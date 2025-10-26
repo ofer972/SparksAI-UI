@@ -7,6 +7,7 @@ import TeamFilter from '@/components/TeamFilter';
 import PIFilter from '@/components/PIFilter';
 import AICards from '@/components/AICards';
 import Recommendations from '@/components/Recommendations';
+import TeamMetrics from '@/components/TeamMetrics';
 
 export default function Home() {
   const [activeNavItem, setActiveNavItem] = useState('team-dashboard');
@@ -32,6 +33,7 @@ export default function Home() {
               <AICards teamName={selectedTeam} />
             </div>
             <Recommendations teamName={selectedTeam} />
+            <TeamMetrics teamName={selectedTeam} />
           </div>
         );
       case 'team-dashboard':
