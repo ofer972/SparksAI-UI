@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import BurndownChart from '@/components/BurndownChart';
+import SettingsScreen from '@/components/SettingsScreen';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('team');
@@ -133,6 +134,8 @@ export default function Home() {
             </div>
           </div>
         );
+      case 'settings':
+        return <SettingsScreen />;
       default:
         return (
           <div className="bg-white rounded-lg shadow-sm p-6 text-center">
