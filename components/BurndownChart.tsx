@@ -142,9 +142,9 @@ export default function BurndownChart({
         position: 'top' as const,
         labels: {
           usePointStyle: true,
-          padding: 20,
+          padding: 10,
           font: {
-            size: 12,
+            size: 9,
           },
         },
       },
@@ -152,7 +152,7 @@ export default function BurndownChart({
         display: true,
         text: sprintInfo ? `${sprintInfo.sprint_name} - Burndown Chart` : 'Sprint Burndown Chart',
         font: {
-          size: 16,
+          size: 12,
           weight: 'bold' as const,
         },
       },
@@ -191,7 +191,7 @@ export default function BurndownChart({
           display: true,
           text: 'Date',
           font: {
-            size: 12,
+            size: 10,
             weight: 'bold' as const,
           },
         },
@@ -205,7 +205,7 @@ export default function BurndownChart({
           display: true,
           text: 'Issues Remaining / Scope / Event Count',
           font: {
-            size: 12,
+            size: 10,
             weight: 'bold' as const,
           },
         },
@@ -282,7 +282,7 @@ export default function BurndownChart({
   }
 
   return (
-    <div className="w-full" style={{ height: '500px' }}>
+    <div className="w-full" style={{ height: '400px' }}>
       <Line data={chartData} options={options} />
     </div>
   );
