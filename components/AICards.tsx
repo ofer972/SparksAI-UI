@@ -140,8 +140,8 @@ export default function AICards({ teamName }: AICardProps) {
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-3 w-full">
+      <div className="h-full">
+        <div className="grid grid-cols-2 gap-3 w-full h-full">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="bg-white rounded-lg shadow-lg p-4 border-l-4 border-gray-200 animate-pulse min-h-[170px]">
               <div className="h-4 bg-gray-200 rounded mb-2"></div>
@@ -157,90 +157,105 @@ export default function AICards({ teamName }: AICardProps) {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-        <div className="text-red-500 text-4xl mb-3">⚠️</div>
-        <h2 className="text-sm font-semibold mb-2">Error Loading AI Cards</h2>
-        <p className="text-xs text-gray-600">{error}</p>
+      <div className="h-full flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+          <div className="text-red-500 text-4xl mb-3">⚠️</div>
+          <h2 className="text-sm font-semibold mb-2">Error Loading AI Cards</h2>
+          <p className="text-xs text-gray-600">{error}</p>
+        </div>
       </div>
     );
   }
 
   if (cards.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-        <div className="text-gray-400 text-4xl mb-3">📋</div>
-        <h2 className="text-sm font-semibold mb-2">No AI Cards Available</h2>
-        <p className="text-xs text-gray-600">No AI insights available for {teamName} at this time.</p>
+      <div className="h-full flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+          <div className="text-gray-400 text-4xl mb-3">📋</div>
+          <h2 className="text-sm font-semibold mb-2">No AI Cards Available</h2>
+          <p className="text-xs text-gray-600">No AI insights available for {teamName} at this time.</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 w-full">
-        {cards.slice(0, 4).map((card) => {
-          const colors = getPriorityColor(card.priority);
-          const actionText = getActionButtonText(card.card_type);
-          const priorityIcon = getPriorityIcon(card.priority);
+    <div className="h-full">
+      <div className="grid grid-cols-2 gap-3 w-full h-full">
+        {[...Array(4)].map((_, index) => {
+          const card = cards[index];
           
-          console.log('Card:', card.card_name, 'Priority:', card.priority, 'Border class:', colors.border);
-          console.log('Description:', card.description.substring(0, 100) + '...');
-          
-          return (
-            <div key={card.id} className={`bg-white rounded-lg shadow-lg p-4 border-l-4 ${colors.border} min-h-[170px]`}>
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center space-x-2">
-                  <div className="relative group">
-                    <span className="text-lg cursor-pointer">
-                      {priorityIcon}
-                    </span>
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                      {card.priority}
-                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+          if (card) {
+            const colors = getPriorityColor(card.priority);
+            const actionText = getActionButtonText(card.card_type);
+            const priorityIcon = getPriorityIcon(card.priority);
+            
+            console.log('Card:', card.card_name, 'Priority:', card.priority, 'Border class:', colors.border);
+            console.log('Description:', card.description.substring(0, 100) + '...');
+            
+            return (
+              <div key={card.id} className={`bg-white rounded-lg shadow-lg p-4 border-l-4 ${colors.border} min-h-[170px]`}>
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="relative group">
+                      <span className="text-lg cursor-pointer">
+                        {priorityIcon}
+                      </span>
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                        {card.priority}
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                      </div>
                     </div>
+                    <h3 className="text-sm font-semibold text-gray-800">{card.card_name}</h3>
                   </div>
-                  <h3 className="text-sm font-semibold text-gray-800">{card.card_name}</h3>
+                  <div className="text-xs text-gray-500 font-medium">{card.card_type}</div>
                 </div>
-                <div className="text-xs text-gray-500 font-medium">{card.card_type}</div>
-              </div>
-              
-              <div className="mb-2">
-                <div className="text-xs text-gray-600 prose prose-sm max-w-none">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      p: ({ children }) => <p className="text-xs text-gray-600 mb-1">{children}</p>,
-                      strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                      em: ({ children }) => <em className="italic">{children}</em>,
-                      ul: ({ children }) => <ul className="list-disc list-inside text-xs text-gray-600">{children}</ul>,
-                      ol: ({ children }) => <ol className="list-decimal list-inside text-xs text-gray-600">{children}</ol>,
-                      li: ({ children }) => <li className="text-xs text-gray-600">{children}</li>,
-                      code: ({ children }) => <code className="bg-gray-100 px-1 rounded text-xs">{children}</code>,
-                      pre: ({ children }) => <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto">{children}</pre>,
-                      h1: ({ children }) => <h1 className="text-sm font-bold text-gray-800 mb-1">{children}</h1>,
-                      h2: ({ children }) => <h2 className="text-xs font-bold text-gray-800 mb-1">{children}</h2>,
-                      h3: ({ children }) => <h3 className="text-xs font-semibold text-gray-800 mb-1">{children}</h3>,
-                      blockquote: ({ children }) => <blockquote className="border-l-2 border-gray-300 pl-2 italic text-gray-600">{children}</blockquote>,
-                      table: ({ children }) => <table className="text-xs border-collapse border border-gray-300">{children}</table>,
-                      th: ({ children }) => <th className="border border-gray-300 px-1 py-0.5 bg-gray-100 font-semibold">{children}</th>,
-                      td: ({ children }) => <td className="border border-gray-300 px-1 py-0.5">{children}</td>,
-                    }}
-                  >
-                    {card.description.length > 200 
-                      ? `${card.description.substring(0, 200)}...` 
-                      : card.description
-                    }
-                  </ReactMarkdown>
+                
+                <div className="mb-2">
+                  <div className="text-xs text-gray-600 prose prose-sm max-w-none">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        p: ({ children }) => <p className="text-xs text-gray-600 mb-1">{children}</p>,
+                        strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                        em: ({ children }) => <em className="italic">{children}</em>,
+                        ul: ({ children }) => <ul className="list-disc list-inside text-xs text-gray-600">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal list-inside text-xs text-gray-600">{children}</ol>,
+                        li: ({ children }) => <li className="text-xs text-gray-600">{children}</li>,
+                        code: ({ children }) => <code className="bg-gray-100 px-1 rounded text-xs">{children}</code>,
+                        pre: ({ children }) => <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto">{children}</pre>,
+                        h1: ({ children }) => <h1 className="text-sm font-bold text-gray-800 mb-1">{children}</h1>,
+                        h2: ({ children }) => <h2 className="text-xs font-bold text-gray-800 mb-1">{children}</h2>,
+                        h3: ({ children }) => <h3 className="text-xs font-semibold text-gray-800 mb-1">{children}</h3>,
+                        blockquote: ({ children }) => <blockquote className="border-l-2 border-gray-300 pl-2 italic text-gray-600">{children}</blockquote>,
+                        table: ({ children }) => <table className="text-xs border-collapse border border-gray-300">{children}</table>,
+                        th: ({ children }) => <th className="border border-gray-300 px-1 py-0.5 bg-gray-100 font-semibold">{children}</th>,
+                        td: ({ children }) => <td className="border border-gray-300 px-1 py-0.5">{children}</td>,
+                      }}
+                    >
+                      {card.description.length > 200
+                        ? `${card.description.substring(0, 200)}...`
+                        : card.description
+                      }
+                    </ReactMarkdown>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end">
+                  <button className={`${colors.button} text-white px-3 py-1 rounded text-xs font-medium transition-colors`}>
+                    {actionText}
+                  </button>
                 </div>
               </div>
-              
-              <div className="flex justify-end">
-                <button className={`${colors.button} text-white px-3 py-1 rounded text-xs font-medium transition-colors`}>
-                  {actionText}
-                </button>
+            );
+          } else {
+            // Render empty placeholder card to maintain layout
+            return (
+              <div key={`placeholder-${index}`} className="bg-white rounded-lg shadow-lg p-4 border-l-4 border-gray-200 min-h-[170px]">
+                {/* Empty placeholder to maintain grid structure */}
               </div>
-            </div>
-          );
+            );
+          }
         })}
       </div>
     </div>

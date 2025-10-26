@@ -27,13 +27,24 @@ export default function Home() {
     switch (activeNavItem) {
       case 'my-team-today':
         return (
-          <div className="space-y-4">
-            <div className="bg-white rounded-lg shadow-sm p-2">
+          <div className="h-full flex flex-col">
+            {/* AI Cards Section - Reduced height with padding */}
+            <div className="bg-white rounded-lg shadow-sm p-2 flex-shrink-0" style={{ height: '45vh' }}>
               <h2 className="text-lg font-semibold mb-1">Team AI Insights</h2>
-              <AICards teamName={selectedTeam} />
+              <div className="h-full pb-4">
+                <AICards teamName={selectedTeam} />
+              </div>
             </div>
-            <Recommendations teamName={selectedTeam} />
-            <TeamMetrics teamName={selectedTeam} />
+            
+            {/* Recommendations Section - Fixed height with no margin */}
+            <div className="flex-shrink-0" style={{ height: '200px' }}>
+              <Recommendations teamName={selectedTeam} />
+            </div>
+            
+            {/* Team Metrics Section - Fixed height with no margin */}
+            <div className="flex-shrink-0 ml-6" style={{ height: '120px' }}>
+              <TeamMetrics teamName={selectedTeam} />
+            </div>
           </div>
         );
       case 'team-dashboard':
@@ -235,7 +246,7 @@ export default function Home() {
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 p-4 overflow-auto">
+        <div className="flex-1 p-2 overflow-auto">
           {renderMainContent()}
         </div>
       </div>

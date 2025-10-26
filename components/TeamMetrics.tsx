@@ -46,13 +46,15 @@ interface WorkInProgressResponse {
   message: string;
 }
 
-const MetricCard = ({ icon, value, label, className = "" }: { 
+const MetricCard = ({ icon, value, label, tooltip, className = "", isLeftmost = false }: { 
   icon: string; 
   value: string; 
   label: string; 
-  className?: string; 
+  tooltip: string;
+  className?: string;
+  isLeftmost?: boolean;
 }) => (
-  <div className={`bg-white rounded-lg shadow-sm p-3 flex flex-col items-center text-center w-[70%] ${className}`}>
+  <div className={`bg-white rounded-lg shadow-sm p-3 flex flex-col items-center text-center w-[70%] relative group ${className}`}>
     <div className="w-8 h-8 mb-2 flex items-center justify-center text-lg">
       {icon}
     </div>
@@ -61,6 +63,11 @@ const MetricCard = ({ icon, value, label, className = "" }: {
     </div>
     <div className="text-xs text-gray-600">
       {label}
+    </div>
+    {/* Tooltip */}
+    <div className={`absolute bottom-full mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10 max-w-xs ${isLeftmost ? 'left-0' : 'left-1/2 transform -translate-x-1/2'}`}>
+      {tooltip}
+      <div className={`absolute top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 ${isLeftmost ? 'left-4' : 'left-1/2 transform -translate-x-1/2'}`}></div>
     </div>
   </div>
 );
@@ -129,8 +136,8 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
 
   if (loading) {
     return (
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold">Team Metrics</h3>
+      <div>
+        <h3 className="text-sm font-semibold mb-2">Team Metrics</h3>
         <div className="grid grid-cols-5 gap-6">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="bg-white rounded-lg shadow-sm p-3 animate-pulse">
@@ -146,8 +153,8 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
 
   if (error) {
     return (
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold">Team Metrics</h3>
+      <div>
+        <h3 className="text-sm font-semibold mb-2">Team Metrics</h3>
         <div className="text-center py-4">
           <div className="text-red-500 text-2xl mb-2">⚠️</div>
           <p className="text-xs text-gray-600">Error loading metrics</p>
@@ -157,14 +164,16 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
   }
 
   return (
-    <div className="space-y-3">
-      <h3 className="text-sm font-semibold">Team Metrics</h3>
+    <div>
+      <h3 className="text-sm font-semibold mb-2">Team Metrics</h3>
       <div className="grid grid-cols-5 gap-6">
         {/* Avg Velocity */}
         <MetricCard
           icon="📈"
           value={sprintMetrics?.velocity?.toString() || "0"}
           label="Avg Velocity"
+          tooltip="Average velocity in the last five closed sprints"
+          isLeftmost={true}
         />
         
         {/* Avg Cycle Time */}
@@ -172,6 +181,7 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
           icon="⏱️"
           value={sprintMetrics?.cycle_time ? `${sprintMetrics.cycle_time}d` : "0d"}
           label="Avg Cycle Time"
+          tooltip="Average story cycle time in the last five sprints"
         />
         
         {/* Avg Sprint Predictability */}
@@ -179,6 +189,7 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
           icon="📊"
           value={sprintMetrics?.predictability ? `${sprintMetrics.predictability}%` : "0%"}
           label="Avg Sprint Predictability"
+          tooltip="Average sprint predictability over last five sprints"
         />
         
         {/* Work in Progress */}
@@ -186,6 +197,7 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
           icon="🔄"
           value={workInProgressData?.total_in_progress?.toString() || "0"}
           label="Work in Progress"
+          tooltip="Number of issues in progress in the current active sprint"
         />
         
         {/* Completion */}
@@ -193,6 +205,7 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
           icon="🎯"
           value={completionData?.completion_rate ? `${completionData.completion_rate}%` : "0%"}
           label="Completion"
+          tooltip="Completed issues (%) in the current active sprint"
         />
       </div>
     </div>
