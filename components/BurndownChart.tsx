@@ -137,15 +137,29 @@ export default function BurndownChart({
   const options = React.useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
+    layout: {
+      padding: {
+        top: 0,
+        bottom: 10,
+        left: 10,
+        right: 10,
+      },
+    },
     plugins: {
       legend: {
         position: 'top' as const,
         labels: {
           usePointStyle: true,
-          padding: 10,
+          padding: 12,
+          boxWidth: 12,
+          boxHeight: 12,
           font: {
             size: 9,
           },
+        },
+        padding: {
+          top: 0,
+          bottom: 5,
         },
       },
       title: {
@@ -155,20 +169,28 @@ export default function BurndownChart({
           size: 12,
           weight: 'bold' as const,
         },
+        position: 'top' as const,
+        align: 'start' as const,
+        padding: {
+          top: 0,
+          bottom: 5,
+        },
       },
       tooltip: {
         mode: 'index' as const,
         intersect: false,
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        titleColor: '#000',
-        bodyColor: '#000',
-        borderColor: '#ddd',
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: '#333',
         borderWidth: 1,
-        cornerRadius: 8,
+        cornerRadius: 6,
         displayColors: true,
         callbacks: {
           title: function(context: any) {
-            return context[0].label;
+            const dataIndex = context[0].dataIndex;
+            const date = data[dataIndex]?.snapshot_date;
+            return date ? format(parseISO(date), 'MMM dd, yyyy') : context[0].label;
           },
           label: function(context: any) {
             const datasetLabel = context.dataset.label;
@@ -176,7 +198,22 @@ export default function BurndownChart({
             if (value === null || value === undefined) {
               return null;
             }
-            return `${datasetLabel}: ${value}`;
+            
+            // Add more descriptive labels
+            switch (datasetLabel) {
+              case 'Actual Remaining':
+                return `📊 Actual Remaining: ${value} issues`;
+              case 'Ideal Burndown':
+                return `📈 Ideal Burndown: ${value} issues`;
+              case 'Total Scope':
+                return `📋 Total Scope: ${value} issues`;
+              case 'Issues Removed':
+                return `🔴 Issues Removed: ${value} issues`;
+              case 'Issues Completed':
+                return `🟢 Issues Completed: ${value} issues`;
+              default:
+                return `${datasetLabel}: ${value}`;
+            }
           },
           filter: function(context: any) {
             return context.parsed.y !== null && context.parsed.y !== undefined;
@@ -282,7 +319,7 @@ export default function BurndownChart({
   }
 
   return (
-    <div className="w-full" style={{ height: '400px' }}>
+    <div className="w-full" style={{ height: '425px' }}>
       <Line data={chartData} options={options} />
     </div>
   );

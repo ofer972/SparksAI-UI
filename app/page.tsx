@@ -8,6 +8,7 @@ import PIFilter from '@/components/PIFilter';
 import AICards from '@/components/AICards';
 import Recommendations from '@/components/Recommendations';
 import TeamMetrics from '@/components/TeamMetrics';
+import TeamDashboard from '@/components/TeamDashboard';
 
 export default function Home() {
   const [activeNavItem, setActiveNavItem] = useState('team-dashboard');
@@ -48,111 +49,7 @@ export default function Home() {
           </div>
         );
       case 'team-dashboard':
-        return (
-          <div className="space-y-4">
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <h2 className="text-lg font-semibold mb-3">Sprint Burndown Chart</h2>
-                  <BurndownChart
-                    teamName={selectedTeam}
-                    issueType="all"
-                  />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="bg-white rounded-lg shadow-sm p-3 border-l-4 border-red-500">
-                <div className="text-xs font-medium text-red-600 mb-1">CRITICAL</div>
-                <div className="text-sm font-semibold mb-1">Dependency Bottleneck</div>
-                <div className="text-xs text-gray-600 mb-1">85% Impact Score</div>
-                <div className="text-xs text-gray-500 mb-2">
-                  API Gateway team is blocking 4 user stories. This affects 2 upcoming releases and customer commitments.
-                </div>
-                <button className="bg-red-500 text-white px-2 py-1 rounded text-xs">Schedule Sync</button>
-              </div>
-              
-              <div className="bg-white rounded-lg shadow-sm p-3 border-l-4 border-orange-500">
-                <div className="text-xs font-medium text-orange-600 mb-1">HIGH</div>
-                <div className="text-sm font-semibold mb-1">Velocity Decline</div>
-                <div className="text-xs text-gray-600 mb-1">72% Impact Score</div>
-                <div className="text-xs text-gray-500 mb-2">
-                  Team velocity dropped 25% compared to last sprint. Code review cycle time increased significantly.
-                </div>
-                <button className="bg-orange-500 text-white px-2 py-1 rounded text-xs">Analyze Trends</button>
-              </div>
-              
-              <div className="bg-white rounded-lg shadow-sm p-3 border-l-4 border-yellow-500">
-                <div className="text-xs font-medium text-yellow-600 mb-1">MEDIUM</div>
-                <div className="text-sm font-semibold mb-1">Team Capacity</div>
-                <div className="text-xs text-gray-600 mb-1">58% Impact Score</div>
-                <div className="text-xs text-gray-500 mb-2">
-                  Two team members are over-allocated. Consider redistributing workload for next sprint planning.
-                </div>
-                <button className="bg-yellow-500 text-white px-2 py-1 rounded text-xs">Rebalance Load</button>
-              </div>
-              
-              <div className="bg-white rounded-lg shadow-sm p-3 border-l-4 border-green-500">
-                <div className="text-xs font-medium text-green-600 mb-1">LOW</div>
-                <div className="text-sm font-semibold mb-1">Code Quality</div>
-                <div className="text-xs text-gray-600 mb-1">34% Impact Score</div>
-                <div className="text-xs text-gray-500 mb-2">
-                  Test coverage improved to 87%. Consider adding integration tests for payment module.
-                </div>
-                <button className="bg-green-500 text-white px-2 py-1 rounded text-xs">View Details</button>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <h3 className="text-sm font-semibold mb-3">Recommendations</h3>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                  <div>
-                    <div className="text-sm font-medium">Schedule Dependency Review</div>
-                    <div className="text-xs text-gray-600">with API Gateway team lead</div>
-                  </div>
-                  <button className="bg-blue-500 text-white px-3 py-1 rounded text-xs">Schedule</button>
-                </div>
-                <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                  <div>
-                    <div className="text-sm font-medium">Generate Sprint Report</div>
-                    <div className="text-xs text-gray-600">For stakeholder update</div>
-                  </div>
-                  <button className="bg-blue-500 text-white px-3 py-1 rounded text-xs">Generate</button>
-                </div>
-                <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                  <div>
-                    <div className="text-sm font-medium">Process Optimization</div>
-                    <div className="text-xs text-gray-600">Review code review workflow</div>
-                  </div>
-                  <button className="bg-blue-500 text-white px-3 py-1 rounded text-xs">Explore</button>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <div className="text-lg font-bold text-blue-600">23</div>
-                  <div className="text-xs text-gray-600">Story Points</div>
-                  <div className="text-xs text-green-600">+15% vs last sprint</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-blue-600">4.2 days</div>
-                  <div className="text-xs text-gray-600">Avg Cycle Time</div>
-                  <div className="text-xs text-green-600">-1.3 days vs target</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-blue-600">68%</div>
-                  <div className="text-xs text-gray-600">Predictability</div>
-                  <div className="text-xs text-green-600">+12% vs last sprint</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-blue-600">87%</div>
-                  <div className="text-xs text-gray-600">Code Coverage</div>
-                  <div className="text-xs text-green-600">↑5% vs last sprint</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
+        return <TeamDashboard selectedTeam={selectedTeam} />;
       case 'settings':
         return <SettingsScreen />;
       default:
