@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface AICardProps {
   teamName: string;
@@ -142,7 +143,7 @@ export default function AICards({ teamName }: AICardProps) {
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3 w-full">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg shadow-lg p-4 border-l-4 border-gray-200 animate-pulse min-h-[200px]">
+            <div key={i} className="bg-white rounded-lg shadow-lg p-4 border-l-4 border-gray-200 animate-pulse min-h-[170px]">
               <div className="h-4 bg-gray-200 rounded mb-2"></div>
               <div className="h-3 bg-gray-200 rounded mb-1"></div>
               <div className="h-3 bg-gray-200 rounded mb-2"></div>
@@ -183,12 +184,21 @@ export default function AICards({ teamName }: AICardProps) {
           const priorityIcon = getPriorityIcon(card.priority);
           
           console.log('Card:', card.card_name, 'Priority:', card.priority, 'Border class:', colors.border);
+          console.log('Description:', card.description.substring(0, 100) + '...');
           
           return (
-            <div key={card.id} className={`bg-white rounded-lg shadow-lg p-4 border-l-4 ${colors.border} min-h-[200px]`}>
+            <div key={card.id} className={`bg-white rounded-lg shadow-lg p-4 border-l-4 ${colors.border} min-h-[170px]`}>
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center space-x-2">
-                  <span className="text-lg">{priorityIcon}</span>
+                  <div className="relative group">
+                    <span className="text-lg cursor-pointer">
+                      {priorityIcon}
+                    </span>
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                      {card.priority}
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                    </div>
+                  </div>
                   <h3 className="text-sm font-semibold text-gray-800">{card.card_name}</h3>
                 </div>
                 <div className="text-xs text-gray-500 font-medium">{card.card_type}</div>
@@ -197,6 +207,7 @@ export default function AICards({ teamName }: AICardProps) {
               <div className="mb-2">
                 <div className="text-xs text-gray-600 prose prose-sm max-w-none">
                   <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
                     components={{
                       p: ({ children }) => <p className="text-xs text-gray-600 mb-1">{children}</p>,
                       strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
@@ -206,6 +217,13 @@ export default function AICards({ teamName }: AICardProps) {
                       li: ({ children }) => <li className="text-xs text-gray-600">{children}</li>,
                       code: ({ children }) => <code className="bg-gray-100 px-1 rounded text-xs">{children}</code>,
                       pre: ({ children }) => <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto">{children}</pre>,
+                      h1: ({ children }) => <h1 className="text-sm font-bold text-gray-800 mb-1">{children}</h1>,
+                      h2: ({ children }) => <h2 className="text-xs font-bold text-gray-800 mb-1">{children}</h2>,
+                      h3: ({ children }) => <h3 className="text-xs font-semibold text-gray-800 mb-1">{children}</h3>,
+                      blockquote: ({ children }) => <blockquote className="border-l-2 border-gray-300 pl-2 italic text-gray-600">{children}</blockquote>,
+                      table: ({ children }) => <table className="text-xs border-collapse border border-gray-300">{children}</table>,
+                      th: ({ children }) => <th className="border border-gray-300 px-1 py-0.5 bg-gray-100 font-semibold">{children}</th>,
+                      td: ({ children }) => <td className="border border-gray-300 px-1 py-0.5">{children}</td>,
                     }}
                   >
                     {card.description.length > 200 

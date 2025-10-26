@@ -6,6 +6,7 @@ import SettingsScreen from '@/components/SettingsScreen';
 import TeamFilter from '@/components/TeamFilter';
 import PIFilter from '@/components/PIFilter';
 import AICards from '@/components/AICards';
+import Recommendations from '@/components/Recommendations';
 
 export default function Home() {
   const [activeNavItem, setActiveNavItem] = useState('team-dashboard');
@@ -27,9 +28,10 @@ export default function Home() {
         return (
           <div className="space-y-4">
             <div className="bg-white rounded-lg shadow-sm p-2">
-              <h2 className="text-lg font-semibold mb-2">Team AI Insights</h2>
+              <h2 className="text-lg font-semibold mb-1">Team AI Insights</h2>
               <AICards teamName={selectedTeam} />
             </div>
+            <Recommendations teamName={selectedTeam} />
           </div>
         );
       case 'team-dashboard':
