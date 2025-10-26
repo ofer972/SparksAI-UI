@@ -3,40 +3,44 @@
 import { useState } from 'react';
 import BurndownChart from '@/components/BurndownChart';
 import SettingsScreen from '@/components/SettingsScreen';
+import TeamFilter from '@/components/TeamFilter';
+import PIFilter from '@/components/PIFilter';
+import AICards from '@/components/AICards';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState('team');
   const [activeNavItem, setActiveNavItem] = useState('team-dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState('AutoDesign-Dev');
+  const [selectedPI, setSelectedPI] = useState('Q4 2025');
 
   const navigationItems = [
-    { id: 'my-team-today', label: 'Today Insights', icon: '🏠' },
+    { id: 'my-team-today', label: 'Team AI Insights', icon: '🏠' },
     { id: 'team-dashboard', label: 'Team Dashboard', icon: '📊' },
     { id: 'pi-quarter', label: 'PI / Quarter', icon: '🕐' },
-    { id: 'dashboard-collection', label: 'Dashboard Collection', icon: '📁' },
     { id: 'ai-chat', label: 'AI Direct Data Chat', icon: '🤖' },
     { id: 'settings', label: 'Settings', icon: '⚙️' },
   ];
 
-  const tabs = [
-    { id: 'insights', label: 'Insights & Dashboards' },
-    { id: 'team', label: 'Team' },
-    { id: 'program', label: 'Program (PI)' },
-    { id: 'ai-summary', label: 'AI Summary' },
-    { id: 'reports', label: 'Reports' },
-  ];
-
   const renderMainContent = () => {
     switch (activeNavItem) {
+      case 'my-team-today':
+        return (
+          <div className="space-y-4">
+            <div className="bg-white rounded-lg shadow-sm p-2">
+              <h2 className="text-lg font-semibold mb-2">Team AI Insights</h2>
+              <AICards teamName={selectedTeam} />
+            </div>
+          </div>
+        );
       case 'team-dashboard':
         return (
           <div className="space-y-4">
             <div className="bg-white rounded-lg shadow-sm p-4">
               <h2 className="text-lg font-semibold mb-3">Sprint Burndown Chart</h2>
-              <BurndownChart 
-                teamName="AutoDesign-Dev"
-                issueType="all"
-              />
+                  <BurndownChart
+                    teamName={selectedTeam}
+                    issueType="all"
+                  />
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -196,54 +200,33 @@ export default function Home() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
         <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex space-x-4">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    activeTab === tab.id
-                      ? 'bg-blue-600 text-white'
-                      : tab.id === 'insights'
-                      ? 'text-blue-600'
-                      : 'text-gray-600 hover:text-gray-800'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Ask AI..."
-                  className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
-                  <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
+            <div className="flex items-center justify-between mb-3">
+              <h1 className="text-lg font-bold text-blue-600">AI Insights & Dashboards</h1>
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Ask AI..."
+                    className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
           
           <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-1">
-              <span className="text-xs font-medium text-gray-700">Team:</span>
-              <select className="border border-gray-300 rounded px-2 py-1 text-xs">
-                <option>AutoDesign-Dev</option>
-              </select>
-            </div>
-            <div className="flex items-center space-x-1">
-              <span className="text-xs font-medium text-gray-700">PI:</span>
-              <select className="border border-gray-300 rounded px-2 py-1 text-xs">
-                <option>Q4 2025</option>
-              </select>
-            </div>
+            <PIFilter 
+              selectedPI={selectedPI}
+              onPIChange={setSelectedPI}
+            />
+            <TeamFilter 
+              selectedTeam={selectedTeam}
+              onTeamChange={setSelectedTeam}
+            />
           </div>
         </div>
 
