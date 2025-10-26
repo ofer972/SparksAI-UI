@@ -70,16 +70,18 @@ const getPriorityColor = (priority: string) => {
   }
 };
 
-const getCardIcon = (cardType: string) => {
-  switch (cardType.toLowerCase()) {
-    case 'daily progress':
-      return '📊';
-    case 'communication':
-      return '💬';
-    case 'sprint goal':
-      return '🎯';
+const getPriorityIcon = (priority: string) => {
+  switch (priority.toLowerCase()) {
+    case 'critical':
+      return '🚨'; // Red alarm/siren icon
+    case 'high':
+      return '⚠️'; // Yellow warning triangle
+    case 'medium':
+      return '🟠'; // Orange circle
+    case 'low':
+      return '🟢'; // Green circle
     default:
-      return '📋';
+      return '⚪'; // White circle
   }
 };
 
@@ -177,8 +179,8 @@ export default function AICards({ teamName }: AICardProps) {
       <div className="grid grid-cols-2 gap-3 w-full">
         {cards.slice(0, 4).map((card) => {
           const colors = getPriorityColor(card.priority);
-          const icon = getCardIcon(card.card_type);
           const actionText = getActionButtonText(card.card_type);
+          const priorityIcon = getPriorityIcon(card.priority);
           
           console.log('Card:', card.card_name, 'Priority:', card.priority, 'Border class:', colors.border);
           
@@ -186,13 +188,8 @@ export default function AICards({ teamName }: AICardProps) {
             <div key={card.id} className={`bg-white rounded-lg shadow-lg p-4 border-l-4 ${colors.border} min-h-[200px]`}>
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center space-x-2">
-                  <span className="text-lg">{icon}</span>
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-800">{card.card_name}</h3>
-                    <div className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${colors.bg} text-white`}>
-                      {card.priority.toUpperCase()}
-                    </div>
-                  </div>
+                  <span className="text-lg">{priorityIcon}</span>
+                  <h3 className="text-sm font-semibold text-gray-800">{card.card_name}</h3>
                 </div>
                 <div className="text-xs text-gray-500 font-medium">{card.card_type}</div>
               </div>
