@@ -111,7 +111,6 @@ export default function IssuesTrendChart({
           borderColor: '#cc0000',
           borderWidth: 1,
           order: 2,
-          barThickness: 'flex',
           maxBarThickness: 50,
         },
         {
@@ -122,7 +121,6 @@ export default function IssuesTrendChart({
           borderColor: '#009900',
           borderWidth: 1,
           order: 3,
-          barThickness: 'flex',
           maxBarThickness: 50,
         },
         {
@@ -145,6 +143,19 @@ export default function IssuesTrendChart({
   }, [data]);
 
   const options = useMemo(() => {
+    // Calculate suggested max for Y axis based on data
+    // Get max from both Issues Created and Issues Resolved
+    const createdData = chartData?.datasets?.find(d => d.label === 'Issues Created')?.data || [];
+    const resolvedData = chartData?.datasets?.find(d => d.label === 'Issues Resolved')?.data || [];
+    const allBarData = [...(Array.isArray(createdData) ? createdData : []), ...(Array.isArray(resolvedData) ? resolvedData : [])];
+    const maxCreatedResolved = allBarData.length > 0 ? Math.max(...allBarData) : 0;
+    // Add 2 ticks above the highest bar
+    const suggestedMaxLeft = maxCreatedResolved > 0 ? Math.ceil(maxCreatedResolved) + 2 : undefined;
+    
+    const rightYMax = chartData?.datasets?.find(d => d.label === 'Issues Left Open (Trend)')?.data || [];
+    const maxOpenIssues = Math.max(...(Array.isArray(rightYMax) ? rightYMax : []));
+    const suggestedMaxRight = maxOpenIssues > 0 ? Math.ceil(maxOpenIssues * 1.15) : undefined;
+    
     return {
     responsive: true,
     maintainAspectRatio: false,
@@ -227,6 +238,15 @@ export default function IssuesTrendChart({
           },
         },
         beginAtZero: true,
+        max: suggestedMaxLeft,
+        ticks: {
+          stepSize: 1,
+          callback: function(value: any) {
+            if (value % 1 === 0) {
+              return value;
+            }
+          },
+        },
         grid: {
           color: 'rgba(0, 0, 0, 0.1)',
         },
@@ -245,8 +265,15 @@ export default function IssuesTrendChart({
           color: '#4169E1',
         },
         beginAtZero: true,
+        max: suggestedMaxRight,
         ticks: {
           color: '#4169E1',
+          stepSize: 1,
+          callback: function(value: any) {
+            if (value % 1 === 0) {
+              return value;
+            }
+          },
         },
         grid: {
           drawOnChartArea: false,
@@ -254,7 +281,7 @@ export default function IssuesTrendChart({
       },
     },
   };
-  }, []);
+  }, [chartData]);
 
   useEffect(() => {
     const fetchData = async () => {
