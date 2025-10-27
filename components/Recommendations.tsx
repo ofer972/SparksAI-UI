@@ -46,23 +46,6 @@ const getRecommendationIcon = (actionText: string) => {
   }
 };
 
-const getActionButtonText = (actionText: string) => {
-  const text = actionText.toLowerCase();
-  if (text.includes('schedule') || text.includes('meeting')) {
-    return 'Schedule';
-  } else if (text.includes('generate') || text.includes('report')) {
-    return 'Generate';
-  } else if (text.includes('optimization') || text.includes('process')) {
-    return 'Explore';
-  } else if (text.includes('flow') || text.includes('delivery')) {
-    return 'Prioritize';
-  } else if (text.includes('transparency') || text.includes('trust')) {
-    return 'Facilitate';
-  } else {
-    return 'View';
-  }
-};
-
 const getShortDescription = (actionText: string) => {
   // Extract a shorter description from the action text
   if (actionText.includes(':')) {
@@ -102,6 +85,22 @@ export default function Recommendations({ teamName }: RecommendationsProps) {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const handleReason = (recommendation: Recommendation) => {
+    // Each recommendation will have its own behavior based on content
+    console.log('Reason clicked for recommendation:', {
+      id: recommendation.id,
+      actionText: recommendation.action_text,
+      priority: recommendation.priority,
+      status: recommendation.status,
+      rational: recommendation.rational,
+      fullInformation: recommendation.full_information.substring(0, 100) + '...'
+    });
+    
+    // TODO: Implement specific behavior based on recommendation content
+    // This could show detailed reasoning, open a modal, etc.
+    alert(`Reason for: ${recommendation.action_text.split(':')[0] || recommendation.action_text} - Priority: ${recommendation.priority}`);
+  };
 
   useEffect(() => {
     const fetchRecommendations = async () => {
@@ -187,13 +186,12 @@ export default function Recommendations({ teamName }: RecommendationsProps) {
           const recommendation = recommendations[index];
           
           if (recommendation) {
-            const actionText = getActionButtonText(recommendation.action_text);
             const shortDescription = getShortDescription(recommendation.action_text);
             const priorityIcon = getPriorityIcon(recommendation.priority);
             const formattedDate = formatDate(recommendation.date);
             
             return (
-              <div key={recommendation.id} className="bg-white rounded-lg shadow-sm px-3 py-2">
+              <div key={recommendation.id} className="bg-white rounded-lg shadow-sm px-3 py-2 relative">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div>
@@ -216,8 +214,12 @@ export default function Recommendations({ teamName }: RecommendationsProps) {
                         <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
                       </div>
                     </div>
-                    <button className="text-blue-600 hover:text-blue-800 text-xs font-medium transition-colors">
-                      {actionText}
+                    {/* Reason Button - positioned on same row as date, after priority icon */}
+                    <button 
+                      onClick={() => handleReason(recommendation)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-0.5 rounded text-xs font-medium transition-colors"
+                    >
+                      Reason
                     </button>
                   </div>
                 </div>

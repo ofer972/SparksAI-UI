@@ -38,36 +38,31 @@ const getPriorityColor = (priority: string) => {
       return {
         border: 'border-red-600',
         bg: 'bg-red-600',
-        text: 'text-red-700',
-        button: 'bg-red-600 hover:bg-red-700'
+        text: 'text-red-700'
       };
     case 'high':
       return {
         border: 'border-yellow-500',
         bg: 'bg-yellow-500',
-        text: 'text-yellow-600',
-        button: 'bg-yellow-500 hover:bg-yellow-600'
+        text: 'text-yellow-600'
       };
     case 'medium':
       return {
         border: 'border-orange-500',
         bg: 'bg-orange-500',
-        text: 'text-orange-600',
-        button: 'bg-orange-500 hover:bg-orange-600'
+        text: 'text-orange-600'
       };
     case 'low':
       return {
         border: 'border-green-500',
         bg: 'bg-green-500',
-        text: 'text-green-600',
-        button: 'bg-green-500 hover:bg-green-600'
+        text: 'text-green-600'
       };
     default:
       return {
         border: 'border-gray-500',
         bg: 'bg-gray-500',
-        text: 'text-gray-600',
-        button: 'bg-gray-500 hover:bg-gray-600'
+        text: 'text-gray-600'
       };
   }
 };
@@ -87,23 +82,25 @@ const getPriorityIcon = (priority: string) => {
   }
 };
 
-const getActionButtonText = (cardType: string) => {
-  switch (cardType.toLowerCase()) {
-    case 'daily progress':
-      return 'View Progress';
-    case 'communication':
-      return 'Review Analysis';
-    case 'sprint goal':
-      return 'View Goals';
-    default:
-      return 'View Details';
-  }
-};
-
 export default function AICards({ teamName }: AICardProps) {
   const [cards, setCards] = useState<AICard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const handleAIChat = (card: AICard) => {
+    // Each card will have its own behavior based on content
+    console.log('AI Chat clicked for card:', {
+      id: card.id,
+      cardName: card.card_name,
+      cardType: card.card_type,
+      priority: card.priority,
+      description: card.description.substring(0, 100) + '...'
+    });
+    
+    // TODO: Implement specific behavior based on card content
+    // This could open a chat modal, navigate to a specific page, etc.
+    alert(`AI Chat for ${card.card_name} (${card.card_type}) - Priority: ${card.priority}`);
+  };
 
   useEffect(() => {
     const fetchAICards = async () => {
@@ -179,14 +176,13 @@ export default function AICards({ teamName }: AICardProps) {
           
           if (card) {
             const colors = getPriorityColor(card.priority);
-            const actionText = getActionButtonText(card.card_type);
             const priorityIcon = getPriorityIcon(card.priority);
             
             console.log('Card:', card.card_name, 'Priority:', card.priority, 'Border class:', colors.border);
             console.log('Description:', card.description.substring(0, 100) + '...');
             
             return (
-              <div key={card.id} className={`bg-white rounded-lg shadow-lg p-4 border-l-4 ${colors.border} min-h-[170px]`}>
+              <div key={card.id} className={`bg-white rounded-lg shadow-lg p-4 border-l-4 ${colors.border} min-h-[170px] relative`}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center space-x-2">
                     <div className="relative group">
@@ -233,11 +229,13 @@ export default function AICards({ teamName }: AICardProps) {
                   </div>
                 </div>
                 
-                <div className="flex justify-end">
-                  <button className={`${colors.button} text-white px-3 py-1 rounded text-xs font-medium transition-colors`}>
-                    {actionText}
-                  </button>
-                </div>
+                {/* Fixed AI Chat Button - positioned at bottom-right */}
+                <button 
+                  onClick={() => handleAIChat(card)}
+                  className="absolute bottom-2 right-2 bg-blue-600 hover:bg-blue-700 text-white px-2 py-0.5 rounded text-xs font-medium transition-colors"
+                >
+                  AI Chat
+                </button>
               </div>
             );
           } else {
