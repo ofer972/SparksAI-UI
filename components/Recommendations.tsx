@@ -68,6 +68,46 @@ const getPriorityIcon = (priority: string) => {
   }
 };
 
+const getPriorityColor = (priority: string) => {
+  switch (priority.toLowerCase()) {
+    case 'critical':
+      return {
+        border: 'border-red-600',
+        frame: 'border-red-600',
+        bg: 'bg-red-600',
+        text: 'text-red-700'
+      };
+    case 'high':
+      return {
+        border: 'border-yellow-500',
+        frame: 'border-yellow-500',
+        bg: 'bg-yellow-500',
+        text: 'text-yellow-600'
+      };
+    case 'medium':
+      return {
+        border: 'border-orange-500',
+        frame: 'border-orange-500',
+        bg: 'bg-orange-500',
+        text: 'text-orange-600'
+      };
+    case 'low':
+      return {
+        border: 'border-green-500',
+        frame: 'border-green-500',
+        bg: 'bg-green-500',
+        text: 'text-green-600'
+      };
+    default:
+      return {
+        border: 'border-gray-500',
+        frame: 'border-gray-500',
+        bg: 'bg-gray-500',
+        text: 'text-gray-600'
+      };
+  }
+};
+
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', { 
@@ -172,10 +212,11 @@ export default function Recommendations({ teamName }: RecommendationsProps) {
           
           if (recommendation) {
             const priorityIcon = getPriorityIcon(recommendation.priority);
+            const colors = getPriorityColor(recommendation.priority);
             const formattedDate = formatDate(recommendation.date);
             
             return (
-              <div key={recommendation.id} className="bg-white rounded-lg shadow-sm px-3 py-2 relative">
+              <div key={recommendation.id} className={`bg-white rounded-lg shadow-sm px-3 py-2 border-l-4 border ${colors.border} ${colors.frame} relative`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="flex-1">

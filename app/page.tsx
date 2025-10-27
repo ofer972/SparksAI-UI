@@ -45,7 +45,7 @@ export default function Home() {
             </div>
             
             {/* Team Metrics Section - Fixed height, right after recommendations */}
-            <div className="flex-shrink-0 mt-2" style={{ height: '120px' }}>
+            <div className="flex-shrink-0 -mt-4" style={{ height: '120px' }}>
               <TeamMetrics teamName={selectedTeam} />
             </div>
           </div>

@@ -40,30 +40,35 @@ const getPriorityColor = (priority: string) => {
     case 'critical':
       return {
         border: 'border-red-600',
+        frame: 'border-red-600',
         bg: 'bg-red-600',
         text: 'text-red-700'
       };
     case 'high':
       return {
         border: 'border-yellow-500',
+        frame: 'border-yellow-500',
         bg: 'bg-yellow-500',
         text: 'text-yellow-600'
       };
     case 'medium':
       return {
         border: 'border-orange-500',
+        frame: 'border-orange-500',
         bg: 'bg-orange-500',
         text: 'text-orange-600'
       };
     case 'low':
       return {
         border: 'border-green-500',
+        frame: 'border-green-500',
         bg: 'bg-green-500',
         text: 'text-green-600'
       };
     default:
       return {
         border: 'border-gray-500',
+        frame: 'border-gray-500',
         bg: 'bg-gray-500',
         text: 'text-gray-600'
       };
@@ -183,7 +188,7 @@ export default function AICards({ teamName }: AICardProps) {
             
             
             return (
-              <div key={card.id} className={`bg-white rounded-lg shadow-lg pt-2 pb-4 px-4 border-l-4 ${colors.border} min-h-[170px] relative`}>
+              <div key={card.id} className={`bg-white rounded-lg shadow-lg pt-2 pb-4 px-4 border-l-4 border ${colors.border} ${colors.frame} min-h-[170px] relative`}>
                 <div className="flex items-start justify-between mb-1">
                   <div className="flex items-center space-x-2">
                     <div className="relative group">
