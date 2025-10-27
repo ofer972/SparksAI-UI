@@ -164,7 +164,7 @@ export default function BurndownChart({
       },
       title: {
         display: true,
-        text: sprintInfo ? `${sprintInfo.sprint_name} - Burndown Chart` : 'Sprint Burndown Chart',
+        text: sprintInfo ? sprintInfo.sprint_name : 'Sprint Burndown',
         font: {
           size: 12,
           weight: 'bold' as const,

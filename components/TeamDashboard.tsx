@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import BurndownChart from './BurndownChart';
+import ClosedSprints from './ClosedSprints';
 
 interface TeamDashboardProps {
   selectedTeam: string;
@@ -12,6 +13,8 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
 
   return (
     <div className="space-y-4">
+      <ClosedSprints selectedTeam={selectedTeam} />
+      
       <div className="bg-white rounded-lg shadow-sm pt-2 pb-4 px-4">
         <div className="flex items-center mb-3">
           <button 
