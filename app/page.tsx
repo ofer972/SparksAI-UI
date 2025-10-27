@@ -9,6 +9,7 @@ import AICards from '@/components/AICards';
 import Recommendations from '@/components/Recommendations';
 import TeamMetrics from '@/components/TeamMetrics';
 import ApiTest from '@/components/ApiTest';
+import TeamDashboard from '@/components/TeamDashboard';
 
 export default function Home() {
   const [activeNavItem, setActiveNavItem] = useState('team-dashboard');
