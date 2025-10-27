@@ -8,7 +8,7 @@ import PIFilter from '@/components/PIFilter';
 import AICards from '@/components/AICards';
 import Recommendations from '@/components/Recommendations';
 import TeamMetrics from '@/components/TeamMetrics';
-import TeamDashboard from '@/components/TeamDashboard';
+import ApiTest from '@/components/ApiTest';
 
 export default function Home() {
   const [activeNavItem, setActiveNavItem] = useState('team-dashboard');
@@ -22,6 +22,7 @@ export default function Home() {
     { id: 'pi-quarter', label: 'PI / Quarter', icon: '🕐' },
     { id: 'ai-chat', label: 'AI Direct Data Chat', icon: '🤖' },
     { id: 'settings', label: 'Settings', icon: '⚙️' },
+    { id: 'api-test', label: 'API Test', icon: '🔧' },
   ];
 
   const renderMainContent = () => {
@@ -52,6 +53,8 @@ export default function Home() {
         return <TeamDashboard selectedTeam={selectedTeam} />;
       case 'settings':
         return <SettingsScreen />;
+      case 'api-test':
+        return <ApiTest />;
       default:
         return (
           <div className="bg-white rounded-lg shadow-sm p-6 text-center">
