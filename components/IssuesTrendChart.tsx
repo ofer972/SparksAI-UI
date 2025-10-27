@@ -70,7 +70,8 @@ export default function IssuesTrendChart({
     // Calculate width: Base + (Number of months * width per month)
     const calculatedWidth = Math.min(1200, baseWidth + (selectedMonths - 1) * widthPerMonth);
     
-    return `${calculatedWidth}px`;
+    // Increase by 20%
+    return `${Math.round(calculatedWidth * 1.2)}px`;
   }, [selectedMonths]);
 
   // Transform data for chart
