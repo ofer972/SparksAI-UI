@@ -6,6 +6,7 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
+  BarController,
   LineElement,
   PointElement,
   Title,
@@ -17,10 +18,12 @@ import { Chart } from 'react-chartjs-2';
 import { ApiService, IssuesTrendDataPoint, IssuesTrendResponse } from '@/lib/api';
 import { format, parseISO } from 'date-fns';
 
+// Register all controllers
 ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
+  BarController,
   LineElement,
   PointElement,
   Title,
@@ -144,15 +147,19 @@ export default function IssuesTrendChart({
 
   const options = useMemo(() => {
     // Calculate suggested max for Y axis based on data
+    if (!chartData || !chartData.datasets) {
+      return {};
+    }
+    
     // Get max from both Issues Created and Issues Resolved
-    const createdData = chartData?.datasets?.find(d => d.label === 'Issues Created')?.data || [];
-    const resolvedData = chartData?.datasets?.find(d => d.label === 'Issues Resolved')?.data || [];
+    const createdData = chartData.datasets.find(d => d.label === 'Issues Created')?.data || [];
+    const resolvedData = chartData.datasets.find(d => d.label === 'Issues Resolved')?.data || [];
     const allBarData = [...(Array.isArray(createdData) ? createdData : []), ...(Array.isArray(resolvedData) ? resolvedData : [])];
     const maxCreatedResolved = allBarData.length > 0 ? Math.max(...allBarData) : 0;
     // Add 2 ticks above the highest bar
     const suggestedMaxLeft = maxCreatedResolved > 0 ? Math.ceil(maxCreatedResolved) + 2 : undefined;
     
-    const rightYMax = chartData?.datasets?.find(d => d.label === 'Issues Left Open (Trend)')?.data || [];
+    const rightYMax = chartData.datasets.find(d => d.label === 'Issues Left Open (Trend)')?.data || [];
     const maxOpenIssues = Math.max(...(Array.isArray(rightYMax) ? rightYMax : []));
     const suggestedMaxRight = maxOpenIssues > 0 ? Math.ceil(maxOpenIssues * 1.15) : undefined;
     
