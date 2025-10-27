@@ -187,7 +187,7 @@ export default function BurndownChart({
             const datasetLabel = context.dataset.label;
             const value = context.parsed.y;
             if (value === null || value === undefined) {
-              return null;
+              return '';
             }
             
             // Add more descriptive labels
@@ -285,7 +285,10 @@ export default function BurndownChart({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-lg">Loading burndown chart...</div>
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+          <div className="text-sm text-gray-600">Loading burndown chart...</div>
+        </div>
       </div>
     );
   }

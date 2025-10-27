@@ -16,9 +16,10 @@ interface SprintData {
 
 interface ClosedSprintsProps {
   selectedTeam: string;
+  isLoading?: boolean;
 }
 
-export default function ClosedSprints({ selectedTeam }: ClosedSprintsProps) {
+export default function ClosedSprints({ selectedTeam, isLoading = false }: ClosedSprintsProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: keyof SprintData | null; direction: 'asc' | 'desc' }>({
     key: null,
@@ -122,6 +123,36 @@ export default function ClosedSprints({ selectedTeam }: ClosedSprintsProps) {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  const LoadingSpinner = () => (
+    <div className="flex items-center justify-center py-8">
+      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+      <span className="ml-2 text-xs text-gray-600">Loading sprints...</span>
+    </div>
+  );
+
+  const SkeletonRow = () => (
+    <tr className="border-b border-gray-100">
+      <td className="py-1.5 px-2">
+        <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4"></div>
+      </td>
+      <td className="py-1.5 px-2 text-right">
+        <div className="h-3 bg-gray-200 rounded animate-pulse w-16 ml-auto"></div>
+      </td>
+      <td className="py-1.5 px-2 text-right">
+        <div className="h-3 bg-gray-200 rounded animate-pulse w-16 ml-auto"></div>
+      </td>
+      <td className="py-1.5 px-2 text-center">
+        <div className="h-3 bg-gray-200 rounded animate-pulse w-8 mx-auto"></div>
+      </td>
+      <td className="py-1.5 px-2 text-center">
+        <div className="h-3 bg-gray-200 rounded animate-pulse w-12 mx-auto"></div>
+      </td>
+      <td className="py-1.5 px-2 text-center">
+        <div className="h-3 bg-gray-200 rounded animate-pulse w-10 mx-auto"></div>
+      </td>
+    </tr>
+  );
+
   return (
     <div className="bg-white rounded-lg shadow-sm p-4">
       <div className="flex items-center mb-3">
@@ -209,23 +240,32 @@ export default function ClosedSprints({ selectedTeam }: ClosedSprintsProps) {
                 </tr>
               </thead>
               <tbody>
-                {sortedAndFilteredData.map((sprint) => (
-                  <tr key={sprint.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-1.5 px-2 font-medium text-gray-900">{sprint.name}</td>
-                    <td className="py-1.5 px-2 text-right text-gray-600">{formatDate(sprint.startDate)}</td>
-                    <td className="py-1.5 px-2 text-right text-gray-600">{formatDate(sprint.endDate)}</td>
-                    <td className="py-1.5 px-2 text-center text-gray-900 font-semibold">{sprint.velocity}</td>
-                    <td className="py-1.5 px-2 text-center">
-                      <span className={`font-semibold ${
-                        sprint.predictability >= 80 ? 'text-green-600' : 
-                        sprint.predictability >= 60 ? 'text-yellow-600' : 'text-red-600'
-                      }`}>
-                        {sprint.predictability}%
-                      </span>
-                    </td>
-                    <td className="py-1.5 px-2 text-center text-gray-700">{sprint.cycleTime}</td>
-                  </tr>
-                ))}
+                {isLoading ? (
+                  <>
+                    <SkeletonRow />
+                    <SkeletonRow />
+                    <SkeletonRow />
+                    <SkeletonRow />
+                  </>
+                ) : (
+                  sortedAndFilteredData.map((sprint) => (
+                    <tr key={sprint.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-1.5 px-2 font-medium text-gray-900">{sprint.name}</td>
+                      <td className="py-1.5 px-2 text-right text-gray-600">{formatDate(sprint.startDate)}</td>
+                      <td className="py-1.5 px-2 text-right text-gray-600">{formatDate(sprint.endDate)}</td>
+                      <td className="py-1.5 px-2 text-center text-gray-900 font-semibold">{sprint.velocity}</td>
+                      <td className="py-1.5 px-2 text-center">
+                        <span className={`font-semibold ${
+                          sprint.predictability >= 80 ? 'text-green-600' : 
+                          sprint.predictability >= 60 ? 'text-yellow-600' : 'text-red-600'
+                        }`}>
+                          {sprint.predictability}%
+                        </span>
+                      </td>
+                      <td className="py-1.5 px-2 text-center text-gray-700">{sprint.cycleTime}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

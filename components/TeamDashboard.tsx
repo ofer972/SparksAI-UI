@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import BurndownChart from './BurndownChart';
 import ClosedSprints from './ClosedSprints';
 
@@ -12,6 +12,7 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
   const [burndownCollapsed, setBurndownCollapsed] = useState(false);
   const [selectedSprint, setSelectedSprint] = useState('');
   const [currentSprintName, setCurrentSprintName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   // Sample sprint data - in the future this will come from API
   const sprintOptions = [
@@ -27,9 +28,22 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
     { value: 'IDPS-DEV-2025-06-29', label: 'IDPS-DEV-2025-06-29' },
   ];
 
+  // Simulate loading when team changes
+  useEffect(() => {
+    setIsLoading(true);
+    setSelectedSprint(''); // Clear sprint selection when team changes
+    setCurrentSprintName(''); // Clear current sprint name
+    // Simulate API call delay
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 800); // Reduced from 1500ms to 800ms
+    
+    return () => clearTimeout(timer);
+  }, [selectedTeam]);
+
   return (
     <div className="space-y-4">
-      <ClosedSprints selectedTeam={selectedTeam} />
+      <ClosedSprints selectedTeam={selectedTeam} isLoading={isLoading} />
       
       <div className="bg-white rounded-lg shadow-sm pt-2 pb-4 px-4">
         <div className="flex items-center mb-3">
