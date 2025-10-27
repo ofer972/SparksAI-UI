@@ -9,8 +9,13 @@ import {
   SprintMetrics,
   CompletionRate,
   InProgressCount,
-  ClosedSprintsResponse
+  ClosedSprintsResponse,
+  IssuesTrendResponse,
+  IssuesTrendDataPoint
 } from './config';
+
+// Re-export types for convenience
+export type { IssuesTrendDataPoint, IssuesTrendResponse };
 
 export interface BurndownDataPoint {
   snapshot_date: string;
@@ -173,6 +178,27 @@ export class ApiService {
     }
 
     const result: ApiResponse<ClosedSprintsResponse> = await response.json();
+    return result.data;
+  }
+
+  async getIssuesTrend(
+    teamName: string,
+    issueType: string = 'Bug',
+    months: number = 6
+  ): Promise<IssuesTrendResponse> {
+    const params = new URLSearchParams({
+      team_name: teamName,
+      issue_type: issueType,
+      months: months.toString(),
+    });
+
+    const response = await fetch(`${buildApiUrl(API_CONFIG.endpoints.teamMetrics.issuesTrend)}?${params}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch issues trend data: ${response.statusText}`);
+    }
+
+    const result: ApiResponse<IssuesTrendResponse> = await response.json();
     return result.data;
   }
 

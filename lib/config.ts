@@ -35,6 +35,7 @@ export const API_CONFIG = {
       countInProgress: '/api/v1/team-metrics/count-in-progress',
       currentSprintCompletion: '/api/v1/team-metrics/current-sprint-completion',
       closedSprints: '/api/v1/team-metrics/closed-sprints',
+      issuesTrend: '/api/v1/team-metrics/issues-trend',
     },
   },
 } as const;
@@ -156,4 +157,21 @@ export interface ClosedSprintsResponse {
   count: number;
   team_name: string;
   months_looked_back: number;
+}
+
+export interface IssuesTrendDataPoint {
+  report_month: string;
+  team_name: string;
+  issue_type: string;
+  issues_created: number;
+  issues_resolved: number;
+  cumulative_open_issues: number;
+}
+
+export interface IssuesTrendResponse {
+  team_name: string;
+  months: number;
+  issue_type: string;
+  trend_data: IssuesTrendDataPoint[];
+  count: number;
 }

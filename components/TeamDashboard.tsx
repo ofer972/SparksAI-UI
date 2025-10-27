@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import BurndownChart from './BurndownChart';
 import ClosedSprints from './ClosedSprints';
+import IssuesTrendChart from './IssuesTrendChart';
 
 interface TeamDashboardProps {
   selectedTeam: string;
@@ -10,6 +11,7 @@ interface TeamDashboardProps {
 
 export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
   const [burndownCollapsed, setBurndownCollapsed] = useState(false);
+  const [issuesTrendCollapsed, setIssuesTrendCollapsed] = useState(false);
   const [selectedSprint, setSelectedSprint] = useState('');
   const [currentSprintName, setCurrentSprintName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -86,6 +88,26 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
               onSprintNameChange={setCurrentSprintName}
             />
           </div>
+        )}
+      </div>
+      
+      {/* Issues Trend Chart */}
+      <div className="bg-white rounded-lg shadow-sm pt-2 pb-4 px-4">
+        <div className="flex items-center mb-3">
+          <button 
+            onClick={() => setIssuesTrendCollapsed(!issuesTrendCollapsed)}
+            className="text-gray-500 hover:text-gray-700 transition-colors mr-2"
+          >
+            {issuesTrendCollapsed ? '▼' : '▲'}
+          </button>
+          <h2 className="text-lg font-semibold">Bugs Created and Resolved Over Time</h2>
+        </div>
+        {!issuesTrendCollapsed && (
+          <IssuesTrendChart
+            teamName={selectedTeam}
+            issueType="Bug"
+            months={6}
+          />
         )}
       </div>
       
