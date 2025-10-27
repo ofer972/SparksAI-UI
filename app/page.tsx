@@ -10,6 +10,7 @@ import Recommendations from '@/components/Recommendations';
 import TeamMetrics from '@/components/TeamMetrics';
 import ApiTest from '@/components/ApiTest';
 import TeamDashboard from '@/components/TeamDashboard';
+import SparksAILogo from '@/components/SparksAILogo';
 
 export default function Home() {
   const [activeNavItem, setActiveNavItem] = useState('team-dashboard');
@@ -76,11 +77,14 @@ export default function Home() {
         sidebarCollapsed ? 'w-16' : 'w-48'
       }`}>
         <div className="p-3 h-full">
-          <div className="flex items-center justify-between mb-4">
-            {!sidebarCollapsed && <h1 className="text-sm font-semibold">Navigation</h1>}
+          <div className="flex flex-col items-center mb-4">
+            <div className="w-full">
+              <SparksAILogo collapsed={sidebarCollapsed} size="medium" />
+            </div>
             <button 
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="text-gray-500 hover:text-gray-700 p-1 rounded hover:bg-gray-100"
+              className="text-gray-500 hover:text-gray-700 p-1 rounded hover:bg-gray-100 mt-2"
+              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={
@@ -117,7 +121,7 @@ export default function Home() {
         {/* Top Header */}
         <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
             <div className="flex items-center justify-between mb-3">
-              <h1 className="text-lg font-bold text-blue-600">AI Insights & Dashboards</h1>
+              <h1 className="text-lg font-bold text-blue-600">SparksAI Insights & Dashboards</h1>
               <div className="flex items-center space-x-4">
                 <div className="relative">
                   <input
