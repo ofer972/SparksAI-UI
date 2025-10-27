@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { ApiService } from '@/lib/api';
 
 interface AICardProps {
   teamName: string;
@@ -108,22 +109,13 @@ export default function AICards({ teamName }: AICardProps) {
     const fetchAICards = async () => {
       try {
         setLoading(true);
-        const params = new URLSearchParams({
-          team_name: teamName,
-        });
+        const apiService = new ApiService();
+        const response = await apiService.getAICards(teamName);
         
-        const response = await fetch(`https://sparksai-backend-production.up.railway.app/api/v1/team-ai-cards/getCards?${params.toString()}`);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data: AICardsResponse = await response.json();
-        
-        if (data.success && data.data.ai_cards) {
-          setCards(data.data.ai_cards);
+        if (response.ai_cards) {
+          setCards(response.ai_cards);
         } else {
-          throw new Error(data.message || 'Failed to fetch AI cards');
+          throw new Error('Failed to fetch AI cards');
         }
       } catch (err) {
         console.error('Error fetching AI cards:', err);

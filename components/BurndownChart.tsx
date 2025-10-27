@@ -13,7 +13,7 @@ import {
   Filler,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { BurndownApiService, BurndownDataPoint } from '@/lib/api';
+import { ApiService, BurndownDataPoint } from '@/lib/api';
 import { format, parseISO } from 'date-fns';
 
 ChartJS.register(
@@ -258,8 +258,8 @@ export default function BurndownChart({
       try {
         setLoading(true);
         setError(null);
-        const apiService = new BurndownApiService();
-        const response = await apiService.getBurndownData(teamName, issueType, sprintName);
+            const apiService = new ApiService();
+            const response = await apiService.getBurndownData(teamName, issueType, sprintName);
         
         setData(response.data.burndown_data);
         setSprintInfo({

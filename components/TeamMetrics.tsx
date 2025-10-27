@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ApiService } from '@/lib/api';
 
 interface TeamMetricsProps {
   teamName: string;
@@ -90,36 +91,12 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
         setLoading(true);
         setError(null);
 
-        // Fetch all three endpoints in parallel
-        const [sprintResponse, completionResponse, wipResponse] = await Promise.all([
-          fetch(`https://sparksai-backend-production.up.railway.app/api/v1/team-metrics/get-avg-sprint-metrics?team_name=${teamName}`),
-          fetch(`https://sparksai-backend-production.up.railway.app/api/v1/team-metrics/current-sprint-completion?team_name=${teamName}`),
-          fetch(`https://sparksai-backend-production.up.railway.app/api/v1/team-metrics/count-in-progress?team_name=${teamName}`)
-        ]);
-
-        // Process sprint metrics
-        if (sprintResponse.ok) {
-          const sprintData: SprintMetricsResponse = await sprintResponse.json();
-          if (sprintData.success) {
-            setSprintMetrics(sprintData.data);
-          }
-        }
-
-        // Process completion data
-        if (completionResponse.ok) {
-          const completionData: CompletionResponse = await completionResponse.json();
-          if (completionData.success) {
-            setCompletionData(completionData.data);
-          }
-        }
-
-        // Process work in progress data
-        if (wipResponse.ok) {
-          const wipData: WorkInProgressResponse = await wipResponse.json();
-          if (wipData.success) {
-            setWorkInProgressData(wipData.data);
-          }
-        }
+        const apiService = new ApiService();
+        const { sprintMetrics, completionRate, inProgressCount } = await apiService.getTeamMetrics(teamName);
+        
+        setSprintMetrics(sprintMetrics);
+        setCompletionData(completionRate);
+        setWorkInProgressData(inProgressCount);
 
       } catch (err) {
         console.error('Error fetching metrics:', err);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ApiService } from '@/lib/api';
 
 interface PIFilterProps {
   selectedPI: string;
@@ -35,22 +36,17 @@ export default function PIFilter({ selectedPI, onPIChange, className = '' }: PIF
     const fetchPIs = async () => {
       try {
         setLoading(true);
-        const response = await fetch('https://sparksai-backend-production.up.railway.app/api/v1/pis/getPis');
+        const apiService = new ApiService();
+        const response = await apiService.getPIs();
         
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data: PIResponse = await response.json();
-        
-        if (data.success && data.data.pis) {
-          setPis(data.data.pis);
+        if (response.pis) {
+          setPis(response.pis);
           // Set default PI if none selected
-          if (!selectedPI && data.data.pis.length > 0) {
-            onPIChange(data.data.pis[0].pi_name);
+          if (!selectedPI && response.pis.length > 0) {
+            onPIChange(response.pis[0].pi_name);
           }
         } else {
-          throw new Error(data.message || 'Failed to fetch PIs');
+          throw new Error('Failed to fetch PIs');
         }
       } catch (err) {
         console.error('Error fetching PIs:', err);

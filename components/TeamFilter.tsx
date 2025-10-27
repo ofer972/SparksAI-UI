@@ -1,20 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ApiService } from '@/lib/api';
 
 interface TeamFilterProps {
   selectedTeam: string;
   onTeamChange: (team: string) => void;
   className?: string;
-}
-
-interface TeamResponse {
-  success: boolean;
-  data: {
-    teams: string[];
-    count: number;
-  };
-  message: string;
 }
 
 export default function TeamFilter({ selectedTeam, onTeamChange, className = '' }: TeamFilterProps) {
@@ -26,22 +18,14 @@ export default function TeamFilter({ selectedTeam, onTeamChange, className = '' 
     const fetchTeams = async () => {
       try {
         setLoading(true);
-        const response = await fetch('https://sparksai-backend-production.up.railway.app/api/v1/teams/getNames');
+        setError(null);
+        const apiService = new ApiService();
+        const response = await apiService.getTeams();
         
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data: TeamResponse = await response.json();
-        
-        if (data.success && data.data.teams) {
-          setTeams(data.data.teams);
-          // Set default team if none selected
-          if (!selectedTeam && data.data.teams.length > 0) {
-            onTeamChange(data.data.teams[0]);
-          }
-        } else {
-          throw new Error(data.message || 'Failed to fetch teams');
+        setTeams(response.teams);
+        // Set default team if none selected
+        if (!selectedTeam && response.teams.length > 0) {
+          onTeamChange(response.teams[0]);
         }
       } catch (err) {
         console.error('Error fetching teams:', err);

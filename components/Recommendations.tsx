@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ApiService } from '@/lib/api';
 
 interface RecommendationsProps {
   teamName: string;
@@ -106,22 +107,13 @@ export default function Recommendations({ teamName }: RecommendationsProps) {
     const fetchRecommendations = async () => {
       try {
         setLoading(true);
-        const params = new URLSearchParams({
-          team_name: teamName,
-        });
+        const apiService = new ApiService();
+        const response = await apiService.getRecommendations(teamName);
         
-        const response = await fetch(`https://sparksai-backend-production.up.railway.app/api/v1/recommendations/getTop?${params.toString()}`);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data: RecommendationsResponse = await response.json();
-        
-        if (data.success && data.data.recommendations) {
-          setRecommendations(data.data.recommendations.slice(0, 3)); // Limit to 3 recommendations
+        if (response.recommendations) {
+          setRecommendations(response.recommendations.slice(0, 3)); // Limit to 3 recommendations
         } else {
-          throw new Error(data.message || 'Failed to fetch recommendations');
+          throw new Error('Failed to fetch recommendations');
         }
       } catch (err) {
         console.error('Error fetching recommendations:', err);

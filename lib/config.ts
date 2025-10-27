@@ -1,0 +1,133 @@
+// API Configuration
+export const API_CONFIG = {
+  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://sparksai-backend-production.up.railway.app',
+  version: process.env.NEXT_PUBLIC_API_VERSION || 'v1',
+  
+  endpoints: {
+    // Team endpoints
+    teams: {
+      getNames: '/api/v1/teams/getNames',
+    },
+    
+    // PI endpoints
+    pis: {
+      getPis: '/api/v1/pis/getPis',
+    },
+    
+    // Burndown endpoints
+    burndown: {
+      sprintBurndown: '/api/v1/team-metrics/sprint-burndown',
+    },
+    
+    // AI Cards endpoints
+    aiCards: {
+      getCards: '/api/v1/team-ai-cards/getCards',
+    },
+    
+    // Recommendations endpoints
+    recommendations: {
+      getTop: '/api/v1/recommendations/getTop',
+    },
+    
+    // Team Metrics endpoints
+    teamMetrics: {
+      avgSprintMetrics: '/api/v1/team-metrics/get-avg-sprint-metrics',
+      countInProgress: '/api/v1/team-metrics/count-in-progress',
+      currentSprintCompletion: '/api/v1/team-metrics/current-sprint-completion',
+    },
+  },
+} as const;
+
+// Helper function to build full API URLs
+export const buildApiUrl = (endpoint: string): string => {
+  return `${API_CONFIG.baseUrl}${endpoint}`;
+};
+
+// Type definitions for API responses
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message: string;
+}
+
+export interface Team {
+  name: string;
+}
+
+export interface TeamsResponse {
+  teams: string[];
+  count: number;
+}
+
+export interface PI {
+  pi_name: string;
+  start_date: string;
+  end_date: string;
+  planning_grace_days: number;
+  prep_grace_days: number;
+  updated_at: string;
+}
+
+export interface PIsResponse {
+  pis: PI[];
+  count: number;
+}
+
+export interface AICard {
+  id: number;
+  date: string;
+  team_name: string;
+  card_name: string;
+  card_type: string;
+  priority: string;
+  source: string;
+  description: string;
+  full_information: string;
+}
+
+export interface AICardsResponse {
+  ai_cards: AICard[];
+  count: number;
+  team_name: string;
+  limit: number;
+}
+
+export interface Recommendation {
+  id: number;
+  team_name: string;
+  date: string;
+  action_text: string;
+  rational: string;
+  full_information: string;
+  priority: string;
+  status: string;
+}
+
+export interface RecommendationsResponse {
+  recommendations: Recommendation[];
+  count: number;
+  team_name: string;
+  limit: number;
+}
+
+export interface SprintMetrics {
+  velocity: number;
+  cycle_time: number;
+  predictability: number;
+  team_name: string;
+  sprint_count: number;
+}
+
+export interface CompletionRate {
+  completion_rate: number;
+  team_name: string;
+}
+
+export interface InProgressCount {
+  total_in_progress: number;
+  count_by_type: {
+    Task: number;
+    Story: number;
+  };
+  team_name: string;
+}
