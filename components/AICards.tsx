@@ -22,6 +22,7 @@ interface AICard {
   source: string;
   description: string;
   full_information: string;
+  information_json?: string;
 }
 
 interface AICardsResponse {
@@ -87,6 +88,28 @@ const getPriorityIcon = (priority: string) => {
       return '🟢'; // Green circle
     default:
       return '⚪'; // White circle
+  }
+};
+
+interface InformationItem {
+  header: string;
+  text: string;
+}
+
+const parseInformationJson = (jsonString: string | undefined): InformationItem[] | null => {
+  if (!jsonString || jsonString.trim() === '') {
+    return null;
+  }
+  
+  try {
+    const parsed = JSON.parse(jsonString);
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error parsing information_json:', error);
+    return null;
   }
 };
 
@@ -202,63 +225,100 @@ export default function AICards({ teamName }: AICardProps) {
                     </div>
                     <h3 className="text-sm font-semibold text-gray-800">{card.card_name}</h3>
                   </div>
+                  <div className="absolute left-1/2 transform -translate-x-1/2 top-2">
+                    <div className="text-xs text-gray-500 font-medium">
+                      ID: {card.id}
+                    </div>
+                  </div>
                   <div className="text-xs text-gray-500 font-medium">
                     {card.card_type}
                   </div>
                 </div>
                 
                 <div className="mb-1 flex-1">
-                  <div className="text-xs text-gray-600 prose prose-sm max-w-none w-full h-full overflow-visible">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      components={{
-                        p: ({ children }) => <p className="text-xs text-gray-600 mb-1">{children}</p>,
-                        strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                        em: ({ children }) => <em className="italic">{children}</em>,
-                        ul: ({ children }) => <ul className="list-disc list-inside text-xs text-gray-600">{children}</ul>,
-                        ol: ({ children }) => <ol className="list-decimal list-inside text-xs text-gray-600">{children}</ol>,
-                        li: ({ children }) => <li className="text-xs text-gray-600">{children}</li>,
-                        code: ({ children }) => <code className="bg-gray-100 px-1 rounded text-xs">{children}</code>,
-                        pre: ({ children }) => <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto">{children}</pre>,
-                        h1: ({ children }) => <h1 className="text-sm font-bold text-gray-800 mb-1">{children}</h1>,
-                        h2: ({ children }) => <h2 className="text-xs font-bold text-gray-800 mb-1">{children}</h2>,
-                        h3: ({ children }) => <h3 className="text-xs font-semibold text-gray-800 mb-1">{children}</h3>,
-                        blockquote: ({ children }) => <blockquote className="border-l-2 border-gray-300 pl-2 italic text-gray-600">{children}</blockquote>,
-                        table: ({ children }) => <table className="w-full text-xs border-collapse border border-gray-300 table-fixed h-full">{children}</table>,
-                        thead: ({ children }) => <thead>{children}</thead>,
-                        tbody: ({ children }) => <tbody className="h-full">{children}</tbody>,
-                        tr: ({ children }) => <tr>{children}</tr>,
-                        th: ({ children }) => {
-                          const text = children?.toString() || '';
-                          if (text.includes('Goal') || text.includes('🎯')) {
-                            return <th className="border border-gray-300 px-1 py-0.5 bg-gray-100 font-semibold text-left w-2/3">{children}</th>;
-                          }
-                          return <th className="border border-gray-300 px-1 py-0.5 bg-gray-100 font-semibold text-center">{children}</th>;
-                        },
-                        td: ({ children }) => {
-                          const text = children?.toString() || '';
-                          
-                          
-                          // Apply goal cell styling only for "Sprint Goal" card type
-                          if (card.card_type === 'Sprint Goal') {
-                            // For sprint goal cards, ensure full text, left-aligned
-                            return <td className="border border-gray-300 px-1 py-0.5 text-left w-2/3 whitespace-normal break-words overflow-visible">{children}</td>;
-                          }
-                          
-                          // Other card types remain center-aligned
-                          return <td className="border border-gray-300 px-1 py-0.5 text-center">{children}</td>;
-                        },
-                      }}
-                    >
-                      {(() => {
+                  <div className="text-xs text-gray-600 max-w-none w-full h-full overflow-visible">
+                    {(() => {
+                      // Parse information_json for non-Sprint Goal cards
+                      if (card.card_type !== 'Sprint Goal') {
+                        const informationItems = parseInformationJson(card.information_json);
                         
-                        // Apply character limit
-                        if (card.description.length > CARD_DESCRIPTION_MAX_LENGTH) {
-                          return `${card.description.substring(0, CARD_DESCRIPTION_MAX_LENGTH)}...`;
+                        // Debug: Log information_json content
+                        console.log('Card ID:', card.id, 'information_json:', card.information_json);
+                        console.log('Parsed items:', informationItems);
+                        console.log('Description:', card.description);
+                        
+                        if (informationItems && informationItems.length > 0) {
+                          return (
+                            <div className="space-y-2">
+                              {informationItems.map((item, index) => (
+                                <div key={index} className="text-xs">
+                                  <span className="font-bold" style={{ color: '#2563eb', fontWeight: '700' }}>
+                                    {item.header}:
+                                  </span>
+                                  <span className="text-gray-600 ml-1">
+                                    {item.text}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          );
                         }
-                        return card.description;
-                      })()}
-                    </ReactMarkdown>
+                      }
+                      
+                      // Fallback to description (markdown) for Sprint Goal cards or when information_json is empty
+                      return (
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            p: ({ children }) => <p className="text-xs text-gray-600 mb-1">{children}</p>,
+                            strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                            em: ({ children }) => <em className="italic">{children}</em>,
+                            ul: ({ children }) => <ul className="list-disc list-inside text-xs text-gray-600">{children}</ul>,
+                            ol: ({ children }) => <ol className="list-decimal list-inside text-xs text-gray-600">{children}</ol>,
+                            li: ({ children }) => <li className="text-xs text-gray-600">{children}</li>,
+                            code: ({ children }) => <code className="bg-gray-100 px-1 rounded text-xs">{children}</code>,
+                            pre: ({ children }) => <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto">{children}</pre>,
+                            h1: ({ children }) => <h1 className="text-sm font-bold text-gray-800 mb-1">{children}</h1>,
+                            h2: ({ children }) => <h2 className="text-xs font-bold text-gray-800 mb-1">{children}</h2>,
+                            h3: ({ children }) => <h3 className="text-xs font-semibold text-gray-800 mb-1">{children}</h3>,
+                            blockquote: ({ children }) => <blockquote className="border-l-2 border-gray-300 pl-2 italic text-gray-600">{children}</blockquote>,
+                            table: ({ children }) => <table className="w-full text-xs border-collapse border border-gray-300 table-fixed h-full">{children}</table>,
+                            thead: ({ children }) => <thead>{children}</thead>,
+                            tbody: ({ children }) => <tbody className="h-full">{children}</tbody>,
+                            tr: ({ children }) => <tr>{children}</tr>,
+                            th: ({ children }) => {
+                              const text = children?.toString() || '';
+                              if (text.includes('Goal') || text.includes('🎯')) {
+                                return <th className="border border-gray-300 px-1 py-0.5 bg-gray-100 font-semibold text-left w-2/3">{children}</th>;
+                              }
+                              return <th className="border border-gray-300 px-1 py-0.5 bg-gray-100 font-semibold text-center">{children}</th>;
+                            },
+                            td: ({ children }) => {
+                              const text = children?.toString() || '';
+                              
+                              
+                              // Apply goal cell styling only for "Sprint Goal" card type
+                              if (card.card_type === 'Sprint Goal') {
+                                // For sprint goal cards, ensure full text, left-aligned
+                                return <td className="border border-gray-300 px-1 py-0.5 text-left w-2/3 whitespace-normal break-words overflow-visible">{children}</td>;
+                              }
+                              
+                              // Other card types remain center-aligned
+                              return <td className="border border-gray-300 px-1 py-0.5 text-center">{children}</td>;
+                            },
+                          }}
+                        >
+                          {(() => {
+                            
+                            // Apply character limit
+                            if (card.description.length > CARD_DESCRIPTION_MAX_LENGTH) {
+                              return `${card.description.substring(0, CARD_DESCRIPTION_MAX_LENGTH)}...`;
+                            }
+                            return card.description;
+                          })()}
+                        </ReactMarkdown>
+                      );
+                    })()}
                   </div>
                 </div>
                 

@@ -22,6 +22,7 @@ interface Recommendation {
   full_information: string;
   priority: string;
   status: string;
+  information_json?: string;
 }
 
 interface RecommendationsResponse {
@@ -49,6 +50,28 @@ const getRecommendationIcon = (actionText: string) => {
     return '🤝'; // Handshake/collaboration icon
   } else {
     return '💡'; // Lightbulb/default icon
+  }
+};
+
+interface InformationItem {
+  header: string;
+  text: string;
+}
+
+const parseInformationJson = (jsonString: string | undefined): InformationItem[] | null => {
+  if (!jsonString || jsonString.trim() === '') {
+    return null;
+  }
+  
+  try {
+    const parsed = JSON.parse(jsonString);
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error parsing information_json:', error);
+    return null;
   }
 };
 
@@ -220,23 +243,48 @@ export default function Recommendations({ teamName }: RecommendationsProps) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="flex-1">
-                      <div className="text-xs text-gray-600 prose prose-sm max-w-none">
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
-                          components={{
-                            p: ({ children }) => <p className="text-xs text-gray-600 mb-1">{children}</p>,
-                            strong: ({ children }) => <strong className="font-semibold text-gray-800">{children}</strong>,
-                            em: ({ children }) => <em className="italic">{children}</em>,
-                            ul: ({ children }) => <ul className="list-disc list-inside text-xs text-gray-600">{children}</ul>,
-                            ol: ({ children }) => <ol className="list-decimal list-inside text-xs text-gray-600">{children}</ol>,
-                            li: ({ children }) => <li className="text-xs text-gray-600">{children}</li>,
-                          }}
-                        >
-                          {recommendation.action_text.length > RECOMMENDATION_TEXT_MAX_LENGTH 
-                            ? `${recommendation.action_text.substring(0, RECOMMENDATION_TEXT_MAX_LENGTH)}...`
-                            : recommendation.action_text
+                      <div className="text-xs text-gray-600 max-w-none">
+                        {(() => {
+                          // Parse information_json for recommendations
+                          const informationItems = parseInformationJson(recommendation.information_json);
+                          
+                          if (informationItems && informationItems.length > 0) {
+                            return (
+                              <div className="space-y-2">
+                                {informationItems.map((item, index) => (
+                                  <div key={index} className="text-xs">
+                                    <span className="font-bold" style={{ color: '#2563eb', fontWeight: '700' }}>
+                                      {item.header}:
+                                    </span>
+                                    <span className="text-gray-600 ml-1">
+                                      {item.text}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            );
                           }
-                        </ReactMarkdown>
+                          
+                          // Fallback to action_text (markdown) when information_json is empty
+                          return (
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                p: ({ children }) => <p className="text-xs text-gray-600 mb-1">{children}</p>,
+                                strong: ({ children }) => <strong className="font-semibold text-gray-800">{children}</strong>,
+                                em: ({ children }) => <em className="italic">{children}</em>,
+                                ul: ({ children }) => <ul className="list-disc list-inside text-xs text-gray-600">{children}</ul>,
+                                ol: ({ children }) => <ol className="list-decimal list-inside text-xs text-gray-600">{children}</ol>,
+                                li: ({ children }) => <li className="text-xs text-gray-600">{children}</li>,
+                              }}
+                            >
+                              {recommendation.action_text.length > RECOMMENDATION_TEXT_MAX_LENGTH 
+                                ? `${recommendation.action_text.substring(0, RECOMMENDATION_TEXT_MAX_LENGTH)}...`
+                                : recommendation.action_text
+                              }
+                            </ReactMarkdown>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>

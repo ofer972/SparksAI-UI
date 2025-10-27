@@ -84,6 +84,7 @@ export interface AICard {
   source: string;
   description: string;
   full_information: string;
+  information_json?: string;
 }
 
 export interface AICardsResponse {
@@ -102,6 +103,7 @@ export interface Recommendation {
   full_information: string;
   priority: string;
   status: string;
+  information_json?: string;
 }
 
 export interface RecommendationsResponse {
