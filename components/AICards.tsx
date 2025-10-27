@@ -5,6 +5,9 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ApiService } from '@/lib/api';
 
+// Constants
+const CARD_DESCRIPTION_MAX_LENGTH = 750;
+
 interface AICardProps {
   teamName: string;
 }
@@ -178,12 +181,10 @@ export default function AICards({ teamName }: AICardProps) {
             const colors = getPriorityColor(card.priority);
             const priorityIcon = getPriorityIcon(card.priority);
             
-            console.log('Card:', card.card_name, 'Priority:', card.priority, 'Border class:', colors.border);
-            console.log('Description:', card.description.substring(0, 100) + '...');
             
             return (
-              <div key={card.id} className={`bg-white rounded-lg shadow-lg p-4 border-l-4 ${colors.border} min-h-[170px] relative`}>
-                <div className="flex items-start justify-between mb-2">
+              <div key={card.id} className={`bg-white rounded-lg shadow-lg pt-2 pb-4 px-4 border-l-4 ${colors.border} min-h-[170px] relative`}>
+                <div className="flex items-start justify-between mb-1">
                   <div className="flex items-center space-x-2">
                     <div className="relative group">
                       <span className="text-lg cursor-pointer">
@@ -196,11 +197,13 @@ export default function AICards({ teamName }: AICardProps) {
                     </div>
                     <h3 className="text-sm font-semibold text-gray-800">{card.card_name}</h3>
                   </div>
-                  <div className="text-xs text-gray-500 font-medium">{card.card_type}</div>
+                  <div className="text-xs text-gray-500 font-medium">
+                    {card.card_type}
+                  </div>
                 </div>
                 
-                <div className="mb-2">
-                  <div className="text-xs text-gray-600 prose prose-sm max-w-none">
+                <div className="mb-1 flex-1">
+                  <div className="text-xs text-gray-600 prose prose-sm max-w-none w-full h-full overflow-visible">
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
@@ -216,15 +219,40 @@ export default function AICards({ teamName }: AICardProps) {
                         h2: ({ children }) => <h2 className="text-xs font-bold text-gray-800 mb-1">{children}</h2>,
                         h3: ({ children }) => <h3 className="text-xs font-semibold text-gray-800 mb-1">{children}</h3>,
                         blockquote: ({ children }) => <blockquote className="border-l-2 border-gray-300 pl-2 italic text-gray-600">{children}</blockquote>,
-                        table: ({ children }) => <table className="text-xs border-collapse border border-gray-300">{children}</table>,
-                        th: ({ children }) => <th className="border border-gray-300 px-1 py-0.5 bg-gray-100 font-semibold">{children}</th>,
-                        td: ({ children }) => <td className="border border-gray-300 px-1 py-0.5">{children}</td>,
+                        table: ({ children }) => <table className="w-full text-xs border-collapse border border-gray-300 table-fixed h-full">{children}</table>,
+                        thead: ({ children }) => <thead>{children}</thead>,
+                        tbody: ({ children }) => <tbody className="h-full">{children}</tbody>,
+                        tr: ({ children }) => <tr>{children}</tr>,
+                        th: ({ children }) => {
+                          const text = children?.toString() || '';
+                          if (text.includes('Goal') || text.includes('🎯')) {
+                            return <th className="border border-gray-300 px-1 py-0.5 bg-gray-100 font-semibold text-left w-2/3">{children}</th>;
+                          }
+                          return <th className="border border-gray-300 px-1 py-0.5 bg-gray-100 font-semibold text-center">{children}</th>;
+                        },
+                        td: ({ children }) => {
+                          const text = children?.toString() || '';
+                          
+                          
+                          // Apply goal cell styling only for "Sprint Goal" card type
+                          if (card.card_type === 'Sprint Goal') {
+                            // For sprint goal cards, ensure full text, left-aligned
+                            return <td className="border border-gray-300 px-1 py-0.5 text-left w-2/3 whitespace-normal break-words overflow-visible">{children}</td>;
+                          }
+                          
+                          // Other card types remain center-aligned
+                          return <td className="border border-gray-300 px-1 py-0.5 text-center">{children}</td>;
+                        },
                       }}
                     >
-                      {card.description.length > 200
-                        ? `${card.description.substring(0, 200)}...`
-                        : card.description
-                      }
+                      {(() => {
+                        
+                        // Apply character limit
+                        if (card.description.length > CARD_DESCRIPTION_MAX_LENGTH) {
+                          return `${card.description.substring(0, CARD_DESCRIPTION_MAX_LENGTH)}...`;
+                        }
+                        return card.description;
+                      })()}
                     </ReactMarkdown>
                   </div>
                 </div>
