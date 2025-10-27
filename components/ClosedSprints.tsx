@@ -1,81 +1,69 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-
-interface SprintData {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  velocity: number;
-  predictability: number;
-  cycleTime: number;
-  completedPoints: number;
-  committedPoints: number;
-}
+import React, { useState, useMemo, useEffect } from 'react';
+import { ApiService } from '../lib/api';
+import { ClosedSprint } from '../lib/config';
 
 interface ClosedSprintsProps {
   selectedTeam: string;
   isLoading?: boolean;
 }
 
+interface TimePeriodOption {
+  value: number;
+  label: string;
+}
+
 export default function ClosedSprints({ selectedTeam, isLoading = false }: ClosedSprintsProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const [sortConfig, setSortConfig] = useState<{ key: keyof SprintData | null; direction: 'asc' | 'desc' }>({
+  const [sortConfig, setSortConfig] = useState<{ key: keyof ClosedSprint | null; direction: 'asc' | 'desc' }>({
     key: null,
     direction: 'asc',
   });
   const [filterText, setFilterText] = useState('');
+  const [selectedTimePeriod, setSelectedTimePeriod] = useState(3); // Default to 3 months
+  const [sprintsData, setSprintsData] = useState<ClosedSprint[]>([]);
+  const [dataLoading, setDataLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fixed sample data
-  const sampleData: SprintData[] = [
-    {
-      id: '1',
-      name: 'Sprint 1 - API Development',
-      startDate: '2025-10-01',
-      endDate: '2025-10-15',
-      velocity: 23,
-      predictability: 85,
-      cycleTime: 4.2,
-      completedPoints: 23,
-      committedPoints: 25,
-    },
-    {
-      id: '2',
-      name: 'Sprint 2 - Frontend Integration',
-      startDate: '2025-09-15',
-      endDate: '2025-09-29',
-      velocity: 28,
-      predictability: 92,
-      cycleTime: 3.8,
-      completedPoints: 28,
-      committedPoints: 30,
-    },
-    {
-      id: '3',
-      name: 'Sprint 3 - Database Optimization',
-      startDate: '2025-09-01',
-      endDate: '2025-09-15',
-      velocity: 20,
-      predictability: 78,
-      cycleTime: 5.1,
-      completedPoints: 20,
-      committedPoints: 22,
-    },
-    {
-      id: '4',
-      name: 'Sprint 4 - Testing & QA',
-      startDate: '2025-08-18',
-      endDate: '2025-09-01',
-      velocity: 25,
-      predictability: 88,
-      cycleTime: 4.5,
-      completedPoints: 25,
-      committedPoints: 28,
-    },
+  const apiService = new ApiService();
+
+  // Time period options matching the API documentation
+  const timePeriodOptions: TimePeriodOption[] = [
+    { value: 1, label: 'Last 1 month' },
+    { value: 2, label: 'Last 2 months' },
+    { value: 3, label: 'Last 3 months' },
+    { value: 4, label: 'Last 4 months' },
+    { value: 6, label: 'Last 6 months' },
+    { value: 9, label: 'Last 9 months' },
   ];
 
-  const handleSort = (key: keyof SprintData) => {
+  // Fetch closed sprints data
+  const fetchClosedSprints = async (teamName: string, months: number) => {
+    if (!teamName) return;
+    
+    setDataLoading(true);
+    setError(null);
+    
+    try {
+      const response = await apiService.getClosedSprints(teamName, months);
+      console.log('API Response:', response);
+      console.log('First sprint data:', response.closed_sprints[0]);
+      setSprintsData(response.closed_sprints);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch closed sprints');
+      setSprintsData([]);
+    } finally {
+      setDataLoading(false);
+    }
+  };
+
+  // Fetch data when team or time period changes
+  useEffect(() => {
+    fetchClosedSprints(selectedTeam, selectedTimePeriod);
+  }, [selectedTeam, selectedTimePeriod]);
+
+  const handleSort = (key: keyof ClosedSprint) => {
     if (sortConfig.key === key) {
       setSortConfig({
         key,
@@ -86,15 +74,40 @@ export default function ClosedSprints({ selectedTeam, isLoading = false }: Close
     }
   };
 
-  const sortedAndFilteredData = useMemo(() => {
-    let data = [...sampleData];
+  // Get all available columns from the first sprint data
+  const availableColumns = useMemo(() => {
+    if (sprintsData.length === 0) return [];
+    
+    const firstSprint = sprintsData[0];
+    return Object.keys(firstSprint).map(key => {
+      let label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      
+      // Special handling for completion percentage fields
+      if (key === 'completion_percentage' || 
+          key === 'completed_percentage' || 
+          key === 'completion' ||
+          (key.includes('completion') && key.includes('percentage'))) {
+        label = 'Completed (%)';
+      }
+      
+      return {
+        key: key as keyof ClosedSprint,
+        label,
+        type: typeof firstSprint[key as keyof ClosedSprint]
+      };
+    });
+  }, [sprintsData]);
 
-    // Apply filter
+  const sortedAndFilteredData = useMemo(() => {
+    let data = [...sprintsData];
+
+    // Apply filter - search across all string fields
     if (filterText) {
       data = data.filter(item =>
-        item.name.toLowerCase().includes(filterText.toLowerCase()) ||
-        item.velocity.toString().includes(filterText) ||
-        item.predictability.toString().includes(filterText)
+        Object.values(item).some(value => 
+          typeof value === 'string' && value.toLowerCase().includes(filterText.toLowerCase()) ||
+          typeof value === 'number' && value.toString().includes(filterText)
+        )
       );
     }
 
@@ -111,9 +124,9 @@ export default function ClosedSprints({ selectedTeam, isLoading = false }: Close
     }
 
     return data;
-  }, [filterText, sortConfig]);
+  }, [filterText, sortConfig, sprintsData]);
 
-  const SortIcon = ({ columnKey }: { columnKey: keyof SprintData }) => {
+  const SortIcon = ({ columnKey }: { columnKey: keyof ClosedSprint }) => {
     if (sortConfig.key !== columnKey) return <span className="text-gray-400">↕</span>;
     return sortConfig.direction === 'asc' ? <span>↑</span> : <span>↓</span>;
   };
@@ -121,6 +134,73 @@ export default function ClosedSprints({ selectedTeam, isLoading = false }: Close
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const formatCellValue = (value: any, key: keyof ClosedSprint) => {
+    if (value === null || value === undefined) return '-';
+    
+    // Format dates
+    if (key.includes('date') && typeof value === 'string') {
+      return formatDate(value);
+    }
+    
+    // Format sprint goal with line breaks
+    if (key === 'sprint_goal' && typeof value === 'string') {
+      return (
+        <div className="whitespace-pre-line text-left">
+          {value}
+        </div>
+      );
+    }
+    
+    // Format completion percentage with specific color coding
+    // Check for various possible field names for completion percentage
+    if (key === 'completion_percentage' || 
+        key === 'completed_percentage' || 
+        key === 'completion' ||
+        (key.includes('completion') && key.includes('percentage'))) {
+      const num = Math.round(Number(value));
+      return (
+        <span className={`font-bold ${
+          num >= 75 ? 'text-green-600' : 
+          num >= 50 ? 'text-yellow-600' : 'text-red-600'
+        }`}>
+          {num}%
+        </span>
+      );
+    }
+    
+    // Format other percentages (like predictability)
+    if (key.includes('predictability')) {
+      const num = Number(value);
+      return (
+        <span className={`font-semibold ${
+          num >= 80 ? 'text-green-600' : 
+          num >= 60 ? 'text-yellow-600' : 'text-red-600'
+        }`}>
+          {num}%
+        </span>
+      );
+    }
+    
+    // Format issue counts with colors
+    if (key.includes('issues_done')) {
+      return <span className="text-green-600 font-semibold">{value}</span>;
+    }
+    if (key.includes('issues_remaining')) {
+      return <span className="text-red-600 font-semibold">{value}</span>;
+    }
+    if (key.includes('issues_')) {
+      return <span className="text-gray-700">{value}</span>;
+    }
+    
+    // Format velocity
+    if (key === 'velocity') {
+      return <span className="text-gray-900 font-semibold">{value}</span>;
+    }
+    
+    // Default formatting
+    return value;
   };
 
   const LoadingSpinner = () => (
@@ -132,24 +212,13 @@ export default function ClosedSprints({ selectedTeam, isLoading = false }: Close
 
   const SkeletonRow = () => (
     <tr className="border-b border-gray-100">
-      <td className="py-1.5 px-2">
-        <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4"></div>
-      </td>
-      <td className="py-1.5 px-2 text-right">
-        <div className="h-3 bg-gray-200 rounded animate-pulse w-16 ml-auto"></div>
-      </td>
-      <td className="py-1.5 px-2 text-right">
-        <div className="h-3 bg-gray-200 rounded animate-pulse w-16 ml-auto"></div>
-      </td>
-      <td className="py-1.5 px-2 text-center">
-        <div className="h-3 bg-gray-200 rounded animate-pulse w-8 mx-auto"></div>
-      </td>
-      <td className="py-1.5 px-2 text-center">
-        <div className="h-3 bg-gray-200 rounded animate-pulse w-12 mx-auto"></div>
-      </td>
-      <td className="py-1.5 px-2 text-center">
-        <div className="h-3 bg-gray-200 rounded animate-pulse w-10 mx-auto"></div>
-      </td>
+      {availableColumns.map((column, index) => (
+        <td key={index} className="py-1.5 px-2">
+          <div className={`h-3 bg-gray-200 rounded animate-pulse ${
+            column.key === 'sprint_name' ? 'w-3/4' : 'w-16 mx-auto'
+          }`}></div>
+        </td>
+      ))}
     </tr>
   );
 
@@ -167,8 +236,22 @@ export default function ClosedSprints({ selectedTeam, isLoading = false }: Close
 
       {!collapsed && (
         <div className="space-y-2">
-          {/* Filter Input */}
+          {/* Time Period Filter and Search Input */}
           <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-medium text-gray-700">Time Period:</label>
+              <select
+                value={selectedTimePeriod}
+                onChange={(e) => setSelectedTimePeriod(Number(e.target.value))}
+                className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                {timePeriodOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
             <input
               type="text"
               placeholder="Filter by sprint name, velocity, or predictability..."
@@ -183,86 +266,51 @@ export default function ClosedSprints({ selectedTeam, isLoading = false }: Close
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th 
-                    className="text-left py-1.5 px-2 cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleSort('name')}
-                  >
-                    <div className="flex items-center gap-1">
-                      Sprint Name
-                      <SortIcon columnKey="name" />
-                    </div>
-                  </th>
-                  <th 
-                    className="text-right py-1.5 px-2 cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleSort('startDate')}
-                  >
-                    <div className="flex items-center justify-end gap-1">
-                      Start Date
-                      <SortIcon columnKey="startDate" />
-                    </div>
-                  </th>
-                  <th 
-                    className="text-right py-1.5 px-2 cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleSort('endDate')}
-                  >
-                    <div className="flex items-center justify-end gap-1">
-                      End Date
-                      <SortIcon columnKey="endDate" />
-                    </div>
-                  </th>
-                  <th 
-                    className="text-center py-1.5 px-2 cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleSort('velocity')}
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      Velocity
-                      <SortIcon columnKey="velocity" />
-                    </div>
-                  </th>
-                  <th 
-                    className="text-center py-1.5 px-2 cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleSort('predictability')}
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      Predictability %
-                      <SortIcon columnKey="predictability" />
-                    </div>
-                  </th>
-                  <th 
-                    className="text-center py-1.5 px-2 cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleSort('cycleTime')}
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      Cycle Time (days)
-                      <SortIcon columnKey="cycleTime" />
-                    </div>
-                  </th>
+                  {availableColumns.map((column) => (
+                    <th 
+                      key={column.key}
+                      className={`py-1.5 px-2 cursor-pointer hover:bg-gray-50 ${
+                        column.key === 'sprint_name' || column.key === 'sprint_goal' ? 'text-left' : 'text-center'
+                      }`}
+                      onClick={() => handleSort(column.key)}
+                    >
+                      <div className={`flex items-center gap-1 ${
+                        column.key === 'sprint_name' || column.key === 'sprint_goal' ? 'justify-start' : 'justify-center'
+                      }`}>
+                        {column.label}
+                        <SortIcon columnKey={column.key} />
+                      </div>
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {isLoading ? (
+                {isLoading || dataLoading ? (
                   <>
                     <SkeletonRow />
                     <SkeletonRow />
                     <SkeletonRow />
                     <SkeletonRow />
                   </>
+                ) : error ? (
+                  <tr>
+                    <td colSpan={availableColumns.length} className="py-8 text-center text-red-600">
+                      Error: {error}
+                    </td>
+                  </tr>
                 ) : (
                   sortedAndFilteredData.map((sprint) => (
-                    <tr key={sprint.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-1.5 px-2 font-medium text-gray-900">{sprint.name}</td>
-                      <td className="py-1.5 px-2 text-right text-gray-600">{formatDate(sprint.startDate)}</td>
-                      <td className="py-1.5 px-2 text-right text-gray-600">{formatDate(sprint.endDate)}</td>
-                      <td className="py-1.5 px-2 text-center text-gray-900 font-semibold">{sprint.velocity}</td>
-                      <td className="py-1.5 px-2 text-center">
-                        <span className={`font-semibold ${
-                          sprint.predictability >= 80 ? 'text-green-600' : 
-                          sprint.predictability >= 60 ? 'text-yellow-600' : 'text-red-600'
-                        }`}>
-                          {sprint.predictability}%
-                        </span>
-                      </td>
-                      <td className="py-1.5 px-2 text-center text-gray-700">{sprint.cycleTime}</td>
+                    <tr key={sprint.sprint_id} className="border-b border-gray-100 hover:bg-gray-50">
+                      {availableColumns.map((column) => (
+                        <td 
+                          key={column.key}
+                          className={`py-1.5 px-2 ${
+                            column.key === 'sprint_name' || column.key === 'sprint_goal' ? 'font-medium text-gray-900 text-left' : 'text-center'
+                          }`}
+                        >
+                          {formatCellValue(sprint[column.key], column.key)}
+                        </td>
+                      ))}
                     </tr>
                   ))
                 )}

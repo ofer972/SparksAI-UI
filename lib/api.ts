@@ -8,7 +8,8 @@ import {
   RecommendationsResponse,
   SprintMetrics,
   CompletionRate,
-  InProgressCount
+  InProgressCount,
+  ClosedSprintsResponse
 } from './config';
 
 export interface BurndownDataPoint {
@@ -156,6 +157,22 @@ export class ApiService {
     }
 
     const result: ApiResponse<InProgressCount> = await response.json();
+    return result.data;
+  }
+
+  async getClosedSprints(teamName: string, months: number = 3): Promise<ClosedSprintsResponse> {
+    const params = new URLSearchParams({
+      team_name: teamName,
+      months: months.toString(),
+    });
+
+    const response = await fetch(`${buildApiUrl(API_CONFIG.endpoints.teamMetrics.closedSprints)}?${params}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch closed sprints: ${response.statusText}`);
+    }
+
+    const result: ApiResponse<ClosedSprintsResponse> = await response.json();
     return result.data;
   }
 

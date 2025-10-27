@@ -34,6 +34,7 @@ export const API_CONFIG = {
       avgSprintMetrics: '/api/v1/team-metrics/get-avg-sprint-metrics',
       countInProgress: '/api/v1/team-metrics/count-in-progress',
       currentSprintCompletion: '/api/v1/team-metrics/current-sprint-completion',
+      closedSprints: '/api/v1/team-metrics/closed-sprints',
     },
   },
 } as const;
@@ -130,4 +131,27 @@ export interface InProgressCount {
     Story: number;
   };
   team_name: string;
+}
+
+export interface ClosedSprint {
+  sprint_id: number;
+  sprint_name: string;
+  start_date: string;
+  end_date: string;
+  sprint_goal: string;
+  completion_percentage: number;
+  issues_planned: number;
+  issues_added: number;
+  issues_done: number;
+  issues_remaining: number;
+  velocity: number;
+  predictability: number;
+  cycle_time: number;
+}
+
+export interface ClosedSprintsResponse {
+  closed_sprints: ClosedSprint[];
+  count: number;
+  team_name: string;
+  months_looked_back: number;
 }
