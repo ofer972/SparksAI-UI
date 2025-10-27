@@ -11,11 +11,13 @@ import {
   InProgressCount,
   ClosedSprintsResponse,
   IssuesTrendResponse,
-  IssuesTrendDataPoint
+  IssuesTrendDataPoint,
+  PIPredictabilityResponse,
+  PIPredictabilityData
 } from './config';
 
 // Re-export types for convenience
-export type { IssuesTrendDataPoint, IssuesTrendResponse };
+export type { IssuesTrendDataPoint, IssuesTrendResponse, PIPredictabilityResponse, PIPredictabilityData };
 
 export interface BurndownDataPoint {
   snapshot_date: string;
@@ -200,6 +202,60 @@ export class ApiService {
 
     const result: ApiResponse<IssuesTrendResponse> = await response.json();
     return result.data;
+  }
+
+  // PI Predictability API
+  async getPIPredictability(piNames: string | string[], teamName?: string): Promise<any> {
+    const params = new URLSearchParams();
+    
+    if (Array.isArray(piNames)) {
+      params.append('pi_names', piNames.join(','));
+    } else {
+      params.append('pi_names', piNames);
+    }
+
+    const url = `${buildApiUrl(API_CONFIG.endpoints.pis.getPredictability)}?${params}`;
+    console.log('PI Predictability URL:', url);
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('PI Predictability API Error:', response.status, errorText);
+      throw new Error(`Failed to fetch PI predictability data: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    console.log('PI Predictability Raw Response:', result);
+    console.log('Result keys:', Object.keys(result));
+    console.log('Result.data:', result.data);
+    console.log('Result.data type:', typeof result.data);
+    console.log('Result.data isArray:', Array.isArray(result.data));
+    
+    // Handle the actual API response structure
+    // The API returns: { success: bool, data: { predictability_data: [...], count: number, ... }, message: string }
+    if (result.data && typeof result.data === 'object' && !Array.isArray(result.data)) {
+      console.log('Result.data keys:', Object.keys(result.data));
+      
+      // Check if predictability_data exists and is an array
+      if ('predictability_data' in result.data && Array.isArray(result.data.predictability_data)) {
+        console.log('Found predictability_data array with length:', result.data.predictability_data.length);
+        return result.data.predictability_data;
+      }
+    }
+    
+    // Fallback for other possible structures
+    if (result.data && Array.isArray(result.data)) {
+      console.log('Returning result.data array with length:', result.data.length);
+      return result.data;
+    } else if (Array.isArray(result)) {
+      console.log('Returning result array directly with length:', result.length);
+      return result;
+    }
+    
+    // Last resort
+    console.log('No suitable data structure found, returning empty array');
+    return [];
   }
 
   // Combined team metrics (for parallel fetching)

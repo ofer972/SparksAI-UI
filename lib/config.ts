@@ -12,6 +12,7 @@ export const API_CONFIG = {
     // PI endpoints
     pis: {
       getPis: '/api/v1/pis/getPis',
+      getPredictability: '/api/v1/pis/predictability',
     },
     
     // Burndown endpoints
@@ -173,5 +174,14 @@ export interface IssuesTrendResponse {
   months: number;
   issue_type: string;
   trend_data: IssuesTrendDataPoint[];
+  count: number;
+}
+
+export interface PIPredictabilityData {
+  [key: string]: any; // Dynamic structure based on API response
+}
+
+export interface PIPredictabilityResponse {
+  data: PIPredictabilityData[];
   count: number;
 }

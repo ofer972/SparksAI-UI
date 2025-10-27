@@ -11,6 +11,7 @@ import TeamMetrics from '@/components/TeamMetrics';
 import ApiTest from '@/components/ApiTest';
 import TeamDashboard from '@/components/TeamDashboard';
 import SparksAILogo from '@/components/SparksAILogo';
+import PIPredictability from '@/components/PIPredictability';
 
 export default function Home() {
   const [activeNavItem, setActiveNavItem] = useState('team-dashboard');
@@ -21,7 +22,8 @@ export default function Home() {
   const navigationItems = [
     { id: 'my-team-today', label: 'Team AI Insights', icon: '🏠' },
     { id: 'team-dashboard', label: 'Team Dashboard', icon: '📊' },
-    { id: 'pi-quarter', label: 'PI / Quarter', icon: '🕐' },
+    { id: 'pi-quarter', label: 'PI AI Insights', icon: '🕐' },
+    { id: 'pi-dashboard', label: 'PI Dashboard', icon: '📈' },
     { id: 'ai-chat', label: 'AI Direct Data Chat', icon: '🤖' },
     { id: 'settings', label: 'Settings', icon: '⚙️' },
     { id: 'api-test', label: 'API Test', icon: '🔧' },
@@ -53,6 +55,12 @@ export default function Home() {
         );
       case 'team-dashboard':
         return <TeamDashboard selectedTeam={selectedTeam} />;
+      case 'pi-dashboard':
+        return (
+          <div className="space-y-4">
+            <PIPredictability selectedPI={selectedPI} selectedTeam={selectedTeam} />
+          </div>
+        );
       case 'settings':
         return <SettingsScreen />;
       case 'api-test':
