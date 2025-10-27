@@ -216,7 +216,7 @@ export default function Recommendations({ teamName }: RecommendationsProps) {
             const formattedDate = formatDate(recommendation.date);
             
             return (
-              <div key={recommendation.id} className={`bg-white rounded-lg shadow-sm px-3 py-2 border-l-4 border ${colors.border} ${colors.frame} relative`}>
+              <div key={recommendation.id} className="bg-white rounded-lg shadow-sm px-3 py-2 border border-gray-300 relative">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="flex-1">
