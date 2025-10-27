@@ -58,14 +58,14 @@ interface InformationItem {
   text: string;
 }
 
-const parseInformationJson = (jsonString: string | undefined): InformationItem[] | null => {
+const parseInformationJson = (jsonString: string | undefined): InformationItem | null => {
   if (!jsonString || jsonString.trim() === '') {
     return null;
   }
   
   try {
     const parsed = JSON.parse(jsonString);
-    if (Array.isArray(parsed)) {
+    if (parsed && typeof parsed === 'object' && parsed.header && parsed.text) {
       return parsed;
     }
     return null;
@@ -246,21 +246,21 @@ export default function Recommendations({ teamName }: RecommendationsProps) {
                       <div className="text-xs text-gray-600 max-w-none">
                         {(() => {
                           // Parse information_json for recommendations
-                          const informationItems = parseInformationJson(recommendation.information_json);
+                          const informationItem = parseInformationJson(recommendation.information_json);
                           
-                          if (informationItems && informationItems.length > 0) {
+                          // Debug: Log information_json content
+                          console.log('Recommendation ID:', recommendation.id, 'information_json:', recommendation.information_json);
+                          console.log('Parsed item:', informationItem);
+                          
+                          if (informationItem) {
                             return (
-                              <div className="space-y-2">
-                                {informationItems.map((item, index) => (
-                                  <div key={index} className="text-xs">
-                                    <span className="font-bold" style={{ color: '#2563eb', fontWeight: '700' }}>
-                                      {item.header}:
-                                    </span>
-                                    <span className="text-gray-600 ml-1">
-                                      {item.text}
-                                    </span>
-                                  </div>
-                                ))}
+                              <div className="text-xs">
+                                <span className="font-bold" style={{ color: '#2563eb', fontWeight: '700' }}>
+                                  {informationItem.header}:
+                                </span>
+                                <span className="text-gray-600 ml-1">
+                                  {informationItem.text}
+                                </span>
                               </div>
                             );
                           }
