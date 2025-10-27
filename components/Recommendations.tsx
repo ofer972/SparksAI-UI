@@ -1,7 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { ApiService } from '@/lib/api';
+
+// Constants
+const MAX_RECOMMENDATIONS = 3;
+const RECOMMENDATION_TEXT_MAX_LENGTH = 200;
 
 interface RecommendationsProps {
   teamName: string;
@@ -46,16 +52,6 @@ const getRecommendationIcon = (actionText: string) => {
   }
 };
 
-const getShortDescription = (actionText: string) => {
-  // Extract a shorter description from the action text
-  if (actionText.includes(':')) {
-    const parts = actionText.split(':');
-    if (parts.length > 1) {
-      return parts[1].trim().substring(0, 50) + '...';
-    }
-  }
-  return actionText.substring(0, 50) + '...';
-};
 
 const getPriorityIcon = (priority: string) => {
   switch (priority.toLowerCase()) {
@@ -85,21 +81,10 @@ export default function Recommendations({ teamName }: RecommendationsProps) {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedRecommendation, setSelectedRecommendation] = useState<Recommendation | null>(null);
 
   const handleReason = (recommendation: Recommendation) => {
-    // Each recommendation will have its own behavior based on content
-    console.log('Reason clicked for recommendation:', {
-      id: recommendation.id,
-      actionText: recommendation.action_text,
-      priority: recommendation.priority,
-      status: recommendation.status,
-      rational: recommendation.rational,
-      fullInformation: recommendation.full_information.substring(0, 100) + '...'
-    });
-    
-    // TODO: Implement specific behavior based on recommendation content
-    // This could show detailed reasoning, open a modal, etc.
-    alert(`Reason for: ${recommendation.action_text.split(':')[0] || recommendation.action_text} - Priority: ${recommendation.priority}`);
+    setSelectedRecommendation(recommendation);
   };
 
   useEffect(() => {
@@ -186,7 +171,6 @@ export default function Recommendations({ teamName }: RecommendationsProps) {
           const recommendation = recommendations[index];
           
           if (recommendation) {
-            const shortDescription = getShortDescription(recommendation.action_text);
             const priorityIcon = getPriorityIcon(recommendation.priority);
             const formattedDate = formatDate(recommendation.date);
             
@@ -194,12 +178,24 @@ export default function Recommendations({ teamName }: RecommendationsProps) {
               <div key={recommendation.id} className="bg-white rounded-lg shadow-sm px-3 py-2 relative">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div>
-                      <div className="text-sm font-medium text-gray-800">
-                        {recommendation.action_text.split(':')[0] || recommendation.action_text}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        {shortDescription}
+                    <div className="flex-1">
+                      <div className="text-xs text-gray-600 prose prose-sm max-w-none">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            p: ({ children }) => <p className="text-xs text-gray-600 mb-1">{children}</p>,
+                            strong: ({ children }) => <strong className="font-semibold text-gray-800">{children}</strong>,
+                            em: ({ children }) => <em className="italic">{children}</em>,
+                            ul: ({ children }) => <ul className="list-disc list-inside text-xs text-gray-600">{children}</ul>,
+                            ol: ({ children }) => <ol className="list-decimal list-inside text-xs text-gray-600">{children}</ol>,
+                            li: ({ children }) => <li className="text-xs text-gray-600">{children}</li>,
+                          }}
+                        >
+                          {recommendation.action_text.length > RECOMMENDATION_TEXT_MAX_LENGTH 
+                            ? `${recommendation.action_text.substring(0, RECOMMENDATION_TEXT_MAX_LENGTH)}...`
+                            : recommendation.action_text
+                          }
+                        </ReactMarkdown>
                       </div>
                     </div>
                   </div>

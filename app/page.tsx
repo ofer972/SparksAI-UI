@@ -42,8 +42,8 @@ export default function Home() {
               <Recommendations teamName={selectedTeam} />
             </div>
             
-            {/* Team Metrics Section - Fixed height with no margin */}
-            <div className="flex-shrink-0 ml-6" style={{ height: '120px' }}>
+            {/* Team Metrics Section - Fixed height, right after recommendations */}
+            <div className="flex-shrink-0 mt-2" style={{ height: '120px' }}>
               <TeamMetrics teamName={selectedTeam} />
             </div>
           </div>
