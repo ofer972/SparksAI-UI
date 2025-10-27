@@ -60,6 +60,19 @@ export default function IssuesTrendChart({
     setChartTitle(title);
   }, [selectedIssueType]);
 
+  // Calculate dynamic chart width based on number of months
+  const chartWidth = useMemo(() => {
+    // Base width for minimum months
+    const baseWidth = 350;
+    // Additional width per month
+    const widthPerMonth = 80;
+    
+    // Calculate width: Base + (Number of months * width per month)
+    const calculatedWidth = Math.min(1200, baseWidth + (selectedMonths - 1) * widthPerMonth);
+    
+    return `${calculatedWidth}px`;
+  }, [selectedMonths]);
+
   // Transform data for chart
   const chartData = useMemo(() => {
     if (!data.length) return null;
@@ -97,6 +110,8 @@ export default function IssuesTrendChart({
           borderColor: '#cc0000',
           borderWidth: 1,
           order: 2,
+          barThickness: 'flex',
+          maxBarThickness: 44,
         },
         {
           type: 'bar' as const,
@@ -106,6 +121,8 @@ export default function IssuesTrendChart({
           borderColor: '#009900',
           borderWidth: 1,
           order: 3,
+          barThickness: 'flex',
+          maxBarThickness: 44,
         },
         {
           type: 'line' as const,
@@ -126,7 +143,8 @@ export default function IssuesTrendChart({
     };
   }, [data]);
 
-  const options = useMemo(() => ({
+  const options = useMemo(() => {
+    return {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -192,6 +210,8 @@ export default function IssuesTrendChart({
         grid: {
           color: 'rgba(0, 0, 0, 0.1)',
         },
+        categoryPercentage: 0.95,
+        barPercentage: 1.0,
       },
       y: {
         type: 'linear' as const,
@@ -232,7 +252,8 @@ export default function IssuesTrendChart({
         },
       },
     },
-  }), []);
+  };
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -322,8 +343,10 @@ export default function IssuesTrendChart({
       </div>
 
       {/* Chart */}
-      <div className="w-full" style={{ height: '425px' }}>
-        <Chart type="bar" data={chartData} options={options} />
+      <div className="overflow-x-auto" style={{ height: '425px' }}>
+        <div style={{ width: chartWidth, height: '425px' }}>
+          <Chart type="bar" data={chartData} options={options} />
+        </div>
       </div>
     </div>
   );
