@@ -11,6 +11,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  Filler,
 } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
 import { ApiService, IssuesTrendDataPoint, IssuesTrendResponse } from '@/lib/api';
@@ -24,7 +25,8 @@ ChartJS.register(
   PointElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 interface IssuesTrendChartProps {
@@ -323,7 +325,7 @@ export default function IssuesTrendChart({
     );
   }
 
-  if (!data.length || !chartData) {
+  if (!data.length || !chartData || !chartData.labels || !chartData.datasets) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-gray-500">No data available</div>
