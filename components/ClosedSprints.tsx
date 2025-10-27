@@ -272,7 +272,7 @@ export default function ClosedSprints({ selectedTeam, isLoading = false }: Close
                   {availableColumns.map((column) => (
                     <th 
                       key={column.key}
-                      className={`py-1.5 px-2 cursor-pointer hover:bg-gray-50 ${
+                      className={`py-1.5 px-1 cursor-pointer hover:bg-gray-50 ${
                         column.key === 'sprint_name' || column.key === 'sprint_goal' ? 'text-left' : 'text-center'
                       }`}
                       onClick={() => handleSort(column.key)}
@@ -302,12 +302,14 @@ export default function ClosedSprints({ selectedTeam, isLoading = false }: Close
                     </td>
                   </tr>
                 ) : (
-                  sortedAndFilteredData.map((sprint) => (
-                    <tr key={sprint.sprint_id} className="border-b border-gray-100 hover:bg-gray-50">
+                  sortedAndFilteredData.map((sprint, index) => (
+                    <tr key={sprint.sprint_id} className={`border-b border-gray-100 ${
+                      index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
+                    }`}>
                       {availableColumns.map((column) => (
                         <td 
                           key={column.key}
-                          className={`py-1.5 px-2 ${
+                          className={`py-1.5 px-1 ${
                             column.key === 'sprint_name' || column.key === 'sprint_goal' ? 'font-medium text-gray-900 text-left' : 'text-center'
                           }`}
                         >
