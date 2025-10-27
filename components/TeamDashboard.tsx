@@ -10,6 +10,22 @@ interface TeamDashboardProps {
 
 export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
   const [burndownCollapsed, setBurndownCollapsed] = useState(false);
+  const [selectedSprint, setSelectedSprint] = useState('');
+  const [currentSprintName, setCurrentSprintName] = useState('');
+
+  // Sample sprint data - in the future this will come from API
+  const sprintOptions = [
+    { value: '', label: 'All Sprints' },
+    { value: 'IDPS-DEV-2025-10-19', label: 'IDPS-DEV-2025-10-19' },
+    { value: 'IDPS-DEV-2025-10-05', label: 'IDPS-DEV-2025-10-05' },
+    { value: 'IDPS-DEV-2025-09-21', label: 'IDPS-DEV-2025-09-21' },
+    { value: 'IDPS-DEV-2025-09-07', label: 'IDPS-DEV-2025-09-07' },
+    { value: 'IDPS-DEV-2025-08-24', label: 'IDPS-DEV-2025-08-24' },
+    { value: 'IDPS-DEV-2025-08-10', label: 'IDPS-DEV-2025-08-10' },
+    { value: 'IDPS-DEV-2025-07-27', label: 'IDPS-DEV-2025-07-27' },
+    { value: 'IDPS-DEV-2025-07-13', label: 'IDPS-DEV-2025-07-13' },
+    { value: 'IDPS-DEV-2025-06-29', label: 'IDPS-DEV-2025-06-29' },
+  ];
 
   return (
     <div className="space-y-4">
@@ -26,10 +42,36 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
           <h2 className="text-lg font-semibold">Sprint Burndown Chart</h2>
         </div>
         {!burndownCollapsed && (
-          <BurndownChart
-            teamName={selectedTeam}
-            issueType="all"
-          />
+          <div className="space-y-3">
+            {/* Sprint Filter and Name */}
+            <div className="flex items-center">
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-gray-700">Sprint:</label>
+                <select
+                  value={selectedSprint}
+                  onChange={(e) => setSelectedSprint(e.target.value)}
+                  className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  {sprintOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1 text-center text-sm font-medium text-gray-800" style={{ transform: 'translateX(-80px)' }}>
+                {currentSprintName || 'Loading...'}
+              </div>
+              <div className="w-24"></div> {/* Spacer to balance the layout */}
+            </div>
+            
+            <BurndownChart
+              teamName={selectedTeam}
+              issueType="all"
+              sprintName={selectedSprint || undefined}
+              onSprintNameChange={setCurrentSprintName}
+            />
+          </div>
         )}
       </div>
       

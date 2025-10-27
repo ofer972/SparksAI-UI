@@ -31,12 +31,14 @@ interface BurndownChartProps {
   teamName?: string;
   issueType?: string;
   sprintName?: string;
+  onSprintNameChange?: (sprintName: string) => void;
 }
 
 export default function BurndownChart({ 
   teamName = 'AutoDesign-Dev', 
   issueType = 'all',
-  sprintName 
+  sprintName,
+  onSprintNameChange
 }: BurndownChartProps) {
   const [data, setData] = useState<BurndownDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -163,18 +165,7 @@ export default function BurndownChart({
         },
       },
       title: {
-        display: true,
-        text: sprintInfo ? sprintInfo.sprint_name : 'Sprint Burndown',
-        font: {
-          size: 12,
-          weight: 'bold' as const,
-        },
-        position: 'top' as const,
-        align: 'start' as const,
-        padding: {
-          top: 0,
-          bottom: 5,
-        },
+        display: false,
       },
       tooltip: {
         mode: 'index' as const,
@@ -276,6 +267,11 @@ export default function BurndownChart({
           start_date: response.data.start_date,
           end_date: response.data.end_date,
         });
+        
+        // Notify parent component of the sprint name
+        if (onSprintNameChange) {
+          onSprintNameChange(response.data.sprint_name);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch data');
       } finally {
