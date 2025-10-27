@@ -232,7 +232,7 @@ export default function AICards({ teamName }: AICardProps) {
                 {/* Fixed AI Chat Button - positioned at bottom-right */}
                 <button 
                   onClick={() => handleAIChat(card)}
-                  className="absolute bottom-2 right-2 bg-blue-600 hover:bg-blue-700 text-white px-2 py-0.5 rounded text-xs font-medium transition-colors"
+                  className="absolute bottom-2 right-2 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-full text-xs font-medium transition-colors shadow-sm hover:shadow-md"
                 >
                   AI Chat
                 </button>

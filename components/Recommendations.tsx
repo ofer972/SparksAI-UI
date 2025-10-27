@@ -217,7 +217,7 @@ export default function Recommendations({ teamName }: RecommendationsProps) {
                     {/* Reason Button - positioned on same row as date, after priority icon */}
                     <button 
                       onClick={() => handleReason(recommendation)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-0.5 rounded text-xs font-medium transition-colors"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-full text-xs font-medium transition-colors shadow-sm hover:shadow-md"
                     >
                       Reason
                     </button>
