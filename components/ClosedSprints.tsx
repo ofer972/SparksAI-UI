@@ -139,13 +139,16 @@ export default function ClosedSprints({ selectedTeam, isLoading = false }: Close
   const formatCellValue = (value: any, key: keyof ClosedSprint) => {
     if (value === null || value === undefined) return '-';
     
+    // Convert key to string for dynamic checks
+    const keyStr = String(key);
+    
     // Format dates
-    if (key.includes('date') && typeof value === 'string') {
+    if (keyStr.includes('date') && typeof value === 'string') {
       return formatDate(value);
     }
     
     // Format sprint goal with line breaks
-    if (key === 'sprint_goal' && typeof value === 'string') {
+    if (keyStr === 'sprint_goal' && typeof value === 'string') {
       return (
         <div className="whitespace-pre-line text-left">
           {value}
@@ -155,10 +158,10 @@ export default function ClosedSprints({ selectedTeam, isLoading = false }: Close
     
     // Format completion percentage with specific color coding
     // Check for various possible field names for completion percentage
-    if (key === 'completion_percentage' || 
-        key === 'completed_percentage' || 
-        key === 'completion' ||
-        (key.includes('completion') && key.includes('percentage'))) {
+    if (keyStr === 'completion_percentage' || 
+        keyStr === 'completed_percentage' || 
+        keyStr === 'completion' ||
+        (keyStr.includes('completion') && keyStr.includes('percentage'))) {
       const num = Math.round(Number(value));
       return (
         <span className={`font-bold ${
@@ -171,7 +174,7 @@ export default function ClosedSprints({ selectedTeam, isLoading = false }: Close
     }
     
     // Format other percentages (like predictability)
-    if (key.includes('predictability')) {
+    if (keyStr.includes('predictability')) {
       const num = Number(value);
       return (
         <span className={`font-semibold ${
@@ -184,18 +187,18 @@ export default function ClosedSprints({ selectedTeam, isLoading = false }: Close
     }
     
     // Format issue counts with colors
-    if (key.includes('issues_done')) {
+    if (keyStr.includes('issues_done')) {
       return <span className="text-green-600 font-semibold">{value}</span>;
     }
-    if (key.includes('issues_remaining')) {
+    if (keyStr.includes('issues_remaining')) {
       return <span className="text-red-600 font-semibold">{value}</span>;
     }
-    if (key.includes('issues_')) {
+    if (keyStr.includes('issues_')) {
       return <span className="text-gray-700">{value}</span>;
     }
     
     // Format velocity
-    if (key === 'velocity') {
+    if (keyStr === 'velocity') {
       return <span className="text-gray-900 font-semibold">{value}</span>;
     }
     
