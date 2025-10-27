@@ -111,7 +111,7 @@ export default function IssuesTrendChart({
           borderWidth: 1,
           order: 2,
           barThickness: 'flex',
-          maxBarThickness: 44,
+          maxBarThickness: 50,
         },
         {
           type: 'bar' as const,
@@ -122,7 +122,7 @@ export default function IssuesTrendChart({
           borderWidth: 1,
           order: 3,
           barThickness: 'flex',
-          maxBarThickness: 44,
+          maxBarThickness: 50,
         },
         {
           type: 'line' as const,
