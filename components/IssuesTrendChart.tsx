@@ -111,7 +111,6 @@ export default function IssuesTrendChart({
           borderColor: '#cc0000',
           borderWidth: 1,
           order: 2,
-          maxBarThickness: 50,
         },
         {
           type: 'bar' as const,
@@ -121,7 +120,6 @@ export default function IssuesTrendChart({
           borderColor: '#009900',
           borderWidth: 1,
           order: 3,
-          maxBarThickness: 50,
         },
         {
           type: 'line' as const,
