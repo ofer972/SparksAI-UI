@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { ApiService } from '../lib/api';
 import { PIPredictabilityData } from '../lib/config';
+import { usePIPredictability } from '@/hooks';
 
 interface PIPredictabilityProps {
   selectedPI: string;
@@ -18,50 +18,12 @@ export default function PIPredictability({ selectedPI, selectedTeam, isLoading =
     direction: 'asc',
   });
   const [filterText, setFilterText] = useState('');
-  const [data, setData] = useState<PIPredictabilityData[]>([]);
-  const [dataLoading, setDataLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const apiService = new ApiService();
-
-  // Fetch PI Predictability data
-  const fetchPIPredictability = async (piName: string, teamName?: string) => {
-    if (!piName) {
-      console.log('No PI selected, skipping fetch');
-      return;
-    }
-    
-    setDataLoading(true);
-    setError(null);
-    
-    try {
-      const response = await apiService.getPIPredictability(piName, teamName);
-      
-      // The API method now returns the predictability_data array directly
-      let dataToSet: PIPredictabilityData[] = [];
-      
-      if (Array.isArray(response)) {
-        dataToSet = response;
-      } else {
-        dataToSet = [];
-      }
-      
-      setData(dataToSet);
-    } catch (err) {
-      console.error('Error fetching PI predictability:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch PI predictability data');
-      setData([]);
-    } finally {
-      setDataLoading(false);
-    }
-  };
-
-  // Fetch data when PI or team changes
+  const { data, loading: dataLoading, error } = usePIPredictability(selectedPI, selectedTeam);
+  
+  // Keep visibility/collapse gating here (no refetch needed, just avoid rendering expensive UI)
   useEffect(() => {
-    if (!isVisible || collapsed) return;
-    
-    fetchPIPredictability(selectedPI, selectedTeam);
-  }, [isVisible, collapsed, selectedPI, selectedTeam]);
+    // no-op: using hook for fetching; visibility handled in render
+  }, [isVisible, collapsed]);
 
   const handleSort = (key: string) => {
     if (sortConfig.key === key) {

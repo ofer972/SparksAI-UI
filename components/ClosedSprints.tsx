@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { ApiService } from '../lib/api';
 import { ClosedSprint } from '../lib/config';
+import { useClosedSprints } from '@/hooks';
 
 interface ClosedSprintsProps {
   selectedTeam: string;
@@ -23,11 +23,7 @@ export default function ClosedSprints({ selectedTeam, isLoading = false, isVisib
   });
   const [filterText, setFilterText] = useState('');
   const [selectedTimePeriod, setSelectedTimePeriod] = useState(3); // Default to 3 months
-  const [sprintsData, setSprintsData] = useState<ClosedSprint[]>([]);
-  const [dataLoading, setDataLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const apiService = new ApiService();
+  const { sprints: sprintsData, loading: dataLoading, error, refetch } = useClosedSprints(selectedTeam, selectedTimePeriod);
 
   // Time period options matching the API documentation
   const timePeriodOptions: TimePeriodOption[] = [
@@ -39,32 +35,12 @@ export default function ClosedSprints({ selectedTeam, isLoading = false, isVisib
     { value: 9, label: 'Last 9 months' },
   ];
 
-  // Fetch closed sprints data
-  const fetchClosedSprints = async (teamName: string, months: number) => {
-    if (!teamName) return;
-    
-    setDataLoading(true);
-    setError(null);
-    
-    try {
-      const response = await apiService.getClosedSprints(teamName, months);
-      console.log('API Response:', response);
-      console.log('First sprint data:', response.closed_sprints[0]);
-      setSprintsData(response.closed_sprints);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch closed sprints');
-      setSprintsData([]);
-    } finally {
-      setDataLoading(false);
-    }
-  };
-
   // Fetch data when team or time period changes
   useEffect(() => {
     if (!isVisible || collapsed) return;
     
-    fetchClosedSprints(selectedTeam, selectedTimePeriod);
-  }, [isVisible, collapsed, selectedTeam, selectedTimePeriod]);
+    refetch(selectedTeam, selectedTimePeriod);
+  }, [isVisible, collapsed, selectedTeam, selectedTimePeriod, refetch]);
 
   const handleSort = (key: keyof ClosedSprint) => {
     if (sortConfig.key === key) {

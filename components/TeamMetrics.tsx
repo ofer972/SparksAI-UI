@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ApiService } from '@/lib/api';
+import { useTeamMetrics } from '@/hooks';
 
 interface TeamMetricsProps {
   teamName: string;
@@ -74,42 +73,7 @@ const MetricCard = ({ icon, value, label, tooltip, className = "", isLeftmost = 
 );
 
 export default function TeamMetrics({ teamName }: TeamMetricsProps) {
-  const [sprintMetrics, setSprintMetrics] = useState<SprintMetricsData | null>(null);
-  const [completionData, setCompletionData] = useState<CompletionData | null>(null);
-  const [workInProgressData, setWorkInProgressData] = useState<WorkInProgressData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchMetrics = async () => {
-      if (!teamName) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-
-        const apiService = new ApiService();
-        const { sprintMetrics, completionRate, inProgressCount } = await apiService.getTeamMetrics(teamName);
-        
-        setSprintMetrics(sprintMetrics);
-        setCompletionData(completionRate);
-        setWorkInProgressData(inProgressCount);
-
-      } catch (err) {
-        console.error('Error fetching metrics:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch metrics');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (teamName) {
-      fetchMetrics();
-    }
-  }, [teamName]);
+  const { sprintMetrics, completionRate, inProgressCount, loading, error } = useTeamMetrics(teamName);
 
   if (loading) {
     return (
@@ -172,7 +136,7 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
         {/* Work in Progress */}
         <MetricCard
           icon="🔄"
-          value={workInProgressData?.total_in_progress?.toString() || "0"}
+          value={inProgressCount?.total_in_progress?.toString() || "0"}
           label="Work in Progress"
           tooltip="Number of issues in progress in the current active sprint"
         />
@@ -180,7 +144,7 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
         {/* Completion */}
         <MetricCard
           icon="🎯"
-          value={completionData?.completion_rate ? `${completionData.completion_rate}%` : "0%"}
+          value={completionRate?.completion_rate ? `${completionRate.completion_rate}%` : "0%"}
           label="Completion"
           tooltip="Completed issues (%) in the current active sprint"
         />

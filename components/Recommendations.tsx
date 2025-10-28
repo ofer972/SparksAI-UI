@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { ApiService } from '@/lib/api';
+import { useRecommendations } from '@/hooks';
 
 // Constants
 const MAX_RECOMMENDATIONS = 3;
@@ -141,39 +141,14 @@ const formatDate = (dateString: string) => {
 };
 
 export default function Recommendations({ teamName }: RecommendationsProps) {
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { recommendations, loading, error } = useRecommendations(teamName, 3);
   const [selectedRecommendation, setSelectedRecommendation] = useState<Recommendation | null>(null);
 
   const handleReason = (recommendation: Recommendation) => {
     setSelectedRecommendation(recommendation);
   };
 
-  useEffect(() => {
-    const fetchRecommendations = async () => {
-      try {
-        setLoading(true);
-        const apiService = new ApiService();
-        const response = await apiService.getRecommendations(teamName);
-        
-        if (response.recommendations) {
-          setRecommendations(response.recommendations.slice(0, 3)); // Limit to 3 recommendations
-        } else {
-          throw new Error('Failed to fetch recommendations');
-        }
-      } catch (err) {
-        console.error('Error fetching recommendations:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch recommendations');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (teamName) {
-      fetchRecommendations();
-    }
-  }, [teamName]);
+  
 
   if (loading) {
     return (

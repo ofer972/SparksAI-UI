@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { ApiService } from '@/lib/api';
+import { useAICards } from '@/hooks';
 
 // Constants
 const CARD_DESCRIPTION_MAX_LENGTH = 750;
@@ -114,9 +113,7 @@ const parseInformationJson = (jsonString: string | undefined): InformationItem[]
 };
 
 export default function AICards({ teamName }: AICardProps) {
-  const [cards, setCards] = useState<AICard[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { cards, loading, error } = useAICards(teamName);
 
   const handleAIChat = (card: AICard) => {
     // Each card will have its own behavior based on content
@@ -133,30 +130,7 @@ export default function AICards({ teamName }: AICardProps) {
     alert(`AI Chat for ${card.card_name} (${card.card_type}) - Priority: ${card.priority}`);
   };
 
-  useEffect(() => {
-    const fetchAICards = async () => {
-      try {
-        setLoading(true);
-        const apiService = new ApiService();
-        const response = await apiService.getAICards(teamName);
-        
-        if (response.ai_cards) {
-          setCards(response.ai_cards);
-        } else {
-          throw new Error('Failed to fetch AI cards');
-        }
-      } catch (err) {
-        console.error('Error fetching AI cards:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch AI cards');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (teamName) {
-      fetchAICards();
-    }
-  }, [teamName]);
+  
 
   if (loading) {
     return (
