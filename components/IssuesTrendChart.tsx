@@ -116,6 +116,7 @@ export default function IssuesTrendChart({
           backgroundColor: 'rgba(204, 0, 0, 0.6)',
           borderColor: '#cc0000',
           borderWidth: 1,
+          maxBarThickness: 36,
           order: 2,
         },
         {
@@ -125,6 +126,7 @@ export default function IssuesTrendChart({
           backgroundColor: 'rgba(0, 153, 0, 0.6)',
           borderColor: '#009900',
           borderWidth: 1,
+          maxBarThickness: 36,
           order: 3,
         },
         {
@@ -167,6 +169,8 @@ export default function IssuesTrendChart({
     return {
     responsive: true,
     maintainAspectRatio: false,
+    maxBarThickness: 36,
+    categoryPercentage: 0.5,
     plugins: {
       legend: {
         position: 'top' as const,
@@ -230,8 +234,6 @@ export default function IssuesTrendChart({
         grid: {
           color: 'rgba(0, 0, 0, 0.1)',
         },
-        categoryPercentage: 0.95,
-        barPercentage: 1.0,
       },
       y: {
         type: 'linear' as const,
