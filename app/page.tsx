@@ -16,7 +16,7 @@ import EpicScopeChangesChart from '@/components/EpicScopeChangesChart';
 import { getIssueTypes, getDefaultIssueType } from '@/lib/issueTypes';
 
 export default function Home() {
-  const [activeNavItem, setActiveNavItem] = useState('team-dashboard');
+  const [activeNavItem, setActiveNavItem] = useState('my-team-today');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState('AutoDesign-Dev');
   const [selectedPI, setSelectedPI] = useState('Q32025'); // Default to Q32025 which has data
