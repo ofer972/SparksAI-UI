@@ -137,7 +137,7 @@ export default function Home() {
       case 'settings':
         return <SettingsScreen />;
       case 'api-test':
-        return <ApiTest />;
+        return <ApiTest teamName={selectedTeam} />;
       default:
         return (
           <div className="bg-white rounded-lg shadow-sm p-6 text-center">

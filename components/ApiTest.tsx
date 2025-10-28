@@ -3,7 +3,11 @@
 import { useState } from 'react';
 import { ApiService } from '@/lib/api';
 
-export default function ApiTest() {
+interface ApiTestProps {
+  teamName?: string;
+}
+
+export default function ApiTest({ teamName }: ApiTestProps) {
   const [testResults, setTestResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -15,9 +19,11 @@ export default function ApiTest() {
     const tests = [
       { name: 'Teams API', test: () => apiService.getTeams() },
       { name: 'PIs API', test: () => apiService.getPIs() },
-      { name: 'AI Cards API', test: () => apiService.getAICards('AutoDesign-Dev') },
-      { name: 'Recommendations API', test: () => apiService.getRecommendations('AutoDesign-Dev') },
-      { name: 'Team Metrics API', test: () => apiService.getTeamMetrics('AutoDesign-Dev') },
+      ...(teamName ? [
+        { name: 'AI Cards API', test: () => apiService.getAICards(teamName) },
+        { name: 'Recommendations API', test: () => apiService.getRecommendations(teamName) },
+        { name: 'Team Metrics API', test: () => apiService.getTeamMetrics(teamName) },
+      ] : [])
     ];
 
     const results = [];

@@ -41,7 +41,7 @@ interface IssuesTrendChartProps {
 }
 
 export default function IssuesTrendChart({ 
-  teamName = 'AutoDesign-Dev',
+  teamName,
   issueType = getDefaultIssueType('trend'),
   months = 6,
   isVisible = true

@@ -14,7 +14,7 @@ interface SprintBurndownChartProps {
 }
 
 export default function SprintBurndownChart({ 
-  teamName = 'AutoDesign-Dev', 
+  teamName, 
   issueType = getDefaultIssueType('burndown'),
   sprintName,
   onSprintNameChange,
