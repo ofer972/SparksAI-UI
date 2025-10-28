@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import AgentJobsTab from './AgentJobsTab';
+import AgentJobsTabNew from './AgentJobsTabNew';
 
 interface TabItem {
   id: string;
@@ -9,8 +9,9 @@ interface TabItem {
 
 const tabs: TabItem[] = [
   { id: 'agent-jobs', label: 'Agent Jobs', icon: '🤖' },
-  // Future tabs can be added here
-  // { id: 'other-entity', label: 'Other Entity', icon: '📊' },
+  { id: 'ai-cards', label: 'AI Cards', icon: '🎯' },
+  { id: 'security-logs', label: 'Security Logs', icon: '🔒' },
+  { id: 'view-transcripts', label: 'View Transcripts', icon: '📝' },
 ];
 
 export default function GeneralDataView() {
@@ -19,7 +20,37 @@ export default function GeneralDataView() {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'agent-jobs':
-        return <AgentJobsTab />;
+        return <AgentJobsTabNew />;
+      case 'ai-cards':
+        return (
+          <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+            <div className="text-4xl mb-3">🎯</div>
+            <h2 className="text-lg font-semibold mb-2">AI Cards</h2>
+            <p className="text-sm text-gray-600">
+              AI Cards tab will be implemented using the generic architecture.
+            </p>
+          </div>
+        );
+      case 'security-logs':
+        return (
+          <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+            <div className="text-4xl mb-3">🔒</div>
+            <h2 className="text-lg font-semibold mb-2">Security Logs</h2>
+            <p className="text-sm text-gray-600">
+              Security Logs tab will be implemented using the generic architecture.
+            </p>
+          </div>
+        );
+      case 'view-transcripts':
+        return (
+          <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+            <div className="text-4xl mb-3">📝</div>
+            <h2 className="text-lg font-semibold mb-2">View Transcripts</h2>
+            <p className="text-sm text-gray-600">
+              View Transcripts tab will be implemented using the generic architecture.
+            </p>
+          </div>
+        );
       default:
         return (
           <div className="bg-white rounded-lg shadow-sm p-6 text-center">

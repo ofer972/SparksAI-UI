@@ -2,12 +2,14 @@ interface DeleteConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
   itemName?: string;
+  onConfirm?: () => void;
 }
 
 export default function DeleteConfirmationModal({ 
   isOpen, 
   onClose, 
-  itemName = 'item' 
+  itemName = 'item',
+  onConfirm
 }: DeleteConfirmationModalProps) {
   if (!isOpen) return null;
 
@@ -34,13 +36,26 @@ export default function DeleteConfirmationModal({
               Please check back later.
             </p>
 
-            {/* Action Button */}
-            <button
-              onClick={onClose}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              Close
-            </button>
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={onClose}
+                className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              {onConfirm && (
+                <button
+                  onClick={() => {
+                    onConfirm();
+                    onClose();
+                  }}
+                  className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors font-medium"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
