@@ -232,7 +232,7 @@ export default function AICards({ teamName }: AICardProps) {
             
             
             return (
-              <div key={card.id} className={`bg-white rounded-lg shadow-lg pt-2 pb-4 px-4 border-l-4 border ${colors.border} ${colors.frame} min-h-[170px] relative`}>
+              <div key={card.id} className={`bg-white rounded-lg shadow-lg pt-1 pb-4 px-4 border-l-4 border ${colors.border} ${colors.frame} min-h-[170px] relative`}>
                 <div className="flex items-start justify-between mb-1">
                   <div className="flex items-center space-x-2">
                     <div className="relative group">
@@ -246,7 +246,7 @@ export default function AICards({ teamName }: AICardProps) {
                     </div>
                     <h3 className="text-sm font-semibold text-gray-800">{card.card_name}</h3>
                   </div>
-                  <div className="absolute left-1/2 transform -translate-x-1/2 top-2">
+                  <div className="absolute left-1/2 transform -translate-x-1/2 top-0">
                     <button 
                       onClick={() => handleViewCard(card)}
                       className="text-xs text-blue-600 underline hover:text-blue-800 cursor-pointer bg-transparent border-none p-0 font-medium"
@@ -276,7 +276,7 @@ export default function AICards({ teamName }: AICardProps) {
                           const columns = Object.keys(sprintGoalItems[0]);
                           
                           return (
-                            <div className="overflow-auto max-h-32">
+                            <div className="overflow-auto max-h-32 -mt-1">
                               <table className="w-[90%] text-xs border-collapse border border-gray-300">
                                 <thead>
                                   <tr>
