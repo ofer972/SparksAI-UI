@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import StackedGroupedBarChart, { StackedGroupedBarChartData } from './StackedGroupedBarChart';
+import MultiPIFilter from './MultiPIFilter';
 import { ApiService, ScopeChangesDataPoint } from '@/lib/api';
 
 interface EpicScopeChangesChartProps {
@@ -12,6 +13,7 @@ export default function EpicScopeChangesChart({ selectedQuarter }: EpicScopeChan
   const [data, setData] = useState<ScopeChangesDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedPIs, setSelectedPIs] = useState<string[]>([selectedQuarter]);
 
   // Color scheme matching the image
   const epicScopeColors = {
@@ -34,7 +36,7 @@ export default function EpicScopeChangesChart({ selectedQuarter }: EpicScopeChan
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!selectedQuarter) {
+      if (selectedPIs.length === 0) {
         setLoading(false);
         return;
       }
@@ -44,7 +46,7 @@ export default function EpicScopeChangesChart({ selectedQuarter }: EpicScopeChan
         setError(null);
 
         const apiService = new ApiService();
-        const response = await apiService.getScopeChanges(selectedQuarter);
+        const response = await apiService.getScopeChanges(selectedPIs);
 
         setData(response.scope_data);
       } catch (err) {
@@ -57,11 +59,28 @@ export default function EpicScopeChangesChart({ selectedQuarter }: EpicScopeChan
     };
 
     fetchData();
-  }, [selectedQuarter]);
+  }, [selectedPIs]);
+
+  // Update selectedPIs when selectedQuarter changes
+  useEffect(() => {
+    if (selectedQuarter && !selectedPIs.includes(selectedQuarter)) {
+      setSelectedPIs([selectedQuarter]);
+    }
+  }, [selectedQuarter, selectedPIs]);
 
   return (
     <div className="space-y-3">
-      <div className="w-1/3">
+      {/* PI Filter */}
+      <div className="flex justify-start">
+        <MultiPIFilter
+          selectedPIs={selectedPIs}
+          onPIsChange={setSelectedPIs}
+          maxSelections={4}
+        />
+      </div>
+      
+      {/* Chart with dynamic width based on number of quarters */}
+      <div className={`${selectedPIs.length <= 2 ? 'w-1/2' : selectedPIs.length <= 3 ? 'w-2/3' : 'w-full'}`}>
         <StackedGroupedBarChart
           data={chartData}
           title="Epic Scope Changes"
