@@ -336,6 +336,65 @@ export class ApiService {
     return [];
   }
 
+  // Team AI Cards API
+  async getTeamAICards(): Promise<any[]> {
+    const response = await fetch(buildApiUrl(API_CONFIG.endpoints.generalData.teamAICards));
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch team AI cards: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    
+    // Debug logging to see the actual response structure
+    console.log('=== TEAM AI CARDS API DEBUG ===');
+    console.log('Full API response:', result);
+    console.log('Response type:', typeof result);
+    console.log('Response keys:', Object.keys(result || {}));
+    console.log('===============================');
+    
+    // Handle the specific API response structure: { success: true, data: { cards: [...], count: number }, message: string }
+    if (result.success && result.data && result.data.cards && Array.isArray(result.data.cards)) {
+      console.log('Returning result.data.cards array with length:', result.data.cards.length);
+      return result.data.cards;
+    }
+    
+    // Fallback for other possible response structures
+    if (result.success && result.data && Array.isArray(result.data)) {
+      console.log('Returning result.data array with length:', result.data.length);
+      return result.data;
+    }
+    
+    if (Array.isArray(result)) {
+      console.log('Returning result array directly with length:', result.length);
+      return result;
+    }
+    
+    // Fallback: return empty array
+    console.warn('Unexpected response structure for team AI cards:', result);
+    return [];
+  }
+
+  async getTeamAICardDetail(id: string): Promise<any> {
+    const url = `${buildApiUrl(API_CONFIG.endpoints.generalData.teamAICardDetail)}/${id}`;
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch team AI card detail: ${response.statusText}`);
+    }
+
+    const result: ApiResponse<any> = await response.json();
+    
+    // Handle the nested structure: result.data.card or direct data
+    if (result.success && result.data) {
+      return result.data.card || result.data;
+    }
+    
+    // Fallback to direct data if structure is different
+    return result.data;
+  }
+
   // Agent Jobs API
   async getAgentJobs(): Promise<any[]> {
     const response = await fetch(buildApiUrl(API_CONFIG.endpoints.generalData.agentJobs));

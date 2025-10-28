@@ -77,13 +77,8 @@ export function ViewRecordModal<T extends Record<string, any>>({
       return config.longTextFields.includes(key);
     }
     
-    // Fallback to common long text field names
-    const longTextFields = [
-      'description', 'result', 'error', 'input_sent', 'full_information', 
-      'information_json', 'data', 'content', 'message', 'details', 'notes'
-    ];
-    
-    return longTextFields.includes(String(key)) || isLongText(value);
+    // Simple auto-detection: if it's a string > 100 chars, it's long text
+    return typeof value === 'string' && value.length > 100;
   };
 
   const isNormalField = (key: keyof T) => {
@@ -92,17 +87,8 @@ export function ViewRecordModal<T extends Record<string, any>>({
       return config.normalFields.includes(key);
     }
     
-    // Fallback to common normal field names (short fields that should be displayed in grid)
-    const normalFields = [
-      'id', 'job_id', 'card_id', 'log_id', 'transcript_id',
-      'status', 'type', 'job_type', 'card_type', 'log_type',
-      'team_name', 'team', 'claimed_by', 'created_by', 'user',
-      'priority', 'level', 'severity',
-      'created_at', 'updated_at', 'claimed_at', 'completed_at', 'date',
-      'source', 'category', 'subcategory'
-    ];
-    
-    return normalFields.includes(String(key));
+    // Simple auto-detection: everything else is normal
+    return true;
   };
 
   const renderNormalField = (key: keyof T, value: any) => {

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import AgentJobsTabNew from './AgentJobsTabNew';
+import TeamAICardsTab from './TeamAICardsTab';
 
 interface TabItem {
   id: string;
@@ -9,7 +10,7 @@ interface TabItem {
 
 const tabs: TabItem[] = [
   { id: 'agent-jobs', label: 'Agent Jobs', icon: '🤖' },
-  { id: 'ai-cards', label: 'AI Cards', icon: '🎯' },
+  { id: 'team-ai-cards', label: 'Team AI Cards', icon: '🎯' },
   { id: 'security-logs', label: 'Security Logs', icon: '🔒' },
   { id: 'view-transcripts', label: 'View Transcripts', icon: '📝' },
 ];
@@ -21,16 +22,8 @@ export default function GeneralDataView() {
     switch (activeTab) {
       case 'agent-jobs':
         return <AgentJobsTabNew />;
-      case 'ai-cards':
-        return (
-          <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-            <div className="text-4xl mb-3">🎯</div>
-            <h2 className="text-lg font-semibold mb-2">AI Cards</h2>
-            <p className="text-sm text-gray-600">
-              AI Cards tab will be implemented using the generic architecture.
-            </p>
-          </div>
-        );
+      case 'team-ai-cards':
+        return <TeamAICardsTab />;
       case 'security-logs':
         return (
           <div className="bg-white rounded-lg shadow-sm p-6 text-center">

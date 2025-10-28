@@ -45,6 +45,8 @@ export const API_CONFIG = {
     generalData: {
       agentJobs: '/api/v1/agent-jobs',
       agentJobDetail: '/api/v1/agent-jobs',
+      teamAICards: '/api/v1/team-ai-cards',
+      teamAICardDetail: '/api/v1/team-ai-cards',
     },
   },
 } as const;

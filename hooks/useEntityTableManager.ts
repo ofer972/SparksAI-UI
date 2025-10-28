@@ -49,7 +49,7 @@ export function useEntityTableManager<T extends Record<string, any>>(
   // Table states
   const [sortConfig, setSortConfig] = useState<{ key: keyof T; direction: 'asc' | 'desc' }>({
     key: config.primaryKey,
-    direction: 'asc'
+    direction: 'desc'
   });
   const [filterText, setFilterText] = useState('');
 
@@ -59,7 +59,17 @@ export function useEntityTableManager<T extends Record<string, any>>(
       setLoading(true);
       setError(null);
       const result = await config.fetchList();
-      setData(Array.isArray(result) ? result : []);
+      
+      // Debug logging
+      console.log(`=== ${config.title.toUpperCase()} FETCH DEBUG ===`);
+      console.log('Raw result:', result);
+      console.log('Result type:', typeof result);
+      console.log('Is array:', Array.isArray(result));
+      console.log('Result length:', Array.isArray(result) ? result.length : 'N/A');
+      console.log('=====================================');
+      
+      const dataArray = Array.isArray(result) ? result : [];
+      setData(dataArray);
     } catch (err) {
       console.error(`Error fetching ${config.title.toLowerCase()}:`, err);
       setError(err instanceof Error ? err.message : `Failed to fetch ${config.title.toLowerCase()}`);
@@ -93,10 +103,11 @@ export function useEntityTableManager<T extends Record<string, any>>(
 
   // Sort filtered data
   const sortedData = [...filteredData].sort((a, b) => {
-    if (!sortConfig.key) return 0;
+    // Always sort by the configured key (primary key by default)
+    const sortKey = sortConfig.key || config.primaryKey;
     
-    const aValue = a[sortConfig.key];
-    const bValue = b[sortConfig.key];
+    const aValue = a[sortKey];
+    const bValue = b[sortKey];
     
     if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
     if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;

@@ -29,8 +29,43 @@ export function DataTable<T extends Record<string, any>>({
   onRefresh,
 }: DataTableProps<T>) {
   
+  // Simple auto-discovery of columns
+  const autoDiscoverColumns = (data: T[]): ColumnConfig<T>[] => {
+    if (!data || data.length === 0) return [];
+    
+    return Object.keys(data[0]).map(key => ({
+      key: key as keyof T,
+      label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      sortable: true,
+      searchable: true,
+      width: '120px', // Default width
+      align: 'left',  // Default alignment
+    }));
+  };
+
+  // Get final columns (config overrides or auto-discovered)
+  const finalColumns = config.columns || autoDiscoverColumns(data);
+  
+  // Apply column overrides if provided
+  if (config.columnOverrides) {
+    finalColumns.forEach(col => {
+      const override = config.columnOverrides![col.key];
+      if (override) {
+        Object.assign(col, override);
+      }
+    });
+  }
+
+  // Filter out hidden fields
+  const visibleColumns = finalColumns.filter(col => 
+    !config.hiddenFields?.includes(col.key)
+  );
+  
   const SortIcon = ({ columnKey }: { columnKey: keyof T }) => {
-    if (sortConfig.key !== columnKey) {
+    // Show sort indicator for the current sort key or primary key by default
+    const isActive = sortConfig.key === columnKey || (sortConfig.key === config.primaryKey && columnKey === config.primaryKey);
+    
+    if (!isActive) {
       return (
         <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
@@ -51,9 +86,9 @@ export function DataTable<T extends Record<string, any>>({
 
   const SkeletonRow = () => (
     <tr className="border-b border-gray-200">
-      {[...Array(config.columns.length + 1)].map((_, index) => (
+      {[...Array(visibleColumns.length + 1)].map((_, index) => (
         <td key={index} className={`py-2 px-3 ${
-          index < config.columns.length ? 'border-r border-gray-200' : 'border-l border-gray-200'
+          index < visibleColumns.length ? 'border-r border-gray-200' : 'border-l border-gray-200'
         }`}>
           <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
         </td>
@@ -82,9 +117,9 @@ export function DataTable<T extends Record<string, any>>({
       column.align === 'right' ? 'text-right' : 'text-left'
     }`;
     
-    // Add status color if configured
-    if (config.getStatusColor && column.key === 'status') {
-      className += ` ${config.getStatusColor(item[column.key])}`;
+    // Add field color if configured
+    if (config.fieldColors && config.fieldColors[String(column.key)]) {
+      className += ` ${config.fieldColors[String(column.key)](item[column.key])}`;
     }
     
     // Add custom column class
@@ -130,16 +165,14 @@ export function DataTable<T extends Record<string, any>>({
         <table className="w-full text-xs border-collapse">
           <thead>
             <tr className="border-b-2 border-gray-300 bg-gray-50">
-              {config.columns.map((column, index) => (
+              {visibleColumns.map((column, index) => (
                 <th 
                   key={String(column.key)}
                   className={`py-2 px-3 font-semibold text-gray-700 ${
                     column.align === 'center' ? 'text-center' : 
                     column.align === 'right' ? 'text-right' : 'text-left'
                   } ${
-                    index < config.columns.length - 1 ? 'border-r border-gray-200' : ''
-                  } ${
-                    column.width ? `w-${column.width}` : ''
+                    index < visibleColumns.length - 1 ? 'border-r border-gray-200' : ''
                   }`}
                   onClick={() => column.sortable && onSort(column.key)}
                   style={{ cursor: column.sortable ? 'pointer' : 'default' }}
@@ -165,12 +198,12 @@ export function DataTable<T extends Record<string, any>>({
               </>
             ) : error ? (
               <tr>
-                <td colSpan={config.columns.length + 1} className="py-8 text-center text-red-600">
+                <td colSpan={visibleColumns.length + 1} className="py-8 text-center text-red-600">
                   Error: {error}
                   <div className="text-xs text-gray-500 mt-2">Check console for more details</div>
                 </td>
               </tr>
-            ) : config.columns.length === 0 ? (
+            ) : visibleColumns.length === 0 ? (
               <tr>
                 <td colSpan={10} className="py-8 text-center text-gray-500">
                   No data available. Waiting for API response...
@@ -181,7 +214,7 @@ export function DataTable<T extends Record<string, any>>({
                 <tr key={index} className={`border-b border-gray-200 ${
                   index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
                 }`}>
-                  {config.columns.map((column, colIndex) => (
+                  {visibleColumns.map((column, colIndex) => (
                     <td 
                       key={String(column.key)}
                       className={getCellClassName(column, item)}

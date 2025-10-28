@@ -32,7 +32,6 @@ export interface EntityConfig<T> {
   deleteItem?: (id: string) => Promise<void>;
   
   // UI Configuration
-  columns: ColumnConfig<T>[];
   primaryKey: keyof T;
   title: string;
   
@@ -40,11 +39,16 @@ export interface EntityConfig<T> {
   filters?: FilterConfig[];
   searchFields?: (keyof T)[];
   
+  // Override system (only specify what's special)
+  columns?: ColumnConfig<T>[]; // Override auto-discovered columns
+  columnOverrides?: Partial<Record<keyof T, Partial<ColumnConfig<T>>>>; // Override specific columns
+  fieldColors?: Record<string, (value: any) => string>; // Special coloring for specific fields
+  hiddenFields?: (keyof T)[]; // Fields to hide from table
+  
   // Custom formatting
   formatCellValue?: (value: any, key: keyof T, item: T) => string | React.ReactNode;
-  getStatusColor?: (value: any) => string;
   
-  // Field categorization for detail view
+  // Field categorization for detail view (override auto-categorization)
   normalFields?: (keyof T)[]; // Fields to show in overview grid
   longTextFields?: (keyof T)[]; // Fields to show in details section
 }
@@ -83,72 +87,29 @@ export const agentJobsConfig: EntityConfig<AgentJob> = {
     return apiService.getAgentJobDetail(id);
   },
   
-  columns: [
-    {
-      key: 'job_id',
-      label: 'Job ID',
-      sortable: true,
-      searchable: true,
-      width: '120px',
-      align: 'center',
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      sortable: true,
-      searchable: true,
-      width: '100px',
-      align: 'center',
-    },
-    {
-      key: 'job_type',
-      label: 'Type',
-      sortable: true,
-      searchable: true,
-      width: '120px',
-    },
-    {
-      key: 'team_name',
-      label: 'Team',
-      sortable: true,
-      searchable: true,
-      width: '120px',
-    },
-    {
-      key: 'claimed_by',
-      label: 'Claimed By',
-      sortable: true,
-      searchable: true,
-      width: '120px',
-    },
-    {
-      key: 'claimed_at',
-      label: 'Claimed At',
-      sortable: true,
-      searchable: false,
-      width: '140px',
-      align: 'center',
-    },
-    {
-      key: 'result',
-      label: 'Result',
-      sortable: false,
-      searchable: true,
-      width: '200px',
-    },
-    {
-      key: 'error',
-      label: 'Error',
-      sortable: false,
-      searchable: true,
-      width: '120px',
-    },
-  ],
-  
   primaryKey: 'job_id',
   title: 'Agent Jobs',
   
-  searchFields: ['job_id', 'status', 'job_type', 'team_name', 'claimed_by', 'result', 'error'],
+  // Only specify what's special (overrides)
+  columnOverrides: {
+    'job_id': { width: '80px', align: 'center' },
+    'status': { width: '100px', align: 'center' },
+    'claimed_at': { width: '140px', align: 'center' },
+    'result': { width: '200px' },
+  },
+  
+  fieldColors: {
+    'status': (status: string) => {
+      switch (status?.toLowerCase()) {
+        case 'completed':
+          return 'text-green-600 font-semibold';
+        case 'error':
+          return 'text-red-600 font-semibold';
+        default:
+          return 'text-blue-600 font-semibold';
+      }
+    }
+  },
   
   formatCellValue: (value: any, key: keyof AgentJob) => {
     if (value === null || value === undefined) return '-';
@@ -182,17 +143,6 @@ export const agentJobsConfig: EntityConfig<AgentJob> = {
       return value.substring(0, 50) + '...';
     }
     return String(value);
-  },
-  
-  getStatusColor: (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'completed':
-        return 'text-green-600 font-semibold';
-      case 'error':
-        return 'text-red-600 font-semibold';
-      default:
-        return 'text-blue-600 font-semibold';
-    }
   },
   
   // Field categorization for detail view
