@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ApiService, BurndownDataPoint } from '@/lib/api';
+import { getDefaultIssueType } from '@/lib/issueTypes';
 import BurndownChart from './BurndownChart';
 
 interface SprintBurndownChartProps {
@@ -13,7 +14,7 @@ interface SprintBurndownChartProps {
 
 export default function SprintBurndownChart({ 
   teamName = 'AutoDesign-Dev', 
-  issueType = 'all',
+  issueType = getDefaultIssueType('burndown'),
   sprintName,
   onSprintNameChange
 }: SprintBurndownChartProps) {

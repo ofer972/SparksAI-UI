@@ -221,7 +221,7 @@ export default function BurndownChart({
         display: true,
         title: {
           display: true,
-          text: 'Issues Remaining / Scope / Event Count',
+          text: 'Issue Count',
           font: {
             size: 10,
             weight: 'bold' as const,

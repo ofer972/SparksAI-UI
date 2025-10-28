@@ -16,6 +16,7 @@ import {
 } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
 import { ApiService, IssuesTrendDataPoint, IssuesTrendResponse } from '@/lib/api';
+import { getIssueTypes, getDefaultIssueType } from '@/lib/issueTypes';
 import { format, parseISO } from 'date-fns';
 
 // Register all controllers
@@ -40,7 +41,7 @@ interface IssuesTrendChartProps {
 
 export default function IssuesTrendChart({ 
   teamName = 'AutoDesign-Dev',
-  issueType = 'Bug',
+  issueType = getDefaultIssueType('trend'),
   months = 6
 }: IssuesTrendChartProps) {
   const [data, setData] = useState<IssuesTrendDataPoint[]>([]);
@@ -351,11 +352,11 @@ export default function IssuesTrendChart({
             onChange={(e) => setSelectedIssueType(e.target.value)}
             className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
-            <option value="Bug">Bug</option>
-            <option value="Story">Story</option>
-            <option value="Task">Task</option>
-            <option value="Epic">Epic</option>
-            <option value="all">All</option>
+            {getIssueTypes().map((issueType) => (
+              <option key={issueType.value} value={issueType.value}>
+                {issueType.label}
+              </option>
+            ))}
           </select>
         </div>
 

@@ -12,12 +12,14 @@ import TeamDashboard from '@/components/TeamDashboard';
 import SparksAILogo from '@/components/SparksAILogo';
 import PIPredictability from '@/components/PIPredictability';
 import PIBurndownChart from '@/components/PIBurndownChart';
+import { getIssueTypes, getDefaultIssueType } from '@/lib/issueTypes';
 
 export default function Home() {
   const [activeNavItem, setActiveNavItem] = useState('team-dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState('AutoDesign-Dev');
   const [selectedPI, setSelectedPI] = useState('Q32025'); // Default to Q32025 which has data
+  const [selectedPIIssueType, setSelectedPIIssueType] = useState(getDefaultIssueType('burndown')); // Default to Epic
 
   const navigationItems = [
     { id: 'my-team-today', label: 'Team AI Insights', icon: '🏠' },
@@ -62,10 +64,40 @@ export default function Home() {
               <div className="flex items-center mb-3">
                 <h2 className="text-lg font-semibold">PI Burndown Chart</h2>
               </div>
-              <PIBurndownChart 
-                piName={selectedPI}
-                issueType="all"
-              />
+              <div className="space-y-3">
+                {/* Issue Type Filter */}
+                <div className="flex items-center">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-medium text-gray-700">Issue Type:</label>
+                    <select
+                      value={selectedPIIssueType}
+                      onChange={(e) => setSelectedPIIssueType(e.target.value)}
+                      className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      style={{ 
+                        minWidth: '120px',
+                        backgroundColor: 'white',
+                        zIndex: 9999,
+                        position: 'relative'
+                      }}
+                    >
+                      {getIssueTypes().map((issueType) => (
+                        <option key={issueType.value} value={issueType.value}>
+                          {issueType.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex-1 text-center text-sm font-medium text-gray-800" style={{ transform: 'translateX(-80px)' }}>
+                    {selectedPI}
+                  </div>
+                  <div className="w-24"></div> {/* Spacer to balance the layout */}
+                </div>
+                
+                <PIBurndownChart 
+                  piName={selectedPI}
+                  issueType={selectedPIIssueType}
+                />
+              </div>
             </div>
             <PIPredictability selectedPI={selectedPI} selectedTeam={selectedTeam} />
           </div>

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ApiService, BurndownDataPoint } from '@/lib/api';
+import { getDefaultIssueType } from '@/lib/issueTypes';
 import BurndownChart from './BurndownChart';
 
 interface PIBurndownChartProps {
@@ -14,7 +15,7 @@ interface PIBurndownChartProps {
 
 export default function PIBurndownChart({ 
   piName,
-  issueType,
+  issueType = getDefaultIssueType('burndown'),
   teamName,
   project,
   onPINameChange
