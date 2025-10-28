@@ -1,8 +1,11 @@
 'use client';
 
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useAICards } from '@/hooks';
+import { ViewRecordModal } from '@/components/ViewRecordModal';
+import { teamAICardsConfig } from '@/lib/teamAICardsConfig';
 
 // Constants
 const CARD_DESCRIPTION_MAX_LENGTH = 750;
@@ -144,6 +147,10 @@ const parseSprintGoalJson = (jsonString: string | undefined): SprintGoalItem[] |
 
 export default function AICards({ teamName }: AICardProps) {
   const { cards, loading, error } = useAICards(teamName);
+  
+  // State for detail modal
+  const [selectedCard, setSelectedCard] = useState<AICard | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const handleAIChat = (card: AICard) => {
     // Each card will have its own behavior based on content
@@ -158,6 +165,16 @@ export default function AICards({ teamName }: AICardProps) {
     // TODO: Implement specific behavior based on card content
     // This could open a chat modal, navigate to a specific page, etc.
     alert(`AI Chat for ${card.card_name} (${card.card_type}) - Priority: ${card.priority}`);
+  };
+
+  const handleViewCard = (card: AICard) => {
+    setSelectedCard(card);
+    setIsDetailModalOpen(true);
+  };
+
+  const closeDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedCard(null);
   };
 
   
@@ -230,9 +247,13 @@ export default function AICards({ teamName }: AICardProps) {
                     <h3 className="text-sm font-semibold text-gray-800">{card.card_name}</h3>
                   </div>
                   <div className="absolute left-1/2 transform -translate-x-1/2 top-2">
-                    <div className="text-xs text-gray-500 font-medium">
+                    <button 
+                      onClick={() => handleViewCard(card)}
+                      className="text-xs text-blue-600 underline hover:text-blue-800 cursor-pointer bg-transparent border-none p-0 font-medium"
+                      title="Click to view details"
+                    >
                       ID: {card.id}
-                    </div>
+                    </button>
                   </div>
                   <div className="text-xs text-gray-500 font-medium">
                     {card.card_type}
@@ -453,6 +474,14 @@ export default function AICards({ teamName }: AICardProps) {
           }
         })}
       </div>
+      
+      {/* Detail Modal */}
+      <ViewRecordModal
+        isOpen={isDetailModalOpen}
+        onClose={closeDetailModal}
+        item={selectedCard}
+        config={teamAICardsConfig}
+      />
     </div>
   );
 }
