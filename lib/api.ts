@@ -165,7 +165,7 @@ export class ApiService {
       team_name: teamName,
     });
 
-    const response = await fetch(`${buildApiUrl(API_CONFIG.endpoints.aiCards.getCards)}?${params}`);
+    const response = await fetch(`${buildApiUrl('/api/v1/team-ai-cards/getTopCards')}?${params}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch AI cards: ${response.statusText}`);
@@ -185,6 +185,38 @@ export class ApiService {
     
     if (!response.ok) {
       throw new Error(`Failed to fetch recommendations: ${response.statusText}`);
+    }
+
+    const result: ApiResponse<RecommendationsResponse> = await response.json();
+    return result.data;
+  }
+
+  // PI AI Cards API
+  async getPIAICards(piName: string): Promise<AICardsResponse> {
+    const params = new URLSearchParams({
+      pi: piName,
+    });
+
+    const response = await fetch(`${buildApiUrl('/api/v1/pi-ai-cards/getTopCards')}?${params}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch PI AI cards: ${response.statusText}`);
+    }
+
+    const result: ApiResponse<AICardsResponse> = await response.json();
+    return result.data;
+  }
+
+  // PI Recommendations API
+  async getPIRecommendations(piName: string): Promise<RecommendationsResponse> {
+    const params = new URLSearchParams({
+      pi: piName,
+    });
+
+    const response = await fetch(`${buildApiUrl('/api/v1/recommendations/getPITop')}?${params}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch PI recommendations: ${response.statusText}`);
     }
 
     const result: ApiResponse<RecommendationsResponse> = await response.json();

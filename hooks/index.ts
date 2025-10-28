@@ -5,4 +5,5 @@ export * from './useClosedSprints';
 export * from './usePIBurndown';
 export * from './usePIPredictability';
 export * from './useAgentJobs';
-
+export * from './usePIAICards';
+export * from './usePIRecommendations';

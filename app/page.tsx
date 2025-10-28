@@ -7,6 +7,8 @@ import PIFilter from '@/components/PIFilter';
 import AICards from '@/components/AICards';
 import Recommendations from '@/components/Recommendations';
 import TeamMetrics from '@/components/TeamMetrics';
+import PIAICards from '@/components/PIAICards';
+import PIRecommendations from '@/components/PIRecommendations';
 import ApiTest from '@/components/ApiTest';
 import TeamDashboard from '@/components/TeamDashboard';
 import SparksAILogo from '@/components/SparksAILogo';
@@ -62,6 +64,23 @@ export default function Home() {
         );
       case 'team-dashboard':
         return <TeamDashboard selectedTeam={selectedTeam} />;
+      case 'pi-quarter':
+        return (
+          <div className="h-full flex flex-col">
+            {/* PI AI Cards Section - Reduced height with padding */}
+            <div className="bg-white rounded-lg shadow-sm p-2 flex-shrink-0" style={{ height: '45vh' }}>
+              <h2 className="text-lg font-semibold mb-1">PI AI Insights</h2>
+              <div className="h-full pb-4">
+                <PIAICards piName={selectedPI} />
+              </div>
+            </div>
+            
+            {/* PI Recommendations Section - Fixed height with no margin */}
+            <div className="flex-shrink-0" style={{ height: '200px' }}>
+              <PIRecommendations piName={selectedPI} />
+            </div>
+          </div>
+        );
       case 'pi-dashboard':
         return (
           <div className="space-y-4">
