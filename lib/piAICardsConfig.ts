@@ -1,18 +1,10 @@
-import { EntityConfig } from './entityConfig';
-
 // PI AI Cards Entity Configuration
-export interface PIAICard {
-  id: number;
-  date: string;
-  pi_name: string;
-  card_name: string;
-  card_type: string;
-  priority: string;
-  source: string;
-  description: string;
-  full_information: string;
-  information_json?: string;
-}
+import { EntityConfig } from './entityConfig';
+import { ApiService } from './api';
+import { AICard } from './config';
+
+// PI AI Cards use the same structure as Team AI Cards
+export type PIAICard = AICard;
 
 export const piAICardsConfig: EntityConfig<PIAICard> = {
   endpoints: {
@@ -20,20 +12,25 @@ export const piAICardsConfig: EntityConfig<PIAICard> = {
     detail: '/api/v1/pi-ai-cards/getCard', // hypothetical detail endpoint
   },
   
+  fetchList: async (piName?: string) => {
+    const apiService = new ApiService();
+    const result = await apiService.getPIAICards(piName || 'Q32025');
+    return result.ai_cards || [];
+  },
+  
   columns: [
-    { key: 'id', label: 'ID', type: 'number' },
-    { key: 'card_name', label: 'Card Name', type: 'text' },
-    { key: 'card_type', label: 'Card Type', type: 'text' },
-    { key: 'priority', label: 'Priority', type: 'text' },
-    { key: 'source', label: 'Source', type: 'text' },
-    { key: 'date', label: 'Date', type: 'date' },
-    { key: 'description', label: 'Description', type: 'text' },
-    { key: 'full_information', label: 'Full Information', type: 'text' },
+    { key: 'id', label: 'ID' },
+    { key: 'card_name', label: 'Card Name' },
+    { key: 'card_type', label: 'Card Type' },
+    { key: 'priority', label: 'Priority' },
+    { key: 'source', label: 'Source' },
+    { key: 'date', label: 'Date' },
+    { key: 'description', label: 'Description' },
+    { key: 'full_information', label: 'Full Information' },
   ],
   
-  // Custom data fetcher for PI AI cards
-  fetchData: async (piName: string) => {
-    const apiService = new ApiService();
-    return apiService.getPIAICards(piName);
-  },
+  primaryKey: 'id',
+  title: 'PI AI Cards',
+  
+  searchFields: ['card_name', 'card_type', 'priority', 'team_name', 'description'],
 };

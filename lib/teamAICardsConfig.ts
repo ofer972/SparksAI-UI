@@ -1,4 +1,6 @@
 // Team AI Cards Entity Configuration
+import { EntityConfig } from './entityConfig';
+
 export interface TeamAICard {
   id: number;
   date: string;

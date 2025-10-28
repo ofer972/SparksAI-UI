@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { EntityConfig } from './entityConfig';
+import { EntityConfig } from '@/lib/entityConfig';
 
 export interface UseEntityTableManagerReturn<T> {
   data: T[];
@@ -89,7 +89,7 @@ export function useEntityTableManager<T extends Record<string, any>>(
     if (!filterText) return true;
     
     if (config.searchFields) {
-      return config.searchFields.some(field => {
+      return config.searchFields.some((field: keyof T) => {
         const value = item[field];
         return String(value).toLowerCase().includes(filterText.toLowerCase());
       });

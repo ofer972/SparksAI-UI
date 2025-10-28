@@ -1,4 +1,6 @@
 // Example: AI Cards Entity Configuration
+import { EntityConfig } from './entityConfig';
+
 export interface AICard {
   id: number;
   date: string;
@@ -29,7 +31,7 @@ export const aiCardsConfig: EntityConfig<AICard> = {
     // Hypothetical detail fetch - would need to be implemented in ApiService
     const { ApiService } = await import('./api');
     const apiService = new ApiService();
-    return apiService.getAICardDetail(id);
+    return apiService.getTeamAICardDetail(id);
   },
   
   columns: [
@@ -112,21 +114,6 @@ export const aiCardsConfig: EntityConfig<AICard> = {
     }
     
     return String(value);
-  },
-  
-  getStatusColor: (priority: string) => {
-    switch (priority?.toLowerCase()) {
-      case 'critical':
-        return 'text-red-600 font-semibold';
-      case 'high':
-        return 'text-yellow-600 font-semibold';
-      case 'medium':
-        return 'text-orange-600 font-semibold';
-      case 'low':
-        return 'text-green-600 font-semibold';
-      default:
-        return 'text-gray-600 font-semibold';
-    }
   },
   
   // Field categorization for detail view
