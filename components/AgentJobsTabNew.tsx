@@ -21,7 +21,7 @@ export default function AgentJobsTab() {
     handleSort,
     handleFilterChange,
     closeModals,
-  } = useEntityTableManager(agentJobsConfig);
+  } = useEntityTableManager<AgentJob>(agentJobsConfig);
 
   return (
     <>
