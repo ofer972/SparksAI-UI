@@ -25,7 +25,7 @@ export default function AgentJobsTab() {
 
   return (
     <>
-      <DataTable
+      <DataTable<AgentJob>
         config={agentJobsConfig}
         data={sortedData}
         loading={loading}
