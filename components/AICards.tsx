@@ -95,6 +95,13 @@ interface InformationItem {
   text: string;
 }
 
+interface SprintGoalItem {
+  goal: string;
+  linkage: string;
+  progress: number;
+  alert: string;
+}
+
 const parseInformationJson = (jsonString: string | undefined): InformationItem[] | null => {
   if (!jsonString || jsonString.trim() === '') {
     return null;
@@ -108,6 +115,29 @@ const parseInformationJson = (jsonString: string | undefined): InformationItem[]
     return null;
   } catch (error) {
     console.error('Error parsing information_json:', error);
+    return null;
+  }
+};
+
+const parseSprintGoalJson = (jsonString: string | undefined): SprintGoalItem[] | null => {
+  if (!jsonString || jsonString.trim() === '') {
+    return null;
+  }
+  
+  try {
+    const parsed = JSON.parse(jsonString);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      // Validate that it's an array of objects with the expected structure
+      const firstItem = parsed[0];
+      if (firstItem && typeof firstItem === 'object' && 
+          'goal' in firstItem && 'linkage' in firstItem && 
+          'progress' in firstItem && 'alert' in firstItem) {
+        return parsed as SprintGoalItem[];
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error('Error parsing Sprint Goal information_json:', error);
     return null;
   }
 };
@@ -212,34 +242,144 @@ export default function AICards({ teamName }: AICardProps) {
                 <div className="mb-1 flex-1">
                   <div className="text-xs text-gray-600 max-w-none w-full h-full overflow-visible">
                     {(() => {
-                      // Parse information_json for non-Sprint Goal cards
-                      if (card.card_type !== 'Sprint Goal') {
-                        const informationItems = parseInformationJson(card.information_json);
+                      // Handle Sprint Goal cards with JSON table format
+                      if (card.card_type === 'Sprint Goal') {
+                        const sprintGoalItems = parseSprintGoalJson(card.information_json);
                         
                         // Debug: Log information_json content
-                        console.log('Card ID:', card.id, 'information_json:', card.information_json);
-                        console.log('Parsed items:', informationItems);
-                        console.log('Description:', card.description);
+                        console.log('Sprint Goal Card ID:', card.id, 'information_json:', card.information_json);
+                        console.log('Parsed sprint goal items:', sprintGoalItems);
                         
-                        if (informationItems && informationItems.length > 0) {
+                        if (sprintGoalItems && sprintGoalItems.length > 0) {
+                          // Get column headers dynamically from the first item
+                          const columns = Object.keys(sprintGoalItems[0]);
+                          
                           return (
-                            <div className="space-y-2">
-                              {informationItems.map((item, index) => (
-                                <div key={index} className="text-xs">
-                                  <span className="font-bold" style={{ color: '#2563eb', fontWeight: '700' }}>
-                                    {item.header}{!item.header.endsWith(':') ? ':' : ''}
-                                  </span>
-                                  <span className="text-gray-600 ml-1">
-                                    {item.text}
-                                  </span>
-                                </div>
-                              ))}
+                            <div className="overflow-auto max-h-32">
+                              <table className="w-[90%] text-xs border-collapse border border-gray-300">
+                                <thead>
+                                  <tr>
+                                    {columns.map((column) => (
+                                      <th 
+                                        key={column} 
+                                        className={`border border-gray-300 px-1 py-0 bg-gray-100 font-semibold text-center ${
+                                          column === 'goal' ? 'text-left w-3/5' : 'w-auto'
+                                        }`}
+                                      >
+                                        {column.charAt(0).toUpperCase() + column.slice(1)}
+                                      </th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {sprintGoalItems.map((item, index) => (
+                                    <tr key={index}>
+                                      {columns.map((column) => (
+                                        <td 
+                                          key={column} 
+                                          className={`border border-gray-300 px-1 py-0 ${
+                                            column === 'goal' 
+                                              ? 'text-left w-3/5 whitespace-normal break-words' 
+                                              : 'text-center'
+                                          } ${
+                                            column === 'alert' 
+                                              ? 'text-lg' 
+                                              : ''
+                                          }`}
+                                        >
+                                          {column === 'progress' 
+                                            ? `${item[column as keyof SprintGoalItem]}%`
+                                            : item[column as keyof SprintGoalItem]
+                                          }
+                                        </td>
+                                      ))}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
                             </div>
                           );
                         }
+                        
+                        // Fallback to description (markdown) for Sprint Goal cards when information_json is empty
+                        return (
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              p: ({ children }) => <p className="text-xs text-gray-600 mb-1">{children}</p>,
+                              strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                              em: ({ children }) => <em className="italic">{children}</em>,
+                              ul: ({ children }) => <ul className="list-disc list-inside text-xs text-gray-600">{children}</ul>,
+                              ol: ({ children }) => <ol className="list-decimal list-inside text-xs text-gray-600">{children}</ol>,
+                              li: ({ children }) => <li className="text-xs text-gray-600">{children}</li>,
+                              code: ({ children }) => <code className="bg-gray-100 px-1 rounded text-xs">{children}</code>,
+                              pre: ({ children }) => <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto">{children}</pre>,
+                              h1: ({ children }) => <h1 className="text-sm font-bold text-gray-800 mb-1">{children}</h1>,
+                              h2: ({ children }) => <h2 className="text-xs font-bold text-gray-800 mb-1">{children}</h2>,
+                              h3: ({ children }) => <h3 className="text-xs font-semibold text-gray-800 mb-1">{children}</h3>,
+                              blockquote: ({ children }) => <blockquote className="border-l-2 border-gray-300 pl-2 italic text-gray-600">{children}</blockquote>,
+                              table: ({ children }) => <table className="w-full text-xs border-collapse border border-gray-300 table-fixed h-full">{children}</table>,
+                              thead: ({ children }) => <thead>{children}</thead>,
+                              tbody: ({ children }) => <tbody className="h-full">{children}</tbody>,
+                              tr: ({ children }) => <tr>{children}</tr>,
+                              th: ({ children }) => {
+                                const text = children?.toString() || '';
+                                if (text.includes('Goal') || text.includes('🎯')) {
+                                  return <th className="border border-gray-300 px-1 py-0.5 bg-gray-100 font-semibold text-left w-2/3">{children}</th>;
+                                }
+                                return <th className="border border-gray-300 px-1 py-0.5 bg-gray-100 font-semibold text-center">{children}</th>;
+                              },
+                              td: ({ children }) => {
+                                const text = children?.toString() || '';
+                                
+                                // Apply goal cell styling only for "Sprint Goal" card type
+                                if (card.card_type === 'Sprint Goal') {
+                                  // For sprint goal cards, ensure full text, left-aligned
+                                  return <td className="border border-gray-300 px-1 py-0.5 text-left w-2/3 whitespace-normal break-words overflow-visible">{children}</td>;
+                                }
+                                
+                                // Other card types remain center-aligned
+                                return <td className="border border-gray-300 px-1 py-0.5 text-center">{children}</td>;
+                              },
+                            }}
+                          >
+                            {(() => {
+                              // Apply character limit
+                              if (card.description.length > CARD_DESCRIPTION_MAX_LENGTH) {
+                                return `${card.description.substring(0, CARD_DESCRIPTION_MAX_LENGTH)}...`;
+                              }
+                              return card.description;
+                            })()}
+                          </ReactMarkdown>
+                        );
                       }
                       
-                      // Fallback to description (markdown) for Sprint Goal cards or when information_json is empty
+                      // Parse information_json for non-Sprint Goal cards
+                      const informationItems = parseInformationJson(card.information_json);
+                      
+                      // Debug: Log information_json content
+                      console.log('Card ID:', card.id, 'information_json:', card.information_json);
+                      console.log('Parsed items:', informationItems);
+                      console.log('Description:', card.description);
+                      
+                      if (informationItems && informationItems.length > 0) {
+                        return (
+                          <div className="space-y-2">
+                            {informationItems.map((item, index) => (
+                              <div key={index} className="text-xs">
+                                <span className="font-bold" style={{ color: '#2563eb', fontWeight: '700' }}>
+                                  {item.header}{!item.header.endsWith(':') ? ':' : ''}
+                                </span>
+                                <span className="text-gray-600 ml-1">
+                                  {item.text}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+                      
+                      // Fallback to description (markdown) for other card types when information_json is empty
                       return (
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
@@ -270,7 +410,6 @@ export default function AICards({ teamName }: AICardProps) {
                             td: ({ children }) => {
                               const text = children?.toString() || '';
                               
-                              
                               // Apply goal cell styling only for "Sprint Goal" card type
                               if (card.card_type === 'Sprint Goal') {
                                 // For sprint goal cards, ensure full text, left-aligned
@@ -283,7 +422,6 @@ export default function AICards({ teamName }: AICardProps) {
                           }}
                         >
                           {(() => {
-                            
                             // Apply character limit
                             if (card.description.length > CARD_DESCRIPTION_MAX_LENGTH) {
                               return `${card.description.substring(0, CARD_DESCRIPTION_MAX_LENGTH)}...`;
