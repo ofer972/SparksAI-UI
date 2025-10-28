@@ -33,6 +33,11 @@ export default function SprintBurndownChart({
     if (!isVisible) return;
     
     const fetchData = async () => {
+      if (!teamName) {
+        setError('Team name is required');
+        return;
+      }
+      
       try {
         setLoading(true);
         setError(null);
