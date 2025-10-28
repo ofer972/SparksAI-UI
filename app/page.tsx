@@ -16,7 +16,7 @@ import EpicScopeChangesChart from '@/components/EpicScopeChangesChart';
 import { getIssueTypes, getDefaultIssueType } from '@/lib/issueTypes';
 
 export default function Home() {
-  const [activeNavItem, setActiveNavItem] = useState('my-team-today');
+  const [activeNavItem, setActiveNavItem] = useState('team-ai-insights');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState('AutoDesign-Dev');
   const [selectedPI, setSelectedPI] = useState('Q32025'); // Default to Q32025 which has data
@@ -25,7 +25,7 @@ export default function Home() {
   const [scopeChangesCollapsed, setScopeChangesCollapsed] = useState(false);
 
   const navigationItems = [
-    { id: 'my-team-today', label: 'Team AI Insights', icon: '🏠' },
+    { id: 'team-ai-insights', label: 'Team AI Insights', icon: '🏠' },
     { id: 'team-dashboard', label: 'Team Dashboard', icon: '📊' },
     { id: 'pi-quarter', label: 'PI AI Insights', icon: '🕐' },
     { id: 'pi-dashboard', label: 'PI Dashboard', icon: '📈' },
@@ -36,7 +36,7 @@ export default function Home() {
 
   const renderMainContent = () => {
     switch (activeNavItem) {
-      case 'my-team-today':
+      case 'team-ai-insights':
         return (
           <div className="h-full flex flex-col">
             {/* AI Cards Section - Reduced height with padding */}
