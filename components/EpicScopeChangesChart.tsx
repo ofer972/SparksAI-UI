@@ -61,16 +61,18 @@ export default function EpicScopeChangesChart({ selectedQuarter }: EpicScopeChan
 
   return (
     <div className="space-y-3">
-      <StackedGroupedBarChart
-        data={chartData}
-        title="Epic Scope Changes"
-        yAxisLabel="# of Epics"
-        xAxisLabel="Quarter"
-        colorScheme={epicScopeColors}
-        height="425px"
-        loading={loading}
-        error={error}
-      />
+      <div className="w-1/3">
+        <StackedGroupedBarChart
+          data={chartData}
+          title="Epic Scope Changes"
+          yAxisLabel="# of Epics"
+          xAxisLabel="Quarter"
+          colorScheme={epicScopeColors}
+          height="425px"
+          loading={loading}
+          error={error}
+        />
+      </div>
     </div>
   );
 }

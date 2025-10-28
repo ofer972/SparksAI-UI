@@ -189,6 +189,8 @@ export default function StackedGroupedBarChart({
           grid: {
             color: 'rgba(0, 0, 0, 0.1)',
           },
+          barPercentage: 0.4,
+          categoryPercentage: 0.7,
         },
         y: {
           display: true,
@@ -210,9 +212,6 @@ export default function StackedGroupedBarChart({
           },
         },
       },
-      // Bar configuration for narrower bars
-      barPercentage: 0.6,
-      categoryPercentage: 0.8,
       interaction: {
         mode: 'index' as const,
         intersect: false,
