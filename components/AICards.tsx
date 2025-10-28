@@ -227,7 +227,7 @@ export default function AICards({ teamName }: AICardProps) {
                               {informationItems.map((item, index) => (
                                 <div key={index} className="text-xs">
                                   <span className="font-bold" style={{ color: '#2563eb', fontWeight: '700' }}>
-                                    {item.header}:
+                                    {item.header}{!item.header.endsWith(':') ? ':' : ''}
                                   </span>
                                   <span className="text-gray-600 ml-1">
                                     {item.text}

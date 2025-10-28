@@ -231,7 +231,7 @@ export default function Recommendations({ teamName }: RecommendationsProps) {
                             return (
                               <div className="text-xs">
                                 <span className="font-bold" style={{ color: '#2563eb', fontWeight: '700' }}>
-                                  {informationItem.header}:
+                                  {informationItem.header}{!informationItem.header.endsWith(':') ? ':' : ''}
                                 </span>
                                 <span className="text-gray-600 ml-1">
                                   {informationItem.text}
