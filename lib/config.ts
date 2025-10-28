@@ -47,6 +47,8 @@ export const API_CONFIG = {
       agentJobDetail: '/api/v1/agent-jobs',
       teamAICards: '/api/v1/team-ai-cards',
       teamAICardDetail: '/api/v1/team-ai-cards',
+      createTeamJob: '/api/v1/agent-jobs/create-team-job',
+      createPiJob: '/api/v1/agent-jobs/create-pi-job',
     },
   },
 } as const;

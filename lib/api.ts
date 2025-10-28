@@ -500,6 +500,48 @@ export class ApiService {
       inProgressCount,
     };
   }
+
+  // Create Team Agent Job
+  async createTeamAgentJob(jobType: string, teamName: string): Promise<any> {
+    const response = await fetch(buildApiUrl(API_CONFIG.endpoints.generalData.createTeamJob), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        job_type: jobType,
+        team_name: teamName,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create team agent job: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result;
+  }
+
+  // Create PI Agent Job
+  async createPiAgentJob(jobType: string, pi: string): Promise<any> {
+    const response = await fetch(buildApiUrl(API_CONFIG.endpoints.generalData.createPiJob), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        job_type: jobType,
+        pi: pi,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create PI agent job: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result;
+  }
 }
 
 // Legacy class for backward compatibility
