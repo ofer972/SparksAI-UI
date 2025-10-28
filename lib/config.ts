@@ -14,6 +14,7 @@ export const API_CONFIG = {
       getPis: '/api/v1/pis/getPis',
       getPredictability: '/api/v1/pis/predictability',
       getBurndown: '/api/v1/pis/burndown',
+      getScopeChanges: '/api/v1/pis/scope-changes',
     },
     
     // Burndown endpoints
@@ -185,4 +186,17 @@ export interface PIPredictabilityData {
 export interface PIPredictabilityResponse {
   data: PIPredictabilityData[];
   count: number;
+}
+
+export interface ScopeChangesDataPoint {
+  'Quarter Name': string;
+  'Stack Group': string;
+  'Metric Name': string;
+  Value: number;
+}
+
+export interface ScopeChangesResponse {
+  scope_data: ScopeChangesDataPoint[];
+  count: number;
+  quarters: string[];
 }

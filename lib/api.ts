@@ -13,11 +13,13 @@ import {
   IssuesTrendResponse,
   IssuesTrendDataPoint,
   PIPredictabilityResponse,
-  PIPredictabilityData
+  PIPredictabilityData,
+  ScopeChangesResponse,
+  ScopeChangesDataPoint
 } from './config';
 
 // Re-export types for convenience
-export type { IssuesTrendDataPoint, IssuesTrendResponse, PIPredictabilityResponse, PIPredictabilityData };
+export type { IssuesTrendDataPoint, IssuesTrendResponse, PIPredictabilityResponse, PIPredictabilityData, ScopeChangesResponse, ScopeChangesDataPoint };
 
 export interface BurndownDataPoint {
   snapshot_date: string;
@@ -257,6 +259,26 @@ export class ApiService {
     }
 
     const result: ApiResponse<IssuesTrendResponse> = await response.json();
+    return result.data;
+  }
+
+  // Scope Changes API
+  async getScopeChanges(quarter: string | string[]): Promise<ScopeChangesResponse> {
+    const params = new URLSearchParams();
+    
+    if (Array.isArray(quarter)) {
+      quarter.forEach(q => params.append('quarter', q));
+    } else {
+      params.append('quarter', quarter);
+    }
+
+    const response = await fetch(`${buildApiUrl(API_CONFIG.endpoints.pis.getScopeChanges)}?${params}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch scope changes data: ${response.statusText}`);
+    }
+
+    const result: ApiResponse<ScopeChangesResponse> = await response.json();
     return result.data;
   }
 

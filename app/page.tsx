@@ -12,6 +12,7 @@ import TeamDashboard from '@/components/TeamDashboard';
 import SparksAILogo from '@/components/SparksAILogo';
 import PIPredictability from '@/components/PIPredictability';
 import PIBurndownChart from '@/components/PIBurndownChart';
+import EpicScopeChangesChart from '@/components/EpicScopeChangesChart';
 import { getIssueTypes, getDefaultIssueType } from '@/lib/issueTypes';
 
 export default function Home() {
@@ -20,6 +21,7 @@ export default function Home() {
   const [selectedTeam, setSelectedTeam] = useState('AutoDesign-Dev');
   const [selectedPI, setSelectedPI] = useState('Q32025'); // Default to Q32025 which has data
   const [selectedPIIssueType, setSelectedPIIssueType] = useState(getDefaultIssueType('burndown')); // Default to Epic
+  const [scopeChangesCollapsed, setScopeChangesCollapsed] = useState(false);
 
   const navigationItems = [
     { id: 'my-team-today', label: 'Team AI Insights', icon: '🏠' },
@@ -100,6 +102,23 @@ export default function Home() {
               </div>
             </div>
             <PIPredictability selectedPI={selectedPI} selectedTeam={selectedTeam} />
+            
+            {/* Epic Scope Changes Chart */}
+            <div className="bg-white rounded-lg shadow-sm p-4">
+              <div className="flex items-center mb-3">
+                <button 
+                  onClick={() => setScopeChangesCollapsed(!scopeChangesCollapsed)}
+                  className="text-gray-500 hover:text-gray-700 transition-colors mr-2"
+                >
+                  {scopeChangesCollapsed ? '▼' : '▲'}
+                </button>
+                <h2 className="text-lg font-semibold">Epic Scope Changes</h2>
+              </div>
+
+              {!scopeChangesCollapsed && (
+                <EpicScopeChangesChart selectedQuarter={selectedPI} />
+              )}
+            </div>
           </div>
         );
       case 'settings':
