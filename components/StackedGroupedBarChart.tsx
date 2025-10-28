@@ -171,8 +171,8 @@ export default function StackedGroupedBarChart({
           formatter: function(value: number) {
             return value > 0 ? value : '';
           },
-          anchor: 'center',
-          align: 'center',
+          anchor: 'center' as const,
+          align: 'center' as const,
         },
       },
       scales: {
