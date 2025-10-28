@@ -29,7 +29,7 @@ export const API_CONFIG = {
     
     // Recommendations endpoints
     recommendations: {
-      getTop: '/api/v1/recommendations/getTop',
+      getTop: '/api/v1/recommendations/getTeamTop',
     },
     
     // Team Metrics endpoints
