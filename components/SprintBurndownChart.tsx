@@ -10,13 +10,15 @@ interface SprintBurndownChartProps {
   issueType?: string;
   sprintName?: string;
   onSprintNameChange?: (sprintName: string) => void;
+  isVisible?: boolean;
 }
 
 export default function SprintBurndownChart({ 
   teamName = 'AutoDesign-Dev', 
   issueType = getDefaultIssueType('burndown'),
   sprintName,
-  onSprintNameChange
+  onSprintNameChange,
+  isVisible = true
 }: SprintBurndownChartProps) {
   const [data, setData] = useState<BurndownDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,6 +30,8 @@ export default function SprintBurndownChart({
   } | null>(null);
 
   useEffect(() => {
+    if (!isVisible) return;
+    
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -56,7 +60,7 @@ export default function SprintBurndownChart({
 
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teamName, issueType, sprintName]);
+  }, [isVisible, teamName, issueType, sprintName]);
 
   return <BurndownChart data={data} loading={loading} error={error} />;
 }

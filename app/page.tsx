@@ -21,6 +21,7 @@ export default function Home() {
   const [selectedTeam, setSelectedTeam] = useState('AutoDesign-Dev');
   const [selectedPI, setSelectedPI] = useState('Q32025'); // Default to Q32025 which has data
   const [selectedPIIssueType, setSelectedPIIssueType] = useState(getDefaultIssueType('burndown')); // Default to Epic
+  const [piBurndownCollapsed, setPiBurndownCollapsed] = useState(false);
   const [scopeChangesCollapsed, setScopeChangesCollapsed] = useState(false);
 
   const navigationItems = [
@@ -64,42 +65,51 @@ export default function Home() {
           <div className="space-y-4">
             <div className="bg-white rounded-lg shadow-sm pt-2 pb-4 px-4">
               <div className="flex items-center mb-3">
+                <button 
+                  onClick={() => setPiBurndownCollapsed(!piBurndownCollapsed)}
+                  className="text-gray-500 hover:text-gray-700 transition-colors mr-2"
+                >
+                  {piBurndownCollapsed ? '▼' : '▲'}
+                </button>
                 <h2 className="text-lg font-semibold">PI Burndown Chart</h2>
               </div>
-              <div className="space-y-3">
-                {/* Issue Type Filter */}
-                <div className="flex items-center">
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs font-medium text-gray-700">Issue Type:</label>
-                    <select
-                      value={selectedPIIssueType}
-                      onChange={(e) => setSelectedPIIssueType(e.target.value)}
-                      className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      style={{ 
-                        minWidth: '120px',
-                        backgroundColor: 'white',
-                        zIndex: 9999,
-                        position: 'relative'
-                      }}
-                    >
-                      {getIssueTypes().map((issueType) => (
-                        <option key={issueType.value} value={issueType.value}>
-                          {issueType.label}
-                        </option>
-                      ))}
-                    </select>
+              {!piBurndownCollapsed && (
+                <div className="space-y-3">
+                  {/* Issue Type Filter */}
+                  <div className="flex items-center">
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs font-medium text-gray-700">Issue Type:</label>
+                      <select
+                        value={selectedPIIssueType}
+                        onChange={(e) => setSelectedPIIssueType(e.target.value)}
+                        className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        style={{ 
+                          minWidth: '120px',
+                          backgroundColor: 'white',
+                          zIndex: 9999,
+                          position: 'relative'
+                        }}
+                      >
+                        {getIssueTypes().map((issueType) => (
+                          <option key={issueType.value} value={issueType.value}>
+                            {issueType.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex-1 text-center text-sm font-medium text-gray-800" style={{ transform: 'translateX(-80px)' }}>
+                      {selectedPI}
+                    </div>
+                    <div className="w-24"></div> {/* Spacer to balance the layout */}
                   </div>
-                  <div className="flex-1 text-center text-sm font-medium text-gray-800" style={{ transform: 'translateX(-80px)' }}>
-                    {selectedPI}
-                  </div>
-                  <div className="w-24"></div> {/* Spacer to balance the layout */}
+                  
+                  <PIBurndownChart 
+                    piName={selectedPI}
+                    issueType={selectedPIIssueType}
+                    isVisible={!piBurndownCollapsed}
+                  />
                 </div>
-                
-                <PIBurndownChart 
-                  piName={selectedPI}
-                  issueType={selectedPIIssueType}
-                />
-              </div>
+              )}
             </div>
             <PIPredictability selectedPI={selectedPI} selectedTeam={selectedTeam} />
             
@@ -116,7 +126,10 @@ export default function Home() {
               </div>
 
               {!scopeChangesCollapsed && (
-                <EpicScopeChangesChart selectedQuarter={selectedPI} />
+                <EpicScopeChangesChart 
+                  selectedQuarter={selectedPI} 
+                  isVisible={!scopeChangesCollapsed}
+                />
               )}
             </div>
           </div>

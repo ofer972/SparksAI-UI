@@ -8,9 +8,10 @@ interface PIPredictabilityProps {
   selectedPI: string;
   selectedTeam?: string;
   isLoading?: boolean;
+  isVisible?: boolean;
 }
 
-export default function PIPredictability({ selectedPI, selectedTeam, isLoading = false }: PIPredictabilityProps) {
+export default function PIPredictability({ selectedPI, selectedTeam, isLoading = false, isVisible = true }: PIPredictabilityProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'asc' | 'desc' }>({
     key: null,
@@ -57,8 +58,10 @@ export default function PIPredictability({ selectedPI, selectedTeam, isLoading =
 
   // Fetch data when PI or team changes
   useEffect(() => {
+    if (!isVisible || collapsed) return;
+    
     fetchPIPredictability(selectedPI, selectedTeam);
-  }, [selectedPI, selectedTeam]);
+  }, [isVisible, collapsed, selectedPI, selectedTeam]);
 
   const handleSort = (key: string) => {
     if (sortConfig.key === key) {

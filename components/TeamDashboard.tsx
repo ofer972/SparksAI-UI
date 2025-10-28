@@ -45,7 +45,11 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
 
   return (
     <div className="space-y-4">
-      <ClosedSprints selectedTeam={selectedTeam} isLoading={isLoading} />
+      <ClosedSprints 
+        selectedTeam={selectedTeam} 
+        isLoading={isLoading} 
+        isVisible={true}
+      />
       
       <div className="bg-white rounded-lg shadow-sm pt-2 pb-4 px-4">
         <div className="flex items-center mb-3">
@@ -86,6 +90,7 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
               issueType="all"
               sprintName={selectedSprint || undefined}
               onSprintNameChange={setCurrentSprintName}
+              isVisible={!burndownCollapsed}
             />
           </div>
         )}
@@ -107,6 +112,7 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
             teamName={selectedTeam}
             issueType="Bug"
             months={6}
+            isVisible={!issuesTrendCollapsed}
           />
         )}
       </div>

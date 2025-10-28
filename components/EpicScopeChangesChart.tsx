@@ -7,9 +7,10 @@ import { ApiService, ScopeChangesDataPoint } from '@/lib/api';
 
 interface EpicScopeChangesChartProps {
   selectedQuarter: string;
+  isVisible?: boolean;
 }
 
-export default function EpicScopeChangesChart({ selectedQuarter }: EpicScopeChangesChartProps) {
+export default function EpicScopeChangesChart({ selectedQuarter, isVisible = true }: EpicScopeChangesChartProps) {
   const [data, setData] = useState<ScopeChangesDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +36,8 @@ export default function EpicScopeChangesChart({ selectedQuarter }: EpicScopeChan
   }, [data]);
 
   useEffect(() => {
+    if (!isVisible) return;
+    
     const fetchData = async () => {
       if (selectedPIs.length === 0) {
         setLoading(false);
@@ -59,7 +62,7 @@ export default function EpicScopeChangesChart({ selectedQuarter }: EpicScopeChan
     };
 
     fetchData();
-  }, [selectedPIs]);
+  }, [isVisible, selectedPIs]);
 
   // Update selectedPIs when selectedQuarter changes
   useEffect(() => {

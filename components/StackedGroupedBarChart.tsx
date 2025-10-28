@@ -63,8 +63,8 @@ export default function StackedGroupedBarChart({
     if (!data.length) return null;
 
     // Get unique quarters and stack groups
-    const quarters = [...new Set(data.map(d => d.quarter))].sort();
-    const stackGroups = [...new Set(data.map(d => d.stackGroup))].sort();
+    const quarters = Array.from(new Set(data.map(d => d.quarter))).sort();
+    const stackGroups = Array.from(new Set(data.map(d => d.stackGroup))).sort();
     
     // Define metric order for proper stacking
     const metricOrder = [
@@ -77,7 +77,7 @@ export default function StackedGroupedBarChart({
     
     // Get metrics in the defined order, then add any others
     const orderedMetrics = [...metricOrder.filter(m => data.some(d => d.metricName === m))];
-    const otherMetrics = [...new Set(data.map(d => d.metricName))].filter(m => !metricOrder.includes(m));
+    const otherMetrics = Array.from(new Set(data.map(d => d.metricName))).filter(m => !metricOrder.includes(m));
     const metrics = [...orderedMetrics, ...otherMetrics];
 
     // Create datasets for each metric

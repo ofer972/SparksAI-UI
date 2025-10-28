@@ -7,6 +7,7 @@ import { ClosedSprint } from '../lib/config';
 interface ClosedSprintsProps {
   selectedTeam: string;
   isLoading?: boolean;
+  isVisible?: boolean;
 }
 
 interface TimePeriodOption {
@@ -14,7 +15,7 @@ interface TimePeriodOption {
   label: string;
 }
 
-export default function ClosedSprints({ selectedTeam, isLoading = false }: ClosedSprintsProps) {
+export default function ClosedSprints({ selectedTeam, isLoading = false, isVisible = true }: ClosedSprintsProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: keyof ClosedSprint | null; direction: 'asc' | 'desc' }>({
     key: null,
@@ -60,8 +61,10 @@ export default function ClosedSprints({ selectedTeam, isLoading = false }: Close
 
   // Fetch data when team or time period changes
   useEffect(() => {
+    if (!isVisible || collapsed) return;
+    
     fetchClosedSprints(selectedTeam, selectedTimePeriod);
-  }, [selectedTeam, selectedTimePeriod]);
+  }, [isVisible, collapsed, selectedTeam, selectedTimePeriod]);
 
   const handleSort = (key: keyof ClosedSprint) => {
     if (sortConfig.key === key) {

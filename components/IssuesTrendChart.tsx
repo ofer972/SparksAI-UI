@@ -37,12 +37,14 @@ interface IssuesTrendChartProps {
   teamName?: string;
   issueType?: string;
   months?: number;
+  isVisible?: boolean;
 }
 
 export default function IssuesTrendChart({ 
   teamName = 'AutoDesign-Dev',
   issueType = getDefaultIssueType('trend'),
-  months = 6
+  months = 6,
+  isVisible = true
 }: IssuesTrendChartProps) {
   const [data, setData] = useState<IssuesTrendDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -298,6 +300,8 @@ export default function IssuesTrendChart({
   }, [chartData]);
 
   useEffect(() => {
+    if (!isVisible) return;
+    
     const fetchData = async () => {
       if (!teamName) return;
 
@@ -318,7 +322,7 @@ export default function IssuesTrendChart({
     };
 
     fetchData();
-  }, [teamName, selectedIssueType, selectedMonths]);
+  }, [isVisible, teamName, selectedIssueType, selectedMonths]);
 
   if (loading) {
     return (

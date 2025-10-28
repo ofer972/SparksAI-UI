@@ -11,6 +11,7 @@ interface PIBurndownChartProps {
   teamName?: string;
   project?: string;
   onPINameChange?: (piName: string) => void;
+  isVisible?: boolean;
 }
 
 export default function PIBurndownChart({ 
@@ -18,7 +19,8 @@ export default function PIBurndownChart({
   issueType = getDefaultIssueType('burndown'),
   teamName,
   project,
-  onPINameChange
+  onPINameChange,
+  isVisible = true
 }: PIBurndownChartProps) {
   const [data, setData] = useState<BurndownDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +32,8 @@ export default function PIBurndownChart({
   } | null>(null);
 
   useEffect(() => {
+    if (!isVisible) return;
+    
     const fetchData = async () => {
       if (!piName) {
         setLoading(false);
@@ -70,7 +74,7 @@ export default function PIBurndownChart({
 
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [piName, issueType, teamName, project]);
+  }, [isVisible, piName, issueType, teamName, project]);
 
   return <BurndownChart data={data} loading={loading} error={error} />;
 }
