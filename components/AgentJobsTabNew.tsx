@@ -1,6 +1,6 @@
 import React from 'react';
 import { useEntityTableManager } from '@/hooks/useEntityTableManager';
-import { agentJobsConfig } from '@/lib/entityConfig';
+import { agentJobsConfig, AgentJob } from '@/lib/entityConfig';
 import { DataTable } from '@/components/DataTable';
 import { ViewRecordModal } from '@/components/ViewRecordModal';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
