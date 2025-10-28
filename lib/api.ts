@@ -21,6 +21,7 @@ export type { IssuesTrendDataPoint, IssuesTrendResponse, PIPredictabilityRespons
 
 export interface BurndownDataPoint {
   snapshot_date: string;
+  pi_name?: string; // For PI burndown
   start_date: string;
   end_date: string;
   remaining_issues: number | null;
@@ -29,19 +30,37 @@ export interface BurndownDataPoint {
   issues_added_on_day: number;
   issues_removed_on_day: number;
   issues_completed_on_day: number;
+  planned_issues?: number; // For PI burndown
 }
 
 export interface BurndownResponse {
   success: boolean;
   data: {
-    sprint_id: number;
-    sprint_name: string;
+    sprint_id?: number;
+    sprint_name?: string;
+    pi_name?: string;
     start_date: string;
     end_date: string;
     burndown_data: BurndownDataPoint[];
     team_name: string;
     issue_type: string;
-    total_issues_in_sprint: number;
+    total_issues_in_sprint?: number;
+    pi?: string;
+    project?: string;
+    team?: string;
+  };
+  message: string;
+}
+
+export interface PIBurndownResponse {
+  success: boolean;
+  data: {
+    burndown_data: BurndownDataPoint[];
+    count: number;
+    pi: string;
+    project?: string | null;
+    issue_type?: string | null;
+    team?: string | null;
   };
   message: string;
 }
@@ -96,6 +115,43 @@ export class ApiService {
     
     if (!response.ok) {
       throw new Error(`Failed to fetch burndown data: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  // PI Burndown API
+  async getPIBurndownData(
+    piName: string,
+    issueType?: string,
+    teamName?: string,
+    project?: string
+  ): Promise<PIBurndownResponse> {
+    const params = new URLSearchParams({
+      pi: piName,
+    });
+
+    if (issueType) {
+      params.append('issue_type', issueType);
+    }
+
+    // Don't send team parameter if not provided - backend expects array format
+    // if (teamName) {
+    //   params.append('team', teamName);
+    // }
+
+    if (project) {
+      params.append('project', project);
+    }
+
+    const url = `${buildApiUrl(API_CONFIG.endpoints.pis.getBurndown)}?${params}`;
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('PI Burndown API Error:', response.status, errorText);
+      throw new Error(`Failed to fetch PI burndown data: ${response.statusText}`);
     }
 
     return response.json();

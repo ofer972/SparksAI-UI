@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import BurndownChart from '@/components/BurndownChart';
 import SettingsScreen from '@/components/SettingsScreen';
 import TeamFilter from '@/components/TeamFilter';
 import PIFilter from '@/components/PIFilter';
@@ -12,12 +11,13 @@ import ApiTest from '@/components/ApiTest';
 import TeamDashboard from '@/components/TeamDashboard';
 import SparksAILogo from '@/components/SparksAILogo';
 import PIPredictability from '@/components/PIPredictability';
+import PIBurndownChart from '@/components/PIBurndownChart';
 
 export default function Home() {
   const [activeNavItem, setActiveNavItem] = useState('team-dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState('AutoDesign-Dev');
-  const [selectedPI, setSelectedPI] = useState('Q4 2025');
+  const [selectedPI, setSelectedPI] = useState('Q32025'); // Default to Q32025 which has data
 
   const navigationItems = [
     { id: 'my-team-today', label: 'Team AI Insights', icon: '🏠' },
@@ -58,6 +58,15 @@ export default function Home() {
       case 'pi-dashboard':
         return (
           <div className="space-y-4">
+            <div className="bg-white rounded-lg shadow-sm pt-2 pb-4 px-4">
+              <div className="flex items-center mb-3">
+                <h2 className="text-lg font-semibold">PI Burndown Chart</h2>
+              </div>
+              <PIBurndownChart 
+                piName={selectedPI}
+                issueType="all"
+              />
+            </div>
             <PIPredictability selectedPI={selectedPI} selectedTeam={selectedTeam} />
           </div>
         );

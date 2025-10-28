@@ -53,9 +53,9 @@ export default function PIFilter({ selectedPI, onPIChange, className = '' }: PIF
         setError(err instanceof Error ? err.message : 'Failed to fetch PIs');
         // Fallback to default PI
         setPis([{
-          pi_name: 'Q4 2025',
-          start_date: '2025-10-05',
-          end_date: '2025-12-28',
+          pi_name: 'Q32025',
+          start_date: '2025-06-29',
+          end_date: '2025-10-04',
           planning_grace_days: 5,
           prep_grace_days: 5,
           updated_at: '2025-10-22T13:10:47.185201+00:00'

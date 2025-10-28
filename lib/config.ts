@@ -13,6 +13,7 @@ export const API_CONFIG = {
     pis: {
       getPis: '/api/v1/pis/getPis',
       getPredictability: '/api/v1/pis/predictability',
+      getBurndown: '/api/v1/pis/burndown',
     },
     
     // Burndown endpoints
