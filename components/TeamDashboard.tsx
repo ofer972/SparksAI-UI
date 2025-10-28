@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import BurndownChart from './BurndownChart';
+import BurndownChart from './SprintBurndownChart';
 import ClosedSprints from './ClosedSprints';
 import IssuesTrendChart from './IssuesTrendChart';
 

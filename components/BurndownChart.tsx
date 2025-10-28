@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -13,7 +13,7 @@ import {
   Filler,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { ApiService, BurndownDataPoint } from '@/lib/api';
+import { BurndownDataPoint } from '@/lib/api';
 import { format, parseISO } from 'date-fns';
 
 ChartJS.register(
@@ -28,26 +28,16 @@ ChartJS.register(
 );
 
 interface BurndownChartProps {
-  teamName?: string;
-  issueType?: string;
-  sprintName?: string;
-  onSprintNameChange?: (sprintName: string) => void;
+  data: BurndownDataPoint[];
+  loading: boolean;
+  error: string | null;
 }
 
 export default function BurndownChart({ 
-  teamName = 'AutoDesign-Dev', 
-  issueType = 'all',
-  sprintName,
-  onSprintNameChange
+  data,
+  loading,
+  error
 }: BurndownChartProps) {
-  const [data, setData] = useState<BurndownDataPoint[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [sprintInfo, setSprintInfo] = useState<{
-    sprint_name: string;
-    start_date: string;
-    end_date: string;
-  } | null>(null);
 
   // Memoize chart data preparation to prevent unnecessary recalculations
   const chartData = React.useMemo(() => {
@@ -251,36 +241,7 @@ export default function BurndownChart({
       mode: 'index' as const,
       intersect: false,
     },
-  }), [sprintInfo, data]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-            const apiService = new ApiService();
-            const response = await apiService.getBurndownData(teamName, issueType, sprintName);
-        
-        setData(response.data.burndown_data);
-        setSprintInfo({
-          sprint_name: response.data.sprint_name,
-          start_date: response.data.start_date,
-          end_date: response.data.end_date,
-        });
-        
-        // Notify parent component of the sprint name
-        if (onSprintNameChange) {
-          onSprintNameChange(response.data.sprint_name);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [teamName, issueType, sprintName]);
+  }), [data]);
 
   if (loading) {
     return (
