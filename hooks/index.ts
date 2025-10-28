@@ -4,4 +4,5 @@ export * from './useTeamMetrics';
 export * from './useClosedSprints';
 export * from './usePIBurndown';
 export * from './usePIPredictability';
+export * from './useAgentJobs';
 

@@ -13,6 +13,7 @@ import SparksAILogo from '@/components/SparksAILogo';
 import PIPredictability from '@/components/PIPredictability';
 import PIBurndownChart from '@/components/PIBurndownChart';
 import EpicScopeChangesChart from '@/components/EpicScopeChangesChart';
+import GeneralDataView from '@/components/GeneralDataView';
 import { getIssueTypes, getDefaultIssueType } from '@/lib/issueTypes';
 
 export default function Home() {
@@ -31,6 +32,7 @@ export default function Home() {
     { id: 'pi-dashboard', label: 'PI Dashboard', icon: '📈' },
     { id: 'ai-chat', label: 'AI Direct Data Chat', icon: '🤖' },
     { id: 'settings', label: 'Settings', icon: '⚙️' },
+    { id: 'general-data', label: 'View General Data', icon: '📋' },
     { id: 'api-test', label: 'API Test', icon: '🔧' },
   ];
 
@@ -136,6 +138,8 @@ export default function Home() {
         );
       case 'settings':
         return <SettingsScreen />;
+      case 'general-data':
+        return <GeneralDataView />;
       case 'api-test':
         return <ApiTest teamName={selectedTeam} />;
       default:

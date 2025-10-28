@@ -40,6 +40,12 @@ export const API_CONFIG = {
       closedSprints: '/api/v1/team-metrics/closed-sprints',
       issuesTrend: '/api/v1/team-metrics/issues-trend',
     },
+    
+    // General Data endpoints
+    generalData: {
+      agentJobs: '/api/v1/agent-jobs',
+      agentJobDetail: '/api/v1/agent-jobs',
+    },
   },
 } as const;
 

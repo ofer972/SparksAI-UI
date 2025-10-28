@@ -336,6 +336,65 @@ export class ApiService {
     return [];
   }
 
+  // Agent Jobs API
+  async getAgentJobs(): Promise<any[]> {
+    const response = await fetch(buildApiUrl(API_CONFIG.endpoints.generalData.agentJobs));
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch agent jobs: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    
+    // Handle the specific API response structure: { success: true, data: { jobs: [...], count: number }, message: string }
+    if (result.success && result.data && result.data.jobs && Array.isArray(result.data.jobs)) {
+      return result.data.jobs;
+    }
+    
+    // Fallback for other possible response structures
+    if (result.data && Array.isArray(result.data)) {
+      return result.data;
+    } else if (Array.isArray(result)) {
+      return result;
+    } else if (result.success && result.data) {
+      // If data is not an array, wrap it in an array
+      return Array.isArray(result.data) ? result.data : [result.data];
+    }
+    
+    // Fallback: return empty array
+    console.warn('Unexpected response structure for agent jobs:', result);
+    return [];
+  }
+
+  async getAgentJobDetail(jobId: string): Promise<any> {
+    const url = `${buildApiUrl(API_CONFIG.endpoints.generalData.agentJobDetail)}/${jobId}`;
+    console.log('=== API DEBUG ===');
+    console.log('Fetching job detail from URL:', url);
+    
+    const response = await fetch(url);
+    
+    console.log('Response status:', response.status);
+    console.log('Response ok:', response.ok);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch agent job detail: ${response.statusText}`);
+    }
+
+    const result: ApiResponse<any> = await response.json();
+    console.log('Raw API result:', result);
+    console.log('Result data:', result.data);
+    console.log('Result data.job:', result.data?.job);
+    console.log('================');
+    
+    // Handle the nested structure: result.data.job
+    if (result.success && result.data && result.data.job) {
+      return result.data.job;
+    }
+    
+    // Fallback to direct data if structure is different
+    return result.data;
+  }
+
   // Combined team metrics (for parallel fetching)
   async getTeamMetrics(teamName: string) {
     const [sprintMetrics, completionRate, inProgressCount] = await Promise.all([
