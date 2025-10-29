@@ -107,15 +107,15 @@ export default function Home() {
         return (
           <div className="h-full flex flex-col">
             {/* AI Cards Section - Reduced height with padding */}
-            <div className="bg-white rounded-lg shadow-sm p-2 flex-shrink-0" style={{ height: '45vh' }}>
-              <h2 className="text-lg font-semibold mb-1">Team AI Insights</h2>
+            <div className="bg-white rounded-lg shadow-sm pt-2 pb-2 pr-2 pl-[7px] flex-shrink-0" style={{ height: '45vh' }}>
+              <h2 className="text-lg font-semibold mb-1 pt-3">Team AI Insights</h2>
               <div className="h-full pb-4">
                 <AICards teamName={selectedTeam} />
               </div>
             </div>
             
-            {/* Recommendations Section - Fixed height with no margin */}
-            <div className="flex-shrink-0" style={{ height: '200px' }}>
+            {/* Recommendations Section - Fixed height with top spacing after AI cards */}
+            <div className="flex-shrink-0 mt-2" style={{ height: '200px' }}>
               <Recommendations teamName={selectedTeam} />
             </div>
             

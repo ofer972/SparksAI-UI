@@ -150,7 +150,7 @@ export default function RecommendationsInsight({
   if (loading) {
     return (
       <div className="px-3 pt-3">
-        <h3 className="text-sm font-semibold mb-1">{title}</h3>
+        <h3 className="text-lg font-semibold mb-1">{title}</h3>
         <div className="space-y-2">
           {[...Array(maxItems)].map((_, i) => (
             <div key={i} className="bg-white rounded-lg shadow-sm px-3 py-2 animate-pulse">
@@ -177,7 +177,7 @@ export default function RecommendationsInsight({
   if (error) {
     return (
       <div className="px-3 pt-3">
-        <h3 className="text-sm font-semibold mb-1">{title}</h3>
+        <h3 className="text-lg font-semibold mb-1">{title}</h3>
         <div className="text-center py-4">
           <div className="text-red-500 text-2xl mb-1">⚠️</div>
           <p className="text-xs text-gray-600">Error loading recommendations</p>
@@ -189,7 +189,7 @@ export default function RecommendationsInsight({
   if (recommendations.length === 0) {
     return (
       <div className="px-3 pt-3">
-        <h3 className="text-sm font-semibold mb-1">{title}</h3>
+        <h3 className="text-lg font-semibold mb-1">{title}</h3>
         <div className="text-center py-4">
           <div className="text-gray-400 text-2xl mb-1">💡</div>
           <p className="text-xs text-gray-600">{emptyMessage}</p>
@@ -200,7 +200,7 @@ export default function RecommendationsInsight({
 
   return (
     <div className="px-3 pt-3">
-      <h3 className="text-sm font-semibold mb-1">{title}</h3>
+      <h3 className="text-lg font-semibold mb-1">{title}</h3>
       <div className="space-y-2">
         {[...Array(maxItems)].map((_, index) => {
           const recommendation = recommendations[index];

@@ -77,8 +77,8 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
 
   if (loading) {
     return (
-      <div>
-        <h3 className="text-sm font-semibold mb-2">Team Metrics</h3>
+      <div className="px-3 pt-3">
+        <h3 className="text-lg font-semibold mb-1">Team Metrics</h3>
         <div className="grid grid-cols-5 gap-6">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="bg-white rounded-lg shadow-sm p-3 animate-pulse">
@@ -94,8 +94,8 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
 
   if (error) {
     return (
-      <div>
-        <h3 className="text-sm font-semibold mb-2">Team Metrics</h3>
+      <div className="px-3 pt-3">
+        <h3 className="text-lg font-semibold mb-1">Team Metrics</h3>
         <div className="text-center py-4">
           <div className="text-red-500 text-2xl mb-2">⚠️</div>
           <p className="text-xs text-gray-600">Error loading metrics</p>
@@ -105,8 +105,8 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
   }
 
   return (
-    <div>
-      <h3 className="text-sm font-semibold mb-2">Team Metrics</h3>
+    <div className="px-3 pt-3">
+      <h3 className="text-lg font-semibold mb-1">Team Metrics</h3>
       <div className="grid grid-cols-5 gap-6">
         {/* Avg Velocity */}
         <MetricCard
