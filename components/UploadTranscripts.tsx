@@ -115,13 +115,8 @@ export default function UploadTranscripts({ selectedTeam, selectedPI }: UploadTr
     setProgress(0);
 
     try {
-      console.log('Starting upload process...');
-      console.log('Files to upload:', files.map(f => f.file.name));
-      console.log('Is Team:', isTeam);
-      
       for (let i = 0; i < files.length; i++) {
         const fileWithId = files[i];
-        console.log(`Uploading file ${i + 1}/${files.length}:`, fileWithId.file.name);
         
         try {
           if (isTeam) {
@@ -129,7 +124,6 @@ export default function UploadTranscripts({ selectedTeam, selectedPI }: UploadTr
           } else {
             await apiService.uploadPITranscript(fileWithId.file, selectedPI, piType);
           }
-          console.log(`Successfully uploaded: ${fileWithId.file.name}`);
         } catch (fileError) {
           console.error(`Failed to upload ${fileWithId.file.name}:`, fileError);
           throw fileError; // Re-throw to be caught by outer catch

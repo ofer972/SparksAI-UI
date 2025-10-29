@@ -549,11 +549,6 @@ export class ApiService {
     teamName: string, 
     type: string
   ): Promise<any> {
-    console.log('=== UPLOAD DEBUG ===');
-    console.log('File:', file.name, 'Size:', file.size);
-    console.log('Team:', teamName);
-    console.log('Type:', type);
-    
     const formData = new FormData();
     formData.append('raw_data', file);
     formData.append('file_name', file.name);
@@ -562,37 +557,17 @@ export class ApiService {
     formData.append('origin', 'UI');
     formData.append('transcript_date', new Date().toISOString().substring(0, 10));
 
-    const url = buildApiUrl(API_CONFIG.endpoints.transcripts.uploadTeam);
-    console.log('Upload URL:', url);
-    console.log('FormData entries:');
-    for (let [key, value] of formData.entries()) {
-      console.log(key, ':', value);
+    const response = await fetch(buildApiUrl(API_CONFIG.endpoints.transcripts.uploadTeam), {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to upload team transcript: ${response.statusText}`);
     }
 
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        body: formData,
-      });
-
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        throw new Error(`Failed to upload team transcript: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      console.log('Success result:', result);
-      console.log('================');
-      return result;
-    } catch (error) {
-      console.error('Upload error:', error);
-      console.log('================');
-      throw error;
-    }
+    const result = await response.json();
+    return result;
   }
 
   // Upload PI Transcript
@@ -602,11 +577,6 @@ export class ApiService {
     type: string,
     fileName?: string
   ): Promise<any> {
-    console.log('=== PI UPLOAD DEBUG ===');
-    console.log('File:', file.name, 'Size:', file.size);
-    console.log('PI:', piName);
-    console.log('Type:', type);
-    
     const formData = new FormData();
     formData.append('raw_data', file);
     formData.append('pi', piName);
@@ -617,37 +587,17 @@ export class ApiService {
       formData.append('file_name', fileName);
     }
 
-    const url = buildApiUrl(API_CONFIG.endpoints.transcripts.uploadPI);
-    console.log('Upload URL:', url);
-    console.log('FormData entries:');
-    for (let [key, value] of formData.entries()) {
-      console.log(key, ':', value);
+    const response = await fetch(buildApiUrl(API_CONFIG.endpoints.transcripts.uploadPI), {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to upload PI transcript: ${response.statusText}`);
     }
 
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        body: formData,
-      });
-
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        throw new Error(`Failed to upload PI transcript: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      console.log('Success result:', result);
-      console.log('================');
-      return result;
-    } catch (error) {
-      console.error('Upload error:', error);
-      console.log('================');
-      throw error;
-    }
+    const result = await response.json();
+    return result;
   }
 }
 
