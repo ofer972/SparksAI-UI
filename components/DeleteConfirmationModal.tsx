@@ -29,11 +29,10 @@ export default function DeleteConfirmationModal({
           {/* Content */}
           <div className="text-center">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Under Construction
+              Confirm Delete
             </h3>
             <p className="text-sm text-gray-600 mb-6">
-              The delete functionality for {itemName} is currently under development. 
-              Please check back later.
+              Are you sure you want to delete {itemName}? This action cannot be undone.
             </p>
 
             {/* Action Buttons */}
@@ -48,7 +47,6 @@ export default function DeleteConfirmationModal({
                 <button
                   onClick={() => {
                     onConfirm();
-                    onClose();
                   }}
                   className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors font-medium"
                 >

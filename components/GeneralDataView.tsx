@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import AgentJobsTabNew from './AgentJobsTabNew';
+import AgentJobsTab from './AgentJobsTab';
 import TeamAICardsTab from './TeamAICardsTab';
+import PromptsTab from './PromptsTab';
 
 interface TabItem {
   id: string;
@@ -13,6 +14,7 @@ const tabs: TabItem[] = [
   { id: 'team-ai-cards', label: 'Team AI Cards', icon: '🎯' },
   { id: 'security-logs', label: 'Security Logs', icon: '🔒' },
   { id: 'view-transcripts', label: 'View Transcripts', icon: '📝' },
+  { id: 'prompts', label: 'Prompts', icon: '💬' },
 ];
 
 export default function GeneralDataView() {
@@ -21,7 +23,7 @@ export default function GeneralDataView() {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'agent-jobs':
-        return <AgentJobsTabNew />;
+        return <AgentJobsTab />;
       case 'team-ai-cards':
         return <TeamAICardsTab />;
       case 'security-logs':
@@ -44,6 +46,8 @@ export default function GeneralDataView() {
             </p>
           </div>
         );
+      case 'prompts':
+        return <PromptsTab />;
       default:
         return (
           <div className="bg-white rounded-lg shadow-sm p-6 text-center">

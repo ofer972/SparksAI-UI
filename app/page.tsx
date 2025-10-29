@@ -16,6 +16,7 @@ import PIPredictability from '@/components/PIPredictability';
 import PIBurndownChart from '@/components/PIBurndownChart';
 import EpicScopeChangesChart from '@/components/EpicScopeChangesChart';
 import GeneralDataView from '@/components/GeneralDataView';
+import PromptsTab from '@/components/PromptsTab';
 import UploadTranscripts from '@/components/UploadTranscripts';
 import { getIssueTypes, getDefaultIssueType } from '@/lib/issueTypes';
 import { ApiService } from '@/lib/api';
@@ -74,6 +75,7 @@ export default function Home() {
     { id: 'team-dashboard', label: 'Team Dashboard', icon: '📊' },
     { id: 'pi-quarter', label: 'PI AI Insights', icon: '🕐' },
     { id: 'pi-dashboard', label: 'PI Dashboard', icon: '📈' },
+    { id: 'prompts', label: 'Prompts', icon: '🧠' },
     { id: 'ai-chat', label: 'AI Direct Data Chat', icon: '🤖' },
     { id: 'settings', label: 'Settings', icon: '⚙️' },
     { id: 'general-data', label: 'View General Data', icon: '📋' },
@@ -88,6 +90,7 @@ export default function Home() {
     'team-dashboard': 'SparksAI-Team Dashboard',
     'pi-quarter': 'SparksAI-PI AI Insights',
     'pi-dashboard': 'SparksAI-PI Dashboard',
+    'prompts': 'SparksAI-Prompts',
     'ai-chat': 'SparksAI-AI Chat',
     'settings': 'SparksAI-Settings',
     'general-data': 'SparksAI-General Data',
@@ -218,6 +221,8 @@ export default function Home() {
             </div>
           </div>
         );
+      case 'prompts':
+        return <PromptsTab />;
       case 'settings':
         return <SettingsScreen />;
       case 'create-agent-job':

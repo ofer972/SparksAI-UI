@@ -10,6 +10,27 @@ export interface ColumnConfig<T> {
   className?: string;
 }
 
+// Form Field Configuration for Editable Tables
+export interface FormFieldConfig<T> {
+  key: keyof T;
+  label: string;
+  type: 'text' | 'textarea' | 'select' | 'number' | 'email' | 'date' | 'boolean';
+  required?: boolean;
+  placeholder?: string;
+  options?: { value: string | number; label: string }[]; // For select fields
+  validation?: {
+    min?: number;
+    max?: number;
+    minLength?: number;
+    maxLength?: number;
+    pattern?: string;
+    custom?: (value: any) => string | null; // Return error message or null
+  };
+  disabled?: boolean;
+  readonly?: boolean;
+  helpText?: string; // Helper text to display below the field
+}
+
 export interface FilterConfig {
   key: string;
   label: string;
@@ -51,6 +72,24 @@ export interface EntityConfig<T> {
   // Field categorization for detail view (override auto-categorization)
   normalFields?: (keyof T)[]; // Fields to show in overview grid
   longTextFields?: (keyof T)[]; // Fields to show in details section
+}
+
+// Extended configuration for editable entities
+export interface EditableEntityConfig<T> extends EntityConfig<T> {
+  // Edit-specific configuration
+  editableFields?: FormFieldConfig<T>[];
+  updateEndpoint?: string;
+  updateItem?: (id: string, data: Partial<T>) => Promise<T>;
+  createEndpoint?: string;
+  createItem?: (data: Partial<T>) => Promise<T>;
+  
+  // Form behavior
+  allowCreate?: boolean;
+  allowEdit?: boolean;
+  allowDelete?: boolean;
+  
+  // Validation
+  validateForm?: (data: Partial<T>) => Record<string, string>; // field errors
 }
 
 // Agent Jobs Entity Configuration
@@ -149,3 +188,14 @@ export const agentJobsConfig: EntityConfig<AgentJob> = {
   normalFields: ['job_id', 'status', 'job_type', 'team_name', 'claimed_by', 'created_at', 'claimed_at', 'completed_at'],
   longTextFields: ['input_sent', 'result', 'error', 'data'],
 };
+
+// Prompt Entity Configuration
+export interface Prompt {
+  email_address: string;
+  prompt_name: string;
+  prompt_description: string;
+  prompt_type: string;
+  prompt_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}

@@ -154,13 +154,6 @@ export default function AICardsInsight({
 
   const handleAIChat = (card: AICard) => {
     // Each card will have its own behavior based on content
-    console.log('AI Chat clicked for card:', {
-      id: card.id,
-      cardName: card.card_name,
-      cardType: card.card_type,
-      priority: card.priority,
-      description: card.description.substring(0, 100) + '...'
-    });
     
     // TODO: Implement specific behavior based on card content
     // This could open a chat modal, navigate to a specific page, etc.
@@ -263,10 +256,6 @@ export default function AICardsInsight({
                       // Handle Sprint Goal cards with JSON table format
                       if (card.card_type === 'Sprint Goal') {
                         const sprintGoalItems = parseSprintGoalJson(card.information_json);
-                        
-                        // Debug: Log information_json content
-                        console.log('Sprint Goal Card ID:', card.id, 'information_json:', card.information_json);
-                        console.log('Parsed sprint goal items:', sprintGoalItems);
                         
                         if (sprintGoalItems && sprintGoalItems.length > 0) {
                           // Get column headers dynamically from the first item
@@ -374,11 +363,6 @@ export default function AICardsInsight({
                       
                       // Parse information_json for non-Sprint Goal cards
                       const informationItems = parseInformationJson(card.information_json);
-                      
-                      // Debug: Log information_json content
-                      console.log('Card ID:', card.id, 'information_json:', card.information_json);
-                      console.log('Parsed items:', informationItems);
-                      console.log('Description:', card.description);
                       
                       if (informationItems && informationItems.length > 0) {
                         return (

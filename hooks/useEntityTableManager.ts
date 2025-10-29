@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { EntityConfig } from '@/lib/entityConfig';
+import { EntityConfig, EditableEntityConfig } from '@/lib/entityConfig';
 
 export interface UseEntityTableManagerReturn<T> {
   data: T[];
@@ -11,6 +11,8 @@ export interface UseEntityTableManagerReturn<T> {
   selectedItem: T | null;
   isDetailModalOpen: boolean;
   isDeleteModalOpen: boolean;
+  isEditModalOpen: boolean;
+  editMode: 'create' | 'edit' | null;
   
   // Table states
   sortConfig: { key: keyof T; direction: 'asc' | 'desc' };
@@ -19,6 +21,9 @@ export interface UseEntityTableManagerReturn<T> {
   // Actions
   handleViewItem: (item: T) => void;
   handleDeleteItem: (item: T) => void;
+  handleEditItem: (item: T) => void;
+  handleCreateItem: () => void;
+  handleSaveItem: (itemData: Partial<T>) => Promise<void>;
   handleSort: (key: keyof T) => void;
   handleFilterChange: (text: string) => void;
   closeModals: () => void;
@@ -35,7 +40,7 @@ export interface UseEntityTableManagerReturn<T> {
  * @returns Object containing data, state, and action functions
  */
 export function useEntityTableManager<T extends Record<string, any>>(
-  config: EntityConfig<T>
+  config: EntityConfig<T> | EditableEntityConfig<T>
 ): UseEntityTableManagerReturn<T> {
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -45,6 +50,8 @@ export function useEntityTableManager<T extends Record<string, any>>(
   const [selectedItem, setSelectedItem] = useState<T | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editMode, setEditMode] = useState<'create' | 'edit' | null>(null);
   
   // Table states
   const [sortConfig, setSortConfig] = useState<{ key: keyof T; direction: 'asc' | 'desc' }>({
@@ -125,6 +132,36 @@ export function useEntityTableManager<T extends Record<string, any>>(
     setIsDeleteModalOpen(true);
   }, []);
 
+  const handleEditItem = useCallback((item: T) => {
+    setSelectedItem(item);
+    setEditMode('edit');
+    setIsEditModalOpen(true);
+  }, []);
+
+  const handleCreateItem = useCallback(() => {
+    setSelectedItem(null);
+    setEditMode('create');
+    setIsEditModalOpen(true);
+  }, []);
+
+  const handleSaveItem = useCallback(async (itemData: Partial<T>) => {
+    // Check if config is an EditableEntityConfig
+    if ('updateItem' in config || 'createItem' in config) {
+      const editableConfig = config as EditableEntityConfig<T>;
+      
+      if (editMode === 'edit' && selectedItem && editableConfig.updateItem) {
+        // Get the primary key value
+        const id = String(selectedItem[config.primaryKey]);
+        await editableConfig.updateItem(id, itemData);
+      } else if (editMode === 'create' && editableConfig.createItem) {
+        await editableConfig.createItem(itemData);
+      }
+      
+      // Refresh the data
+      await fetchData();
+    }
+  }, [config, editMode, selectedItem, fetchData]);
+
   const handleSort = useCallback((key: keyof T) => {
     if (sortConfig.key === key) {
       setSortConfig({
@@ -143,7 +180,9 @@ export function useEntityTableManager<T extends Record<string, any>>(
   const closeModals = useCallback(() => {
     setIsDetailModalOpen(false);
     setIsDeleteModalOpen(false);
+    setIsEditModalOpen(false);
     setSelectedItem(null);
+    setEditMode(null);
   }, []);
 
   return {
@@ -155,12 +194,17 @@ export function useEntityTableManager<T extends Record<string, any>>(
     selectedItem,
     isDetailModalOpen,
     isDeleteModalOpen,
+    isEditModalOpen,
+    editMode,
     
     sortConfig,
     filterText,
     
     handleViewItem,
     handleDeleteItem,
+    handleEditItem,
+    handleCreateItem,
+    handleSaveItem,
     handleSort,
     handleFilterChange,
     closeModals,

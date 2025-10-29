@@ -599,6 +599,247 @@ export class ApiService {
     const result = await response.json();
     return result;
   }
+
+  // Prompts API
+  async getPrompts(params?: {
+    email_address?: string;
+    prompt_type?: string;
+    active?: boolean;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<any[]> {
+    const urlParams = new URLSearchParams();
+    
+    if (params?.email_address) urlParams.append('email_address', params.email_address);
+    if (params?.prompt_type) urlParams.append('prompt_type', params.prompt_type);
+    if (params?.active !== undefined) urlParams.append('active', String(params.active));
+    if (params?.search) urlParams.append('search', params.search);
+    if (params?.limit) urlParams.append('limit', String(params.limit));
+    if (params?.offset) urlParams.append('offset', String(params.offset));
+
+    const url = `${buildApiUrl('/api/v1/prompts')}${urlParams.toString() ? '?' + urlParams.toString() : ''}`;
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch prompts: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+
+    // Common structures we may receive:
+    // 1) { success: true, data: [...] }
+    if (result?.success && Array.isArray(result.data)) {
+      return result.data;
+    }
+
+    // 2) { success: true, data: { prompts: [...], count: number } }
+    if (result?.success && result?.data && Array.isArray(result.data.prompts)) {
+      return result.data.prompts;
+    }
+
+    // 3) Direct array
+    if (Array.isArray(result)) {
+      return result;
+    }
+
+    // 4) { prompts: [...] }
+    if (Array.isArray(result?.prompts)) {
+      return result.prompts;
+    }
+
+    return [];
+  }
+
+  async getPromptDetail(email: string, promptName: string): Promise<any> {
+    // URL encode email and promptName to handle special characters like @ in emails
+    const encodedEmail = encodeURIComponent(email);
+    const encodedPromptName = encodeURIComponent(promptName);
+    const url = `${buildApiUrl('/api/v1/prompts')}/${encodedEmail}/${encodedPromptName}`;
+    
+    console.log('Fetching prompt detail from URL:', url);
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorText = await response.text();
+        if (errorText) {
+          console.error('Prompt detail API error:', response.status, errorText);
+          // Try to parse as JSON for structured error messages
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.message || errorJson.error || errorMessage;
+          } catch {
+            // If not JSON, use the text as is
+            if (errorText.length < 200) {
+              errorMessage = errorText;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error reading error response:', e);
+      }
+      throw new Error(`Failed to fetch prompt detail: ${errorMessage}`);
+    }
+
+    const result: ApiResponse<any> = await response.json();
+    
+    console.log('getPromptDetail raw result:', result);
+    console.log('getPromptDetail result.data:', result.data);
+    console.log('getPromptDetail result.data keys:', result.data ? Object.keys(result.data) : 'null');
+    
+    // Handle different response structures
+    if (result.data) {
+      // If data has a nested prompt structure
+      if (result.data.prompt) {
+        return result.data.prompt;
+      }
+      // If data is an object with prompt fields directly
+      if (typeof result.data === 'object' && !Array.isArray(result.data)) {
+        return result.data;
+      }
+    }
+    
+    return result.data;
+  }
+
+  async createPrompt(data: {
+    email_address: string;
+    prompt_name: string;
+    prompt_description: string;
+    prompt_type: string;
+    prompt_active: boolean;
+  }): Promise<any> {
+    const url = buildApiUrl('/api/v1/prompts');
+    
+    console.log('Creating prompt at URL:', url);
+    console.log('Creating prompt with data:', JSON.stringify(data, null, 2));
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorText = await response.text();
+        if (errorText) {
+          console.error('Create prompt API error:', response.status, errorText);
+          // Try to parse as JSON for structured error messages
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.message || errorJson.error || errorMessage;
+          } catch {
+            // If not JSON, use the text as is
+            if (errorText.length < 200) {
+              errorMessage = errorText;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error reading error response:', e);
+      }
+      throw new Error(`Failed to create prompt: ${errorMessage}`);
+    }
+
+    const result = await response.json();
+    return result;
+  }
+
+  async updatePrompt(email: string, promptName: string, data: {
+    email_address: string;
+    prompt_name: string;
+    prompt_description: string;
+    prompt_type: string;
+    prompt_active: boolean;
+  }): Promise<any> {
+    // URL encode email and promptName to handle special characters
+    const encodedEmail = encodeURIComponent(email);
+    const encodedPromptName = encodeURIComponent(promptName);
+    
+    const url = `${buildApiUrl('/api/v1/prompts')}/${encodedEmail}/${encodedPromptName}`;
+    
+    console.log('Updating prompt at URL:', url);
+    console.log('Update data being sent:', JSON.stringify(data, null, 2));
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorText = await response.text();
+        if (errorText) {
+          console.error('Update prompt API error:', response.status, errorText);
+          // Try to parse as JSON for structured error messages
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.message || errorJson.error || errorMessage;
+          } catch {
+            // If not JSON, use the text as is
+            if (errorText.length < 200) {
+              errorMessage = errorText;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error reading error response:', e);
+      }
+      throw new Error(`Failed to update prompt: ${errorMessage}`);
+    }
+
+    const result = await response.json();
+    return result;
+  }
+
+  async deletePrompt(email: string, promptName: string): Promise<void> {
+    // URL encode email and promptName to handle special characters
+    const encodedEmail = encodeURIComponent(email);
+    const encodedPromptName = encodeURIComponent(promptName);
+    const url = `${buildApiUrl('/api/v1/prompts')}/${encodedEmail}/${encodedPromptName}`;
+    
+    console.log('Deleting prompt at URL:', url);
+    
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorText = await response.text();
+        if (errorText) {
+          console.error('Delete prompt API error:', response.status, errorText);
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.message || errorJson.error || errorMessage;
+          } catch {
+            if (errorText.length < 200) {
+              errorMessage = errorText;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error reading error response:', e);
+      }
+      throw new Error(`Failed to delete prompt: ${errorMessage}`);
+    }
+  }
 }
 
 // Legacy class for backward compatibility

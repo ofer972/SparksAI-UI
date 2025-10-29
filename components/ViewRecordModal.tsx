@@ -33,8 +33,19 @@ export function ViewRecordModal<T extends Record<string, any>>({
     try {
       setLoading(true);
       setError(null);
-      const primaryKeyValue = item[config.primaryKey];
-      const detail = await config.fetchDetail(String(primaryKeyValue));
+      
+      // Handle composite keys (e.g., prompts use email_address + prompt_name)
+      let detailId: string;
+      if (config.title === 'Prompts' && 'email_address' in item && 'prompt_name' in item) {
+        // Construct composite ID for prompts: email_address/prompt_name
+        detailId = `${(item as any).email_address}/${(item as any).prompt_name}`;
+      } else {
+        // Use primary key for other entities
+        const primaryKeyValue = item[config.primaryKey];
+        detailId = String(primaryKeyValue);
+      }
+      
+      const detail = await config.fetchDetail(detailId);
       setDetailData(detail);
     } catch (err) {
       console.error('Error fetching detail:', err);
