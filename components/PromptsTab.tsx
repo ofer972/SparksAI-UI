@@ -267,7 +267,7 @@ export default function PromptsTab() {
 
       <DataTable
         config={{
-          title: 'Prompts',
+          ...promptsConfig,
           columns: [
             { key: 'email_address', label: 'Email', sortable: true, width: '150px' },
             { key: 'prompt_name', label: 'Prompt Name', sortable: true, width: '150px' },
