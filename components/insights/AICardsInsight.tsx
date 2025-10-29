@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ViewRecordModal } from '@/components/ViewRecordModal';
 import { EntityConfig } from '@/lib/entityConfig';
+import AIChatModal from '@/components/AIChatModal';
 
 // Constants
 const CARD_DESCRIPTION_MAX_LENGTH = 750;
@@ -152,12 +153,21 @@ export default function AICardsInsight({
   const [selectedCard, setSelectedCard] = useState<AICard | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
+  // State for AI Chat modal
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  const [selectedInsightId, setSelectedInsightId] = useState<number | null>(null);
+  const [selectedTeamName, setSelectedTeamName] = useState<string>('');
+
   const handleAIChat = (card: AICard) => {
-    // Each card will have its own behavior based on content
-    
-    // TODO: Implement specific behavior based on card content
-    // This could open a chat modal, navigate to a specific page, etc.
-    alert(`AI Chat for ${card.card_name} (${card.card_type}) - Priority: ${card.priority}`);
+    setSelectedInsightId(card.id);
+    setSelectedTeamName(card.team_name);
+    setIsChatModalOpen(true);
+  };
+
+  const closeChatModal = () => {
+    setIsChatModalOpen(false);
+    setSelectedInsightId(null);
+    setSelectedTeamName('');
   };
 
   const handleViewCard = (card: AICard) => {
@@ -463,6 +473,17 @@ export default function AICardsInsight({
         item={selectedCard}
         config={config}
       />
+
+      {/* AI Chat Modal */}
+      {selectedInsightId !== null && (
+        <AIChatModal
+          isOpen={isChatModalOpen}
+          onClose={closeChatModal}
+          chatType="Team_insights"
+          insightsId={selectedInsightId}
+          teamName={selectedTeamName}
+        />
+      )}
     </div>
   );
 }
