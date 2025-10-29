@@ -82,6 +82,25 @@ export default function Home() {
     { id: 'api-test', label: 'API Test', icon: '🔧' },
   ];
 
+  // Map sidebar items to browser tab titles (no spaces around '-')
+  const titles: Record<string, string> = {
+    'team-ai-insights': 'SparksAI-Team AI Insights',
+    'team-dashboard': 'SparksAI-Team Dashboard',
+    'pi-quarter': 'SparksAI-PI AI Insights',
+    'pi-dashboard': 'SparksAI-PI Dashboard',
+    'ai-chat': 'SparksAI-AI Chat',
+    'settings': 'SparksAI-Settings',
+    'general-data': 'SparksAI-General Data',
+    'create-agent-job': 'SparksAI-Create Agent Job',
+    'upload-transcripts': 'SparksAI-Upload Transcripts',
+    'api-test': 'SparksAI-API Test',
+  };
+
+  useEffect(() => {
+    const fallbackTitle = 'SparksAI';
+    document.title = titles[activeNavItem] ?? fallbackTitle;
+  }, [activeNavItem]);
+
   const renderMainContent = () => {
     switch (activeNavItem) {
       case 'team-ai-insights':
