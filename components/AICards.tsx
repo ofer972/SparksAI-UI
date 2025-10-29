@@ -20,6 +20,7 @@ export default function AICards({ teamName }: AICardProps) {
       title="Team AI Insights"
       emptyMessage={`No AI insights available for ${teamName} at this time.`}
       config={teamAICardsConfig}
+      chatType="Team_insights"
     />
   );
 }

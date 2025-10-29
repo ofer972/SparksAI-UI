@@ -20,6 +20,8 @@ export default function PIAICards({ piName }: PIAICardsProps) {
       title="PI AI Insights"
       emptyMessage={`No AI insights available for ${piName} at this time.`}
       config={piAICardsConfig}
+      chatType="PI_insights"
+      piName={piName}
     />
   );
 }

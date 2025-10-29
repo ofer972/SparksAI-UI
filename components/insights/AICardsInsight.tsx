@@ -31,6 +31,8 @@ interface AICardsInsightProps {
   title?: string;
   emptyMessage?: string;
   config: EntityConfig<any>;
+  chatType?: string; // Chat type for AI chat: "Team_insights" or "PI_insights"
+  piName?: string; // PI name for PI insights context
 }
 
 const getPriorityColor = (priority: string) => {
@@ -147,7 +149,9 @@ export default function AICardsInsight({
   onRefetch,
   title = "AI Insights",
   emptyMessage = "No AI insights available at this time.",
-  config
+  config,
+  chatType = "Team_insights", // Default to Team_insights
+  piName // Optional PI name for PI insights
 }: AICardsInsightProps) {
   // State for detail modal
   const [selectedCard, setSelectedCard] = useState<AICard | null>(null);
@@ -160,7 +164,9 @@ export default function AICardsInsight({
 
   const handleAIChat = (card: AICard) => {
     setSelectedInsightId(card.id);
-    setSelectedTeamName(card.team_name);
+    // For PI insights, use card.team_name if available, otherwise empty
+    // team_name might still be present in PI cards, but selected_pi will be used
+    setSelectedTeamName(card.team_name || '');
     setIsChatModalOpen(true);
   };
 
@@ -479,9 +485,10 @@ export default function AICardsInsight({
         <AIChatModal
           isOpen={isChatModalOpen}
           onClose={closeChatModal}
-          chatType="Team_insights"
+          chatType={chatType}
           insightsId={selectedInsightId}
           teamName={selectedTeamName}
+          piName={piName}
         />
       )}
     </div>
