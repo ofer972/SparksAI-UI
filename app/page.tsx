@@ -18,6 +18,7 @@ import EpicScopeChangesChart from '@/components/EpicScopeChangesChart';
 import GeneralDataView from '@/components/GeneralDataView';
 import PromptsTab from '@/components/PromptsTab';
 import UploadTranscripts from '@/components/UploadTranscripts';
+import AIChatModal from '@/components/AIChatModal';
 import { getIssueTypes, getDefaultIssueType } from '@/lib/issueTypes';
 import { ApiService } from '@/lib/api';
 
@@ -35,6 +36,7 @@ export default function Home() {
     piSync: false,
   });
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isDashboardChatModalOpen, setIsDashboardChatModalOpen] = useState(false);
 
   const apiService = new ApiService();
 
@@ -372,7 +374,7 @@ export default function Home() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
+        <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0 relative">
             <div className="flex items-center justify-between mb-3">
               <h1 className="text-lg font-bold text-blue-600">SparksAI Insights & Dashboards</h1>
               <div className="flex items-center space-x-4">
@@ -400,6 +402,14 @@ export default function Home() {
               selectedTeam={selectedTeam}
               onTeamChange={setSelectedTeam}
             />
+            {(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') && (
+              <button
+                onClick={() => setIsDashboardChatModalOpen(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-full text-sm font-medium transition-colors shadow-sm hover:shadow-md absolute left-1/2 transform -translate-x-1/2"
+              >
+                Get Dashboard AI Insights
+              </button>
+            )}
           </div>
         </div>
 
@@ -408,6 +418,23 @@ export default function Home() {
           {renderMainContent()}
         </div>
       </div>
+
+      {/* Dashboard Insights AI Chat Modal */}
+      {(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') && (
+        <AIChatModal
+          isOpen={isDashboardChatModalOpen}
+          onClose={() => setIsDashboardChatModalOpen(false)}
+          chatType={
+            activeNavItem === 'team-dashboard' 
+              ? 'Team_dashboard' 
+              : activeNavItem === 'pi-dashboard' 
+                ? 'PI_dashboard' 
+                : ''
+          }
+          teamName={activeNavItem === 'team-dashboard' ? selectedTeam : undefined}
+          piName={activeNavItem === 'pi-dashboard' ? selectedPI : undefined}
+        />
+      )}
     </div>
   );
 }
