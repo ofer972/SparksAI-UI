@@ -7,25 +7,7 @@ import { EditRecordModal } from '@/components/EditRecordModal';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 import { ApiService } from '@/lib/api';
 import { promptsConfig } from '@/lib/promptsConfig';
-
-interface Prompt {
-  email_address: string;
-  prompt_name: string;
-  prompt_description: string;
-  prompt_type: string;
-  prompt_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-interface PromptsResponse {
-  success: boolean;
-  data: {
-    prompts: Prompt[];
-    count: number;
-  };
-  message: string;
-}
+import { Prompt } from '@/lib/entityConfig';
 
 export default function PromptsTab() {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
@@ -227,6 +209,11 @@ export default function PromptsTab() {
     const aValue = a[sortConfig.key];
     const bValue = b[sortConfig.key];
     
+    // Handle undefined/null values - put them at the end
+    if (aValue == null && bValue == null) return 0;
+    if (aValue == null) return 1;
+    if (bValue == null) return -1;
+    
     if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
     if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
     return 0;
@@ -284,6 +271,7 @@ export default function PromptsTab() {
               return value ? 'Yes' : 'No';
             }
             if (key === 'created_at' || key === 'updated_at') {
+              if (!value) return '-';
               return new Date(value).toLocaleDateString();
             }
             return value;
