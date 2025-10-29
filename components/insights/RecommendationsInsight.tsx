@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import AIChatModal from '@/components/AIChatModal';
 
 // Constants
 const RECOMMENDATION_TEXT_MAX_LENGTH = 200;
@@ -143,8 +144,21 @@ export default function RecommendationsInsight({
 }: RecommendationsInsightProps) {
   const [selectedRecommendation, setSelectedRecommendation] = useState<Recommendation | null>(null);
 
+  // State for AI Chat modal
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  const [selectedRecommendationId, setSelectedRecommendationId] = useState<number | null>(null);
+  const [selectedTeamName, setSelectedTeamName] = useState<string>('');
+
   const handleReason = (recommendation: Recommendation) => {
-    setSelectedRecommendation(recommendation);
+    setSelectedRecommendationId(recommendation.id);
+    setSelectedTeamName(recommendation.team_name);
+    setIsChatModalOpen(true);
+  };
+
+  const closeChatModal = () => {
+    setIsChatModalOpen(false);
+    setSelectedRecommendationId(null);
+    setSelectedTeamName('');
   };
 
   if (loading) {
@@ -292,6 +306,17 @@ export default function RecommendationsInsight({
           }
         })}
       </div>
+
+      {/* AI Chat Modal */}
+      {selectedRecommendationId !== null && (
+        <AIChatModal
+          isOpen={isChatModalOpen}
+          onClose={closeChatModal}
+          chatType="Recommendation_reason"
+          recommendationId={selectedRecommendationId}
+          teamName={selectedTeamName}
+        />
+      )}
     </div>
   );
 }
