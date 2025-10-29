@@ -16,6 +16,7 @@ import PIPredictability from '@/components/PIPredictability';
 import PIBurndownChart from '@/components/PIBurndownChart';
 import EpicScopeChangesChart from '@/components/EpicScopeChangesChart';
 import GeneralDataView from '@/components/GeneralDataView';
+import UploadTranscripts from '@/components/UploadTranscripts';
 import { getIssueTypes, getDefaultIssueType } from '@/lib/issueTypes';
 import { ApiService } from '@/lib/api';
 
@@ -77,6 +78,7 @@ export default function Home() {
     { id: 'settings', label: 'Settings', icon: '⚙️' },
     { id: 'general-data', label: 'View General Data', icon: '📋' },
     { id: 'create-agent-job', label: 'Create Agent Job', icon: '➕' },
+    { id: 'upload-transcripts', label: 'Upload Transcripts', icon: '📤' },
     { id: 'api-test', label: 'API Test', icon: '🔧' },
   ];
 
@@ -280,6 +282,8 @@ export default function Home() {
         );
       case 'general-data':
         return <GeneralDataView />;
+      case 'upload-transcripts':
+        return <UploadTranscripts selectedTeam={selectedTeam} selectedPI={selectedPI} />;
       case 'api-test':
         return <ApiTest teamName={selectedTeam} />;
       default:

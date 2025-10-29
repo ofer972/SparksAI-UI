@@ -50,6 +50,12 @@ export const API_CONFIG = {
       createTeamJob: '/api/v1/agent-jobs/create-team-job',
       createPiJob: '/api/v1/agent-jobs/create-pi-job',
     },
+    
+    // Transcript Upload endpoints
+    transcripts: {
+      uploadTeam: '/api/v1/transcripts/upload-team',
+      uploadPI: '/api/v1/transcripts/upload-pi',
+    },
   },
 } as const;
 

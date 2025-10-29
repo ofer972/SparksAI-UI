@@ -1,0 +1,9 @@
+// Test file for debugging upload issues
+// This is a simple test transcript file
+// Created for testing upload functionality
+
+Test transcript content:
+- Meeting started at 10:00 AM
+- Team discussed project progress
+- Action items assigned
+- Meeting ended at 11:00 AM
