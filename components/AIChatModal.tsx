@@ -48,6 +48,8 @@ export default function AIChatModal({
   const [dragPos, setDragPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
+  // Guard to prevent double initial call in React Strict Mode (dev only)
+  const lastInitialSentAtRef = useRef<number>(0);
 
   const onHeaderMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     // Enable drag only on non-touch large screens
@@ -119,6 +121,13 @@ export default function AIChatModal({
 
   // Send initial message automatically when modal opens
   const sendInitialMessage = React.useCallback(async () => {
+    // Dev-mode Strict Mode can remount and re-run effects quickly; guard duplicates
+    const now = Date.now();
+    if (now - lastInitialSentAtRef.current < 500) {
+      return;
+    }
+    lastInitialSentAtRef.current = now;
+
     setHasInitialMessage(true);
     setLoading(true);
     setError(null);
