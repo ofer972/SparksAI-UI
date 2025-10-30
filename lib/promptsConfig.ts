@@ -80,7 +80,6 @@ export const promptsConfig: EditableEntityConfig<Prompt> = {
       placeholder: 'Generate a daily summary of team activities',
       validation: {
         minLength: 10,
-        maxLength: 500,
       },
     },
     {
