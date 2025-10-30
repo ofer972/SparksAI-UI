@@ -182,7 +182,7 @@ export function DataTable<T extends Record<string, any>>({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+      <div className="overflow-x-auto max-h-[600px] overflow-y-auto px-2 border border-gray-200 rounded-md">
         <table className="w-full text-xs border-collapse">
           <thead>
             <tr className="border-b-2 border-gray-300 bg-gray-50">

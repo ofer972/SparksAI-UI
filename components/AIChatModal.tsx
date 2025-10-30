@@ -43,6 +43,56 @@ export default function AIChatModal({
   const [hasInitialMessage, setHasInitialMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const apiService = useRef(new ApiService());
+  // Drag state (desktop only)
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [dragPos, setDragPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const isDraggingRef = useRef(false);
+
+  const onHeaderMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Enable drag only on non-touch large screens
+    if (window.innerWidth < 768) return;
+    if (!panelRef.current) return;
+    isDraggingRef.current = true;
+    // Record offset between pointer and current position
+    dragOffsetRef.current = {
+      x: e.clientX - dragPos.x,
+      y: e.clientY - dragPos.y,
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp, { once: true });
+    e.preventDefault();
+  };
+
+  const onMouseMove = (e: MouseEvent) => {
+    if (!isDraggingRef.current || !panelRef.current) return;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const rect = panelRef.current.getBoundingClientRect();
+    const panelWidth = rect.width;
+    const panelHeight = rect.height;
+
+    let nextX = e.clientX - dragOffsetRef.current.x;
+    let nextY = e.clientY - dragOffsetRef.current.y;
+
+    // Clamp within viewport (relative to centered origin via transform)
+    const maxX = viewportWidth - panelWidth / 2;
+    const minX = -maxX;
+    const maxY = viewportHeight - panelHeight / 2;
+    const minY = -maxY;
+
+    if (nextX > maxX) nextX = maxX;
+    if (nextX < minX) nextX = minX;
+    if (nextY > maxY) nextY = maxY;
+    if (nextY < minY) nextY = minY;
+
+    setDragPos({ x: nextX, y: nextY });
+  };
+
+  const onMouseUp = () => {
+    isDraggingRef.current = false;
+    window.removeEventListener('mousemove', onMouseMove);
+  };
 
   // Build chat request payload
   const buildChatRequest = (
@@ -203,16 +253,23 @@ export default function AIChatModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] flex flex-col">
+      <div
+        ref={panelRef}
+        className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] flex flex-col"
+        style={{ transform: `translate(${dragPos.x}px, ${dragPos.y}px)` }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">AI Chat</h3>
+        <div
+          className="flex items-center justify-between p-3 border-b border-gray-200 select-none md:cursor-move bg-gray-100 text-gray-900 rounded-t-lg"
+          onMouseDown={onHeaderMouseDown}
+        >
+          <h3 className="text-sm font-semibold">AI Chat</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-600 hover:text-gray-800 transition-colors"
             aria-label="Close"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
