@@ -125,8 +125,8 @@ export default function AIChatModal({
     setConversationId(''); // Ensure conversation ID is empty on first message
 
     try {
-      // Send an empty or default initial question - adjust based on your needs
-      const initialQuestion = "Tell me about this insight.";
+      // Send an empty initial question
+      const initialQuestion = "";
       const requestPayload = buildChatRequest(initialQuestion, null); // null for first request
       console.log('AI Chat Request Payload:', requestPayload); // Debug: verify insights id is included
       const response = await apiService.current.chatWithInsight(requestPayload);
