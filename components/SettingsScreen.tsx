@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { ApiService } from '../lib/api';
 
 export default function SettingsScreen() {
   const [activeTab, setActiveTab] = useState('ai-config');
@@ -11,6 +12,108 @@ export default function SettingsScreen() {
   const [openaiTemperature, setOpenaiTemperature] = useState(0.7);
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [openaiApiKey, setOpenaiApiKey] = useState('');
+  const [originalGeminiApiKey, setOriginalGeminiApiKey] = useState<string | null>(null);
+  const [originalOpenaiApiKey, setOriginalOpenaiApiKey] = useState<string | null>(null);
+  const MASK = '********';
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Load settings from backend on mount
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const api = new ApiService();
+        const result = await api.getSettings();
+        if (!result) return;
+
+        // Support both { data: { settings: {...} } } and flat objects
+        const s = (result as any).settings ?? result;
+
+        // Provider
+        if (s.ai_provider) setAiProvider(s.ai_provider);
+
+        // Models (backend provides a single ai_model for chatgpt/openai)
+        if (s.ai_model) setOpenaiModel(s.ai_model);
+        if (s.gemini_model) setGeminiModel(s.gemini_model);
+
+        // Temperatures (map strings to numbers if needed)
+        if (s.ai_gemini_temperature !== undefined) {
+          const v = typeof s.ai_gemini_temperature === 'string' ? parseFloat(s.ai_gemini_temperature) : s.ai_gemini_temperature;
+          if (!Number.isNaN(v)) setGeminiTemperature(v);
+        } else if (s.gemini_temperature !== undefined) {
+          const v = typeof s.gemini_temperature === 'string' ? parseFloat(s.gemini_temperature) : s.gemini_temperature;
+          if (!Number.isNaN(v)) setGeminiTemperature(v);
+        }
+
+        if (s.ai_chatgpt_temperature !== undefined) {
+          const v = typeof s.ai_chatgpt_temperature === 'string' ? parseFloat(s.ai_chatgpt_temperature) : s.ai_chatgpt_temperature;
+          if (!Number.isNaN(v)) setOpenaiTemperature(v);
+        } else if (s.openai_temperature !== undefined) {
+          const v = typeof s.openai_temperature === 'string' ? parseFloat(s.openai_temperature) : s.openai_temperature;
+          if (!Number.isNaN(v)) setOpenaiTemperature(v);
+        }
+
+        // API keys presence
+        const hasGeminiKey = Boolean(s.gemini_api_key && String(s.gemini_api_key).length > 0);
+        const openaiKeyValue = s.chatgpt_api_key || s.openai_api_key;
+        const hasOpenaiKey = Boolean(openaiKeyValue && String(openaiKeyValue).length > 0);
+
+        setOriginalGeminiApiKey(hasGeminiKey ? String(s.gemini_api_key) : null);
+        setOriginalOpenaiApiKey(hasOpenaiKey ? String(openaiKeyValue) : null);
+        setGeminiApiKey(hasGeminiKey ? MASK : '');
+        setOpenaiApiKey(hasOpenaiKey ? MASK : '');
+      } catch (e) {
+        console.error('Failed to load settings', e);
+      }
+    };
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setSaveMessage(null);
+      setSaveError(null);
+      const api = new ApiService();
+      // Match backend field names and types per /settings/batch
+      const providerForApi = aiProvider === 'openai' ? 'chatgpt' : aiProvider; // backend expects 'chatgpt'
+      // Determine keys to send: send original value if user didn't change (masked)
+      const geminiKeyToSend = geminiApiKey && geminiApiKey !== MASK
+        ? geminiApiKey
+        : (originalGeminiApiKey ?? '');
+      const openaiKeyToSend = openaiApiKey && openaiApiKey !== MASK
+        ? openaiApiKey
+        : (originalOpenaiApiKey ?? '');
+
+      const payload: Record<string, any> = {
+        ai_provider: String(providerForApi),
+        ai_model: String(openaiModel),
+        ai_gemini_temperature: String(geminiTemperature),
+        ai_chatgpt_temperature: String(openaiTemperature),
+        gemini_api_key: String(geminiKeyToSend),
+        chatgpt_api_key: String(openaiKeyToSend),
+      };
+
+      console.log('Saving settings payload (batch):', payload);
+      const result = await api.updateSettings(payload, 'admin@example.com');
+      console.log('Save settings result:', result);
+
+      // After save, mask and update originals
+      setOriginalGeminiApiKey(payload.gemini_api_key);
+      setOriginalOpenaiApiKey(payload.chatgpt_api_key);
+      setGeminiApiKey(MASK);
+      setOpenaiApiKey(MASK);
+
+      setSaveMessage('Settings saved successfully');
+    } catch (e) {
+      console.error('Failed to save settings', e);
+      setSaveError((e as any)?.message || 'Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const settingsTabs = [
     { id: 'ai-config', label: 'AI Configuration', icon: '🤖' },
@@ -154,10 +257,16 @@ export default function SettingsScreen() {
             </div>
 
             {/* Save Button */}
-            <div className="flex justify-start">
-              <button className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:from-blue-600 hover:to-blue-700 transition-all">
+            <div className="flex flex-col items-start space-y-2">
+              <button onClick={handleSave} disabled={saving} className={`bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium transition-all ${saving ? 'opacity-60 cursor-not-allowed' : 'hover:from-blue-600 hover:to-blue-700'}`}>
                 Save AI Configuration
               </button>
+              {saveMessage && (
+                <span className="text-xs text-green-600">{saveMessage}</span>
+              )}
+              {saveError && (
+                <span className="text-xs text-red-600">{saveError}</span>
+              )}
             </div>
           </div>
         );

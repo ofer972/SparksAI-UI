@@ -56,6 +56,13 @@ export const API_CONFIG = {
       uploadTeam: '/api/v1/transcripts/upload-team',
       uploadPI: '/api/v1/transcripts/upload-pi',
     },
+
+    // Settings endpoints
+    settings: {
+      get: '/api/v1/settings/getAll',
+      update: '/api/v1/settings',
+      batch: '/api/v1/settings/batch',
+    },
   },
 } as const;
 

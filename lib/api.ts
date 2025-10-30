@@ -927,6 +927,53 @@ export class ApiService {
 
     return response.json();
   }
+
+  // Settings API
+  async getSettings(): Promise<any> {
+    const url = buildApiUrl(API_CONFIG.endpoints.settings.get);
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch settings: ${response.statusText}`);
+    }
+    const result = await response.json();
+    // Support common shapes
+    if (result?.success && result?.data) return result.data;
+    return result;
+  }
+
+  async updateSettings(settings: Record<string, any>, updatedBy?: string): Promise<any> {
+    const url = buildApiUrl(API_CONFIG.endpoints.settings.batch);
+    // Attempt 1: dict form { settings: { key: value }, updated_by }
+    const bodyDict = { settings, updated_by: updatedBy || 'ui' } as any;
+    console.log('updateSettings URL:', url);
+    console.log('updateSettings body (dict):', bodyDict);
+    let response = await fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(bodyDict),
+    });
+    if (response.ok) {
+      return response.json();
+    }
+    const text1 = await response.text();
+    // If the server expects an array of {key, value}
+    if (response.status === 422 || response.status === 400) {
+      const settingsArray = Object.entries(settings).map(([key, value]) => ({ key, value }));
+      const bodyArray = { settings: settingsArray, updated_by: updatedBy || 'ui' };
+      console.warn('updateSettings retry with array payload due to', response.status, text1);
+      console.log('updateSettings body (array):', bodyArray);
+      response = await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(bodyArray),
+      });
+      if (response.ok) {
+        return response.json();
+      }
+    }
+    const text = await response.text();
+    throw new Error(`Failed to update settings: ${response.status} ${response.statusText}${text ? ` - ${text}` : ''}`);
+  }
 }
 
 // Legacy class for backward compatibility
