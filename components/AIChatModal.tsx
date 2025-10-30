@@ -132,8 +132,8 @@ export default function AIChatModal({
       const response = await apiService.current.chatWithInsight(requestPayload);
 
       if (response.success && response.data) {
-        // Extract conversation ID from canonical path
-        const convId = response.data.conversation_id || '';
+        // Extract conversation ID from typed canonical path
+        const convId = response.data.input_parameters?.conversation_id || '';
         if (convId) {
           setConversationId(convId);
         }
@@ -206,8 +206,8 @@ export default function AIChatModal({
       const response = await apiService.current.chatWithInsight(requestPayload);
 
       if (response.success && response.data) {
-        // Extract conversation ID from canonical path
-        const convId = response.data.conversation_id || '';
+        // Extract conversation ID from typed canonical path
+        const convId = response.data.input_parameters?.conversation_id || '';
         if (convId) {
           setConversationId(convId);
         }
