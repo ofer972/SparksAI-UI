@@ -407,6 +407,41 @@ export class ApiService {
     return [];
   }
 
+  // PI AI Cards API (list)
+  async getPIAICardsList(): Promise<any[]> {
+    const response = await fetch(buildApiUrl('/api/v1/pi-ai-cards'));
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch PI AI cards: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    if (result.success && result.data && Array.isArray(result.data.cards)) {
+      return result.data.cards;
+    }
+    if (result.success && Array.isArray(result.data)) {
+      return result.data;
+    }
+    if (Array.isArray(result)) {
+      return result;
+    }
+    return [];
+  }
+
+  // PI AI Card detail
+  async getPIAICardDetail(id: string): Promise<any> {
+    const url = `${buildApiUrl('/api/v1/pi-ai-cards')}/${id}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch PI AI card detail: ${response.statusText}`);
+    }
+    const result: ApiResponse<any> = await response.json();
+    if (result.success && result.data) {
+      return result.data.card || result.data;
+    }
+    return result.data;
+  }
+
   async getTeamAICardDetail(id: string): Promise<any> {
     const url = `${buildApiUrl(API_CONFIG.endpoints.generalData.teamAICardDetail)}/${id}`;
     
