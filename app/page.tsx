@@ -381,7 +381,7 @@ export default function Home() {
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="Ask AI..."
+                    placeholder="Ask SparksAI..."
                     className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
