@@ -1,6 +1,6 @@
 // API Configuration
 export const API_CONFIG = {
-  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://sparksai-backend-production.up.railway.app',
+  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || '/api',
   version: process.env.NEXT_PUBLIC_API_VERSION || 'v1',
   
   endpoints: {
