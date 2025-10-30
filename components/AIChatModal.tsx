@@ -50,6 +50,8 @@ export default function AIChatModal({
   const isDraggingRef = useRef(false);
   // Guard to prevent double initial call in React Strict Mode (dev only)
   const lastInitialSentAtRef = useRef<number>(0);
+  // Timer ref for typewriter effect
+  const typingTimerRef = useRef<number | null>(null);
 
   const onHeaderMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     // Enable drag only on non-touch large screens
@@ -147,12 +149,8 @@ export default function AIChatModal({
           setConversationId(convId);
         }
 
-        // Add AI response to chat
-        const aiMessage: Message = {
-          role: 'assistant',
-          content: response.data.response || 'No response received.',
-        };
-        setMessages([aiMessage]);
+        // Typewriter effect for assistant response
+        startTypewriter(response.data.response || '', false);
       } else {
         throw new Error(response.message || 'Failed to get AI response');
       }
@@ -198,6 +196,51 @@ export default function AIChatModal({
     }
   }, [messages, loading]);
 
+  // Cleanup typing timer on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimerRef.current) {
+        window.clearInterval(typingTimerRef.current);
+        typingTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  const startTypewriter = (fullText: string, append: boolean = false) => {
+    if (typingTimerRef.current) {
+      window.clearInterval(typingTimerRef.current);
+      typingTimerRef.current = null;
+    }
+
+    const words = (fullText || '').split(/(\s+)/); // keep spaces as tokens
+
+    if (append) {
+      setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
+    } else {
+      setMessages([{ role: 'assistant', content: '' }]);
+    }
+
+    let index = 0;
+    typingTimerRef.current = window.setInterval(() => {
+      index += 1;
+      setMessages((prev) => {
+        const updated = [...prev];
+        const lastIdx = updated.length - 1;
+        const current = updated[lastIdx];
+        if (!current || current.role !== 'assistant') return updated;
+        const nextContent = words.slice(0, index).join('');
+        updated[lastIdx] = { ...current, content: nextContent };
+        return updated;
+      });
+      if (index >= words.length) {
+        if (typingTimerRef.current) {
+          window.clearInterval(typingTimerRef.current);
+          typingTimerRef.current = null;
+        }
+      }
+    }, 30);
+  };
+
   // Handle sending a message
   const handleSend = async () => {
     const question = inputValue.trim();
@@ -221,12 +264,8 @@ export default function AIChatModal({
           setConversationId(convId);
         }
 
-        // Add AI response to chat
-        const aiMessage: Message = {
-          role: 'assistant',
-          content: response.data.response || 'No response received.',
-        };
-        setMessages((prev) => [...prev, aiMessage]);
+        // Typewriter effect for assistant response (append)
+        startTypewriter(response.data.response || '', true);
       } else {
         throw new Error(response.message || 'Failed to get AI response');
       }
