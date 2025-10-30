@@ -3,6 +3,7 @@ import AgentJobsTab from './AgentJobsTab';
 import TeamAICardsTab from './TeamAICardsTab';
 import PIAICardsTab from './PIAICardsTab';
 import PromptsTab from './PromptsTab';
+import TranscriptsTab from './TranscriptsTab';
 
 interface TabItem {
   id: string;
@@ -41,15 +42,7 @@ export default function GeneralDataView() {
           </div>
         );
       case 'view-transcripts':
-        return (
-          <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-            <div className="text-4xl mb-3">📝</div>
-            <h2 className="text-lg font-semibold mb-2">View Transcripts</h2>
-            <p className="text-sm text-gray-600">
-              View Transcripts tab will be implemented using the generic architecture.
-            </p>
-          </div>
-        );
+        return <TranscriptsTab />;
       case 'prompts':
         return <PromptsTab />;
       default:
