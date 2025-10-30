@@ -1,6 +1,6 @@
 ========================================== 
 SparksAI-UI Project - Combined Code File 
-Generated on: 29/10/2025  9:02:57.26 
+Generated on: 30/10/2025  8:10:53.51 
 ========================================== 
  
 ========================================== 
@@ -163,6 +163,22 @@ FILE: next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // App directory is now stable in Next.js 14, no need for experimental flag
+  async rewrites() {
+    const target = process.env.INTERNAL_BACKEND_URL || 'http://localhost:8000';
+    // Ensure destination is valid for Next.js (must start with /, http:// or https://)
+    if (!/^https?:\/\//.test(target)) {
+      throw new Error(
+        `Invalid INTERNAL_BACKEND_URL: "${target}". It must start with http:// or https://`
+      );
+    }
+
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${target}/:path*`,
+      },
+    ];
+  },
 }
 
 module.exports = nextConfig
@@ -397,7 +413,9 @@ import PIPredictability from '@/components/PIPredictability';
 import PIBurndownChart from '@/components/PIBurndownChart';
 import EpicScopeChangesChart from '@/components/EpicScopeChangesChart';
 import GeneralDataView from '@/components/GeneralDataView';
+import PromptsTab from '@/components/PromptsTab';
 import UploadTranscripts from '@/components/UploadTranscripts';
+import AIChatModal from '@/components/AIChatModal';
 import { getIssueTypes, getDefaultIssueType } from '@/lib/issueTypes';
 import { ApiService } from '@/lib/api';
 
@@ -415,6 +433,7 @@ export default function Home() {
     piSync: false,
   });
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isDashboardChatModalOpen, setIsDashboardChatModalOpen] = useState(false);
 
   const apiService = new ApiService();
 
@@ -455,6 +474,7 @@ export default function Home() {
     { id: 'team-dashboard', label: 'Team Dashboard', icon: '📊' },
     { id: 'pi-quarter', label: 'PI AI Insights', icon: '🕐' },
     { id: 'pi-dashboard', label: 'PI Dashboard', icon: '📈' },
+    { id: 'prompts', label: 'Prompts', icon: '🧠' },
     { id: 'ai-chat', label: 'AI Direct Data Chat', icon: '🤖' },
     { id: 'settings', label: 'Settings', icon: '⚙️' },
     { id: 'general-data', label: 'View General Data', icon: '📋' },
@@ -469,6 +489,7 @@ export default function Home() {
     'team-dashboard': 'SparksAI-Team Dashboard',
     'pi-quarter': 'SparksAI-PI AI Insights',
     'pi-dashboard': 'SparksAI-PI Dashboard',
+    'prompts': 'SparksAI-Prompts',
     'ai-chat': 'SparksAI-AI Chat',
     'settings': 'SparksAI-Settings',
     'general-data': 'SparksAI-General Data',
@@ -599,6 +620,8 @@ export default function Home() {
             </div>
           </div>
         );
+      case 'prompts':
+        return <PromptsTab />;
       case 'settings':
         return <SettingsScreen />;
       case 'create-agent-job':
@@ -748,7 +771,7 @@ export default function Home() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
+        <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0 relative">
             <div className="flex items-center justify-between mb-3">
               <h1 className="text-lg font-bold text-blue-600">SparksAI Insights & Dashboards</h1>
               <div className="flex items-center space-x-4">
@@ -776,6 +799,14 @@ export default function Home() {
               selectedTeam={selectedTeam}
               onTeamChange={setSelectedTeam}
             />
+            {(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') && (
+              <button
+                onClick={() => setIsDashboardChatModalOpen(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-full text-sm font-medium transition-colors shadow-sm hover:shadow-md absolute left-1/2 transform -translate-x-1/2"
+              >
+                Get Dashboard AI Insights
+              </button>
+            )}
           </div>
         </div>
 
@@ -784,6 +815,23 @@ export default function Home() {
           {renderMainContent()}
         </div>
       </div>
+
+      {/* Dashboard Insights AI Chat Modal */}
+      {(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') && (
+        <AIChatModal
+          isOpen={isDashboardChatModalOpen}
+          onClose={() => setIsDashboardChatModalOpen(false)}
+          chatType={
+            activeNavItem === 'team-dashboard' 
+              ? 'Team_dashboard' 
+              : activeNavItem === 'pi-dashboard' 
+                ? 'PI_dashboard' 
+                : ''
+          }
+          teamName={activeNavItem === 'team-dashboard' ? selectedTeam : undefined}
+          piName={activeNavItem === 'pi-dashboard' ? selectedPI : undefined}
+        />
+      )}
     </div>
   );
 } 
@@ -985,312 +1033,6 @@ export default function AgentJobDetailModal({
 ========================================== 
 FILE: components\AgentJobsTab.tsx 
 ========================================== 
-import { useState } from 'react';
-import { useAgentJobs } from '@/hooks/useAgentJobs';
-import AgentJobDetailModal from './AgentJobDetailModal';
-import DeleteConfirmationModal from './DeleteConfirmationModal';
-
-export default function AgentJobsTab() {
-  const { jobs, loading, error, refetch } = useAgentJobs();
-  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
-    key: '',
-    direction: 'asc'
-  });
-  
-  // Filter state
-  const [filterText, setFilterText] = useState('');
-
-  // Ensure jobs is always an array
-  const safeJobs = Array.isArray(jobs) ? jobs : [];
-
-  // Apply text filter
-  const filteredJobs = safeJobs.filter(job => {
-    if (!filterText) return true;
-    return Object.values(job).some(value => 
-      String(value).toLowerCase().includes(filterText.toLowerCase())
-    );
-  });
-
-  // Get available columns from the first job
-  const availableColumns = safeJobs.length > 0 ? Object.keys(safeJobs[0]).map(key => ({
-    key,
-    label: key === 'job_id' ? 'Job ID' : key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-  })) : [];
-
-  const handleSort = (key: string) => {
-    if (sortConfig.key === key) {
-      setSortConfig({
-        key,
-        direction: sortConfig.direction === 'asc' ? 'desc' : 'asc',
-      });
-    } else {
-      setSortConfig({ key, direction: 'asc' });
-    }
-  };
-
-  const sortedJobs = [...filteredJobs].sort((a, b) => {
-    if (!sortConfig.key) return 0;
-    
-    const aValue = a[sortConfig.key];
-    const bValue = b[sortConfig.key];
-    
-    if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
-    if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
-    return 0;
-  });
-
-  const handleViewJob = (jobId: string) => {
-    setSelectedJobId(jobId);
-    setIsDetailModalOpen(true);
-  };
-
-  const handleDeleteJob = (jobId: string) => {
-    setSelectedJobId(jobId);
-    setIsDeleteModalOpen(true);
-  };
-
-  const formatCellValue = (value: any, key: string) => {
-    if (value === null || value === undefined) return '-';
-    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-    if (typeof value === 'object') return JSON.stringify(value);
-    
-    // Special formatting for specific columns
-    if (key === 'claimed_at') {
-      // Format date to show time with minutes only
-      try {
-        const date = new Date(value);
-        return date.toLocaleString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false
-        });
-      } catch {
-        return String(value);
-      }
-    }
-    
-    if (key === 'result' && typeof value === 'string') {
-      // For results, show more text but still truncate very long ones
-      if (value.length > 100) {
-        return value.substring(0, 100) + '...';
-      }
-      return value;
-    }
-    
-    if (typeof value === 'string' && value.length > 50) {
-      return value.substring(0, 50) + '...';
-    }
-    return String(value);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'completed':
-        return 'text-green-600 font-semibold';
-      case 'error':
-        return 'text-red-600 font-semibold';
-      default:
-        return 'text-blue-600 font-semibold';
-    }
-  };
-
-  const SortIcon = ({ columnKey }: { columnKey: string }) => {
-    if (sortConfig.key !== columnKey) {
-      return (
-        <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-        </svg>
-      );
-    }
-    
-    return sortConfig.direction === 'asc' ? (
-      <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-      </svg>
-    ) : (
-      <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
-    );
-  };
-
-  const SkeletonRow = () => (
-    <tr className="border-b border-gray-200">
-      {[...Array(availableColumns.length + 1)].map((_, index) => (
-        <td key={index} className={`py-2 px-3 ${
-          index < availableColumns.length ? 'border-r border-gray-200' : 'border-l border-gray-200'
-        }`}>
-          <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-        </td>
-      ))}
-    </tr>
-  );
-
-  return (
-    <div className="bg-white rounded-lg shadow-sm">
-      {/* Header */}
-      <div className="px-4 py-2 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-900">Agent Jobs</h2>
-          <button
-            onClick={refetch}
-            disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            {loading ? 'Refreshing...' : 'Refresh'}
-          </button>
-        </div>
-        
-        {/* Search Filter */}
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            placeholder="Filter jobs..."
-            value={filterText}
-            onChange={(e) => setFilterText(e.target.value)}
-            className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-        <table className="w-full text-xs border-collapse">
-          <thead>
-            <tr className="border-b-2 border-gray-300 bg-gray-50">
-              {availableColumns.map((column, index) => (
-                <th 
-                  key={column.key}
-                  className={`py-2 px-3 cursor-pointer hover:bg-gray-100 font-semibold text-gray-700 ${
-                    column.key === 'job_id' ? 'text-center' : 'text-left'
-                  } ${
-                    index < availableColumns.length - 1 ? 'border-r border-gray-200' : ''
-                  } ${
-                    column.key === 'result' ? 'min-w-80 max-w-md' : ''
-                  } ${
-                    column.key === 'error' ? 'max-w-32' : ''
-                  }`}
-                  onClick={() => handleSort(column.key)}
-                >
-                  <div className={`flex items-center gap-1 ${
-                    column.key === 'job_id' ? 'justify-center' : ''
-                  }`}>
-                    {column.label}
-                    <SortIcon columnKey={column.key} />
-                  </div>
-                </th>
-              ))}
-              <th className="py-2 px-3 text-center text-gray-500 font-semibold border-l border-gray-200">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <>
-                <SkeletonRow />
-                <SkeletonRow />
-                <SkeletonRow />
-                <SkeletonRow />
-              </>
-            ) : error ? (
-              <tr>
-                <td colSpan={availableColumns.length + 1} className="py-8 text-center text-red-600">
-                  Error: {error}
-                  <div className="text-xs text-gray-500 mt-2">Check console for more details</div>
-                </td>
-              </tr>
-            ) : availableColumns.length === 0 ? (
-              <tr>
-                <td colSpan={10} className="py-8 text-center text-gray-500">
-                  No data available. Waiting for API response...
-                </td>
-              </tr>
-            ) : (
-              sortedJobs.map((job, index) => (
-                <tr key={index} className={`border-b border-gray-200 ${
-                  index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
-                }`}>
-                  {availableColumns.map((column, colIndex) => (
-                    <td 
-                      key={column.key}
-                      className={`py-2 px-3 ${
-                        column.key === 'job_id' ? 'text-center' : 'text-left'
-                      } ${
-                        colIndex < availableColumns.length - 1 ? 'border-r border-gray-200' : ''
-                      } ${
-                        column.key === 'status' ? getStatusColor(job[column.key]) : ''
-                      } ${
-                        column.key === 'result' ? 'text-sm min-w-80 max-w-md' : ''
-                      } ${
-                        column.key === 'error' ? 'text-xs max-w-32' : ''
-                      }`}
-                    >
-                      {formatCellValue(job[column.key], column.key)}
-                    </td>
-                  ))}
-                  <td className="py-2 px-3 text-center border-l border-gray-200">
-                    <div className="flex items-center justify-center gap-2">
-                      <button
-                        onClick={() => handleViewJob(job.job_id || job.id || index.toString())}
-                        className="text-blue-600 hover:text-blue-800 transition-colors p-1 rounded hover:bg-blue-50"
-                        title="View Details"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteJob(job.job_id || job.id || index.toString())}
-                        className="text-red-600 hover:text-red-800 transition-colors p-1 rounded hover:bg-red-50"
-                        title="Delete"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {sortedJobs.length === 0 && !loading && !error && (
-        <div className="text-center py-8 text-gray-500">
-          No agent jobs found.
-        </div>
-      )}
-
-      {/* Modals */}
-      <AgentJobDetailModal
-        isOpen={isDetailModalOpen}
-        onClose={() => setIsDetailModalOpen(false)}
-        jobId={selectedJobId || ''}
-      />
-      
-      <DeleteConfirmationModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        itemName="agent job"
-      />
-    </div>
-  );
-}
- 
- 
-========================================== 
-FILE: components\AgentJobsTabNew.tsx 
-========================================== 
 import React from 'react';
 import { useEntityTableManager } from '@/hooks/useEntityTableManager';
 import { agentJobsConfig, AgentJob } from '@/lib/entityConfig';
@@ -1375,6 +1117,7 @@ export default function AICards({ teamName }: AICardProps) {
       title="Team AI Insights"
       emptyMessage={`No AI insights available for ${teamName} at this time.`}
       config={teamAICardsConfig}
+      chatType="Team_insights"
     />
   );
 }
@@ -1438,6 +1181,320 @@ export default function AICardsTab() {
         itemName="AI card"
       />
     </>
+  );
+}
+ 
+ 
+========================================== 
+FILE: components\AIChatModal.tsx 
+========================================== 
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { ApiService } from '@/lib/api';
+
+interface AIChatModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  
+  // Required - identifies what we're chatting about
+  chatType: string;
+  
+  // Context parameters - each parent passes what it has
+  insightsId?: number | string;
+  recommendationId?: number | string;
+  teamName?: string;
+  piName?: string;
+  username?: string;
+}
+
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export default function AIChatModal({
+  isOpen,
+  onClose,
+  chatType,
+  insightsId,
+  recommendationId,
+  teamName,
+  piName,
+  username = 'user',
+}: AIChatModalProps) {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputValue, setInputValue] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string>('');
+  const [hasInitialMessage, setHasInitialMessage] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const apiService = useRef(new ApiService());
+
+  // Build chat request payload
+  const buildChatRequest = (
+    question: string,
+    convId: string | null
+  ) => {
+    const request: any = {
+      question: question,
+      username: username,
+      selected_team: teamName || '',
+      selected_pi: piName || '',
+      chat_type: chatType,
+      recommendation_id: recommendationId !== undefined && recommendationId !== null ? String(recommendationId) : '',
+      insights_id: insightsId !== undefined && insightsId !== null ? String(insightsId) : '',
+    };
+    
+    // Only include conversation_id if it exists (for follow-up questions)
+    if (convId && convId.trim() !== '') {
+      request.conversation_id = convId;
+    }
+    
+    return request;
+  };
+
+  // Send initial message automatically when modal opens
+  const sendInitialMessage = React.useCallback(async () => {
+    setHasInitialMessage(true);
+    setLoading(true);
+    setError(null);
+    setConversationId(''); // Ensure conversation ID is empty on first message
+
+    try {
+      // Send an empty or default initial question - adjust based on your needs
+      const initialQuestion = "Tell me about this insight.";
+      const requestPayload = buildChatRequest(initialQuestion, null); // null for first request
+      console.log('AI Chat Request Payload:', requestPayload); // Debug: verify insights id is included
+      const response = await apiService.current.chatWithInsight(requestPayload);
+
+      if (response.success && response.data) {
+        // Extract conversation ID from response
+        const convId = 
+          response.data.input_parameters?.conversation_id ||
+          '';
+        if (convId) {
+          setConversationId(convId);
+        }
+
+        // Add AI response to chat
+        const aiMessage: Message = {
+          role: 'assistant',
+          content: response.data.response || 'No response received.',
+        };
+        setMessages([aiMessage]);
+      } else {
+        throw new Error(response.message || 'Failed to get AI response');
+      }
+    } catch (err) {
+      console.error('Error sending initial chat message:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send message. Please try again.';
+      setError(errorMessage);
+      
+      // Add error message to chat
+      const errorMsg: Message = {
+        role: 'assistant',
+        content: `Error: ${errorMessage}`,
+      };
+      setMessages([errorMsg]);
+    } finally {
+      setLoading(false);
+    }
+  }, [chatType, insightsId, recommendationId, teamName, piName, username]);
+
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setMessages([]);
+      setInputValue('');
+      setLoading(false);
+      setError(null);
+      setConversationId('');
+      setHasInitialMessage(false);
+    }
+  }, [isOpen]);
+
+  // Send initial message when modal opens
+  useEffect(() => {
+    if (isOpen && !hasInitialMessage) {
+      sendInitialMessage();
+    }
+  }, [isOpen, hasInitialMessage, sendInitialMessage]);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, loading]);
+
+  // Handle sending a message
+  const handleSend = async () => {
+    const question = inputValue.trim();
+    if (!question || loading) return;
+
+    // Add user message to chat
+    const userMessage: Message = { role: 'user', content: question };
+    setMessages((prev) => [...prev, userMessage]);
+    setInputValue('');
+    setLoading(true);
+    setError(null);
+
+    try {
+      const requestPayload = buildChatRequest(question, conversationId);
+      const response = await apiService.current.chatWithInsight(requestPayload);
+
+      if (response.success && response.data) {
+        // Extract conversation ID from response if provided
+        const convId = 
+          response.data.input_parameters?.conversation_id ||
+          '';
+        if (convId) {
+          setConversationId(convId);
+        }
+
+        // Add AI response to chat
+        const aiMessage: Message = {
+          role: 'assistant',
+          content: response.data.response || 'No response received.',
+        };
+        setMessages((prev) => [...prev, aiMessage]);
+      } else {
+        throw new Error(response.message || 'Failed to get AI response');
+      }
+    } catch (err) {
+      console.error('Error sending chat message:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send message. Please try again.';
+      setError(errorMessage);
+      
+      // Add error message to chat
+      const errorMsg: Message = {
+        role: 'assistant',
+        content: `Error: ${errorMessage}`,
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle Enter key (Shift+Enter for new line, Enter to send)
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">AI Chat</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Close"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto p-4 min-h-[400px] space-y-4">
+          {messages.length === 0 && !loading && !hasInitialMessage && (
+            <div className="text-center text-gray-500 text-sm mt-8">
+              Loading...
+            </div>
+          )}
+
+          {messages.map((message, index) => (
+            <div
+              key={index}
+              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-[75%] rounded-lg px-4 py-2 ${
+                  message.role === 'user'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-800'
+                }`}
+              >
+                {message.role === 'assistant' ? (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      p: ({ children }) => <p className="text-sm mb-2 last:mb-0">{children}</p>,
+                      strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                      em: ({ children }) => <em className="italic">{children}</em>,
+                      ul: ({ children }) => <ul className="list-disc list-inside text-sm mb-2 space-y-1">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal list-inside text-sm mb-2 space-y-1">{children}</ol>,
+                      li: ({ children }) => <li className="text-sm">{children}</li>,
+                      code: ({ children }) => (
+                        <code className="bg-gray-200 px-1 rounded text-sm font-mono">{children}</code>
+                      ),
+                      pre: ({ children }) => (
+                        <pre className="bg-gray-200 p-2 rounded text-sm overflow-x-auto mb-2">{children}</pre>
+                      ),
+                      h1: ({ children }) => <h1 className="text-base font-bold mb-2">{children}</h1>,
+                      h2: ({ children }) => <h2 className="text-sm font-bold mb-2">{children}</h2>,
+                      h3: ({ children }) => <h3 className="text-sm font-semibold mb-1">{children}</h3>,
+                      blockquote: ({ children }) => (
+                        <blockquote className="border-l-2 border-gray-300 pl-2 italic text-sm mb-2">{children}</blockquote>
+                      ),
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
+                ) : (
+                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {/* Loading indicator */}
+          {loading && (
+            <div className="flex justify-center text-gray-500 text-sm italic">
+              Sending your request to the LLM
+            </div>
+          )}
+
+          {/* Scroll anchor */}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input Area */}
+        <div className="p-4 border-t border-gray-200">
+          <div className="flex items-end space-x-2">
+            <textarea
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type your question here... (Press Enter to send, Shift+Enter for new line)"
+              rows={3}
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={loading}
+            />
+            <button
+              onClick={handleSend}
+              disabled={!inputValue.trim() || loading}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+            >
+              Send
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
  
@@ -2185,7 +2242,11 @@ interface DataTableProps<T> {
   onFilterChange: (text: string) => void;
   onViewItem: (item: T) => void;
   onDeleteItem: (item: T) => void;
+  onEditItem?: (item: T) => void;
+  onCreateItem?: () => void;
   onRefresh: () => void;
+  allowEdit?: boolean;
+  allowCreate?: boolean;
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -2199,7 +2260,11 @@ export function DataTable<T extends Record<string, any>>({
   onFilterChange,
   onViewItem,
   onDeleteItem,
+  onEditItem,
+  onCreateItem,
   onRefresh,
+  allowEdit = false,
+  allowCreate = false,
 }: DataTableProps<T>) {
   
   // Simple auto-discovery of columns
@@ -2309,16 +2374,29 @@ export function DataTable<T extends Record<string, any>>({
       <div className="px-4 py-2 border-b border-gray-200">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold text-gray-900">{config.title}</h2>
-          <button
-            onClick={onRefresh}
-            disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            {loading ? 'Refreshing...' : 'Refresh'}
-          </button>
+          <div className="flex gap-2">
+            {allowCreate && onCreateItem && (
+              <button
+                onClick={onCreateItem}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Create
+              </button>
+            )}
+            <button
+              onClick={onRefresh}
+              disabled={loading}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {loading ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
         </div>
         
         {/* Search Filter */}
@@ -2400,6 +2478,17 @@ export function DataTable<T extends Record<string, any>>({
                   ))}
                   <td className="py-2 px-3 text-center border-l border-gray-200">
                     <div className="flex items-center justify-center gap-2">
+                      {allowEdit && onEditItem && (
+                        <button
+                          onClick={() => onEditItem(item)}
+                          className="text-green-600 hover:text-green-800 transition-colors p-1 rounded hover:bg-green-50"
+                          title="Edit"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                      )}
                       <button
                         onClick={() => onViewItem(item)}
                         className="text-blue-600 hover:text-blue-800 transition-colors p-1 rounded hover:bg-blue-50"
@@ -2471,11 +2560,10 @@ export default function DeleteConfirmationModal({
           {/* Content */}
           <div className="text-center">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Under Construction
+              Confirm Delete
             </h3>
             <p className="text-sm text-gray-600 mb-6">
-              The delete functionality for {itemName} is currently under development. 
-              Please check back later.
+              Are you sure you want to delete {itemName}? This action cannot be undone.
             </p>
 
             {/* Action Buttons */}
@@ -2490,7 +2578,6 @@ export default function DeleteConfirmationModal({
                 <button
                   onClick={() => {
                     onConfirm();
-                    onClose();
                   }}
                   className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors font-medium"
                 >
@@ -2504,6 +2591,362 @@ export default function DeleteConfirmationModal({
     </div>
   );
 }
+ 
+ 
+========================================== 
+FILE: components\EditRecordModal.tsx 
+========================================== 
+import React, { useState, useEffect } from 'react';
+import { EditableEntityConfig, FormFieldConfig } from '@/lib/entityConfig';
+
+interface EditRecordModalProps<T> {
+  isOpen: boolean;
+  onClose: () => void;
+  item: T | null;
+  config: EditableEntityConfig<T>;
+  mode: 'create' | 'edit';
+  onSave: (data: Partial<T>) => Promise<void>;
+}
+
+export function EditRecordModal<T extends Record<string, any>>({
+  isOpen,
+  onClose,
+  item,
+  config,
+  mode,
+  onSave,
+}: EditRecordModalProps<T>) {
+  const [formData, setFormData] = useState<Partial<T>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Initialize form data when modal opens or item changes
+  useEffect(() => {
+    if (isOpen) {
+      if (mode === 'edit' && item) {
+        console.log('EditRecordModal: Initializing form data with item:', item);
+        console.log('EditRecordModal: Item keys:', Object.keys(item));
+        console.log('EditRecordModal: prompt_type value:', (item as any).prompt_type);
+        console.log('EditRecordModal: All item values:', Object.entries(item));
+        const formDataToSet = { ...item };
+        console.log('EditRecordModal: Form data to set:', formDataToSet);
+        console.log('EditRecordModal: Form data prompt_type:', formDataToSet.prompt_type);
+        setFormData(formDataToSet);
+      } else {
+        // Initialize with empty values for create mode
+        const initialData: Partial<T> = {};
+        if (config.editableFields) {
+          config.editableFields.forEach(field => {
+            // For prompts, set prompt_active to true by default in create mode
+            if (config.title === 'Prompts' && field.key === 'prompt_active' && field.type === 'boolean') {
+              initialData[field.key] = true as any;
+            } else {
+              initialData[field.key] = (field.type === 'boolean' ? false : '') as any;
+            }
+          });
+        }
+        console.log('EditRecordModal: Initializing empty form data:', initialData);
+        setFormData(initialData);
+      }
+      setErrors({});
+      setSaveError(null);
+    }
+  }, [isOpen, item, mode, config]);
+
+  if (!isOpen) return null;
+
+  const validateField = (key: string, value: any, fieldConfig: FormFieldConfig<T>): string | null => {
+    // Required validation
+    if (fieldConfig.required && (value === null || value === '' || value === undefined)) {
+      return `${fieldConfig.label} is required`;
+    }
+
+    // Skip further validation if field is empty and not required
+    if (!value && !fieldConfig.required) {
+      return null;
+    }
+
+    // Type-specific validation
+    if (fieldConfig.type === 'email' && value) {
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailPattern.test(value)) {
+        return 'Please enter a valid email address';
+      }
+    }
+
+    // Validation rules
+    if (fieldConfig.validation) {
+      const validation = fieldConfig.validation;
+
+      if (typeof value === 'string') {
+        if (validation.minLength && value.length < validation.minLength) {
+          return `${fieldConfig.label} must be at least ${validation.minLength} characters`;
+        }
+        if (validation.maxLength && value.length > validation.maxLength) {
+          return `${fieldConfig.label} must be at most ${validation.maxLength} characters`;
+        }
+        if (validation.pattern && !new RegExp(validation.pattern).test(value)) {
+          return `Invalid format for ${fieldConfig.label}`;
+        }
+      }
+
+      if (typeof value === 'number') {
+        if (validation.min !== undefined && value < validation.min) {
+          return `${fieldConfig.label} must be at least ${validation.min}`;
+        }
+        if (validation.max !== undefined && value > validation.max) {
+          return `${fieldConfig.label} must be at most ${validation.max}`;
+        }
+      }
+
+      // Custom validation
+      if (validation.custom) {
+        const customError = validation.custom(value);
+        if (customError) return customError;
+      }
+    }
+
+    return null;
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!config.editableFields) {
+      return true;
+    }
+
+    // Validate each field
+    config.editableFields.forEach(field => {
+      const value = formData[field.key];
+      const error = validateField(String(field.key), value, field);
+      if (error) {
+        newErrors[String(field.key)] = error;
+      }
+    });
+
+    // Run additional config validation if provided
+    if (config.validateForm) {
+      const configErrors = config.validateForm(formData);
+      Object.assign(newErrors, configErrors);
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleChange = (key: keyof T, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [key]: value,
+    }));
+
+    // Clear error for this field
+    if (errors[String(key)]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[String(key)];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleBlur = (key: keyof T) => {
+    if (!config.editableFields) return;
+
+    const fieldConfig = config.editableFields.find(f => f.key === key);
+    if (!fieldConfig) return;
+
+    const value = formData[key];
+    const error = validateField(String(key), value, fieldConfig);
+    
+    setErrors(prev => ({
+      ...prev,
+      ...(error ? { [String(key)]: error } : {})
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaveError(null);
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await onSave(formData);
+      onClose();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to save');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderField = (fieldConfig: FormFieldConfig<T>) => {
+    const value = formData[fieldConfig.key];
+    const error = errors[String(fieldConfig.key)];
+    const fieldId = `field-${String(fieldConfig.key)}`;
+    const isPromptImmutable =
+      mode === 'edit' &&
+      config.title === 'Prompts' &&
+      (String(fieldConfig.key) === 'email_address' || String(fieldConfig.key) === 'prompt_name');
+    const isDisabled = Boolean(fieldConfig.disabled || isPromptImmutable);
+    const isReadOnly = Boolean(fieldConfig.readonly || isPromptImmutable);
+
+    return (
+      <div key={String(fieldConfig.key)} className="mb-4">
+        <label
+          htmlFor={fieldId}
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
+          {fieldConfig.label}
+          {fieldConfig.required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+
+        {fieldConfig.type === 'textarea' ? (
+          <textarea
+            id={fieldId}
+            value={value as string || ''}
+            onChange={(e) => handleChange(fieldConfig.key, e.target.value)}
+            onBlur={() => handleBlur(fieldConfig.key)}
+            placeholder={fieldConfig.placeholder}
+            disabled={isDisabled}
+            readOnly={isReadOnly}
+            required={fieldConfig.required}
+            rows={4}
+            className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
+              error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+            } disabled:bg-gray-100 disabled:cursor-not-allowed`}
+          />
+        ) : fieldConfig.type === 'select' ? (
+          <select
+            id={fieldId}
+            value={String(value || '')}
+            onChange={(e) => handleChange(fieldConfig.key, e.target.value)}
+            onBlur={() => handleBlur(fieldConfig.key)}
+            disabled={isDisabled}
+            required={fieldConfig.required}
+            className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
+              error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+            } disabled:bg-gray-100 disabled:cursor-not-allowed`}
+          >
+            <option value="">Select {fieldConfig.label}</option>
+            {fieldConfig.options?.map(option => (
+              <option key={String(option.value)} value={String(option.value)}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        ) : fieldConfig.type === 'boolean' ? (
+          <div className="flex items-center space-x-3">
+            <button
+              type="button"
+              onClick={() => handleChange(fieldConfig.key, !value)}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                value ? 'bg-blue-600' : 'bg-gray-200'
+              }`}
+              disabled={isDisabled}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  value ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+            <span className="text-sm text-gray-600">{value ? 'Yes' : 'No'}</span>
+          </div>
+        ) : (
+          <input
+            id={fieldId}
+            type={fieldConfig.type}
+            value={value as string || ''}
+            onChange={(e) => handleChange(fieldConfig.key, e.target.value)}
+            onBlur={() => handleBlur(fieldConfig.key)}
+            placeholder={fieldConfig.placeholder}
+            disabled={isDisabled}
+            readOnly={isReadOnly}
+            required={fieldConfig.required}
+            className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
+              error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+            } disabled:bg-gray-100 disabled:cursor-not-allowed`}
+          />
+        )}
+
+        {error && (
+          <p className="mt-1 text-sm text-red-600">{error}</p>
+        )}
+        
+        {fieldConfig.helpText && !error && (
+          <p className="mt-1 text-sm text-gray-500">{fieldConfig.helpText}</p>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">
+            {mode === 'create' ? `Create ${config.title}` : `Edit ${config.title}`}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Content */}
+        <form onSubmit={handleSubmit}>
+          <div className="p-4 overflow-y-auto max-h-[calc(90vh-160px)]">
+            {saveError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{saveError}</p>
+              </div>
+            )}
+
+            {config.editableFields ? (
+              config.editableFields.map(field => renderField(field))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No editable fields configured
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="flex justify-end gap-2 px-4 py-3 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            >
+              {loading ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+
  
  
 ========================================== 
@@ -2615,8 +3058,9 @@ export default function EpicScopeChangesChart({ selectedQuarter, isVisible = tru
 FILE: components\GeneralDataView.tsx 
 ========================================== 
 import { useState } from 'react';
-import AgentJobsTabNew from './AgentJobsTabNew';
+import AgentJobsTab from './AgentJobsTab';
 import TeamAICardsTab from './TeamAICardsTab';
+import PromptsTab from './PromptsTab';
 
 interface TabItem {
   id: string;
@@ -2629,6 +3073,7 @@ const tabs: TabItem[] = [
   { id: 'team-ai-cards', label: 'Team AI Cards', icon: '🎯' },
   { id: 'security-logs', label: 'Security Logs', icon: '🔒' },
   { id: 'view-transcripts', label: 'View Transcripts', icon: '📝' },
+  { id: 'prompts', label: 'Prompts', icon: '💬' },
 ];
 
 export default function GeneralDataView() {
@@ -2637,7 +3082,7 @@ export default function GeneralDataView() {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'agent-jobs':
-        return <AgentJobsTabNew />;
+        return <AgentJobsTab />;
       case 'team-ai-cards':
         return <TeamAICardsTab />;
       case 'security-logs':
@@ -2660,6 +3105,8 @@ export default function GeneralDataView() {
             </p>
           </div>
         );
+      case 'prompts':
+        return <PromptsTab />;
       default:
         return (
           <div className="bg-white rounded-lg shadow-sm p-6 text-center">
@@ -3352,6 +3799,8 @@ export default function PIAICards({ piName }: PIAICardsProps) {
       title="PI AI Insights"
       emptyMessage={`No AI insights available for ${piName} at this time.`}
       config={piAICardsConfig}
+      chatType="PI_insights"
+      piName={piName}
     />
   );
 }
@@ -3894,6 +4343,336 @@ export default function PIRecommendations({ piName }: PIRecommendationsProps) {
   );
 }
  
+ 
+========================================== 
+FILE: components\PromptsTab.tsx 
+========================================== 
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { DataTable } from '@/components/DataTable';
+import { ViewRecordModal } from '@/components/ViewRecordModal';
+import { EditRecordModal } from '@/components/EditRecordModal';
+import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
+import { ApiService } from '@/lib/api';
+import { promptsConfig } from '@/lib/promptsConfig';
+import { Prompt } from '@/lib/entityConfig';
+
+export default function PromptsTab() {
+  const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Prompt; direction: 'asc' | 'desc' }>({
+    key: 'email_address',
+    direction: 'asc'
+  });
+  const [filterText, setFilterText] = useState('');
+  const [selectedItem, setSelectedItem] = useState<Prompt | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editMode, setEditMode] = useState<'create' | 'edit'>('edit');
+  const [editLoading, setEditLoading] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  const apiService = new ApiService();
+
+  const fetchPrompts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      // Use centralized ApiService which builds the full backend URL
+      const items = await apiService.getPrompts();
+      setPrompts(items as Prompt[]);
+    } catch (err) {
+      console.error('Error fetching prompts:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPrompts();
+  }, []);
+
+  const handleSort = (key: keyof Prompt) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const handleFilterChange = (text: string) => {
+    setFilterText(text);
+  };
+
+  const handleViewItem = (item: Prompt) => {
+    setSelectedItem(item);
+    setIsDetailModalOpen(true);
+  };
+
+  const closeDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedItem(null);
+  };
+
+  const handleDeleteItem = (item: Prompt) => {
+    setSelectedItem(item);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedItem) return;
+    
+    try {
+      const compositeId = `${selectedItem.email_address}/${selectedItem.prompt_name}`;
+      await promptsConfig.deleteItem!(compositeId);
+      
+      // Show success toast
+      setToastType('success');
+      setToastMessage(`Prompt "${selectedItem.prompt_name}" (${selectedItem.email_address}) deleted successfully`);
+      setTimeout(() => setToastMessage(null), 3000);
+      
+      // Refresh the list
+      await fetchPrompts();
+      setIsDeleteModalOpen(false);
+      setSelectedItem(null);
+    } catch (err) {
+      console.error('Error deleting prompt:', err);
+      // Show error toast
+      setToastType('error');
+      setToastMessage(`Failed to delete prompt: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setTimeout(() => setToastMessage(null), 3000);
+    }
+  };
+
+  const closeDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setSelectedItem(null);
+  };
+
+  const handleEditItem = async (item: Prompt) => {
+    try {
+      setEditLoading(true);
+      setEditMode('edit');
+      
+      // Fetch full data from API before showing edit modal
+      const compositeId = `${item.email_address}/${item.prompt_name}`;
+      console.log('Fetching prompt detail for edit:', compositeId);
+      const fullItem = await promptsConfig.fetchDetail!(compositeId);
+      console.log('Fetched prompt detail:', fullItem);
+      console.log('Fetched prompt detail type:', typeof fullItem);
+      console.log('Fetched prompt detail keys:', fullItem ? Object.keys(fullItem) : 'null');
+      console.log('Fetched prompt detail values:', fullItem ? Object.values(fullItem) : 'null');
+      
+      // Ensure we have the data before opening modal
+      if (fullItem) {
+        setSelectedItem(fullItem as Prompt);
+        setIsEditModalOpen(true);
+      } else {
+        console.warn('API returned empty data, using item data');
+        setSelectedItem(item);
+        setIsEditModalOpen(true);
+      }
+    } catch (err) {
+      console.error('Error fetching prompt detail for edit:', err);
+      // Fallback to using item data if API fetch fails
+      console.log('Using fallback item data:', item);
+      setSelectedItem(item);
+      setIsEditModalOpen(true);
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleCreateItem = () => {
+    setSelectedItem(null);
+    setEditMode('create');
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveItem = async (itemData: Partial<Prompt>) => {
+    try {
+      if (editMode === 'edit' && selectedItem) {
+        // Construct composite ID: email_address/prompt_name
+        const id = `${selectedItem.email_address}/${selectedItem.prompt_name}`;
+        
+        // API requires ALL fields (including email_address and prompt_name) even though they're in URL
+        // Ensure we have all required fields with proper values
+        const updateData = {
+          email_address: itemData.email_address || selectedItem.email_address,
+          prompt_name: itemData.prompt_name || selectedItem.prompt_name,
+          prompt_description: itemData.prompt_description || selectedItem.prompt_description || '',
+          prompt_type: itemData.prompt_type || selectedItem.prompt_type || '',
+          prompt_active: itemData.prompt_active !== undefined ? itemData.prompt_active : selectedItem.prompt_active,
+        };
+        
+        console.log('Update data being sent:', JSON.stringify(updateData, null, 2));
+        
+        await promptsConfig.updateItem!(id, updateData);
+      } else if (editMode === 'create') {
+        await promptsConfig.createItem!(itemData);
+      }
+      
+      // Refresh the list after save
+      await fetchPrompts();
+      setIsEditModalOpen(false);
+      
+      // Show success toast message
+      setToastType('success');
+      if (editMode === 'edit' && selectedItem) {
+        setToastMessage(`Prompt "${selectedItem.prompt_name}" (${selectedItem.email_address}) updated successfully`);
+      } else if (editMode === 'create' && itemData.email_address && itemData.prompt_name) {
+        setToastMessage(`Prompt "${itemData.prompt_name}" (${itemData.email_address}) created successfully`);
+      }
+      
+      // Auto-hide toast after 3 seconds
+      setTimeout(() => setToastMessage(null), 3000);
+      
+      setSelectedItem(null);
+    } catch (err) {
+      console.error('Error saving prompt:', err);
+      throw err; // Re-throw so EditRecordModal can handle it
+    }
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedItem(null);
+  };
+
+  const handleRefresh = () => {
+    fetchPrompts();
+  };
+
+  // Filter and sort data
+  const filteredData = prompts.filter(item =>
+    Object.values(item).some(value =>
+      String(value).toLowerCase().includes(filterText.toLowerCase())
+    )
+  );
+
+  const sortedData = [...filteredData].sort((a, b) => {
+    const aValue = a[sortConfig.key];
+    const bValue = b[sortConfig.key];
+    
+    // Handle undefined/null values - put them at the end
+    if (aValue == null && bValue == null) return 0;
+    if (aValue == null) return 1;
+    if (bValue == null) return -1;
+    
+    if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  return (
+    <div className="space-y-4">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-4 right-4 z-50">
+          <div className={`${toastType === 'success' ? 'bg-green-600' : 'bg-red-600'} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px]`}>
+            {toastType === 'success' ? (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            )}
+            <span className="flex-1 text-sm font-medium">{toastMessage}</span>
+            <button
+              onClick={() => setToastMessage(null)}
+              className="text-white hover:text-gray-200 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Prompts Management</h2>
+        <p className="text-sm text-gray-600">Manage and view all prompts.</p>
+      </div>
+
+      <DataTable
+        config={{
+          ...promptsConfig,
+          columns: [
+            { key: 'email_address', label: 'Email', sortable: true, width: '150px' },
+            { key: 'prompt_name', label: 'Prompt Name', sortable: true, width: '150px' },
+            { key: 'prompt_type', label: 'Type', sortable: true, width: '120px' },
+            { key: 'prompt_active', label: 'Active', sortable: true, width: '80px' },
+            { key: 'prompt_description', label: 'Description', sortable: true, width: '200px' },
+            { key: 'updated_at', label: 'Updated', sortable: true, width: '120px' },
+            { key: 'created_at', label: 'Created', sortable: true, width: '120px' },
+          ],
+          primaryKey: 'prompt_name',
+          hiddenFields: [],
+          formatCellValue: (value, key) => {
+            if (key === 'prompt_active') {
+              return value ? 'Yes' : 'No';
+            }
+            if (key === 'created_at' || key === 'updated_at') {
+              if (!value) return '-';
+              return new Date(value).toLocaleDateString();
+            }
+            return value;
+          },
+          fieldColors: {
+            'prompt_active': (value) => value ? 'text-green-600' : 'text-red-600'
+          }
+        }}
+        data={sortedData}
+        loading={loading}
+        error={error}
+        sortConfig={sortConfig}
+        filterText={filterText}
+        onSort={handleSort}
+        onFilterChange={handleFilterChange}
+        onViewItem={handleViewItem}
+        onDeleteItem={handleDeleteItem}
+        onEditItem={handleEditItem}
+        onCreateItem={handleCreateItem}
+        onRefresh={handleRefresh}
+        allowEdit={true}
+        allowCreate={true}
+      />
+
+      {/* View Detail Modal */}
+      <ViewRecordModal
+        isOpen={isDetailModalOpen}
+        onClose={closeDetailModal}
+        item={selectedItem}
+        config={promptsConfig}
+      />
+
+      {/* Edit/Create Modal */}
+      <EditRecordModal
+        isOpen={isEditModalOpen}
+        onClose={closeEditModal}
+        item={selectedItem}
+        config={promptsConfig}
+        mode={editMode}
+        onSave={handleSaveItem}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={closeDeleteModal}
+        itemName={selectedItem ? `prompt "${selectedItem.prompt_name}" (${selectedItem.email_address})` : 'prompt'}
+        onConfirm={handleConfirmDelete}
+      />
+    </div>
+  );
+} 
  
 ========================================== 
 FILE: components\Recommendations.tsx 
@@ -5348,8 +6127,19 @@ export function ViewRecordModal<T extends Record<string, any>>({
     try {
       setLoading(true);
       setError(null);
-      const primaryKeyValue = item[config.primaryKey];
-      const detail = await config.fetchDetail(String(primaryKeyValue));
+      
+      // Handle composite keys (e.g., prompts use email_address + prompt_name)
+      let detailId: string;
+      if (config.title === 'Prompts' && 'email_address' in item && 'prompt_name' in item) {
+        // Construct composite ID for prompts: email_address/prompt_name
+        detailId = `${(item as any).email_address}/${(item as any).prompt_name}`;
+      } else {
+        // Use primary key for other entities
+        const primaryKeyValue = item[config.primaryKey];
+        detailId = String(primaryKeyValue);
+      }
+      
+      const detail = await config.fetchDetail(detailId);
       setDetailData(detail);
     } catch (err) {
       console.error('Error fetching detail:', err);
@@ -5522,6 +6312,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ViewRecordModal } from '@/components/ViewRecordModal';
 import { EntityConfig } from '@/lib/entityConfig';
+import AIChatModal from '@/components/AIChatModal';
 
 // Constants
 const CARD_DESCRIPTION_MAX_LENGTH = 750;
@@ -5547,6 +6338,8 @@ interface AICardsInsightProps {
   title?: string;
   emptyMessage?: string;
   config: EntityConfig<any>;
+  chatType?: string; // Chat type for AI chat: "Team_insights" or "PI_insights"
+  piName?: string; // PI name for PI insights context
 }
 
 const getPriorityColor = (priority: string) => {
@@ -5663,25 +6456,31 @@ export default function AICardsInsight({
   onRefetch,
   title = "AI Insights",
   emptyMessage = "No AI insights available at this time.",
-  config
+  config,
+  chatType = "Team_insights", // Default to Team_insights
+  piName // Optional PI name for PI insights
 }: AICardsInsightProps) {
   // State for detail modal
   const [selectedCard, setSelectedCard] = useState<AICard | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
+  // State for AI Chat modal
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  const [selectedInsightId, setSelectedInsightId] = useState<number | null>(null);
+  const [selectedTeamName, setSelectedTeamName] = useState<string>('');
+
   const handleAIChat = (card: AICard) => {
-    // Each card will have its own behavior based on content
-    console.log('AI Chat clicked for card:', {
-      id: card.id,
-      cardName: card.card_name,
-      cardType: card.card_type,
-      priority: card.priority,
-      description: card.description.substring(0, 100) + '...'
-    });
-    
-    // TODO: Implement specific behavior based on card content
-    // This could open a chat modal, navigate to a specific page, etc.
-    alert(`AI Chat for ${card.card_name} (${card.card_type}) - Priority: ${card.priority}`);
+    setSelectedInsightId(card.id);
+    // For PI insights, use card.team_name if available, otherwise empty
+    // team_name might still be present in PI cards, but selected_pi will be used
+    setSelectedTeamName(card.team_name || '');
+    setIsChatModalOpen(true);
+  };
+
+  const closeChatModal = () => {
+    setIsChatModalOpen(false);
+    setSelectedInsightId(null);
+    setSelectedTeamName('');
   };
 
   const handleViewCard = (card: AICard) => {
@@ -5780,10 +6579,6 @@ export default function AICardsInsight({
                       // Handle Sprint Goal cards with JSON table format
                       if (card.card_type === 'Sprint Goal') {
                         const sprintGoalItems = parseSprintGoalJson(card.information_json);
-                        
-                        // Debug: Log information_json content
-                        console.log('Sprint Goal Card ID:', card.id, 'information_json:', card.information_json);
-                        console.log('Parsed sprint goal items:', sprintGoalItems);
                         
                         if (sprintGoalItems && sprintGoalItems.length > 0) {
                           // Get column headers dynamically from the first item
@@ -5892,11 +6687,6 @@ export default function AICardsInsight({
                       // Parse information_json for non-Sprint Goal cards
                       const informationItems = parseInformationJson(card.information_json);
                       
-                      // Debug: Log information_json content
-                      console.log('Card ID:', card.id, 'information_json:', card.information_json);
-                      console.log('Parsed items:', informationItems);
-                      console.log('Description:', card.description);
-                      
                       if (informationItems && informationItems.length > 0) {
                         return (
                           <div className="space-y-2">
@@ -5996,6 +6786,18 @@ export default function AICardsInsight({
         item={selectedCard}
         config={config}
       />
+
+      {/* AI Chat Modal */}
+      {selectedInsightId !== null && (
+        <AIChatModal
+          isOpen={isChatModalOpen}
+          onClose={closeChatModal}
+          chatType={chatType}
+          insightsId={selectedInsightId}
+          teamName={selectedTeamName}
+          piName={piName}
+        />
+      )}
     </div>
   );
 }
@@ -6009,6 +6811,7 @@ FILE: components\insights\RecommendationsInsight.tsx
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import AIChatModal from '@/components/AIChatModal';
 
 // Constants
 const RECOMMENDATION_TEXT_MAX_LENGTH = 200;
@@ -6149,8 +6952,21 @@ export default function RecommendationsInsight({
 }: RecommendationsInsightProps) {
   const [selectedRecommendation, setSelectedRecommendation] = useState<Recommendation | null>(null);
 
+  // State for AI Chat modal
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  const [selectedRecommendationId, setSelectedRecommendationId] = useState<number | null>(null);
+  const [selectedTeamName, setSelectedTeamName] = useState<string>('');
+
   const handleReason = (recommendation: Recommendation) => {
-    setSelectedRecommendation(recommendation);
+    setSelectedRecommendationId(recommendation.id);
+    setSelectedTeamName(recommendation.team_name);
+    setIsChatModalOpen(true);
+  };
+
+  const closeChatModal = () => {
+    setIsChatModalOpen(false);
+    setSelectedRecommendationId(null);
+    setSelectedTeamName('');
   };
 
   if (loading) {
@@ -6298,6 +7114,17 @@ export default function RecommendationsInsight({
           }
         })}
       </div>
+
+      {/* AI Chat Modal */}
+      {selectedRecommendationId !== null && (
+        <AIChatModal
+          isOpen={isChatModalOpen}
+          onClose={closeChatModal}
+          chatType="Recommendation_reason"
+          recommendationId={selectedRecommendationId}
+          teamName={selectedTeamName}
+        />
+      )}
     </div>
   );
 }
@@ -6491,7 +7318,7 @@ export function useClosedSprints(teamName?: string, months: number = 3): UseClos
 FILE: hooks\useEntityTableManager.ts 
 ========================================== 
 import { useState, useEffect, useCallback } from 'react';
-import { EntityConfig } from '@/lib/entityConfig';
+import { EntityConfig, EditableEntityConfig } from '@/lib/entityConfig';
 
 export interface UseEntityTableManagerReturn<T> {
   data: T[];
@@ -6503,6 +7330,8 @@ export interface UseEntityTableManagerReturn<T> {
   selectedItem: T | null;
   isDetailModalOpen: boolean;
   isDeleteModalOpen: boolean;
+  isEditModalOpen: boolean;
+  editMode: 'create' | 'edit' | null;
   
   // Table states
   sortConfig: { key: keyof T; direction: 'asc' | 'desc' };
@@ -6511,6 +7340,9 @@ export interface UseEntityTableManagerReturn<T> {
   // Actions
   handleViewItem: (item: T) => void;
   handleDeleteItem: (item: T) => void;
+  handleEditItem: (item: T) => void;
+  handleCreateItem: () => void;
+  handleSaveItem: (itemData: Partial<T>) => Promise<void>;
   handleSort: (key: keyof T) => void;
   handleFilterChange: (text: string) => void;
   closeModals: () => void;
@@ -6527,7 +7359,7 @@ export interface UseEntityTableManagerReturn<T> {
  * @returns Object containing data, state, and action functions
  */
 export function useEntityTableManager<T extends Record<string, any>>(
-  config: EntityConfig<T>
+  config: EntityConfig<T> | EditableEntityConfig<T>
 ): UseEntityTableManagerReturn<T> {
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -6537,6 +7369,8 @@ export function useEntityTableManager<T extends Record<string, any>>(
   const [selectedItem, setSelectedItem] = useState<T | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editMode, setEditMode] = useState<'create' | 'edit' | null>(null);
   
   // Table states
   const [sortConfig, setSortConfig] = useState<{ key: keyof T; direction: 'asc' | 'desc' }>({
@@ -6617,6 +7451,36 @@ export function useEntityTableManager<T extends Record<string, any>>(
     setIsDeleteModalOpen(true);
   }, []);
 
+  const handleEditItem = useCallback((item: T) => {
+    setSelectedItem(item);
+    setEditMode('edit');
+    setIsEditModalOpen(true);
+  }, []);
+
+  const handleCreateItem = useCallback(() => {
+    setSelectedItem(null);
+    setEditMode('create');
+    setIsEditModalOpen(true);
+  }, []);
+
+  const handleSaveItem = useCallback(async (itemData: Partial<T>) => {
+    // Check if config is an EditableEntityConfig
+    if ('updateItem' in config || 'createItem' in config) {
+      const editableConfig = config as EditableEntityConfig<T>;
+      
+      if (editMode === 'edit' && selectedItem && editableConfig.updateItem) {
+        // Get the primary key value
+        const id = String(selectedItem[config.primaryKey]);
+        await editableConfig.updateItem(id, itemData);
+      } else if (editMode === 'create' && editableConfig.createItem) {
+        await editableConfig.createItem(itemData);
+      }
+      
+      // Refresh the data
+      await fetchData();
+    }
+  }, [config, editMode, selectedItem, fetchData]);
+
   const handleSort = useCallback((key: keyof T) => {
     if (sortConfig.key === key) {
       setSortConfig({
@@ -6635,7 +7499,9 @@ export function useEntityTableManager<T extends Record<string, any>>(
   const closeModals = useCallback(() => {
     setIsDetailModalOpen(false);
     setIsDeleteModalOpen(false);
+    setIsEditModalOpen(false);
     setSelectedItem(null);
+    setEditMode(null);
   }, []);
 
   return {
@@ -6647,12 +7513,17 @@ export function useEntityTableManager<T extends Record<string, any>>(
     selectedItem,
     isDetailModalOpen,
     isDeleteModalOpen,
+    isEditModalOpen,
+    editMode,
     
     sortConfig,
     filterText,
     
     handleViewItem,
     handleDeleteItem,
+    handleEditItem,
+    handleCreateItem,
+    handleSaveItem,
     handleSort,
     handleFilterChange,
     closeModals,
@@ -7749,6 +8620,299 @@ export class ApiService {
     const result = await response.json();
     return result;
   }
+
+  // Prompts API
+  async getPrompts(params?: {
+    email_address?: string;
+    prompt_type?: string;
+    active?: boolean;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<any[]> {
+    const urlParams = new URLSearchParams();
+    
+    if (params?.email_address) urlParams.append('email_address', params.email_address);
+    if (params?.prompt_type) urlParams.append('prompt_type', params.prompt_type);
+    if (params?.active !== undefined) urlParams.append('active', String(params.active));
+    if (params?.search) urlParams.append('search', params.search);
+    if (params?.limit) urlParams.append('limit', String(params.limit));
+    if (params?.offset) urlParams.append('offset', String(params.offset));
+
+    const url = `${buildApiUrl('/api/v1/prompts')}${urlParams.toString() ? '?' + urlParams.toString() : ''}`;
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch prompts: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+
+    // Common structures we may receive:
+    // 1) { success: true, data: [...] }
+    if (result?.success && Array.isArray(result.data)) {
+      return result.data;
+    }
+
+    // 2) { success: true, data: { prompts: [...], count: number } }
+    if (result?.success && result?.data && Array.isArray(result.data.prompts)) {
+      return result.data.prompts;
+    }
+
+    // 3) Direct array
+    if (Array.isArray(result)) {
+      return result;
+    }
+
+    // 4) { prompts: [...] }
+    if (Array.isArray(result?.prompts)) {
+      return result.prompts;
+    }
+
+    return [];
+  }
+
+  async getPromptDetail(email: string, promptName: string): Promise<any> {
+    // URL encode email and promptName to handle special characters like @ in emails
+    const encodedEmail = encodeURIComponent(email);
+    const encodedPromptName = encodeURIComponent(promptName);
+    const url = `${buildApiUrl('/api/v1/prompts')}/${encodedEmail}/${encodedPromptName}`;
+    
+    console.log('Fetching prompt detail from URL:', url);
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorText = await response.text();
+        if (errorText) {
+          console.error('Prompt detail API error:', response.status, errorText);
+          // Try to parse as JSON for structured error messages
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.message || errorJson.error || errorMessage;
+          } catch {
+            // If not JSON, use the text as is
+            if (errorText.length < 200) {
+              errorMessage = errorText;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error reading error response:', e);
+      }
+      throw new Error(`Failed to fetch prompt detail: ${errorMessage}`);
+    }
+
+    const result: ApiResponse<any> = await response.json();
+    
+    console.log('getPromptDetail raw result:', result);
+    console.log('getPromptDetail result.data:', result.data);
+    console.log('getPromptDetail result.data keys:', result.data ? Object.keys(result.data) : 'null');
+    
+    // Handle different response structures
+    if (result.data) {
+      // If data has a nested prompt structure
+      if (result.data.prompt) {
+        return result.data.prompt;
+      }
+      // If data is an object with prompt fields directly
+      if (typeof result.data === 'object' && !Array.isArray(result.data)) {
+        return result.data;
+      }
+    }
+    
+    return result.data;
+  }
+
+  async createPrompt(data: {
+    email_address: string;
+    prompt_name: string;
+    prompt_description: string;
+    prompt_type: string;
+    prompt_active: boolean;
+  }): Promise<any> {
+    const url = buildApiUrl('/api/v1/prompts');
+    
+    console.log('Creating prompt at URL:', url);
+    console.log('Creating prompt with data:', JSON.stringify(data, null, 2));
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorText = await response.text();
+        if (errorText) {
+          console.error('Create prompt API error:', response.status, errorText);
+          // Try to parse as JSON for structured error messages
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.message || errorJson.error || errorMessage;
+          } catch {
+            // If not JSON, use the text as is
+            if (errorText.length < 200) {
+              errorMessage = errorText;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error reading error response:', e);
+      }
+      throw new Error(`Failed to create prompt: ${errorMessage}`);
+    }
+
+    const result = await response.json();
+    return result;
+  }
+
+  async updatePrompt(email: string, promptName: string, data: {
+    email_address: string;
+    prompt_name: string;
+    prompt_description: string;
+    prompt_type: string;
+    prompt_active: boolean;
+  }): Promise<any> {
+    // URL encode email and promptName to handle special characters
+    const encodedEmail = encodeURIComponent(email);
+    const encodedPromptName = encodeURIComponent(promptName);
+    
+    const url = `${buildApiUrl('/api/v1/prompts')}/${encodedEmail}/${encodedPromptName}`;
+    
+    console.log('Updating prompt at URL:', url);
+    console.log('Update data being sent:', JSON.stringify(data, null, 2));
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorText = await response.text();
+        if (errorText) {
+          console.error('Update prompt API error:', response.status, errorText);
+          // Try to parse as JSON for structured error messages
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.message || errorJson.error || errorMessage;
+          } catch {
+            // If not JSON, use the text as is
+            if (errorText.length < 200) {
+              errorMessage = errorText;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error reading error response:', e);
+      }
+      throw new Error(`Failed to update prompt: ${errorMessage}`);
+    }
+
+    const result = await response.json();
+    return result;
+  }
+
+  async deletePrompt(email: string, promptName: string): Promise<void> {
+    // URL encode email and promptName to handle special characters
+    const encodedEmail = encodeURIComponent(email);
+    const encodedPromptName = encodeURIComponent(promptName);
+    const url = `${buildApiUrl('/api/v1/prompts')}/${encodedEmail}/${encodedPromptName}`;
+    
+    console.log('Deleting prompt at URL:', url);
+    
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorText = await response.text();
+        if (errorText) {
+          console.error('Delete prompt API error:', response.status, errorText);
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.message || errorJson.error || errorMessage;
+          } catch {
+            if (errorText.length < 200) {
+              errorMessage = errorText;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error reading error response:', e);
+      }
+      throw new Error(`Failed to delete prompt: ${errorMessage}`);
+    }
+  }
+
+  // AI Chat API
+  async chatWithInsight(request: {
+    conversation_id?: string | null;
+    question: string;
+    username: string;
+    selected_team: string;
+    selected_pi?: string;
+    chat_type: string;
+    recommendation_id?: string;
+    insights_id?: string;
+  }): Promise<{
+    success: boolean;
+    data: {
+      response: string;
+      input_parameters: {
+        conversation_id: string;
+        question: string;
+        username: string;
+        selected_team: string;
+        selected_pi?: string;
+        chat_type: string;
+        recommendation_id?: string;
+        insights_id?: string;
+      };
+    };
+    message: string;
+  }> {
+    const response = await fetch(buildApiUrl('/api/v1/ai-chat'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch {
+        if (errorText && errorText.length < 200) {
+          errorMessage = errorText;
+        }
+      }
+      throw new Error(`Failed to send chat message: ${errorMessage}`);
+    }
+
+    return response.json();
+  }
 }
 
 // Legacy class for backward compatibility
@@ -7774,7 +8938,7 @@ FILE: lib\config.ts
 ========================================== 
 // API Configuration
 export const API_CONFIG = {
-  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://sparksai-backend-production.up.railway.app',
+  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || '/api',
   version: process.env.NEXT_PUBLIC_API_VERSION || 'v1',
   
   endpoints: {
@@ -8007,6 +9171,27 @@ export interface ColumnConfig<T> {
   className?: string;
 }
 
+// Form Field Configuration for Editable Tables
+export interface FormFieldConfig<T> {
+  key: keyof T;
+  label: string;
+  type: 'text' | 'textarea' | 'select' | 'number' | 'email' | 'date' | 'boolean';
+  required?: boolean;
+  placeholder?: string;
+  options?: { value: string | number; label: string }[]; // For select fields
+  validation?: {
+    min?: number;
+    max?: number;
+    minLength?: number;
+    maxLength?: number;
+    pattern?: string;
+    custom?: (value: any) => string | null; // Return error message or null
+  };
+  disabled?: boolean;
+  readonly?: boolean;
+  helpText?: string; // Helper text to display below the field
+}
+
 export interface FilterConfig {
   key: string;
   label: string;
@@ -8048,6 +9233,24 @@ export interface EntityConfig<T> {
   // Field categorization for detail view (override auto-categorization)
   normalFields?: (keyof T)[]; // Fields to show in overview grid
   longTextFields?: (keyof T)[]; // Fields to show in details section
+}
+
+// Extended configuration for editable entities
+export interface EditableEntityConfig<T> extends EntityConfig<T> {
+  // Edit-specific configuration
+  editableFields?: FormFieldConfig<T>[];
+  updateEndpoint?: string;
+  updateItem?: (id: string, data: Partial<T>) => Promise<T>;
+  createEndpoint?: string;
+  createItem?: (data: Partial<T>) => Promise<T>;
+  
+  // Form behavior
+  allowCreate?: boolean;
+  allowEdit?: boolean;
+  allowDelete?: boolean;
+  
+  // Validation
+  validateForm?: (data: Partial<T>) => Record<string, string>; // field errors
 }
 
 // Agent Jobs Entity Configuration
@@ -8146,6 +9349,17 @@ export const agentJobsConfig: EntityConfig<AgentJob> = {
   normalFields: ['job_id', 'status', 'job_type', 'team_name', 'claimed_by', 'created_at', 'claimed_at', 'completed_at'],
   longTextFields: ['input_sent', 'result', 'error', 'data'],
 };
+
+// Prompt Entity Configuration
+export interface Prompt {
+  email_address: string;
+  prompt_name: string;
+  prompt_description: string;
+  prompt_type: string;
+  prompt_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
  
  
 ========================================== 
@@ -8230,6 +9444,154 @@ export const piAICardsConfig: EntityConfig<PIAICard> = {
   
   searchFields: ['card_name', 'card_type', 'priority', 'team_name', 'description'],
 };
+ 
+ 
+========================================== 
+FILE: lib\promptsConfig.ts 
+========================================== 
+import { EditableEntityConfig, Prompt, FormFieldConfig } from './entityConfig';
+
+export const promptsConfig: EditableEntityConfig<Prompt> = {
+  endpoints: {
+    list: '/api/v1/prompts',
+    detail: '/api/v1/prompts',
+  },
+  
+  fetchList: async () => {
+    const { ApiService } = await import('./api');
+    const apiService = new ApiService();
+    return apiService.getPrompts();
+  },
+  
+  fetchDetail: async (id: string) => {
+    // ID format: email/promptName
+    const [email, promptName] = id.split('/');
+    const { ApiService } = await import('./api');
+    const apiService = new ApiService();
+    return apiService.getPromptDetail(email, promptName);
+  },
+  
+  deleteItem: async (id: string) => {
+    const [email, promptName] = id.split('/');
+    const { ApiService } = await import('./api');
+    const apiService = new ApiService();
+    return apiService.deletePrompt(email, promptName);
+  },
+  
+  createItem: async (data: Partial<Prompt>) => {
+    const { ApiService } = await import('./api');
+    const apiService = new ApiService();
+    return apiService.createPrompt(data as {
+      email_address: string;
+      prompt_name: string;
+      prompt_description: string;
+      prompt_type: string;
+      prompt_active: boolean;
+    });
+  },
+  
+  updateItem: async (id: string, data: Partial<Prompt>) => {
+    const [email, promptName] = id.split('/');
+    const { ApiService } = await import('./api');
+    const apiService = new ApiService();
+    // API requires all fields, ensure we have them all
+    return apiService.updatePrompt(email, promptName, data as {
+      email_address: string;
+      prompt_name: string;
+      prompt_description: string;
+      prompt_type: string;
+      prompt_active: boolean;
+    });
+  },
+  
+  primaryKey: 'email_address',
+  title: 'Prompts',
+  
+  // Form configuration for edit/create
+  editableFields: [
+    {
+      key: 'email_address',
+      label: 'Email Address',
+      type: 'text',
+      required: true,
+      placeholder: 'user@example.com',
+    },
+    {
+      key: 'prompt_name',
+      label: 'Prompt Name',
+      type: 'text',
+      required: true,
+      placeholder: 'DailySummary',
+    },
+    {
+      key: 'prompt_description',
+      label: 'Description',
+      type: 'textarea',
+      required: true,
+      placeholder: 'Generate a daily summary of team activities',
+      validation: {
+        minLength: 10,
+        maxLength: 500,
+      },
+    },
+    {
+      key: 'prompt_type',
+      label: 'Type',
+      type: 'select',
+      required: true,
+      options: [
+        { value: 'Team Dashboard', label: 'Team Dashboard' },
+        { value: 'PI Dashboard', label: 'PI Dashboard' },
+      ],
+    },
+    {
+      key: 'prompt_active',
+      label: 'Active',
+      type: 'boolean',
+      required: false,
+    },
+  ],
+  
+  // Enable operations
+  allowCreate: true,
+  allowEdit: true,
+  allowDelete: true,
+  
+  // Column overrides
+  columnOverrides: {
+    'email_address': { width: '200px' },
+    'prompt_name': { width: '150px' },
+    'prompt_type': { width: '120px', align: 'center' },
+    'prompt_active': { width: '80px', align: 'center' },
+  },
+  
+  fieldColors: {
+    'prompt_active': (value: boolean) => {
+      return value ? 'text-green-600 font-semibold' : 'text-gray-500';
+    },
+  },
+  
+  formatCellValue: (value: any, key: keyof Prompt) => {
+    if (value === null || value === undefined) return '-';
+    if (typeof value === 'boolean') return value ? 'Active' : 'Inactive';
+    
+    if (key === 'prompt_description' && typeof value === 'string') {
+      if (value.length > 100) {
+        return value.substring(0, 100) + '...';
+      }
+      return value;
+    }
+    
+    return String(value);
+  },
+  
+  normalFields: ['email_address', 'prompt_name', 'prompt_type', 'prompt_active'],
+  longTextFields: ['prompt_description'],
+  
+  searchFields: ['email_address', 'prompt_name', 'prompt_description', 'prompt_type'],
+};
+
+
  
  
 ========================================== 
