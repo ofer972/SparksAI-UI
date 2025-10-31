@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 import { EntityConfig } from '@/lib/entityConfig';
 
 interface ViewRecordModalProps<T> {
@@ -141,7 +143,23 @@ export function ViewRecordModal<T extends Record<string, any>>({
         <div className="bg-gray-50 p-3 rounded text-sm text-gray-900 max-h-64 overflow-y-auto">
           {isMarkdown ? (
             <div className="prose prose-sm max-w-none">
-              <ReactMarkdown>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm, remarkBreaks]}
+                components={{
+                  p: ({ children }) => <p className="text-sm text-gray-900 mb-2">{children}</p>,
+                  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                  em: ({ children }) => <em className="italic">{children}</em>,
+                  ul: ({ children }) => <ul className="list-disc list-inside text-sm text-gray-900 mb-2">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal list-inside text-sm text-gray-900 mb-2">{children}</ol>,
+                  li: ({ children }) => <li className="text-sm text-gray-900">{children}</li>,
+                  code: ({ children }) => <code className="bg-gray-100 px-1 rounded text-xs">{children}</code>,
+                  pre: ({ children }) => <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto whitespace-pre-wrap">{children}</pre>,
+                  h1: ({ children }) => <h1 className="text-lg font-bold text-gray-900 mb-2">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-base font-bold text-gray-900 mb-2">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-sm font-semibold text-gray-900 mb-2">{children}</h3>,
+                  blockquote: ({ children }) => <blockquote className="border-l-2 border-gray-300 pl-2 italic text-gray-600 mb-2">{children}</blockquote>,
+                }}
+              >
                 {String(displayValue)}
               </ReactMarkdown>
             </div>
