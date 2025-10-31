@@ -42,7 +42,7 @@ export const transcriptsConfig: EntityConfig<TranscriptRecord> = {
   title: 'Transcripts',
   // DataTable will auto-discover all columns from the API response
   // Field categorization for detail modal view only
-  normalFields: ['id', 'file_name', 'origin', 'pi', 'transcript_date', 'type', 'created_at', 'updated_at'] as any,
+  normalFields: ['id', 'file_name', 'origin', 'team_name', 'pi', 'transcript_date', 'type', 'created_at', 'updated_at'] as any,
   longTextFields: ['raw_text'] as any,
 };
 

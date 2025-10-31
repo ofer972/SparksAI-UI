@@ -168,10 +168,25 @@ export function ViewRecordModal<T extends Record<string, any>>({
                   Overview
                 </h4>
                 <div className="grid grid-cols-2 gap-4">
-                  {Object.entries(displayData)
-                    .filter(([key, value]) => isNormalField(key as keyof T))
-                    .map(([key, value]) => renderNormalField(key as keyof T, value))
-                  }
+                  {(() => {
+                    const entries = Object.entries(displayData).filter(([key, value]) => isNormalField(key as keyof T));
+                    
+                    // Sort by normalFields order if configured
+                    if (config.normalFields && config.normalFields.length > 0) {
+                      entries.sort(([keyA], [keyB]) => {
+                        const indexA = config.normalFields!.indexOf(keyA as keyof T);
+                        const indexB = config.normalFields!.indexOf(keyB as keyof T);
+                        // Fields in normalFields come first, ordered by array
+                        // Fields not in normalFields come after, in original order
+                        if (indexA === -1 && indexB === -1) return 0;
+                        if (indexA === -1) return 1;
+                        if (indexB === -1) return -1;
+                        return indexA - indexB;
+                      });
+                    }
+                    
+                    return entries.map(([key, value]) => renderNormalField(key as keyof T, value));
+                  })()}
                 </div>
               </div>
 
@@ -182,10 +197,25 @@ export function ViewRecordModal<T extends Record<string, any>>({
                     Details
                   </h4>
                   <div className="space-y-4">
-                    {Object.entries(displayData)
-                      .filter(([key, value]) => isLongTextField(key as keyof T, value))
-                      .map(([key, value]) => renderLongTextField(key as keyof T, value))
-                    }
+                    {(() => {
+                      const entries = Object.entries(displayData).filter(([key, value]) => isLongTextField(key as keyof T, value));
+                      
+                      // Sort by longTextFields order if configured
+                      if (config.longTextFields && config.longTextFields.length > 0) {
+                        entries.sort(([keyA], [keyB]) => {
+                          const indexA = config.longTextFields!.indexOf(keyA as keyof T);
+                          const indexB = config.longTextFields!.indexOf(keyB as keyof T);
+                          // Fields in longTextFields come first, ordered by array
+                          // Fields not in longTextFields come after, in original order
+                          if (indexA === -1 && indexB === -1) return 0;
+                          if (indexA === -1) return 1;
+                          if (indexB === -1) return -1;
+                          return indexA - indexB;
+                        });
+                      }
+                      
+                      return entries.map(([key, value]) => renderLongTextField(key as keyof T, value));
+                    })()}
                   </div>
                 </div>
               )}
