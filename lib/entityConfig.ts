@@ -99,6 +99,7 @@ export interface AgentJob {
   status: string;
   job_type: string;
   team_name: string;
+  pi?: string;
   claimed_by: string;
   created_at: string;
   claimed_at: string;
@@ -136,6 +137,7 @@ export const agentJobsConfig: EntityConfig<AgentJob> = {
     'status': { width: '100px', align: 'center' },
     'claimed_at': { width: '140px', align: 'center' },
     'result': { width: '200px' },
+    'error': { width: '200px' },
   },
   
   fieldColors: {
@@ -186,7 +188,7 @@ export const agentJobsConfig: EntityConfig<AgentJob> = {
   },
   
   // Field categorization for detail view
-  normalFields: ['job_id', 'status', 'job_type', 'team_name', 'claimed_by', 'created_at', 'claimed_at', 'completed_at'],
+  normalFields: ['job_id', 'status', 'job_type', 'team_name', 'pi', 'claimed_by', 'created_at', 'claimed_at', 'completed_at'],
   longTextFields: ['input_sent', 'result', 'error', 'data'],
   markdownFields: ['input_sent', 'result'],
 };
