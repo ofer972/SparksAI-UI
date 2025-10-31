@@ -2,6 +2,7 @@ interface DeleteConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
   itemName?: string;
+  itemId?: string;
   onConfirm?: () => void;
 }
 
@@ -9,6 +10,7 @@ export default function DeleteConfirmationModal({
   isOpen, 
   onClose, 
   itemName = 'item',
+  itemId,
   onConfirm
 }: DeleteConfirmationModalProps) {
   if (!isOpen) return null;
@@ -32,7 +34,7 @@ export default function DeleteConfirmationModal({
               Confirm Delete
             </h3>
             <p className="text-sm text-gray-600 mb-6">
-              Are you sure you want to delete {itemName}? This action cannot be undone.
+              Are you sure you want to delete {itemName}{itemId && <> with ID <span className="font-bold">{itemId}</span></>}? This action cannot be undone.
             </p>
 
             {/* Action Buttons */}

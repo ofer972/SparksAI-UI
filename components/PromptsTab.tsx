@@ -311,7 +311,8 @@ export default function PromptsTab() {
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={closeDeleteModal}
-        itemName={selectedItem ? `prompt "${selectedItem.prompt_name}" (${selectedItem.email_address})` : 'prompt'}
+        itemName={selectedItem ? `prompt "${selectedItem.prompt_name}"` : 'prompt'}
+        itemId={selectedItem ? `${selectedItem.email_address}/${selectedItem.prompt_name}` : undefined}
         onConfirm={handleConfirmDelete}
       />
     </div>

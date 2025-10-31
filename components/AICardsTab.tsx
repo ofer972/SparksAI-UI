@@ -4,6 +4,7 @@ import { aiCardsConfig } from '@/lib/aiCardsConfig';
 import { DataTable } from '@/components/DataTable';
 import { ViewRecordModal } from '@/components/ViewRecordModal';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
+import Toast from '@/components/Toast';
 
 export default function AICardsTab() {
   const {
@@ -16,8 +17,12 @@ export default function AICardsTab() {
     isDeleteModalOpen,
     sortConfig,
     filterText,
+    toastMessage,
+    toastType,
+    clearToast,
     handleViewItem,
     handleDeleteItem,
+    handleConfirmDelete,
     handleSort,
     handleFilterChange,
     closeModals,
@@ -25,6 +30,7 @@ export default function AICardsTab() {
 
   return (
     <>
+      <Toast message={toastMessage} type={toastType} onClose={clearToast} />
       <DataTable
         config={aiCardsConfig}
         data={sortedData}
@@ -50,7 +56,9 @@ export default function AICardsTab() {
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={closeModals}
+        onConfirm={handleConfirmDelete}
         itemName="AI card"
+        itemId={selectedItem ? String(selectedItem[aiCardsConfig.primaryKey]) : undefined}
       />
     </>
   );

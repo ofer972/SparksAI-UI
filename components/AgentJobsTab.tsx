@@ -4,6 +4,7 @@ import { agentJobsConfig, AgentJob } from '@/lib/entityConfig';
 import { DataTable } from '@/components/DataTable';
 import { ViewRecordModal } from '@/components/ViewRecordModal';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
+import Toast from '@/components/Toast';
 
 export default function AgentJobsTab() {
   const {
@@ -16,8 +17,12 @@ export default function AgentJobsTab() {
     isDeleteModalOpen,
     sortConfig,
     filterText,
+    toastMessage,
+    toastType,
+    clearToast,
     handleViewItem,
     handleDeleteItem,
+    handleConfirmDelete,
     handleSort,
     handleFilterChange,
     closeModals,
@@ -25,6 +30,7 @@ export default function AgentJobsTab() {
 
   return (
     <>
+      <Toast message={toastMessage} type={toastType} onClose={clearToast} />
       <DataTable<AgentJob>
         config={agentJobsConfig}
         data={sortedData}
@@ -50,7 +56,9 @@ export default function AgentJobsTab() {
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={closeModals}
+        onConfirm={handleConfirmDelete}
         itemName="agent job"
+        itemId={selectedItem ? String(selectedItem[agentJobsConfig.primaryKey]) : undefined}
       />
     </>
   );

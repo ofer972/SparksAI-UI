@@ -1,4 +1,5 @@
 import React from 'react';
+import { EntityConfig } from './entityConfig';
 // Team AI Cards Entity Configuration
 export interface TeamAICard {
   id: number;

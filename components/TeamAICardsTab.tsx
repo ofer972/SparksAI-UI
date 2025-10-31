@@ -4,6 +4,7 @@ import { teamAICardsConfig } from '@/lib/teamAICardsConfig';
 import { DataTable } from '@/components/DataTable';
 import { ViewRecordModal } from '@/components/ViewRecordModal';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
+import Toast from '@/components/Toast';
 
 export default function TeamAICardsTab() {
   const {
@@ -16,8 +17,12 @@ export default function TeamAICardsTab() {
     isDeleteModalOpen,
     sortConfig,
     filterText,
+    toastMessage,
+    toastType,
+    clearToast,
     handleViewItem,
     handleDeleteItem,
+    handleConfirmDelete,
     handleSort,
     handleFilterChange,
     closeModals,
@@ -25,6 +30,7 @@ export default function TeamAICardsTab() {
 
   return (
     <>
+      <Toast message={toastMessage} type={toastType} onClose={clearToast} />
       <DataTable
         config={teamAICardsConfig}
         data={sortedData}
@@ -50,7 +56,9 @@ export default function TeamAICardsTab() {
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={closeModals}
+        onConfirm={handleConfirmDelete}
         itemName="team AI card"
+        itemId={selectedItem ? String(selectedItem[teamAICardsConfig.primaryKey]) : undefined}
       />
     </>
   );

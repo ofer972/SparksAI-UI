@@ -4,6 +4,7 @@ import { piAICardsConfig } from '@/lib/piAICardsConfig';
 import { DataTable } from '@/components/DataTable';
 import { ViewRecordModal } from '@/components/ViewRecordModal';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
+import Toast from '@/components/Toast';
 
 export default function PIAICardsTab() {
   const {
@@ -16,8 +17,12 @@ export default function PIAICardsTab() {
     isDeleteModalOpen,
     sortConfig,
     filterText,
+    toastMessage,
+    toastType,
+    clearToast,
     handleViewItem,
     handleDeleteItem,
+    handleConfirmDelete,
     handleSort,
     handleFilterChange,
     closeModals,
@@ -25,6 +30,7 @@ export default function PIAICardsTab() {
 
   return (
     <>
+      <Toast message={toastMessage} type={toastType} onClose={clearToast} />
       <DataTable
         config={piAICardsConfig}
         data={sortedData}
@@ -50,7 +56,9 @@ export default function PIAICardsTab() {
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={closeModals}
+        onConfirm={handleConfirmDelete}
         itemName="PI AI card"
+        itemId={selectedItem ? String(selectedItem[piAICardsConfig.primaryKey]) : undefined}
       />
     </>
   );
