@@ -72,6 +72,7 @@ export interface EntityConfig<T> {
   // Field categorization for detail view (override auto-categorization)
   normalFields?: (keyof T)[]; // Fields to show in overview grid
   longTextFields?: (keyof T)[]; // Fields to show in details section
+  markdownFields?: (keyof T)[]; // Fields to render as markdown
 }
 
 // Extended configuration for editable entities
@@ -187,6 +188,7 @@ export const agentJobsConfig: EntityConfig<AgentJob> = {
   // Field categorization for detail view
   normalFields: ['job_id', 'status', 'job_type', 'team_name', 'claimed_by', 'created_at', 'claimed_at', 'completed_at'],
   longTextFields: ['input_sent', 'result', 'error', 'data'],
+  markdownFields: ['input_sent'],
 };
 
 // Prompt Entity Configuration

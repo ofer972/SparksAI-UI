@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { EntityConfig } from '@/lib/entityConfig';
 
 interface ViewRecordModalProps<T> {
@@ -117,14 +118,23 @@ export function ViewRecordModal<T extends Record<string, any>>({
 
   const renderLongTextField = (key: keyof T, value: any) => {
     const formattedValue = formatValue(value, key);
+    const isMarkdown = config.markdownFields?.includes(key);
     
     return (
       <div key={String(key)} className="mb-4">
         <div className="text-sm font-medium text-gray-700 mb-2">
           {String(key).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:
         </div>
-        <div className="bg-gray-50 p-3 rounded text-sm text-gray-900 whitespace-pre-wrap max-h-64 overflow-y-auto">
-          {formattedValue}
+        <div className="bg-gray-50 p-3 rounded text-sm text-gray-900 max-h-64 overflow-y-auto">
+          {isMarkdown ? (
+            <div className="prose prose-sm max-w-none">
+              <ReactMarkdown>
+                {String(formattedValue)}
+              </ReactMarkdown>
+            </div>
+          ) : (
+            <div className="whitespace-pre-wrap">{formattedValue}</div>
+          )}
         </div>
       </div>
     );
