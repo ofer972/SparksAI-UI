@@ -119,6 +119,19 @@ export function ViewRecordModal<T extends Record<string, any>>({
   const renderLongTextField = (key: keyof T, value: any) => {
     const formattedValue = formatValue(value, key);
     const isMarkdown = config.markdownFields?.includes(key);
+    const isInformationJson = String(key) === 'information_json';
+    
+    // Format information_json as readable JSON
+    let displayValue = formattedValue;
+    if (isInformationJson && typeof value === 'string' && value.trim()) {
+      try {
+        const parsed = JSON.parse(value);
+        displayValue = JSON.stringify(parsed, null, 2);
+      } catch {
+        // If parsing fails, use original value
+        displayValue = formattedValue;
+      }
+    }
     
     return (
       <div key={String(key)} className="mb-4">
@@ -129,11 +142,11 @@ export function ViewRecordModal<T extends Record<string, any>>({
           {isMarkdown ? (
             <div className="prose prose-sm max-w-none">
               <ReactMarkdown>
-                {String(formattedValue)}
+                {String(displayValue)}
               </ReactMarkdown>
             </div>
           ) : (
-            <div className="whitespace-pre-wrap">{formattedValue}</div>
+            <div className="whitespace-pre-wrap font-mono text-xs">{displayValue}</div>
           )}
         </div>
       </div>
