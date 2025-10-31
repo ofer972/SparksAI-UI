@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { EditableEntityConfig, FormFieldConfig } from '@/lib/entityConfig';
 
 interface EditRecordModalProps<T> {
@@ -22,18 +22,66 @@ export function EditRecordModal<T extends Record<string, any>>({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  
+  // Drag state (desktop only)
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [dragPos, setDragPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const isDraggingRef = useRef(false);
+
+  const onHeaderMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Enable drag only on non-touch large screens
+    if (window.innerWidth < 768) return;
+    if (!panelRef.current) return;
+    isDraggingRef.current = true;
+    // Record offset between pointer and current position
+    dragOffsetRef.current = {
+      x: e.clientX - dragPos.x,
+      y: e.clientY - dragPos.y,
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp, { once: true });
+    e.preventDefault();
+  };
+
+  const onMouseMove = (e: MouseEvent) => {
+    if (!isDraggingRef.current || !panelRef.current) return;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const rect = panelRef.current.getBoundingClientRect();
+    const panelWidth = rect.width;
+    const panelHeight = rect.height;
+
+    let nextX = e.clientX - dragOffsetRef.current.x;
+    let nextY = e.clientY - dragOffsetRef.current.y;
+
+    // Clamp within viewport (relative to centered origin via transform)
+    const maxX = viewportWidth - panelWidth / 2;
+    const minX = -maxX;
+    const maxY = viewportHeight - panelHeight / 2;
+    const minY = -maxY;
+
+    if (nextX > maxX) nextX = maxX;
+    if (nextX < minX) nextX = minX;
+    if (nextY > maxY) nextY = maxY;
+    if (nextY < minY) nextY = minY;
+
+    setDragPos({ x: nextX, y: nextY });
+  };
+
+  const onMouseUp = () => {
+    isDraggingRef.current = false;
+    window.removeEventListener('mousemove', onMouseMove);
+  };
 
   // Initialize form data when modal opens or item changes
   useEffect(() => {
     if (isOpen) {
+      // Reset drag position when modal opens
+      setDragPos({ x: 0, y: 0 });
+      
       if (mode === 'edit' && item) {
-        console.log('EditRecordModal: Initializing form data with item:', item);
-        console.log('EditRecordModal: Item keys:', Object.keys(item));
-        console.log('EditRecordModal: prompt_type value:', (item as any).prompt_type);
-        console.log('EditRecordModal: All item values:', Object.entries(item));
         const formDataToSet = { ...item };
-        console.log('EditRecordModal: Form data to set:', formDataToSet);
-        console.log('EditRecordModal: Form data prompt_type:', formDataToSet.prompt_type);
         setFormData(formDataToSet);
       } else {
         // Initialize with empty values for create mode
@@ -48,7 +96,6 @@ export function EditRecordModal<T extends Record<string, any>>({
             }
           });
         }
-        console.log('EditRecordModal: Initializing empty form data:', initialData);
         setFormData(initialData);
       }
       setErrors({});
@@ -198,18 +245,19 @@ export function EditRecordModal<T extends Record<string, any>>({
       (String(fieldConfig.key) === 'email_address' || String(fieldConfig.key) === 'prompt_name');
     const isDisabled = Boolean(fieldConfig.disabled || isPromptImmutable);
     const isReadOnly = Boolean(fieldConfig.readonly || isPromptImmutable);
+    const isPromptDescription = String(fieldConfig.key) === 'prompt_description';
 
-    return (
-      <div key={String(fieldConfig.key)} className="mb-4">
-        <label
-          htmlFor={fieldId}
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          {fieldConfig.label}
-          {fieldConfig.required && <span className="text-red-500 ml-1">*</span>}
-        </label>
-
-        {fieldConfig.type === 'textarea' ? (
+    // For prompt_description, use full width layout; otherwise use compact horizontal layout
+    if (isPromptDescription) {
+      return (
+        <div key={String(fieldConfig.key)} className="mb-4">
+          <label
+            htmlFor={fieldId}
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            {fieldConfig.label}
+            {fieldConfig.required && <span className="text-red-500 ml-1">*</span>}
+          </label>
           <textarea
             id={fieldId}
             value={value as string || ''}
@@ -219,97 +267,140 @@ export function EditRecordModal<T extends Record<string, any>>({
             disabled={isDisabled}
             readOnly={isReadOnly}
             required={fieldConfig.required}
-            rows={4}
+            rows={12}
             className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
               error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
             } disabled:bg-gray-100 disabled:cursor-not-allowed`}
           />
-        ) : fieldConfig.type === 'select' ? (
-          <select
-            id={fieldId}
-            value={String(value || '')}
-            onChange={(e) => handleChange(fieldConfig.key, e.target.value)}
-            onBlur={() => handleBlur(fieldConfig.key)}
-            disabled={isDisabled}
-            required={fieldConfig.required}
-            className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
-              error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-            } disabled:bg-gray-100 disabled:cursor-not-allowed`}
-          >
-            <option value="">Select {fieldConfig.label}</option>
-            {fieldConfig.options?.map(option => (
-              <option key={String(option.value)} value={String(option.value)}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        ) : fieldConfig.type === 'boolean' ? (
-          <div className="flex items-center space-x-3">
-            <button
-              type="button"
-              onClick={() => handleChange(fieldConfig.key, !value)}
-              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                value ? 'bg-blue-600' : 'bg-gray-200'
-              }`}
-              disabled={isDisabled}
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  value ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-            <span className="text-sm text-gray-600">{value ? 'Yes' : 'No'}</span>
-          </div>
-        ) : (
-          <input
-            id={fieldId}
-            type={fieldConfig.type}
-            value={value as string || ''}
-            onChange={(e) => handleChange(fieldConfig.key, e.target.value)}
-            onBlur={() => handleBlur(fieldConfig.key)}
-            placeholder={fieldConfig.placeholder}
-            disabled={isDisabled}
-            readOnly={isReadOnly}
-            required={fieldConfig.required}
-            className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
-              error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-            } disabled:bg-gray-100 disabled:cursor-not-allowed`}
-          />
-        )}
+          {error && (
+            <p className="mt-1 text-sm text-red-600">{error}</p>
+          )}
+          {fieldConfig.helpText && !error && (
+            <p className="mt-1 text-sm text-gray-500">{fieldConfig.helpText}</p>
+          )}
+        </div>
+      );
+    }
 
-        {error && (
-          <p className="mt-1 text-sm text-red-600">{error}</p>
-        )}
-        
-        {fieldConfig.helpText && !error && (
-          <p className="mt-1 text-sm text-gray-500">{fieldConfig.helpText}</p>
-        )}
+    // Compact horizontal layout for other fields
+    return (
+      <div key={String(fieldConfig.key)} className="mb-3 flex items-start">
+        <label
+          htmlFor={fieldId}
+          className="text-sm font-medium text-gray-700 w-40 flex-shrink-0 pt-2"
+        >
+          {fieldConfig.label}
+          {fieldConfig.required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+        <div className="flex-1">
+          {fieldConfig.type === 'textarea' ? (
+            <textarea
+              id={fieldId}
+              value={value as string || ''}
+              onChange={(e) => handleChange(fieldConfig.key, e.target.value)}
+              onBlur={() => handleBlur(fieldConfig.key)}
+              placeholder={fieldConfig.placeholder}
+              disabled={isDisabled}
+              readOnly={isReadOnly}
+              required={fieldConfig.required}
+              rows={4}
+              className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
+                error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+              } disabled:bg-gray-100 disabled:cursor-not-allowed`}
+            />
+          ) : fieldConfig.type === 'select' ? (
+            <select
+              id={fieldId}
+              value={String(value || '')}
+              onChange={(e) => handleChange(fieldConfig.key, e.target.value)}
+              onBlur={() => handleBlur(fieldConfig.key)}
+              disabled={isDisabled}
+              required={fieldConfig.required}
+              className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
+                error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+              } disabled:bg-gray-100 disabled:cursor-not-allowed`}
+            >
+              <option value="">Select {fieldConfig.label}</option>
+              {fieldConfig.options?.map(option => (
+                <option key={String(option.value)} value={String(option.value)}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          ) : fieldConfig.type === 'boolean' ? (
+            <div className="flex items-center space-x-3">
+              <button
+                type="button"
+                onClick={() => handleChange(fieldConfig.key, !value)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  value ? 'bg-blue-600' : 'bg-gray-200'
+                }`}
+                disabled={isDisabled}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    value ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+              <span className="text-sm text-gray-600">{value ? 'Yes' : 'No'}</span>
+            </div>
+          ) : (
+            <input
+              id={fieldId}
+              type={fieldConfig.type}
+              value={value as string || ''}
+              onChange={(e) => handleChange(fieldConfig.key, e.target.value)}
+              onBlur={() => handleBlur(fieldConfig.key)}
+              placeholder={fieldConfig.placeholder}
+              disabled={isDisabled}
+              readOnly={isReadOnly}
+              required={fieldConfig.required}
+              className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
+                error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+              } disabled:bg-gray-100 disabled:cursor-not-allowed`}
+            />
+          )}
+          {error && (
+            <p className="mt-1 text-sm text-red-600">{error}</p>
+          )}
+          {fieldConfig.helpText && !error && (
+            <p className="mt-1 text-sm text-gray-500">{fieldConfig.helpText}</p>
+          )}
+        </div>
       </div>
     );
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">
+      <div
+        ref={panelRef}
+        className="bg-white rounded-lg shadow-xl max-w-[50.4rem] w-full mx-4 max-h-[95vh] overflow-hidden flex flex-col"
+        style={{ transform: `translate(${dragPos.x}px, ${dragPos.y}px)` }}
+      >
+        {/* Header - Draggable */}
+        <div
+          className="flex items-center justify-between p-3 border-b border-gray-200 select-none md:cursor-move bg-gray-100 text-gray-900 rounded-t-lg"
+          onMouseDown={onHeaderMouseDown}
+        >
+          <h3 className="text-sm font-semibold">
             {mode === 'create' ? `Create ${config.title}` : `Edit ${config.title}`}
           </h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-600 hover:text-gray-800 transition-colors"
+            aria-label="Close"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit}>
-          <div className="p-4 overflow-y-auto max-h-[calc(90vh-160px)]">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="p-4 overflow-y-auto flex-1">
             {saveError && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-sm text-red-600">{saveError}</p>
