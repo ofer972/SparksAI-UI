@@ -151,8 +151,10 @@ const parseSprintGoalJson = (jsonString: string | undefined): Record<string, any
         const tableRows: Record<string, any>[] = [];
         
         // Group items by chunks - every 4 items form a row (Goal, Linkage, Progress, Alert)
-        for (let i = 0; i < flatArray.length; i += 4) {
-          if (i + 3 < flatArray.length) {
+        // Limit to 8 rows maximum (32 items)
+        const maxItems = Math.min(flatArray.length, 32);
+        for (let i = 0; i < maxItems; i += 4) {
+          if (i + 3 < maxItems) {
             const goalItem = flatArray[i];
             const linkageItem = flatArray[i + 1];
             const progressItem = flatArray[i + 2];
