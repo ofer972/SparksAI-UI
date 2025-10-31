@@ -230,19 +230,8 @@ export default function Home() {
       case 'create-agent-job':
         return (
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="bg-white rounded-lg shadow-sm p-6 relative">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Create Agent Job</h2>
-              
-              {/* Success/Error Message */}
-              {message && (
-                <div className={`p-4 rounded-lg mb-6 ${
-                  message.type === 'success' 
-                    ? 'bg-green-50 border border-green-200 text-green-800' 
-                    : 'bg-red-50 border border-red-200 text-red-800'
-                }`}>
-                  {message.text}
-                </div>
-              )}
               
               {/* Sprint Goal Row */}
               <div className="border border-gray-200 rounded-lg p-4 mb-4">
@@ -303,6 +292,17 @@ export default function Home() {
                   </div>
                 </div>
               </div>
+              
+              {/* Success/Error Message - Fixed at bottom */}
+              {message && (
+                <div className={`p-4 rounded-lg mt-6 ${
+                  message.type === 'success' 
+                    ? 'bg-green-50 border border-green-200 text-green-800' 
+                    : 'bg-red-50 border border-red-200 text-red-800'
+                }`}>
+                  {message.text}
+                </div>
+              )}
             </div>
           </div>
         );
