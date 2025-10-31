@@ -942,35 +942,30 @@ export class ApiService {
   }
 
   async updateSettings(settings: Record<string, any>, updatedBy?: string): Promise<any> {
+    // Ensure all values are strings as backend expects Dict[str, str]
+    const stringSettings: Record<string, string> = {};
+    for (const [key, value] of Object.entries(settings)) {
+      stringSettings[key] = String(value);
+    }
+    
     const url = buildApiUrl(API_CONFIG.endpoints.settings.batch);
-    // Attempt 1: dict form { settings: { key: value }, updated_by }
-    const bodyDict = { settings, updated_by: updatedBy || 'ui' } as any;
+    // Send object shape expected by batch endpoint: { settings: { ... }, updated_by }
+    const body = { settings: stringSettings, updated_by: updatedBy || 'ui' };
+    
     console.log('updateSettings URL:', url);
-    console.log('updateSettings body (dict):', bodyDict);
-    let response = await fetch(url, {
+    console.log('updateSettings body:', JSON.stringify(body, null, 2));
+    console.log('updateSettings settings keys:', Object.keys(stringSettings));
+    
+    const response = await fetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify(bodyDict),
+      body: JSON.stringify(body),
     });
+    
     if (response.ok) {
       return response.json();
     }
-    const text1 = await response.text();
-    // If the server expects an array of {key, value}
-    if (response.status === 422 || response.status === 400) {
-      const settingsArray = Object.entries(settings).map(([key, value]) => ({ key, value }));
-      const bodyArray = { settings: settingsArray, updated_by: updatedBy || 'ui' };
-      console.warn('updateSettings retry with array payload due to', response.status, text1);
-      console.log('updateSettings body (array):', bodyArray);
-      response = await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(bodyArray),
-      });
-      if (response.ok) {
-        return response.json();
-      }
-    }
+    
     const text = await response.text();
     throw new Error(`Failed to update settings: ${response.status} ${response.statusText}${text ? ` - ${text}` : ''}`);
   }
@@ -992,3 +987,4 @@ export class BurndownApiService {
     return this.apiService.getBurndownData(teamName, issueType, sprintName);
   }
 }
+
