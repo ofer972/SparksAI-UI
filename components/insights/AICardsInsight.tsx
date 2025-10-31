@@ -95,13 +95,6 @@ interface InformationItem {
   text: string;
 }
 
-interface SprintGoalItem {
-  goal: string;
-  linkage: string;
-  progress: number;
-  alert: string;
-}
-
 const parseInformationJson = (jsonString: string | undefined): InformationItem[] | null => {
   if (!jsonString || jsonString.trim() === '') {
     return null;
@@ -109,9 +102,25 @@ const parseInformationJson = (jsonString: string | undefined): InformationItem[]
   
   try {
     const parsed = JSON.parse(jsonString);
+    
+    // Handle direct array
     if (Array.isArray(parsed)) {
       return parsed;
     }
+    
+    // Handle object - only extract DashboardSummary (or variations)
+    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+      // Look for DashboardSummary with flexible key matching
+      const keys = Object.keys(parsed);
+      const dashboardSummaryKey = keys.find(key => 
+        key.toLowerCase().replace(/[_\s]/g, '') === 'dashboardsummary'
+      );
+      
+      if (dashboardSummaryKey && Array.isArray(parsed[dashboardSummaryKey])) {
+        return parsed[dashboardSummaryKey] as InformationItem[];
+      }
+    }
+    
     return null;
   } catch (error) {
     console.error('Error parsing information_json:', error);
@@ -119,22 +128,76 @@ const parseInformationJson = (jsonString: string | undefined): InformationItem[]
   }
 };
 
-const parseSprintGoalJson = (jsonString: string | undefined): SprintGoalItem[] | null => {
+const parseSprintGoalJson = (jsonString: string | undefined): Record<string, any>[] | null => {
   if (!jsonString || jsonString.trim() === '') {
     return null;
   }
   
   try {
     const parsed = JSON.parse(jsonString);
+    
+    // Handle direct array (already in table format)
     if (Array.isArray(parsed) && parsed.length > 0) {
-      // Validate that it's an array of objects with the expected structure
-      const firstItem = parsed[0];
-      if (firstItem && typeof firstItem === 'object' && 
-          'goal' in firstItem && 'linkage' in firstItem && 
-          'progress' in firstItem && 'alert' in firstItem) {
-        return parsed as SprintGoalItem[];
+      return parsed as Record<string, any>[];
+    }
+    
+    // Handle object containing DashboardSummary or other arrays
+    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+      // Check for DashboardSummary first (most common for Sprint Goals)
+      if (parsed.DashboardSummary && Array.isArray(parsed.DashboardSummary) && parsed.DashboardSummary.length > 0) {
+        // Transform from flat format [{header: "Goal", text: "..."}, {header: "Linkage", text: "3"}, ...] 
+        // to table format [{Goal: "...", Linkage: "3", Progress: "0%", Alert: "🔴"}, ...]
+        const flatArray = parsed.DashboardSummary;
+        const tableRows: Record<string, any>[] = [];
+        
+        // Group items by chunks - every 4 items form a row (Goal, Linkage, Progress, Alert)
+        for (let i = 0; i < flatArray.length; i += 4) {
+          if (i + 3 < flatArray.length) {
+            const goalItem = flatArray[i];
+            const linkageItem = flatArray[i + 1];
+            const progressItem = flatArray[i + 2];
+            const alertItem = flatArray[i + 3];
+            
+            // Extract the field name from header (remove emoji and normalize)
+            const getFieldName = (header: string) => {
+              const lower = header.toLowerCase();
+              if (lower.includes('goal')) return 'Goal';
+              if (lower.includes('linkage') || lower.includes('link')) return 'Linkage';
+              if (lower.includes('progress')) return 'Progress';
+              if (lower.includes('alert')) return 'Alert';
+              return header; // fallback
+            };
+            
+            const row: Record<string, any> = {};
+            row[getFieldName(goalItem.header)] = String(goalItem.text || '').trim();
+            row[getFieldName(linkageItem.header)] = String(linkageItem.text || '').trim();
+            row[getFieldName(progressItem.header)] = String(progressItem.text || '').trim();
+            row[getFieldName(alertItem.header)] = String(alertItem.text || '').trim();
+            
+            tableRows.push(row);
+          }
+        }
+        
+        if (tableRows.length > 0) {
+          return tableRows;
+        }
+      }
+      
+      // Check other common property names that might contain arrays
+      const arrayKeys = ['items', 'data', 'goals', 'sprint_goals', 'rows', 'records'];
+      for (const key of arrayKeys) {
+        if (parsed[key] && Array.isArray(parsed[key]) && parsed[key].length > 0) {
+          return parsed[key] as Record<string, any>[];
+        }
+      }
+      
+      // If object itself is an array-like structure, try to extract values
+      const values = Object.values(parsed);
+      if (values.length > 0 && Array.isArray(values[0]) && values[0].length > 0) {
+        return values[0] as Record<string, any>[];
       }
     }
+    
     return null;
   } catch (error) {
     console.error('Error parsing Sprint Goal information_json:', error);
@@ -275,47 +338,72 @@ export default function AICardsInsight({
                         
                         if (sprintGoalItems && sprintGoalItems.length > 0) {
                           // Get column headers dynamically from the first item
-                          const columns = Object.keys(sprintGoalItems[0]);
+                          const firstItem = sprintGoalItems[0];
+                          let columns = firstItem && typeof firstItem === 'object' ? Object.keys(firstItem) : [];
+                          
+                          if (columns.length === 0) {
+                            // Fallback if no columns found
+                            return null;
+                          }
+                          
+                          // Check if "Goal" column exists (case-insensitive) and move it to first position
+                          const goalColumnIndex = columns.findIndex(col => col.toLowerCase().includes('goal'));
+                          if (goalColumnIndex !== -1) {
+                            const goalColumn = columns[goalColumnIndex];
+                            columns = [goalColumn, ...columns.filter(col => col !== goalColumn)];
+                          }
                           
                           return (
-                            <div className="overflow-auto max-h-32 -mt-1">
-                              <table className="w-[90%] text-xs border-collapse border border-gray-300">
+                            <div className="w-full overflow-auto max-h-32 -mt-1" style={{ width: '100%', display: 'block' }}>
+                              <table 
+                                className="text-xs border-collapse border border-gray-300" 
+                                style={{ width: '90%', marginLeft: 0, marginRight: 'auto', textAlign: 'center' }}
+                              >
                                 <thead>
                                   <tr>
-                                    {columns.map((column) => (
-                                      <th 
-                                        key={column} 
-                                        className={`border border-gray-300 px-1 py-0 bg-gray-100 font-semibold text-center ${
-                                          column === 'goal' ? 'text-left w-3/5' : 'w-auto'
-                                        }`}
-                                      >
-                                        {column.charAt(0).toUpperCase() + column.slice(1)}
-                                      </th>
-                                    ))}
+                                    {columns.map((column) => {
+                                      const isGoalColumn = column.toLowerCase().includes('goal');
+                                      return (
+                                        <th 
+                                          key={column} 
+                                          className={`border border-gray-300 px-1 py-0 bg-gray-100 font-semibold ${
+                                            isGoalColumn ? 'text-left w-3/5' : 'w-auto'
+                                          }`}
+                                          style={isGoalColumn ? { textAlign: 'left', width: '60%' } : { textAlign: 'center' }}
+                                        >
+                                          {column.charAt(0).toUpperCase() + column.slice(1)}
+                                        </th>
+                                      );
+                                    })}
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {sprintGoalItems.map((item, index) => (
                                     <tr key={index}>
-                                      {columns.map((column) => (
-                                        <td 
-                                          key={column} 
-                                          className={`border border-gray-300 px-1 py-0 ${
-                                            column === 'goal' 
-                                              ? 'text-left w-3/5 whitespace-normal break-words' 
-                                              : 'text-center'
-                                          } ${
-                                            column === 'alert' 
-                                              ? 'text-lg' 
-                                              : ''
-                                          }`}
-                                        >
-                                          {column === 'progress' 
-                                            ? `${item[column as keyof SprintGoalItem]}%`
-                                            : item[column as keyof SprintGoalItem]
-                                          }
-                                        </td>
-                                      ))}
+                                      {columns.map((column) => {
+                                        const isGoalColumn = column.toLowerCase().includes('goal');
+                                        const value = item[column];
+                                        return (
+                                          <td 
+                                            key={column} 
+                                            className={`border border-gray-300 px-1 py-0 ${
+                                              isGoalColumn 
+                                                ? 'whitespace-normal break-words' 
+                                                : ''
+                                            } ${
+                                              column.toLowerCase() === 'alert' 
+                                                ? 'text-lg' 
+                                                : ''
+                                            }`}
+                                            style={isGoalColumn ? { textAlign: 'left', width: '60%' } : { textAlign: 'center' }}
+                                          >
+                                            {column.toLowerCase() === 'progress' && typeof value === 'number'
+                                              ? `${value}%`
+                                              : String(value ?? '').trim()
+                                            }
+                                          </td>
+                                        );
+                                      })}
                                     </tr>
                                   ))}
                                 </tbody>

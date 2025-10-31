@@ -235,8 +235,6 @@ export default function RecommendationsInsight({
                           const informationItem = parseInformationJson(recommendation.information_json);
                           
                           // Debug: Log information_json content
-                          console.log('Recommendation ID:', recommendation.id, 'information_json:', recommendation.information_json);
-                          console.log('Parsed item:', informationItem);
                           
                           if (informationItem) {
                             return (
