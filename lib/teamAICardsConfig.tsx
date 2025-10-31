@@ -9,6 +9,7 @@ export interface TeamAICard {
   card_type: string;
   priority: string;
   source: string;
+  source_job_id?: string | number;
   description: string;
   full_information: string;
   information_json?: string;
@@ -101,6 +102,6 @@ export const teamAICardsConfig: EntityConfig<TeamAICard> = {
   },
   
   // Field categorization for detail view
-  normalFields: ['id', 'card_name', 'card_type', 'priority', 'team_name', 'date', 'source'],
+  normalFields: ['id', 'card_name', 'card_type', 'priority', 'team_name', 'date', 'source', 'source_job_id'],
   longTextFields: ['description', 'full_information', 'information_json'],
 };

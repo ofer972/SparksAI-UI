@@ -72,6 +72,6 @@ export const piAICardsConfig: EntityConfig<PIAICard> = {
     return String(value);
   },
 
-  normalFields: ['id', 'card_name', 'card_type', 'priority', 'team_name', 'date', 'source'],
+  normalFields: ['id', 'card_name', 'card_type', 'priority', 'team_name', 'date', 'source', 'source_job_id'],
   longTextFields: ['description', 'full_information', 'information_json'],
 };

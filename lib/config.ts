@@ -109,6 +109,7 @@ export interface AICard {
   card_type: string;
   priority: string;
   source: string;
+  source_job_id?: string | number;
   description: string;
   full_information: string;
   information_json?: string;
