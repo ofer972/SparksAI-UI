@@ -78,12 +78,12 @@ export default function Home() {
     { id: 'pi-quarter', label: 'PI AI Insights', icon: '🕐' },
     { id: 'pi-dashboard', label: 'PI Dashboard', icon: '📈' },
     { id: 'prompts', label: 'Prompts', icon: '🧠' },
-    { id: 'ai-chat', label: 'AI Direct Data Chat', icon: '🤖' },
     { id: 'settings', label: 'Settings', icon: '⚙️' },
     { id: 'general-data', label: 'View General Data', icon: '📋' },
     { id: 'create-agent-job', label: 'Create Agent Job', icon: '➕' },
     { id: 'upload-transcripts', label: 'Upload Transcripts', icon: '📤' },
     { id: 'api-test', label: 'API Test', icon: '🔧' },
+    { id: 'ai-chat', label: 'AI Direct Data Chat', icon: '🤖' },
   ];
 
   // Map sidebar items to browser tab titles (no spaces around '-')
