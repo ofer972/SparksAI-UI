@@ -40,9 +40,34 @@ export const transcriptsConfig: EntityConfig<TranscriptRecord> = {
 
   primaryKey: 'id',
   title: 'Transcripts',
+  
+  formatCellValue: (value: any, key: keyof TranscriptRecord) => {
+    if (value === null || value === undefined) return '-';
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    if (typeof value === 'object') return JSON.stringify(value);
+    
+    // Special formatting for date fields
+    if (key === 'transcript_date_time' || key === 'created_at' || key === 'updated_at') {
+      try {
+        const date = new Date(value);
+        const month = date.toLocaleDateString('en-US', { month: 'short' });
+        const day = date.getDate();
+        const year = date.getFullYear();
+        return `${month} ${day} ${year}`;
+      } catch {
+        return String(value);
+      }
+    }
+    
+    if (typeof value === 'string' && value.length > 50) {
+      return value.substring(0, 50) + '...';
+    }
+    return String(value);
+  },
+  
   // DataTable will auto-discover all columns from the API response
   // Field categorization for detail modal view only
-  normalFields: ['id', 'file_name', 'origin', 'team_name', 'pi', 'transcript_date', 'type', 'created_at', 'updated_at'] as any,
+  normalFields: ['id', 'file_name', 'origin', 'team_name', 'pi', 'transcript_date_time', 'type', 'created_at', 'updated_at'] as any,
   longTextFields: ['raw_text'] as any,
 };
 

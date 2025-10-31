@@ -57,8 +57,11 @@ export const piAICardsConfig: EntityConfig<PIAICard> = {
 
     if (key === 'date') {
       try {
-        const d = new Date(value as any);
-        return d.toLocaleDateString();
+        const date = new Date(value as any);
+        const month = date.toLocaleDateString('en-US', { month: 'short' });
+        const day = date.getDate();
+        const year = date.getFullYear();
+        return `${month} ${day} ${year}`;
       } catch {
         return String(value);
       }

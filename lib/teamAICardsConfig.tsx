@@ -81,7 +81,10 @@ export const teamAICardsConfig: EntityConfig<TeamAICard> = {
     if (key === 'date') {
       try {
         const date = new Date(value);
-        return date.toLocaleDateString();
+        const month = date.toLocaleDateString('en-US', { month: 'short' });
+        const day = date.getDate();
+        const year = date.getFullYear();
+        return `${month} ${day} ${year}`;
       } catch {
         return String(value);
       }
