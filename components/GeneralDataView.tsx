@@ -15,8 +15,8 @@ const tabs: TabItem[] = [
   { id: 'agent-jobs', label: 'Agent Jobs', icon: '🤖' },
   { id: 'team-ai-cards', label: 'Team AI Cards', icon: '🎯' },
   { id: 'pi-ai-cards', label: 'PI AI Cards', icon: '📈' },
-  { id: 'security-logs', label: 'Security Logs', icon: '🔒' },
   { id: 'view-transcripts', label: 'View Transcripts', icon: '📝' },
+  { id: 'security-logs', label: 'Security Logs', icon: '🔒' },
   { id: 'prompts', label: 'Prompts', icon: '💬' },
 ];
 
@@ -31,6 +31,8 @@ export default function GeneralDataView() {
         return <TeamAICardsTab />;
       case 'pi-ai-cards':
         return <PIAICardsTab />;
+      case 'view-transcripts':
+        return <TranscriptsTab />;
       case 'security-logs':
         return (
           <div className="bg-white rounded-lg shadow-sm p-6 text-center">
@@ -41,8 +43,6 @@ export default function GeneralDataView() {
             </p>
           </div>
         );
-      case 'view-transcripts':
-        return <TranscriptsTab />;
       case 'prompts':
         return <PromptsTab />;
       default:
