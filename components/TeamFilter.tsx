@@ -38,7 +38,8 @@ export default function TeamFilter({ selectedTeam, onTeamChange, className = '' 
     };
 
     fetchTeams();
-  }, [selectedTeam, onTeamChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only fetch once on mount
 
   if (loading) {
     return (

@@ -59,7 +59,8 @@ export default function PIFilter({ selectedPI, onPIChange, className = '' }: PIF
     };
 
     fetchPIs();
-  }, [selectedPI, onPIChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only fetch once on mount
 
   if (loading) {
     return (

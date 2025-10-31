@@ -309,7 +309,7 @@ export default function Home() {
       case 'general-data':
         return <GeneralDataView />;
       case 'upload-transcripts':
-        return <UploadTranscripts selectedTeam={selectedTeam} selectedPI={selectedPI} />;
+        return <UploadTranscripts selectedTeam={selectedTeam} selectedPI={selectedPI} onTeamChange={setSelectedTeam} onPIChange={setSelectedPI} />;
       case 'api-test':
         return <ApiTest teamName={selectedTeam} />;
       default:
