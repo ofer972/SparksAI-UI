@@ -111,12 +111,7 @@ export default function PromptsTab() {
       
       // Fetch full data from API before showing edit modal
       const compositeId = `${item.email_address}/${item.prompt_name}`;
-      console.log('Fetching prompt detail for edit:', compositeId);
       const fullItem = await promptsConfig.fetchDetail!(compositeId);
-      console.log('Fetched prompt detail:', fullItem);
-      console.log('Fetched prompt detail type:', typeof fullItem);
-      console.log('Fetched prompt detail keys:', fullItem ? Object.keys(fullItem) : 'null');
-      console.log('Fetched prompt detail values:', fullItem ? Object.values(fullItem) : 'null');
       
       // Ensure we have the data before opening modal
       if (fullItem) {
@@ -130,7 +125,6 @@ export default function PromptsTab() {
     } catch (err) {
       console.error('Error fetching prompt detail for edit:', err);
       // Fallback to using item data if API fetch fails
-      console.log('Using fallback item data:', item);
       setSelectedItem(item);
       setIsEditModalOpen(true);
     } finally {
@@ -160,7 +154,6 @@ export default function PromptsTab() {
           prompt_active: itemData.prompt_active !== undefined ? itemData.prompt_active : selectedItem.prompt_active,
         };
         
-        console.log('Update data being sent:', JSON.stringify(updateData, null, 2));
         
         await promptsConfig.updateItem!(id, updateData);
       } else if (editMode === 'create') {

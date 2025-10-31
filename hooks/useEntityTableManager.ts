@@ -67,14 +67,6 @@ export function useEntityTableManager<T extends Record<string, any>>(
       setError(null);
       const result = await config.fetchList();
       
-      // Debug logging
-      console.log(`=== ${config.title.toUpperCase()} FETCH DEBUG ===`);
-      console.log('Raw result:', result);
-      console.log('Result type:', typeof result);
-      console.log('Is array:', Array.isArray(result));
-      console.log('Result length:', Array.isArray(result) ? result.length : 'N/A');
-      console.log('=====================================');
-      
       const dataArray = Array.isArray(result) ? result : [];
       setData(dataArray);
     } catch (err) {

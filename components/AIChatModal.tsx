@@ -139,7 +139,6 @@ export default function AIChatModal({
       // Send an empty initial question
       const initialQuestion = "";
       const requestPayload = buildChatRequest(initialQuestion, null); // null for first request
-      console.log('AI Chat Request Payload:', requestPayload); // Debug: verify insights id is included
       const response = await apiService.current.chatWithInsight(requestPayload);
 
       if (response.success && response.data) {

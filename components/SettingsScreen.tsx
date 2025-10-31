@@ -96,9 +96,7 @@ export default function SettingsScreen() {
         chatgpt_api_key: String(openaiKeyToSend),
       };
 
-      console.log('Saving settings payload (batch):', payload);
       const result = await api.updateSettings(payload, 'admin@example.com');
-      console.log('Save settings result:', result);
 
       // After save, mask and update originals
       setOriginalGeminiApiKey(payload.gemini_api_key);

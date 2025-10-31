@@ -325,7 +325,6 @@ export class ApiService {
     }
 
     const url = `${buildApiUrl(API_CONFIG.endpoints.pis.getPredictability)}?${params}`;
-    console.log('PI Predictability URL:', url);
     
     const response = await fetch(url);
     
@@ -336,35 +335,24 @@ export class ApiService {
     }
 
     const result = await response.json();
-    console.log('PI Predictability Raw Response:', result);
-    console.log('Result keys:', Object.keys(result));
-    console.log('Result.data:', result.data);
-    console.log('Result.data type:', typeof result.data);
-    console.log('Result.data isArray:', Array.isArray(result.data));
     
     // Handle the actual API response structure
     // The API returns: { success: bool, data: { predictability_data: [...], count: number, ... }, message: string }
     if (result.data && typeof result.data === 'object' && !Array.isArray(result.data)) {
-      console.log('Result.data keys:', Object.keys(result.data));
-      
       // Check if predictability_data exists and is an array
       if ('predictability_data' in result.data && Array.isArray(result.data.predictability_data)) {
-        console.log('Found predictability_data array with length:', result.data.predictability_data.length);
         return result.data.predictability_data;
       }
     }
     
     // Fallback for other possible structures
     if (result.data && Array.isArray(result.data)) {
-      console.log('Returning result.data array with length:', result.data.length);
       return result.data;
     } else if (Array.isArray(result)) {
-      console.log('Returning result array directly with length:', result.length);
       return result;
     }
     
     // Last resort
-    console.log('No suitable data structure found, returning empty array');
     return [];
   }
 
@@ -378,27 +366,17 @@ export class ApiService {
 
     const result = await response.json();
     
-    // Debug logging to see the actual response structure
-    console.log('=== TEAM AI CARDS API DEBUG ===');
-    console.log('Full API response:', result);
-    console.log('Response type:', typeof result);
-    console.log('Response keys:', Object.keys(result || {}));
-    console.log('===============================');
-    
     // Handle the specific API response structure: { success: true, data: { cards: [...], count: number }, message: string }
     if (result.success && result.data && result.data.cards && Array.isArray(result.data.cards)) {
-      console.log('Returning result.data.cards array with length:', result.data.cards.length);
       return result.data.cards;
     }
     
     // Fallback for other possible response structures
     if (result.success && result.data && Array.isArray(result.data)) {
-      console.log('Returning result.data array with length:', result.data.length);
       return result.data;
     }
     
     if (Array.isArray(result)) {
-      console.log('Returning result array directly with length:', result.length);
       return result;
     }
     
@@ -494,23 +472,14 @@ export class ApiService {
 
   async getAgentJobDetail(jobId: string): Promise<any> {
     const url = `${buildApiUrl(API_CONFIG.endpoints.generalData.agentJobDetail)}/${jobId}`;
-    console.log('=== API DEBUG ===');
-    console.log('Fetching job detail from URL:', url);
     
     const response = await fetch(url);
-    
-    console.log('Response status:', response.status);
-    console.log('Response ok:', response.ok);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch agent job detail: ${response.statusText}`);
     }
 
     const result: ApiResponse<any> = await response.json();
-    console.log('Raw API result:', result);
-    console.log('Result data:', result.data);
-    console.log('Result data.job:', result.data?.job);
-    console.log('================');
     
     // Handle the nested structure: result.data.job
     if (result.success && result.data && result.data.job) {
@@ -693,8 +662,6 @@ export class ApiService {
     const encodedPromptName = encodeURIComponent(promptName);
     const url = `${buildApiUrl('/api/v1/prompts')}/${encodedEmail}/${encodedPromptName}`;
     
-    console.log('Fetching prompt detail from URL:', url);
-    
     const response = await fetch(url);
     
     if (!response.ok) {
@@ -722,10 +689,6 @@ export class ApiService {
 
     const result: ApiResponse<any> = await response.json();
     
-    console.log('getPromptDetail raw result:', result);
-    console.log('getPromptDetail result.data:', result.data);
-    console.log('getPromptDetail result.data keys:', result.data ? Object.keys(result.data) : 'null');
-    
     // Handle different response structures
     if (result.data) {
       // If data has a nested prompt structure
@@ -749,9 +712,6 @@ export class ApiService {
     prompt_active: boolean;
   }): Promise<any> {
     const url = buildApiUrl('/api/v1/prompts');
-    
-    console.log('Creating prompt at URL:', url);
-    console.log('Creating prompt with data:', JSON.stringify(data, null, 2));
     
     const response = await fetch(url, {
       method: 'POST',
@@ -801,9 +761,6 @@ export class ApiService {
     
     const url = `${buildApiUrl('/api/v1/prompts')}/${encodedEmail}/${encodedPromptName}`;
     
-    console.log('Updating prompt at URL:', url);
-    console.log('Update data being sent:', JSON.stringify(data, null, 2));
-    
     const response = await fetch(url, {
       method: 'PUT',
       headers: {
@@ -844,8 +801,6 @@ export class ApiService {
     const encodedEmail = encodeURIComponent(email);
     const encodedPromptName = encodeURIComponent(promptName);
     const url = `${buildApiUrl('/api/v1/prompts')}/${encodedEmail}/${encodedPromptName}`;
-    
-    console.log('Deleting prompt at URL:', url);
     
     const response = await fetch(url, {
       method: 'DELETE',
@@ -951,10 +906,6 @@ export class ApiService {
     const url = buildApiUrl(API_CONFIG.endpoints.settings.batch);
     // Send object shape expected by batch endpoint: { settings: { ... }, updated_by }
     const body = { settings: stringSettings, updated_by: updatedBy || 'ui' };
-    
-    console.log('updateSettings URL:', url);
-    console.log('updateSettings body:', JSON.stringify(body, null, 2));
-    console.log('updateSettings settings keys:', Object.keys(stringSettings));
     
     const response = await fetch(url, {
       method: 'PUT',

@@ -29,19 +29,6 @@ export default function AgentJobDetailModal({
       const apiService = new ApiService();
       const response = await apiService.getAgentJobDetail(jobId);
       
-      // Debug logging
-      console.log('=== JOB DETAIL DEBUG ===');
-      console.log('Job ID requested:', jobId);
-      console.log('Full API response:', response);
-      console.log('Response type:', typeof response);
-      console.log('Response keys:', Object.keys(response || {}));
-      console.log('job_id field:', response?.job_id);
-      console.log('status field:', response?.status);
-      console.log('job_type field:', response?.job_type);
-      console.log('team_name field:', response?.team_name);
-      console.log('claimed_by field:', response?.claimed_by);
-      console.log('========================');
-      
       setJobDetail(response);
     } catch (err) {
       console.error('Error fetching job detail:', err);
