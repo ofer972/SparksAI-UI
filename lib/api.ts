@@ -18,9 +18,63 @@ import {
   ScopeChangesResponse,
   ScopeChangesDataPoint
 } from './config';
+import { getAuthHeaders, refreshAccessToken, clearTokens } from './auth';
 
 // Re-export types for convenience
 export type { IssuesTrendDataPoint, IssuesTrendResponse, PIPredictabilityResponse, PIPredictabilityData, ScopeChangesResponse, ScopeChangesDataPoint };
+
+// Lightweight authorized fetch wrapper to add Authorization when available
+const nativeFetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+  return (globalThis as any).fetch(input as any, init as any);
+};
+
+// Shared refresh promise to prevent concurrent refresh attempts
+let refreshPromise: Promise<boolean> | null = null;
+
+export async function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const doFetch = async () => nativeFetch(input, { ...(init || {}), headers: getAuthHeaders(init?.headers as HeadersInit) });
+  let res = await doFetch();
+  
+  // Handle both 401 and 403 - expired tokens might come as either
+  if (res.status === 401 || res.status === 403) {
+    // Use shared refresh promise so concurrent requests wait for the same refresh
+    if (!refreshPromise) {
+      refreshPromise = refreshAccessToken();
+    }
+    const refreshed = await refreshPromise;
+    
+    // Clear the promise after use (success or failure)
+    refreshPromise = null;
+    
+    if (refreshed) {
+      // Retry the original request with new token
+      res = await doFetch();
+      // If successful, return it
+      if (res.status !== 401 && res.status !== 403) {
+        return res;
+      }
+      // If still 401/403 after refresh:
+      // - 401: Token still invalid, redirect to login
+      // - 403: Might be a real permission issue, return to caller
+      if (res.status === 401) {
+        clearTokens();
+        if (typeof window !== 'undefined') {
+          try { window.location.assign('/login'); } catch {}
+        }
+      }
+    } else {
+      // Refresh failed - clear tokens and redirect
+      clearTokens();
+      if (typeof window !== 'undefined') {
+        try { window.location.assign('/login'); } catch {}
+      }
+    }
+  }
+  return res;
+}
+
+// Shadow global fetch within this module so all below calls include auth automatically
+const fetch = (input: RequestInfo | URL, init?: RequestInit) => authFetch(input, init);
 
 export interface BurndownDataPoint {
   snapshot_date: string;
@@ -940,6 +994,93 @@ export class ApiService {
     // If response is direct object (no wrapper), return it directly
     return result as User;
   }
+}
+
+export interface UserDto {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface RoleDto {
+  id: string;
+  roleName: string;  // Backend returns camelCase
+  createdAt: string;
+}
+
+export async function verifyAdmin(): Promise<boolean> {
+  const res = await fetch(buildApiUrl('/api/users/verify-admin'));
+  if (!res.ok) return false;
+  try {
+    const data = await res.json();
+    return !!data.isAdmin;
+  } catch {
+    return false;
+  }
+}
+
+export async function listUsers(): Promise<UserDto[]> {
+  const res = await fetch(buildApiUrl('/api/users'));
+  if (!res.ok) throw new Error('Failed to fetch users');
+  return res.json();
+}
+
+export async function getUserRoles(userId: string): Promise<RoleDto[]> {
+  const res = await fetch(buildApiUrl(`/api/users/${userId}/roles`));
+  if (!res.ok) throw new Error('Failed to fetch user roles');
+  return res.json();
+}
+
+export type AllowlistEntry = { id: string; pattern: string; type: string; created_by?: string; created_at: string };
+
+export async function getAllowlist(search: string = ''): Promise<AllowlistEntry[]> {
+  const q = search ? `?search=${encodeURIComponent(search)}` : '';
+  const res = await fetch(buildApiUrl(`/api/allowlist${q}`));
+  if (!res.ok) throw new Error('Failed to fetch allowlist');
+  const data = await res.json();
+  return Array.isArray(data) ? data : (data.data || []);
+}
+
+export async function addAllowlist(pattern: string): Promise<AllowlistEntry> {
+  const res = await fetch(buildApiUrl('/api/allowlist'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pattern }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function deleteAllowlist(id: string): Promise<void> {
+  const res = await fetch(buildApiUrl(`/api/allowlist/${id}`), { method: 'DELETE' });
+  if (!res.ok) throw new Error('Failed to delete allowlist entry');
+}
+
+export async function deleteUser(userId: string): Promise<void> {
+  const res = await fetch(buildApiUrl(`/api/users/${userId}`), { method: 'DELETE' });
+  if (!res.ok) throw new Error(await res.text() || 'Failed to delete user');
+}
+
+export async function listRoles(): Promise<RoleDto[]> {
+  const res = await fetch(buildApiUrl('/api/roles'));
+  if (!res.ok) throw new Error('Failed to fetch roles');
+  return res.json();
+}
+
+export async function assignRoleToUser(userId: string, roleId: string): Promise<void> {
+  const res = await fetch(buildApiUrl(`/api/users/${userId}/roles`), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role_id: roleId }),
+  });
+  if (!res.ok) throw new Error(await res.text() || 'Failed to assign role');
+}
+
+export async function unassignRoleFromUser(userId: string, roleId: string): Promise<void> {
+  const res = await fetch(buildApiUrl(`/api/users/${userId}/roles/${roleId}`), {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error(await res.text() || 'Failed to unassign role');
 }
 
 // Legacy class for backward compatibility
