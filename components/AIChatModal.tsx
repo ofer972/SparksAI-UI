@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ApiService } from '@/lib/api';
+import { useUser } from '@/hooks';
 
 interface AIChatModalProps {
   isOpen: boolean;
@@ -17,7 +18,7 @@ interface AIChatModalProps {
   recommendationId?: number | string;
   teamName?: string;
   piName?: string;
-  username?: string;
+  promptName?: string;
 }
 
 interface Message {
@@ -33,8 +34,9 @@ export default function AIChatModal({
   recommendationId,
   teamName,
   piName,
-  username = 'user',
+  promptName,
 }: AIChatModalProps) {
+  const { user } = useUser();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
@@ -105,13 +107,18 @@ export default function AIChatModal({
   ) => {
     const request: any = {
       question: question,
-      username: username,
+      user_id: user?.user_id || '',
       selected_team: teamName || '',
       selected_pi: piName || '',
       chat_type: chatType,
       recommendation_id: recommendationId !== undefined && recommendationId !== null ? String(recommendationId) : '',
       insights_id: insightsId !== undefined && insightsId !== null ? String(insightsId) : '',
     };
+    
+    // Only include prompt_name if provided (for dashboard chat with selected prompt)
+    if (promptName && promptName.trim() !== '' && promptName !== '[use default]') {
+      request.prompt_name = promptName;
+    }
     
     // Only include conversation_id if it exists (for follow-up questions)
     if (convId && convId.trim() !== '') {
@@ -167,7 +174,7 @@ export default function AIChatModal({
     } finally {
       setLoading(false);
     }
-  }, [chatType, insightsId, recommendationId, teamName, piName, username]);
+  }, [chatType, insightsId, recommendationId, teamName, piName, promptName, user]);
 
   // Reset state when modal closes
   useEffect(() => {

@@ -484,6 +484,7 @@ export default function Home() {
           }
           teamName={activeNavItem === 'team-dashboard' ? selectedTeam : undefined}
           piName={activeNavItem === 'pi-dashboard' ? selectedPI : undefined}
+          promptName={selectedPrompt && selectedPrompt.trim() !== '' && selectedPrompt !== '[use default]' ? selectedPrompt : undefined}
         />
       )}
     </div>

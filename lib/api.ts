@@ -836,12 +836,13 @@ export class ApiService {
   async chatWithInsight(request: {
     conversation_id?: string | null;
     question: string;
-    username: string;
+    user_id: string;
     selected_team: string;
     selected_pi?: string;
     chat_type: string;
     recommendation_id?: string;
     insights_id?: string;
+    prompt_name?: string;
   }): Promise<{
     success: boolean;
     data: {
@@ -849,12 +850,13 @@ export class ApiService {
       input_parameters: {
         conversation_id: string;
         question: string;
-        username: string;
+        user_id: string;
         selected_team: string;
         selected_pi?: string;
         chat_type: string;
         recommendation_id?: string;
         insights_id?: string;
+        prompt_name?: string;
       };
     };
     message: string;
