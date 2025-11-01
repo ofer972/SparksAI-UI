@@ -2,6 +2,7 @@ import {
   API_CONFIG, 
   buildApiUrl, 
   ApiResponse,
+  User,
   TeamsResponse,
   PIsResponse,
   AICardsResponse,
@@ -919,6 +920,25 @@ export class ApiService {
     
     const text = await response.text();
     throw new Error(`Failed to update settings: ${response.status} ${response.statusText}${text ? ` - ${text}` : ''}`);
+  }
+
+  // Users API
+  async getCurrentUser(): Promise<User> {
+    const response = await fetch(buildApiUrl(API_CONFIG.endpoints.users.getCurrentUser));
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch current user: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    
+    // Check if response is wrapped in ApiResponse format
+    if (result.success && result.data) {
+      return result.data as User;
+    }
+    
+    // If response is direct object (no wrapper), return it directly
+    return result as User;
   }
 }
 
