@@ -37,6 +37,9 @@ export default function Home() {
   });
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isDashboardChatModalOpen, setIsDashboardChatModalOpen] = useState(false);
+  const [prompts, setPrompts] = useState<any[]>([]);
+  const [selectedPrompt, setSelectedPrompt] = useState<string>('');
+  const [loadingPrompts, setLoadingPrompts] = useState(false);
 
   const apiService = new ApiService();
 
@@ -104,6 +107,36 @@ export default function Home() {
   useEffect(() => {
     const fallbackTitle = 'SparksAI';
     document.title = titles[activeNavItem] ?? fallbackTitle;
+  }, [activeNavItem]);
+
+  // Fetch prompts when on team-dashboard or pi-dashboard
+  useEffect(() => {
+    const fetchPrompts = async () => {
+      if (activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') {
+        try {
+          setLoadingPrompts(true);
+          // Determine prompt type based on active dashboard
+          const promptType = activeNavItem === 'team-dashboard' ? 'Team Dashboard' : 'PI Dashboard';
+          const fetchedPrompts = await apiService.getPrompts({ 
+            email_address: 'ofer972@gmail.com',
+            prompt_type: promptType
+          });
+          setPrompts(fetchedPrompts || []);
+          // Reset selection when prompts change
+          setSelectedPrompt('');
+        } catch (error) {
+          console.error('Error fetching prompts:', error);
+          setPrompts([]);
+        } finally {
+          setLoadingPrompts(false);
+        }
+      } else {
+        setPrompts([]);
+        setSelectedPrompt('');
+      }
+    };
+
+    fetchPrompts();
   }, [activeNavItem]);
 
   const renderMainContent = () => {
@@ -403,12 +436,30 @@ export default function Home() {
               onTeamChange={setSelectedTeam}
             />
             {(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') && (
-              <button
-                onClick={() => setIsDashboardChatModalOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-full text-sm font-medium transition-colors shadow-sm hover:shadow-md absolute left-1/2 transform -translate-x-1/2"
-              >
-                Get Dashboard AI Insights
-              </button>
+              <div className="flex items-center space-x-3" style={{ marginLeft: '150px' }}>
+                <button
+                  onClick={() => setIsDashboardChatModalOpen(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-full text-sm font-medium transition-colors shadow-sm hover:shadow-md"
+                >
+                  Get Dashboard AI Insights
+                </button>
+                <div className="flex items-center space-x-2">
+                  <label className="text-xs font-medium text-gray-700 whitespace-nowrap">Prompt:</label>
+                  <select
+                    value={selectedPrompt}
+                    onChange={(e) => setSelectedPrompt(e.target.value)}
+                    disabled={loadingPrompts}
+                    className="px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[200px] bg-white"
+                  >
+                    <option value="">Select a prompt...</option>
+                    {prompts.map((prompt) => (
+                      <option key={`${prompt.email_address}/${prompt.prompt_name}`} value={prompt.prompt_name}>
+                        {prompt.prompt_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             )}
           </div>
         </div>
