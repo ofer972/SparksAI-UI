@@ -63,6 +63,11 @@ export const API_CONFIG = {
       update: '/api/v1/settings',
       batch: '/api/v1/settings/batch',
     },
+
+    // Users endpoints
+    users: {
+      getCurrentUser: '/api/v1/users/get-current-user',
+    },
   },
 } as const;
 
@@ -76,6 +81,18 @@ export interface ApiResponse<T> {
   success: boolean;
   data: T;
   message: string;
+}
+
+export interface User {
+  user_id: string | number;
+  user_name: string;
+  user_type: string;
+  // Keep for backward compatibility
+  id?: string | number;
+  email?: string;
+  name?: string;
+  username?: string;
+  [key: string]: any; // Allow for additional fields from API
 }
 
 export interface Team {
