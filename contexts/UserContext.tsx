@@ -1,7 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { ApiService } from '@/lib/api';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { User } from '@/lib/config';
 
 // Re-export User type for convenience
@@ -21,34 +20,22 @@ interface UserProviderProps {
 }
 
 export function UserProvider({ children }: UserProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  // TODO: Remove temporary hardcoded user and restore API call to getCurrentUser
+  const [user, setUser] = useState<User | null>({
+    user_id: 'admin',
+    user_name: 'admin',
+    user_type: 'Admin',
+  });
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchUser = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const apiService = new ApiService();
-      const userData = await apiService.getCurrentUser();
-      // Debug: Log the actual user data structure from API
-      console.log('Current user data from API:', userData);
-      setUser(userData);
-    } catch (err) {
-      console.error('Error fetching current user:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch current user');
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
+  const refetch = async () => {
+    // TODO: Restore API call to getCurrentUser when ready
+    // No-op for now
   };
 
-  useEffect(() => {
-    fetchUser();
-  }, []);
-
   return (
-    <UserContext.Provider value={{ user, loading, error, refetch: fetchUser }}>
+    <UserContext.Provider value={{ user, loading, error, refetch }}>
       {children}
     </UserContext.Provider>
   );
