@@ -226,6 +226,9 @@ export interface SprintMetrics {
   velocity: number;
   cycle_time: number;
   predictability: number;
+  velocity_status?: 'red' | 'yellow' | 'green';
+  cycle_time_status?: 'red' | 'yellow' | 'green';
+  predictability_status?: 'red' | 'yellow' | 'green';
   team_name: string;
   sprint_count: number;
 }

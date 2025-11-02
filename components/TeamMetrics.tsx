@@ -10,6 +10,9 @@ interface SprintMetricsData {
   velocity: number;
   cycle_time: number;
   predictability: number;
+  velocity_status?: 'red' | 'yellow' | 'green';
+  cycle_time_status?: 'red' | 'yellow' | 'green';
+  predictability_status?: 'red' | 'yellow' | 'green';
   team_name: string;
   sprint_count: number;
 }
@@ -46,31 +49,47 @@ interface WorkInProgressResponse {
   message: string;
 }
 
-const MetricCard = ({ icon, value, label, tooltip, className = "", isLeftmost = false }: { 
+const MetricCard = ({ icon, value, label, tooltip, className = "", isLeftmost = false, status }: { 
   icon: string; 
   value: string; 
   label: string; 
   tooltip: string;
   className?: string;
   isLeftmost?: boolean;
-}) => (
-  <div className={`bg-white rounded-lg shadow-sm p-3 flex flex-col items-center text-center w-[70%] relative group ${className}`}>
-    <div className="w-8 h-8 mb-2 flex items-center justify-center text-lg">
-      {icon}
+  status?: 'red' | 'yellow' | 'green';
+}) => {
+  const getStatusColor = (status?: 'red' | 'yellow' | 'green') => {
+    switch (status) {
+      case 'red':
+        return 'text-red-600';
+      case 'yellow':
+        return 'text-yellow-600';
+      case 'green':
+        return 'text-green-600';
+      default:
+        return 'text-gray-800';
+    }
+  };
+
+  return (
+    <div className={`bg-white rounded-lg shadow-sm p-3 flex flex-col items-center text-center w-[70%] relative group ${className}`}>
+      <div className="w-8 h-8 mb-2 flex items-center justify-center text-lg">
+        {icon}
+      </div>
+      <div className={`text-2xl font-bold mb-1 ${getStatusColor(status)}`}>
+        {value}
+      </div>
+      <div className="text-xs text-gray-600">
+        {label}
+      </div>
+      {/* Tooltip */}
+      <div className={`absolute bottom-full mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10 max-w-xs ${isLeftmost ? 'left-0' : 'left-1/2 transform -translate-x-1/2'}`}>
+        {tooltip}
+        <div className={`absolute top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 ${isLeftmost ? 'left-4' : 'left-1/2 transform -translate-x-1/2'}`}></div>
+      </div>
     </div>
-    <div className="text-2xl font-bold text-gray-800 mb-1">
-      {value}
-    </div>
-    <div className="text-xs text-gray-600">
-      {label}
-    </div>
-    {/* Tooltip */}
-    <div className={`absolute bottom-full mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10 max-w-xs ${isLeftmost ? 'left-0' : 'left-1/2 transform -translate-x-1/2'}`}>
-      {tooltip}
-      <div className={`absolute top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 ${isLeftmost ? 'left-4' : 'left-1/2 transform -translate-x-1/2'}`}></div>
-    </div>
-  </div>
-);
+  );
+};
 
 export default function TeamMetrics({ teamName }: TeamMetricsProps) {
   const { sprintMetrics, completionRate, inProgressCount, loading, error } = useTeamMetrics(teamName);
@@ -115,6 +134,7 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
           label="Avg Velocity"
           tooltip="Average velocity in the last five closed sprints"
           isLeftmost={true}
+          status={sprintMetrics?.velocity_status}
         />
         
         {/* Avg Cycle Time */}
@@ -123,6 +143,7 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
           value={sprintMetrics?.cycle_time ? `${sprintMetrics.cycle_time}d` : "0d"}
           label="Avg Cycle Time"
           tooltip="Average story cycle time in the last five sprints"
+          status={sprintMetrics?.cycle_time_status}
         />
         
         {/* Avg Sprint Predictability */}
@@ -131,6 +152,7 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
           value={sprintMetrics?.predictability ? `${sprintMetrics.predictability}%` : "0%"}
           label="Avg Sprint Predictability"
           tooltip="Average sprint predictability over last five sprints"
+          status={sprintMetrics?.predictability_status}
         />
         
         {/* Work in Progress */}
