@@ -22,7 +22,7 @@ import PromptsTab from '@/components/PromptsTab';
 import UploadTranscripts from '@/components/UploadTranscripts';
 import AIChatModal from '@/components/AIChatModal';
 import { getIssueTypes, getDefaultIssueType } from '@/lib/issueTypes';
-import { ApiService, verifyAdmin, listUsers, getUserRoles, getAllowlist, addAllowlist, deleteAllowlist, deleteUser, listRoles, assignRoleToUser, unassignRoleFromUser, RoleDto, UserDto } from '@/lib/api';
+import { ApiService, verifyAdmin, listUsers, getUserRoles, getAllowlist, addAllowlist, deleteAllowlist, deleteUser, listRoles, assignRoleToUser, unassignRoleFromUser, getPendingRoles, assignPendingRole, unassignPendingRole, RoleDto, UserDto } from '@/lib/api';
 
 export default function Home() {
   const router = useRouter();
@@ -76,6 +76,7 @@ export default function Home() {
   const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean; userId?: string; userName?: string}>({show: false});
   const [deleteAllowlistConfirm, setDeleteAllowlistConfirm] = useState<{show: boolean; allowlistId?: string; pattern?: string}>({show: false});
   const [editingRolesFor, setEditingRolesFor] = useState<string | null>(null);
+  const [pendingRoleAssignments, setPendingRoleAssignments] = useState<Record<string, RoleDto[]>>({});
 
   useEffect(() => {
     // Bypass admin check on localhost if env var is set
@@ -179,6 +180,29 @@ export default function Home() {
         const merged = ulist.map((u: UserDto, idx: number) => ({ ...u, roles: rolesList[idx] }));
         setUsersList(merged);
         setAllowlist(alist);
+
+        // Load pending role assignments for all invited users (email-type allowlist entries)
+        const emailEntries = alist.filter((e: any) => e.type === 'email');
+        const pendingRolesMap: Record<string, RoleDto[]> = {};
+        
+        await Promise.all(
+          emailEntries.map(async (e: any) => {
+            const emailLower = e.pattern.toLowerCase();
+            // Check if user is already registered
+            const isRegistered = merged.some((u: any) => u.email?.toLowerCase() === emailLower);
+            if (!isRegistered) {
+              try {
+                const roles = await getPendingRoles(e.pattern);
+                pendingRolesMap[emailLower] = roles;
+              } catch (err) {
+                console.error(`Failed to load pending roles for ${e.pattern}:`, err);
+                pendingRolesMap[emailLower] = [];
+              }
+            }
+          })
+        );
+
+        setPendingRoleAssignments(pendingRolesMap);
       } catch (e) {
         console.error('Failed loading admin data', e);
       }
@@ -625,11 +649,84 @@ export default function Home() {
                       // Check if this email is already in usersList
                       const isRegistered = usersList.some((u:any) => u.email?.toLowerCase() === e.pattern.toLowerCase());
                       if (isRegistered) return null; // Don't show duplicates
+                      const emailLower = e.pattern.toLowerCase();
+                      const pendingKey = `email:${emailLower}`;
+                      const roles = pendingRoleAssignments[emailLower] || [];
                       return (
                         <tr key={`allowlist-${e.id}`} className="border-t bg-gray-50">
                           <td className="p-2 italic text-gray-500">Invited (not registered)</td>
                           <td className="p-2">{e.pattern}</td>
-                          <td className="p-2 text-xs text-gray-400">-</td>
+                          <td className="p-2">
+                            {editingRolesFor === pendingKey ? (
+                              <div className="space-y-1">
+                                <div className="flex flex-wrap gap-1 mb-1">
+                                  {roles.map(r => (
+                                    <span key={r.id} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
+                                      {r.roleName}
+                                      <button
+                                        onClick={async () => {
+                                          try {
+                                            await unassignPendingRole(e.pattern, r.id);
+                                            const updated = { ...pendingRoleAssignments };
+                                            if (!updated[emailLower]) updated[emailLower] = [];
+                                            updated[emailLower] = updated[emailLower].filter(role => role.id !== r.id);
+                                            if (updated[emailLower].length === 0) {
+                                              delete updated[emailLower];
+                                            }
+                                            setPendingRoleAssignments(updated);
+                                          } catch (err: any) {
+                                            alert(err?.message || 'Failed to remove role');
+                                          }
+                                        }}
+                                        className="ml-1 text-blue-600 hover:text-blue-800"
+                                        title="Remove role"
+                                      >×</button>
+                                    </span>
+                                  ))}
+                                </div>
+                                <select
+                                  className="text-xs border rounded p-1"
+                                  value=""
+                                  onChange={async (evt) => {
+                                    const roleId = evt.target.value;
+                                    if (!roleId) return;
+                                    const role = allRoles.find(r => r.id === roleId);
+                                    if (!role) return;
+                                    try {
+                                      await assignPendingRole(e.pattern, roleId);
+                                      const updated = { ...pendingRoleAssignments };
+                                      if (!updated[emailLower]) updated[emailLower] = [];
+                                      if (!updated[emailLower].some(r => r.id === role.id)) {
+                                        updated[emailLower] = [...updated[emailLower], role];
+                                        setPendingRoleAssignments(updated);
+                                      }
+                                      evt.target.value = '';
+                                    } catch (err: any) {
+                                      alert(err?.message || 'Failed to assign role');
+                                    }
+                                  }}
+                                >
+                                  <option value="">Add role...</option>
+                                  {allRoles.filter(r => !roles.some(ur => ur.id === r.id)).map(r => (
+                                    <option key={r.id} value={r.id}>{r.roleName}</option>
+                                  ))}
+                                </select>
+                                <button
+                                  onClick={() => setEditingRolesFor(null)}
+                                  className="ml-2 text-xs text-gray-600 hover:text-gray-800"
+                                >Done</button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center space-x-1">
+                                <span className="text-xs">{roles.map(r => r.roleName).join(', ') || '-'}</span>
+                                <button
+                                  onClick={() => setEditingRolesFor(pendingKey)}
+                                  className="text-xs text-blue-600 hover:text-blue-800"
+                                  title="Edit roles"
+                                >✏️</button>
+                              </div>
+                            )}
+                          </td>
                           <td className="p-2"></td>
                         </tr>
                       );

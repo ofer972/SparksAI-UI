@@ -1111,6 +1111,31 @@ export async function unassignRoleFromUser(userId: string, roleId: string): Prom
   if (!res.ok) throw new Error(await res.text() || 'Failed to unassign role');
 }
 
+// Pending role assignments for invited users (by email)
+export async function getPendingRoles(email: string): Promise<RoleDto[]> {
+  const res = await fetch(buildUserServiceUrl(`/pending-roles?email=${encodeURIComponent(email)}`));
+  if (!res.ok) throw new Error('Failed to fetch pending roles');
+  return res.json();
+}
+
+export async function assignPendingRole(email: string, roleId: string): Promise<void> {
+  const res = await fetch(buildUserServiceUrl('/pending-roles'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, role_id: roleId }),
+  });
+  if (!res.ok) throw new Error(await res.text() || 'Failed to assign pending role');
+}
+
+export async function unassignPendingRole(email: string, roleId: string): Promise<void> {
+  const res = await fetch(buildUserServiceUrl('/pending-roles'), {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, role_id: roleId }),
+  });
+  if (!res.ok) throw new Error(await res.text() || 'Failed to unassign pending role');
+}
+
 // Legacy class for backward compatibility
 export class BurndownApiService {
   private apiService: ApiService;

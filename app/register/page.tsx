@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { register as registerUser } from "@/lib/auth";
+import UnauthorizedAccess from "@/components/UnauthorizedAccess";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -12,20 +13,31 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showUnauthorized, setShowUnauthorized] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setShowUnauthorized(false);
     setLoading(true);
     try {
       await registerUser(name, email, password);
       router.push("/");
     } catch (err: any) {
       const msg = String(err?.message || "Registration failed");
-      setError(msg);
+      // Check if error indicates unauthorized email
+      if (msg === "email_not_allowed" || msg.includes("email_not_allowed")) {
+        setShowUnauthorized(true);
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
+  }
+
+  if (showUnauthorized) {
+    return <UnauthorizedAccess email={email} />;
   }
 
   return (
