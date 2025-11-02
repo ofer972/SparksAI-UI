@@ -32,8 +32,23 @@ const nativeFetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Resp
 let refreshPromise: Promise<boolean> | null = null;
 
 export async function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const doFetch = async () => nativeFetch(input, { ...(init || {}), headers: getAuthHeaders(init?.headers as HeadersInit) });
+  // Detect localhost and bypass settings
+  const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+  const bypassAuth = isLocalhost && process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true';
+  
+  const doFetch = async () => {
+    const headers = bypassAuth 
+      ? (init?.headers || {}) 
+      : getAuthHeaders(init?.headers as HeadersInit);
+    return nativeFetch(input, { ...(init || {}), headers });
+  };
+  
   let res = await doFetch();
+  
+  // Skip token refresh logic if bypassing auth
+  if (bypassAuth) {
+    return res;
+  }
   
   // Handle both 401 and 403 - expired tokens might come as either
   if (res.status === 401 || res.status === 403) {
@@ -220,7 +235,7 @@ export class ApiService {
       team_name: teamName,
     });
 
-    const response = await fetch(`${buildApiUrl('/api/v1/team-ai-cards/getTopCards')}?${params}`);
+    const response = await fetch(`${buildApiUrl('/team-ai-cards/getTopCards')}?${params}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch AI cards: ${response.statusText}`);
@@ -252,7 +267,7 @@ export class ApiService {
       pi: piName,
     });
 
-    const response = await fetch(`${buildApiUrl('/api/v1/pi-ai-cards/getTopCards')}?${params}`);
+    const response = await fetch(`${buildApiUrl('/pi-ai-cards/getTopCards')}?${params}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch PI AI cards: ${response.statusText}`);
@@ -268,7 +283,7 @@ export class ApiService {
       pi: piName,
     });
 
-    const response = await fetch(`${buildApiUrl('/api/v1/recommendations/getPITop')}?${params}`);
+    const response = await fetch(`${buildApiUrl('/recommendations/getPITop')}?${params}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch PI recommendations: ${response.statusText}`);
@@ -442,7 +457,7 @@ export class ApiService {
 
   // PI AI Cards API (list)
   async getPIAICardsList(): Promise<any[]> {
-    const response = await fetch(buildApiUrl('/api/v1/pi-ai-cards'));
+    const response = await fetch(buildApiUrl('/pi-ai-cards'));
     
     if (!response.ok) {
       throw new Error(`Failed to fetch PI AI cards: ${response.statusText}`);
@@ -463,7 +478,7 @@ export class ApiService {
 
   // PI AI Card detail
   async getPIAICardDetail(id: string): Promise<any> {
-    const url = `${buildApiUrl('/api/v1/pi-ai-cards')}/${id}`;
+    const url = `${buildApiUrl('/pi-ai-cards')}/${id}`;
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch PI AI card detail: ${response.statusText}`);
@@ -677,7 +692,7 @@ export class ApiService {
     if (params?.limit) urlParams.append('limit', String(params.limit));
     if (params?.offset) urlParams.append('offset', String(params.offset));
 
-    const url = `${buildApiUrl('/api/v1/prompts')}${urlParams.toString() ? '?' + urlParams.toString() : ''}`;
+    const url = `${buildApiUrl('/prompts')}${urlParams.toString() ? '?' + urlParams.toString() : ''}`;
     
     const response = await fetch(url);
     
@@ -715,7 +730,7 @@ export class ApiService {
     // URL encode email and promptName to handle special characters like @ in emails
     const encodedEmail = encodeURIComponent(email);
     const encodedPromptName = encodeURIComponent(promptName);
-    const url = `${buildApiUrl('/api/v1/prompts')}/${encodedEmail}/${encodedPromptName}`;
+    const url = `${buildApiUrl('/prompts')}/${encodedEmail}/${encodedPromptName}`;
     
     const response = await fetch(url);
     
@@ -766,7 +781,7 @@ export class ApiService {
     prompt_type: string;
     prompt_active: boolean;
   }): Promise<any> {
-    const url = buildApiUrl('/api/v1/prompts');
+    const url = buildApiUrl('/prompts');
     
     const response = await fetch(url, {
       method: 'POST',
@@ -814,7 +829,7 @@ export class ApiService {
     const encodedEmail = encodeURIComponent(email);
     const encodedPromptName = encodeURIComponent(promptName);
     
-    const url = `${buildApiUrl('/api/v1/prompts')}/${encodedEmail}/${encodedPromptName}`;
+    const url = `${buildApiUrl('/prompts')}/${encodedEmail}/${encodedPromptName}`;
     
     const response = await fetch(url, {
       method: 'PUT',
@@ -855,7 +870,7 @@ export class ApiService {
     // URL encode email and promptName to handle special characters
     const encodedEmail = encodeURIComponent(email);
     const encodedPromptName = encodeURIComponent(promptName);
-    const url = `${buildApiUrl('/api/v1/prompts')}/${encodedEmail}/${encodedPromptName}`;
+    const url = `${buildApiUrl('/prompts')}/${encodedEmail}/${encodedPromptName}`;
     
     const response = await fetch(url, {
       method: 'DELETE',
@@ -915,7 +930,7 @@ export class ApiService {
     };
     message: string;
   }> {
-    const response = await fetch(buildApiUrl('/api/v1/ai-chat'), {
+    const response = await fetch(buildApiUrl('/ai-chat'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1011,7 +1026,7 @@ export interface RoleDto {
 }
 
 export async function verifyAdmin(): Promise<boolean> {
-  const res = await fetch(buildApiUrl('/api/users/verify-admin'));
+  const res = await fetch(buildApiUrl('/users/verify-admin'));
   if (!res.ok) return false;
   try {
     const data = await res.json();
@@ -1022,13 +1037,13 @@ export async function verifyAdmin(): Promise<boolean> {
 }
 
 export async function listUsers(): Promise<UserDto[]> {
-  const res = await fetch(buildApiUrl('/api/users'));
+  const res = await fetch(buildApiUrl('/users'));
   if (!res.ok) throw new Error('Failed to fetch users');
   return res.json();
 }
 
 export async function getUserRoles(userId: string): Promise<RoleDto[]> {
-  const res = await fetch(buildApiUrl(`/api/users/${userId}/roles`));
+  const res = await fetch(buildApiUrl(`/users/${userId}/roles`));
   if (!res.ok) throw new Error('Failed to fetch user roles');
   return res.json();
 }
@@ -1037,14 +1052,14 @@ export type AllowlistEntry = { id: string; pattern: string; type: string; create
 
 export async function getAllowlist(search: string = ''): Promise<AllowlistEntry[]> {
   const q = search ? `?search=${encodeURIComponent(search)}` : '';
-  const res = await fetch(buildApiUrl(`/api/allowlist${q}`));
+  const res = await fetch(buildApiUrl(`/allowlist${q}`));
   if (!res.ok) throw new Error('Failed to fetch allowlist');
   const data = await res.json();
   return Array.isArray(data) ? data : (data.data || []);
 }
 
 export async function addAllowlist(pattern: string): Promise<AllowlistEntry> {
-  const res = await fetch(buildApiUrl('/api/allowlist'), {
+  const res = await fetch(buildApiUrl('/allowlist'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ pattern }),
@@ -1054,23 +1069,23 @@ export async function addAllowlist(pattern: string): Promise<AllowlistEntry> {
 }
 
 export async function deleteAllowlist(id: string): Promise<void> {
-  const res = await fetch(buildApiUrl(`/api/allowlist/${id}`), { method: 'DELETE' });
+  const res = await fetch(buildApiUrl(`/allowlist/${id}`), { method: 'DELETE' });
   if (!res.ok) throw new Error('Failed to delete allowlist entry');
 }
 
 export async function deleteUser(userId: string): Promise<void> {
-  const res = await fetch(buildApiUrl(`/api/users/${userId}`), { method: 'DELETE' });
+  const res = await fetch(buildApiUrl(`/users/${userId}`), { method: 'DELETE' });
   if (!res.ok) throw new Error(await res.text() || 'Failed to delete user');
 }
 
 export async function listRoles(): Promise<RoleDto[]> {
-  const res = await fetch(buildApiUrl('/api/roles'));
+  const res = await fetch(buildApiUrl('/roles'));
   if (!res.ok) throw new Error('Failed to fetch roles');
   return res.json();
 }
 
 export async function assignRoleToUser(userId: string, roleId: string): Promise<void> {
-  const res = await fetch(buildApiUrl(`/api/users/${userId}/roles`), {
+  const res = await fetch(buildApiUrl(`/users/${userId}/roles`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ role_id: roleId }),
@@ -1079,7 +1094,7 @@ export async function assignRoleToUser(userId: string, roleId: string): Promise<
 }
 
 export async function unassignRoleFromUser(userId: string, roleId: string): Promise<void> {
-  const res = await fetch(buildApiUrl(`/api/users/${userId}/roles/${roleId}`), {
+  const res = await fetch(buildApiUrl(`/users/${userId}/roles/${roleId}`), {
     method: 'DELETE',
   });
   if (!res.ok) throw new Error(await res.text() || 'Failed to unassign role');

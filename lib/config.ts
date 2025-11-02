@@ -1,79 +1,114 @@
 // API Configuration
+// Helper to detect if we should bypass auth/gateway (localhost only)
+const shouldBypassGateway = () => {
+  if (typeof window === 'undefined') return false; // Server-side: no bypass
+  const isLocalhost = window.location.hostname === 'localhost';
+  return isLocalhost && process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true';
+};
+
+// Get base URL dynamically (handles localhost bypass)
+const getBaseUrl = () => {
+  if (shouldBypassGateway()) {
+    return process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+  }
+  return process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
+};
+
 export const API_CONFIG = {
-  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || '/api',
+  get baseUrl() {
+    return getBaseUrl();
+  },
   version: process.env.NEXT_PUBLIC_API_VERSION || 'v1',
   
   endpoints: {
     // Team endpoints
     teams: {
-      getNames: '/api/v1/teams/getNames',
+      getNames: '/teams/getNames',
     },
     
     // PI endpoints
     pis: {
-      getPis: '/api/v1/pis/getPis',
-      getPredictability: '/api/v1/pis/predictability',
-      getBurndown: '/api/v1/pis/burndown',
-      getScopeChanges: '/api/v1/pis/scope-changes',
+      getPis: '/pis/getPis',
+      getPredictability: '/pis/predictability',
+      getBurndown: '/pis/burndown',
+      getScopeChanges: '/pis/scope-changes',
     },
     
     // Burndown endpoints
     burndown: {
-      sprintBurndown: '/api/v1/team-metrics/sprint-burndown',
+      sprintBurndown: '/team-metrics/sprint-burndown',
     },
     
     // AI Cards endpoints
     aiCards: {
-      getCards: '/api/v1/team-ai-cards/getCards',
+      getCards: '/team-ai-cards/getCards',
     },
     
     // Recommendations endpoints
     recommendations: {
-      getTop: '/api/v1/recommendations/getTeamTop',
+      getTop: '/recommendations/getTeamTop',
     },
     
     // Team Metrics endpoints
     teamMetrics: {
-      avgSprintMetrics: '/api/v1/team-metrics/get-avg-sprint-metrics',
-      countInProgress: '/api/v1/team-metrics/count-in-progress',
-      currentSprintCompletion: '/api/v1/team-metrics/current-sprint-completion',
-      closedSprints: '/api/v1/team-metrics/closed-sprints',
-      issuesTrend: '/api/v1/team-metrics/issues-trend',
+      avgSprintMetrics: '/team-metrics/get-avg-sprint-metrics',
+      countInProgress: '/team-metrics/count-in-progress',
+      currentSprintCompletion: '/team-metrics/current-sprint-completion',
+      closedSprints: '/team-metrics/closed-sprints',
+      issuesTrend: '/team-metrics/issues-trend',
     },
     
     // General Data endpoints
     generalData: {
-      agentJobs: '/api/v1/agent-jobs',
-      agentJobDetail: '/api/v1/agent-jobs',
-      teamAICards: '/api/v1/team-ai-cards',
-      teamAICardDetail: '/api/v1/team-ai-cards',
-      createTeamJob: '/api/v1/agent-jobs/create-team-job',
-      createPiJob: '/api/v1/agent-jobs/create-pi-job',
+      agentJobs: '/agent-jobs',
+      agentJobDetail: '/agent-jobs',
+      teamAICards: '/team-ai-cards',
+      teamAICardDetail: '/team-ai-cards',
+      createTeamJob: '/agent-jobs/create-team-job',
+      createPiJob: '/agent-jobs/create-pi-job',
     },
     
     // Transcript Upload endpoints
     transcripts: {
-      uploadTeam: '/api/v1/transcripts/upload-team',
-      uploadPI: '/api/v1/transcripts/upload-pi',
+      uploadTeam: '/transcripts/upload-team',
+      uploadPI: '/transcripts/upload-pi',
     },
 
     // Settings endpoints
     settings: {
-      get: '/api/v1/settings/getAll',
-      update: '/api/v1/settings',
-      batch: '/api/v1/settings/batch',
+      get: '/settings/getAll',
+      update: '/settings',
+      batch: '/settings/batch',
     },
 
     // Users endpoints
     users: {
-      getCurrentUser: '/api/v1/users/get-current-user',
+      getCurrentUser: '/users/get-current-user',
     },
   },
 } as const;
 
 // Helper function to build full API URLs
+// Uses router/builder pattern: endpoints are resource paths only, builder adds version and /api prefix
 export const buildApiUrl = (endpoint: string): string => {
-  return `${API_CONFIG.baseUrl}${endpoint}`;
+  const baseUrl = API_CONFIG.baseUrl;
+  const version = API_CONFIG.version;
+  
+  // Ensure endpoint starts with /
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  
+  // Build versioned path: /v1/teams/getNames
+  const versionedPath = `/${version}${cleanEndpoint}`;
+  
+  if (shouldBypassGateway()) {
+    // Bypass mode (direct backend): add /api prefix
+    // Result: http://localhost:8000/api/v1/teams/getNames
+    return `${baseUrl}/api${versionedPath}`;
+  } else {
+    // Gateway mode: baseUrl already includes /api
+    // Result: /api/v1/teams/getNames
+    return `${baseUrl}${versionedPath}`;
+  }
 };
 
 // Type definitions for API responses

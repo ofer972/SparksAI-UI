@@ -8,12 +8,12 @@ export interface TranscriptRecord {
 
 export const transcriptsConfig: EntityConfig<TranscriptRecord> = {
   endpoints: {
-    list: '/api/v1/transcripts',
-    detail: '/api/v1/transcripts',
+    list: '/transcripts',
+    detail: '/transcripts',
   },
 
   fetchList: async () => {
-    const response = await fetch(buildApiUrl('/api/v1/transcripts'));
+    const response = await fetch(buildApiUrl('/transcripts'));
     if (!response.ok) {
       throw new Error(`Failed to fetch transcripts: ${response.statusText}`);
     }
@@ -26,7 +26,7 @@ export const transcriptsConfig: EntityConfig<TranscriptRecord> = {
   },
 
   fetchDetail: async (id: string) => {
-    const url = `${buildApiUrl('/api/v1/transcripts')}/${id}`;
+    const url = `${buildApiUrl('/transcripts')}/${id}`;
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch transcript detail: ${response.statusText}`);

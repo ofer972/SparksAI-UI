@@ -28,6 +28,13 @@ export default function Home() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
   useEffect(() => {
+    // Bypass auth check on localhost if env var is set
+    const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+    if (isLocalhost && process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true') {
+      setAuthChecked(true);
+      return;
+    }
+
     (async () => {
       const token = getAccessToken();
       async function goLogin() {
@@ -71,6 +78,13 @@ export default function Home() {
   const [editingRolesFor, setEditingRolesFor] = useState<string | null>(null);
 
   useEffect(() => {
+    // Bypass admin check on localhost if env var is set
+    const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+    if (isLocalhost && process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true') {
+      setIsAdmin(true); // Assume admin when bypassing auth on localhost
+      return;
+    }
+
     (async () => {
       try {
         const admin = await verifyAdmin();
@@ -122,6 +136,16 @@ export default function Home() {
 
   // Load roles only once when admin status is confirmed
   useEffect(() => {
+    // Bypass roles API call on localhost if env var is set
+    const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+    if (isLocalhost && process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true') {
+      // Set empty roles array when bypassing
+      if (allRoles.length === 0) {
+        setAllRoles([]);
+      }
+      return;
+    }
+
     if (!isAdmin || allRoles.length > 0) return;
     (async () => {
       try {
