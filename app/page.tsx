@@ -828,7 +828,7 @@ export default function Home() {
         sidebarCollapsed ? 'w-16' : 'w-48'
       }`}>
         <div className="p-3 h-full">
-          <div className="flex flex-col items-center mb-4">
+          <div className="flex flex-col items-center mb-1">
             <div className="w-full">
               <SparksAILogo collapsed={sidebarCollapsed} size="medium" />
             </div>

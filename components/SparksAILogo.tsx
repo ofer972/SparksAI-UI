@@ -10,9 +10,9 @@ interface SparksAILogoProps {
 
 export default function SparksAILogo({ collapsed = false, size = 'medium' }: SparksAILogoProps) {
   const sizeClasses = {
-    small: 'w-12 h-12',    // 50% bigger: 8*1.5 = 12
-    medium: 'w-18 h-18',   // 50% bigger: 12*1.5 = 18
-    large: 'w-24 h-24'     // 50% bigger: 16*1.5 = 24
+    small: 'w-16 h-16',    // 64px
+    medium: 'w-28 h-28',   // 112px - bigger and clearer
+    large: 'w-32 h-32'     // 128px
   };
 
   // Hide the logo when sidebar is collapsed
@@ -26,9 +26,10 @@ export default function SparksAILogo({ collapsed = false, size = 'medium' }: Spa
         <Image
           src="/SparksAI.png"
           alt="SparksAI Logo"
-          width={size === 'small' ? 48 : size === 'medium' ? 72 : 96}
-          height={size === 'small' ? 48 : size === 'medium' ? 72 : 96}
+          width={size === 'small' ? 64 : size === 'medium' ? 112 : 128}
+          height={size === 'small' ? 64 : size === 'medium' ? 112 : 128}
           className="w-full h-full object-contain"
+          quality={100}
           priority
           onError={(e) => {
             // Fallback to a simple text logo if image fails to load
