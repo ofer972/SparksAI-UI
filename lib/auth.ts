@@ -50,7 +50,18 @@ export async function login(email: string, password: string): Promise<AuthTokens
     body: JSON.stringify({ email, password }),
   });
   if (!res.ok) {
-    const text = await res.text();
+    let text = await res.text();
+    // Try to parse as JSON if possible
+    try {
+      const jsonError = JSON.parse(text);
+      text = jsonError.message || jsonError.error || text;
+    } catch {
+      // Keep original text if not JSON
+    }
+    // Normalize error message
+    if (res.status === 403 || text.includes('email_not_allowed') || text.includes('email not found')) {
+      throw new Error('email_not_allowed');
+    }
     throw new Error(text || res.statusText);
   }
   const data = await res.json();
@@ -69,7 +80,18 @@ export async function register(name: string, email: string, password: string): P
     body: JSON.stringify({ name, email, password }),
   });
   if (!res.ok) {
-    const text = await res.text();
+    let text = await res.text();
+    // Try to parse as JSON if possible
+    try {
+      const jsonError = JSON.parse(text);
+      text = jsonError.message || jsonError.error || text;
+    } catch {
+      // Keep original text if not JSON
+    }
+    // Normalize error message
+    if (res.status === 403 || text.includes('email_not_allowed') || text.includes('email not found')) {
+      throw new Error('email_not_allowed');
+    }
     throw new Error(text || res.statusText);
   }
   const data = await res.json();
