@@ -286,8 +286,6 @@ export default function SettingsScreen() {
     <div className="space-y-4">
       {/* Settings Header */}
       <div className="bg-white rounded-lg shadow-sm p-4">
-        <h2 className="text-lg font-semibold mb-4">Settings</h2>
-        
         {/* Settings Tabs */}
         <div className="flex space-x-1 border-b border-gray-200">
           {settingsTabs.map((tab) => (

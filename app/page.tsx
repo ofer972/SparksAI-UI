@@ -276,7 +276,6 @@ export default function Home() {
           <div className="h-full flex flex-col">
             {/* AI Cards Section - Reduced height with padding */}
             <div className="bg-white rounded-lg shadow-sm pt-2 pb-2 pr-2 pl-[7px] flex-shrink-0" style={{ height: '45vh' }}>
-              <h2 className="text-lg font-semibold mb-1 pt-3">Team AI Insights</h2>
               <div className="h-full pb-4">
                 <AICards teamName={selectedTeam} />
               </div>
@@ -294,107 +293,131 @@ export default function Home() {
           </div>
         );
       case 'team-dashboard':
-        return <TeamDashboard selectedTeam={selectedTeam} />;
+        return (
+          <div className="h-full flex flex-col">
+            {/* Dashboard Content */}
+            <div className="flex-1 overflow-auto">
+              <TeamDashboard selectedTeam={selectedTeam} />
+            </div>
+          </div>
+        );
       case 'pi-quarter':
         return (
           <div className="h-full flex flex-col">
             {/* PI AI Cards Section - Reduced height with padding */}
             <div className="bg-white rounded-lg shadow-sm p-2 flex-shrink-0" style={{ height: '45vh' }}>
-              <h2 className="text-lg font-semibold mb-1">PI AI Insights</h2>
               <div className="h-full pb-4">
                 <PIAICards piName={selectedPI} />
               </div>
             </div>
             
             {/* PI Recommendations Section - Fixed height with no margin */}
-            <div className="flex-shrink-0" style={{ height: '200px' }}>
+            <div className="flex-shrink-0 mt-2" style={{ height: '200px' }}>
               <PIRecommendations piName={selectedPI} />
             </div>
           </div>
         );
       case 'pi-dashboard':
         return (
-          <div className="space-y-4">
-            <div className="bg-white rounded-lg shadow-sm pt-2 pb-4 px-4">
-              <div className="flex items-center mb-3">
-                <button 
-                  onClick={() => setPiBurndownCollapsed(!piBurndownCollapsed)}
-                  className="text-gray-500 hover:text-gray-700 transition-colors mr-2"
-                >
-                  {piBurndownCollapsed ? '▼' : '▲'}
-                </button>
-                <h2 className="text-lg font-semibold">PI Burndown Chart</h2>
-              </div>
-              {!piBurndownCollapsed && (
-                <div className="space-y-3">
-                  {/* Issue Type Filter */}
-                  <div className="flex items-center">
-                    <div className="flex items-center gap-2">
-                      <label className="text-xs font-medium text-gray-700">Issue Type:</label>
-                      <select
-                        value={selectedPIIssueType}
-                        onChange={(e) => setSelectedPIIssueType(e.target.value)}
-                        className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        style={{ 
-                          minWidth: '120px',
-                          backgroundColor: 'white',
-                          zIndex: 9999,
-                          position: 'relative'
-                        }}
-                      >
-                        {getIssueTypes().map((issueType) => (
-                          <option key={issueType.value} value={issueType.value}>
-                            {issueType.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="flex-1 text-center text-sm font-medium text-gray-800" style={{ transform: 'translateX(-80px)' }}>
-                      {selectedPI}
-                    </div>
-                    <div className="w-24"></div> {/* Spacer to balance the layout */}
-                  </div>
-                  
-                  <PIBurndownChart 
-                    piName={selectedPI}
-                    issueType={selectedPIIssueType}
-                    isVisible={!piBurndownCollapsed}
-                  />
+          <div className="h-full flex flex-col">
+            {/* Dashboard Content */}
+            <div className="flex-1 overflow-auto space-y-4">
+              <div className="bg-white rounded-lg shadow-sm pt-2 pb-4 px-4">
+                <div className="flex items-center mb-3">
+                  <button 
+                    onClick={() => setPiBurndownCollapsed(!piBurndownCollapsed)}
+                    className="text-gray-500 hover:text-gray-700 transition-colors mr-2"
+                  >
+                    {piBurndownCollapsed ? '▼' : '▲'}
+                  </button>
+                  <h2 className="text-lg font-semibold">PI Burndown Chart</h2>
                 </div>
-              )}
-            </div>
-            <PIPredictability selectedPI={selectedPI} selectedTeam={selectedTeam} />
-            
-            {/* Epic Scope Changes Chart */}
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <div className="flex items-center mb-3">
-                <button 
-                  onClick={() => setScopeChangesCollapsed(!scopeChangesCollapsed)}
-                  className="text-gray-500 hover:text-gray-700 transition-colors mr-2"
-                >
-                  {scopeChangesCollapsed ? '▼' : '▲'}
-                </button>
-                <h2 className="text-lg font-semibold">Epic Scope Changes</h2>
+                {!piBurndownCollapsed && (
+                  <div className="space-y-3">
+                    {/* Issue Type Filter */}
+                    <div className="flex items-center">
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs font-medium text-gray-700">Issue Type:</label>
+                        <select
+                          value={selectedPIIssueType}
+                          onChange={(e) => setSelectedPIIssueType(e.target.value)}
+                          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          style={{ 
+                            minWidth: '120px',
+                            backgroundColor: 'white',
+                            zIndex: 9999,
+                            position: 'relative'
+                          }}
+                        >
+                          {getIssueTypes().map((issueType) => (
+                            <option key={issueType.value} value={issueType.value}>
+                              {issueType.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex-1 text-center text-sm font-medium text-gray-800" style={{ transform: 'translateX(-80px)' }}>
+                        {selectedPI}
+                      </div>
+                      <div className="w-24"></div> {/* Spacer to balance the layout */}
+                    </div>
+                    
+                    <PIBurndownChart 
+                      piName={selectedPI}
+                      issueType={selectedPIIssueType}
+                      isVisible={!piBurndownCollapsed}
+                    />
+                  </div>
+                )}
               </div>
+              <PIPredictability selectedPI={selectedPI} selectedTeam={selectedTeam} />
+              
+              {/* Epic Scope Changes Chart */}
+              <div className="bg-white rounded-lg shadow-sm p-4">
+                <div className="flex items-center mb-3">
+                  <button 
+                    onClick={() => setScopeChangesCollapsed(!scopeChangesCollapsed)}
+                    className="text-gray-500 hover:text-gray-700 transition-colors mr-2"
+                  >
+                    {scopeChangesCollapsed ? '▼' : '▲'}
+                  </button>
+                  <h2 className="text-lg font-semibold">Epic Scope Changes</h2>
+                </div>
 
-              {!scopeChangesCollapsed && (
-                <EpicScopeChangesChart 
-                  selectedQuarter={selectedPI} 
-                  isVisible={!scopeChangesCollapsed}
-                />
-              )}
+                {!scopeChangesCollapsed && (
+                  <EpicScopeChangesChart 
+                    selectedQuarter={selectedPI} 
+                    isVisible={!scopeChangesCollapsed}
+                  />
+                )}
+              </div>
             </div>
           </div>
         );
       case 'prompts':
-        return <PromptsTab />;
+        return (
+          <div className="h-full flex flex-col">
+            {/* Content */}
+            <div className="flex-1 overflow-auto">
+              <PromptsTab />
+            </div>
+          </div>
+        );
       case 'settings':
-        return <SettingsScreen />;
+        return (
+          <div className="h-full flex flex-col">
+            {/* Content */}
+            <div className="flex-1 overflow-auto">
+              <SettingsScreen />
+            </div>
+          </div>
+        );
       case 'create-agent-job':
         return (
-          <div className="space-y-6">
+          <div className="h-full flex flex-col">
+            {/* Content */}
+            <div className="flex-1 overflow-auto space-y-6">
             <div className="bg-white rounded-lg shadow-sm p-6 relative">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Create Agent Job</h2>
               
               {/* Sprint Goal Row */}
               <div className="border border-gray-200 rounded-lg p-4 mb-4">
@@ -467,17 +490,41 @@ export default function Home() {
                 </div>
               )}
             </div>
+            </div>
           </div>
         );
       case 'general-data':
-        return <GeneralDataView />;
+        return (
+          <div className="h-full flex flex-col">
+            {/* Content */}
+            <div className="flex-1 overflow-auto">
+              <GeneralDataView />
+            </div>
+          </div>
+        );
       case 'upload-transcripts':
-        return <UploadTranscripts selectedTeam={selectedTeam} selectedPI={selectedPI} onTeamChange={setSelectedTeam} onPIChange={setSelectedPI} />;
+        return (
+          <div className="h-full flex flex-col">
+            {/* Content */}
+            <div className="flex-1 overflow-auto">
+              <UploadTranscripts selectedTeam={selectedTeam} selectedPI={selectedPI} onTeamChange={setSelectedTeam} onPIChange={setSelectedPI} />
+            </div>
+          </div>
+        );
       case 'api-test':
-        return <ApiTest teamName={selectedTeam} />;
+        return (
+          <div className="h-full flex flex-col">
+            {/* Content */}
+            <div className="flex-1 overflow-auto">
+              <ApiTest teamName={selectedTeam} />
+            </div>
+          </div>
+        );
       case 'users-admin':
         return (
-          <div className="space-y-4">
+          <div className="h-full flex flex-col">
+            {/* Content */}
+            <div className="flex-1 overflow-auto space-y-4">
             <div className="bg-white rounded-lg shadow-sm p-4">
               <h2 className="text-lg font-semibold mb-3">Allowlist Management</h2>
               <div className="space-y-2 mb-3">
@@ -806,6 +853,7 @@ export default function Home() {
                 </div>
               </div>
             )}
+            </div>
           </div>
         );
       default:
@@ -874,56 +922,37 @@ export default function Home() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0 relative">
-            <div className="flex items-center justify-between mb-3">
-              <h1 className="text-lg font-bold text-blue-600">SparksAI Insights & Dashboards</h1>
-              <div className="flex items-center space-x-4">
-                {/* Current user and Logout */}
-                <div className="flex items-center space-x-3 text-sm text-gray-700">
-                  {(() => { const u = getCurrentUser(); if (!u) return <span>Signed in</span>; const label = u.name && u.email ? `${u.name} (${u.email})` : (u.name || u.email || 'Signed in'); return (
-                    <span title={u.email || ''}>{label}</span>
-                  ); })()}
-                  <button
-                    onClick={() => { logout(); try { location.assign('/login'); } catch {} }}
-                    className="px-2 py-1 border rounded hover:bg-gray-50"
-                    title="Logout"
-                  >Logout</button>
-                </div>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Ask SparksAI..."
-                    className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
-                    <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
+        <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            {/* Left side: View title and filters */}
+            <div className="flex items-center space-x-4 flex-1 min-w-0">
+              <h1 className="text-xl font-semibold text-gray-900 whitespace-nowrap">
+                {navigationItems.find(item => item.id === activeNavItem)?.label || 'SparksAI'}
+              </h1>
+              
+              {/* Team Filter - for views that need it */}
+              {(activeNavItem === 'team-ai-insights' || activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'api-test' || activeNavItem === 'upload-transcripts') && (
+                <TeamFilter 
+                  selectedTeam={selectedTeam}
+                  onTeamChange={setSelectedTeam}
+                />
+              )}
+              
+              {/* PI Filter - for views that need it */}
+              {(activeNavItem === 'pi-quarter' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (
+                <PIFilter 
+                  selectedPI={selectedPI}
+                  onPIChange={setSelectedPI}
+                />
+              )}
             </div>
-          
-          <div className="flex items-center space-x-3">
-            {/* Show PI Filter only on views that use it */}
-            {(activeNavItem === 'pi-quarter' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (
-              <PIFilter 
-                selectedPI={selectedPI}
-                onPIChange={setSelectedPI}
-              />
-            )}
-            {/* Show Team Filter only on views that use it */}
-            {(activeNavItem === 'team-ai-insights' || activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'api-test' || activeNavItem === 'upload-transcripts') && (
-              <TeamFilter 
-                selectedTeam={selectedTeam}
-                onTeamChange={setSelectedTeam}
-              />
-            )}
+            
+            {/* Center: Dashboard AI Insights button and Prompt selector */}
             {(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') && (
-              <div className="flex items-center space-x-3" style={{ marginLeft: '150px' }}>
+              <div className="flex items-center justify-center space-x-3 flex-1">
                 <button
                   onClick={() => setIsDashboardChatModalOpen(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-full text-sm font-medium transition-colors shadow-sm hover:shadow-md"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-full text-sm font-medium transition-colors shadow-sm hover:shadow-md whitespace-nowrap"
                 >
                   Get Dashboard AI Insights
                 </button>
@@ -945,6 +974,32 @@ export default function Home() {
                 </div>
               </div>
             )}
+            
+            {/* Right side: Search and user info */}
+            <div className="flex items-center space-x-4 flex-1 justify-end">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Ask SparksAI..."
+                  className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                  <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3 text-sm text-gray-700">
+                {(() => { const u = getCurrentUser(); if (!u) return <span>Signed in</span>; const label = u.name && u.email ? `${u.name} (${u.email})` : (u.name || u.email || 'Signed in'); return (
+                  <span title={u.email || ''}>{label}</span>
+                ); })()}
+                <button
+                  onClick={() => { logout(); try { location.assign('/login'); } catch {} }}
+                  className="px-2 py-1 border rounded hover:bg-gray-50"
+                  title="Logout"
+                >Logout</button>
+              </div>
+            </div>
           </div>
         </div>
 

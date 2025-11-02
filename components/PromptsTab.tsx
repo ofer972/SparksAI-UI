@@ -240,10 +240,6 @@ export default function PromptsTab() {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Prompts Management</h2>
-        <p className="text-sm text-gray-600">Manage and view all prompts.</p>
-      </div>
 
       <DataTable
         config={{

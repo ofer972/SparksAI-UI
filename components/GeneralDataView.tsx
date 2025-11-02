@@ -63,7 +63,6 @@ export default function GeneralDataView() {
       {/* Tab Navigation */}
       <div className="bg-white border-b border-gray-200">
         <div className="px-6 py-4">
-          <h1 className="text-xl font-semibold text-gray-900 mb-4">View General Data</h1>
           <nav className="flex">
             {tabs.map((tab, index) => (
               <button

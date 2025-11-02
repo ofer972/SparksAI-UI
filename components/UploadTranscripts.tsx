@@ -371,11 +371,6 @@ export default function UploadTranscripts({ selectedTeam, selectedPI, onTeamChan
 
   return (
     <div className="space-y-3">
-      <div className="bg-white rounded-lg shadow-sm p-3">
-        <h2 className="text-xl font-semibold text-gray-900 mb-1">Upload Transcripts</h2>
-        <p className="text-sm text-gray-600">Upload transcript files for team meetings or PI sessions.</p>
-      </div>
-
       {/* Side by side containers */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* Team Transcripts Upload */}
