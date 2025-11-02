@@ -827,25 +827,14 @@ export default function Home() {
       <div className={`bg-white shadow-sm border-r border-gray-200 flex-shrink-0 transition-all duration-300 ${
         sidebarCollapsed ? 'w-16' : 'w-48'
       }`}>
-        <div className="p-3 h-full">
+        <div className="p-3 h-full flex flex-col">
           <div className="flex flex-col items-center mb-1">
             <div className="w-full">
               <SparksAILogo collapsed={sidebarCollapsed} size="medium" />
             </div>
-            <button 
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="text-gray-500 hover:text-gray-700 p-1 rounded hover:bg-gray-100 mt-2"
-              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={
-                  sidebarCollapsed ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"
-                } />
-              </svg>
-            </button>
           </div>
           
-          <nav className="space-y-1">
+          <nav className="space-y-1 flex-1">
             {navigationItems.map((item) => (
               <button
                 key={item.id}
@@ -864,6 +853,21 @@ export default function Home() {
               </button>
             ))}
           </nav>
+
+          <div className="mt-auto pt-2 border-t border-gray-200">
+            <button 
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="w-full text-gray-500 hover:text-gray-700 p-2 rounded hover:bg-gray-100 flex items-center justify-center"
+              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={
+                  sidebarCollapsed ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"
+                } />
+              </svg>
+              {!sidebarCollapsed && <span className="ml-2 text-xs font-medium">Collapse</span>}
+            </button>
+          </div>
         </div>
       </div>
 
