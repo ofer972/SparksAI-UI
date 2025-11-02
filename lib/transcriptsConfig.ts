@@ -1,5 +1,5 @@
 import { EntityConfig } from './entityConfig';
-import { buildApiUrl, ApiResponse } from './config';
+import { buildBackendUrl, ApiResponse } from './config';
 
 export interface TranscriptRecord {
   id: string | number;
@@ -13,7 +13,7 @@ export const transcriptsConfig: EntityConfig<TranscriptRecord> = {
   },
 
   fetchList: async () => {
-    const response = await fetch(buildApiUrl('/transcripts'));
+    const response = await fetch(buildBackendUrl('/transcripts'));
     if (!response.ok) {
       throw new Error(`Failed to fetch transcripts: ${response.statusText}`);
     }
@@ -26,7 +26,7 @@ export const transcriptsConfig: EntityConfig<TranscriptRecord> = {
   },
 
   fetchDetail: async (id: string) => {
-    const url = `${buildApiUrl('/transcripts')}/${id}`;
+    const url = `${buildBackendUrl('/transcripts')}/${id}`;
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch transcript detail: ${response.statusText}`);

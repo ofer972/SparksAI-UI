@@ -88,9 +88,38 @@ export const API_CONFIG = {
   },
 } as const;
 
-// Helper function to build full API URLs
-// Uses router/builder pattern: endpoints are resource paths only, builder adds version and /api prefix
-export const buildApiUrl = (endpoint: string): string => {
+/**
+ * Build URL for USER SERVICE / USER ENDPOINTS
+ * These endpoints are handled by the gateway service at /api/* (NOT /api/v1/*)
+ * Use for: /users/*, /roles, /allowlist, /login, /register, /auth/*, /oauth/*
+ * 
+ * @param endpoint - Resource path (will be prefixed with /api)
+ * @returns Full URL: /api/{endpoint}
+ * 
+ * @example
+ * buildUserServiceUrl('/users/verify-admin') → '/api/users/verify-admin'
+ * buildUserServiceUrl('/roles') → '/api/roles'
+ */
+export const buildUserServiceUrl = (endpoint: string): string => {
+  const baseUrl = API_CONFIG.baseUrl;
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return `${baseUrl}${cleanEndpoint}`;  // /api/users/verify-admin (no /v1)
+};
+
+/**
+ * Build URL for BACKEND v1 API endpoints
+ * Backend endpoints are proxied to backend services at /api/v1/* 
+ * All endpoints in API_CONFIG.endpoints.* should use this.
+ * Use for: teams, pis, transcripts, agent-jobs, team-ai-cards, settings, etc.
+ * 
+ * @param endpoint - Resource path (will be prefixed with /api/v1)
+ * @returns Full URL: /api/v1/{endpoint}
+ * 
+ * @example
+ * buildBackendUrl('/teams/getNames') → '/api/v1/teams/getNames'
+ * buildBackendUrl(API_CONFIG.endpoints.teams.getNames) → '/api/v1/teams/getNames'
+ */
+export const buildBackendUrl = (endpoint: string): string => {
   const baseUrl = API_CONFIG.baseUrl;
   const version = API_CONFIG.version;
   

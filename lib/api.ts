@@ -1,6 +1,7 @@
 import { 
   API_CONFIG, 
-  buildApiUrl, 
+  buildBackendUrl,
+  buildUserServiceUrl,
   ApiResponse,
   User,
   TeamsResponse,
@@ -146,7 +147,7 @@ export class ApiService {
 
   // Teams API
   async getTeams(): Promise<TeamsResponse> {
-    const response = await fetch(buildApiUrl(API_CONFIG.endpoints.teams.getNames));
+    const response = await fetch(buildBackendUrl(API_CONFIG.endpoints.teams.getNames));
     
     if (!response.ok) {
       throw new Error(`Failed to fetch teams: ${response.statusText}`);
@@ -158,7 +159,7 @@ export class ApiService {
 
   // PIs API
   async getPIs(): Promise<PIsResponse> {
-    const response = await fetch(buildApiUrl(API_CONFIG.endpoints.pis.getPis));
+    const response = await fetch(buildBackendUrl(API_CONFIG.endpoints.pis.getPis));
     
     if (!response.ok) {
       throw new Error(`Failed to fetch PIs: ${response.statusText}`);
@@ -183,7 +184,7 @@ export class ApiService {
       params.append('sprint_name', sprintName);
     }
 
-    const response = await fetch(`${buildApiUrl(API_CONFIG.endpoints.burndown.sprintBurndown)}?${params}`);
+    const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.burndown.sprintBurndown)}?${params}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch burndown data: ${response.statusText}`);
@@ -216,7 +217,7 @@ export class ApiService {
       params.append('project', project);
     }
 
-    const url = `${buildApiUrl(API_CONFIG.endpoints.pis.getBurndown)}?${params}`;
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.pis.getBurndown)}?${params}`;
     
     const response = await fetch(url);
     
@@ -235,7 +236,7 @@ export class ApiService {
       team_name: teamName,
     });
 
-    const response = await fetch(`${buildApiUrl('/team-ai-cards/getTopCards')}?${params}`);
+    const response = await fetch(`${buildBackendUrl('/team-ai-cards/getTopCards')}?${params}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch AI cards: ${response.statusText}`);
@@ -251,7 +252,7 @@ export class ApiService {
       team_name: teamName,
     });
 
-    const response = await fetch(`${buildApiUrl(API_CONFIG.endpoints.recommendations.getTop)}?${params}`);
+    const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.recommendations.getTop)}?${params}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch recommendations: ${response.statusText}`);
@@ -267,7 +268,7 @@ export class ApiService {
       pi: piName,
     });
 
-    const response = await fetch(`${buildApiUrl('/pi-ai-cards/getTopCards')}?${params}`);
+    const response = await fetch(`${buildBackendUrl('/pi-ai-cards/getTopCards')}?${params}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch PI AI cards: ${response.statusText}`);
@@ -283,7 +284,7 @@ export class ApiService {
       pi: piName,
     });
 
-    const response = await fetch(`${buildApiUrl('/recommendations/getPITop')}?${params}`);
+    const response = await fetch(`${buildBackendUrl('/recommendations/getPITop')}?${params}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch PI recommendations: ${response.statusText}`);
@@ -295,7 +296,7 @@ export class ApiService {
 
   // Team Metrics APIs
   async getSprintMetrics(teamName: string): Promise<SprintMetrics> {
-    const response = await fetch(`${buildApiUrl(API_CONFIG.endpoints.teamMetrics.avgSprintMetrics)}?team_name=${teamName}`);
+    const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.teamMetrics.avgSprintMetrics)}?team_name=${teamName}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch sprint metrics: ${response.statusText}`);
@@ -306,7 +307,7 @@ export class ApiService {
   }
 
   async getCompletionRate(teamName: string): Promise<CompletionRate> {
-    const response = await fetch(`${buildApiUrl(API_CONFIG.endpoints.teamMetrics.currentSprintCompletion)}?team_name=${teamName}`);
+    const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.teamMetrics.currentSprintCompletion)}?team_name=${teamName}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch completion rate: ${response.statusText}`);
@@ -317,7 +318,7 @@ export class ApiService {
   }
 
   async getInProgressCount(teamName: string): Promise<InProgressCount> {
-    const response = await fetch(`${buildApiUrl(API_CONFIG.endpoints.teamMetrics.countInProgress)}?team_name=${teamName}`);
+    const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.teamMetrics.countInProgress)}?team_name=${teamName}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch in progress count: ${response.statusText}`);
@@ -333,7 +334,7 @@ export class ApiService {
       months: months.toString(),
     });
 
-    const response = await fetch(`${buildApiUrl(API_CONFIG.endpoints.teamMetrics.closedSprints)}?${params}`);
+    const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.teamMetrics.closedSprints)}?${params}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch closed sprints: ${response.statusText}`);
@@ -354,7 +355,7 @@ export class ApiService {
       months: months.toString(),
     });
 
-    const response = await fetch(`${buildApiUrl(API_CONFIG.endpoints.teamMetrics.issuesTrend)}?${params}`);
+    const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.teamMetrics.issuesTrend)}?${params}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch issues trend data: ${response.statusText}`);
@@ -374,7 +375,7 @@ export class ApiService {
       params.append('quarter', quarter);
     }
 
-    const response = await fetch(`${buildApiUrl(API_CONFIG.endpoints.pis.getScopeChanges)}?${params}`);
+    const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.pis.getScopeChanges)}?${params}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch scope changes data: ${response.statusText}`);
@@ -394,7 +395,7 @@ export class ApiService {
       params.append('pi_names', piNames);
     }
 
-    const url = `${buildApiUrl(API_CONFIG.endpoints.pis.getPredictability)}?${params}`;
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.pis.getPredictability)}?${params}`;
     
     const response = await fetch(url);
     
@@ -428,7 +429,7 @@ export class ApiService {
 
   // Team AI Cards API
   async getTeamAICards(): Promise<any[]> {
-    const response = await fetch(buildApiUrl(API_CONFIG.endpoints.generalData.teamAICards));
+    const response = await fetch(buildBackendUrl(API_CONFIG.endpoints.generalData.teamAICards));
     
     if (!response.ok) {
       throw new Error(`Failed to fetch team AI cards: ${response.statusText}`);
@@ -457,7 +458,7 @@ export class ApiService {
 
   // PI AI Cards API (list)
   async getPIAICardsList(): Promise<any[]> {
-    const response = await fetch(buildApiUrl('/pi-ai-cards'));
+    const response = await fetch(buildBackendUrl('/pi-ai-cards'));
     
     if (!response.ok) {
       throw new Error(`Failed to fetch PI AI cards: ${response.statusText}`);
@@ -478,7 +479,7 @@ export class ApiService {
 
   // PI AI Card detail
   async getPIAICardDetail(id: string): Promise<any> {
-    const url = `${buildApiUrl('/pi-ai-cards')}/${id}`;
+    const url = `${buildBackendUrl('/pi-ai-cards')}/${id}`;
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch PI AI card detail: ${response.statusText}`);
@@ -491,7 +492,7 @@ export class ApiService {
   }
 
   async getTeamAICardDetail(id: string): Promise<any> {
-    const url = `${buildApiUrl(API_CONFIG.endpoints.generalData.teamAICardDetail)}/${id}`;
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.generalData.teamAICardDetail)}/${id}`;
     
     const response = await fetch(url);
     
@@ -512,7 +513,7 @@ export class ApiService {
 
   // Agent Jobs API
   async getAgentJobs(): Promise<any[]> {
-    const response = await fetch(buildApiUrl(API_CONFIG.endpoints.generalData.agentJobs));
+    const response = await fetch(buildBackendUrl(API_CONFIG.endpoints.generalData.agentJobs));
     
     if (!response.ok) {
       throw new Error(`Failed to fetch agent jobs: ${response.statusText}`);
@@ -541,7 +542,7 @@ export class ApiService {
   }
 
   async getAgentJobDetail(jobId: string): Promise<any> {
-    const url = `${buildApiUrl(API_CONFIG.endpoints.generalData.agentJobDetail)}/${jobId}`;
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.generalData.agentJobDetail)}/${jobId}`;
     
     const response = await fetch(url);
     
@@ -577,7 +578,7 @@ export class ApiService {
 
   // Create Team Agent Job
   async createTeamAgentJob(jobType: string, teamName: string): Promise<any> {
-    const response = await fetch(buildApiUrl(API_CONFIG.endpoints.generalData.createTeamJob), {
+    const response = await fetch(buildBackendUrl(API_CONFIG.endpoints.generalData.createTeamJob), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -598,7 +599,7 @@ export class ApiService {
 
   // Create PI Agent Job
   async createPiAgentJob(jobType: string, pi: string): Promise<any> {
-    const response = await fetch(buildApiUrl(API_CONFIG.endpoints.generalData.createPiJob), {
+    const response = await fetch(buildBackendUrl(API_CONFIG.endpoints.generalData.createPiJob), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -631,7 +632,7 @@ export class ApiService {
     formData.append('origin', 'UI');
     formData.append('transcript_date', new Date().toISOString().substring(0, 10));
 
-    const response = await fetch(buildApiUrl(API_CONFIG.endpoints.transcripts.uploadTeam), {
+    const response = await fetch(buildBackendUrl(API_CONFIG.endpoints.transcripts.uploadTeam), {
       method: 'POST',
       body: formData,
     });
@@ -661,7 +662,7 @@ export class ApiService {
       formData.append('file_name', fileName);
     }
 
-    const response = await fetch(buildApiUrl(API_CONFIG.endpoints.transcripts.uploadPI), {
+    const response = await fetch(buildBackendUrl(API_CONFIG.endpoints.transcripts.uploadPI), {
       method: 'POST',
       body: formData,
     });
@@ -692,7 +693,7 @@ export class ApiService {
     if (params?.limit) urlParams.append('limit', String(params.limit));
     if (params?.offset) urlParams.append('offset', String(params.offset));
 
-    const url = `${buildApiUrl('/prompts')}${urlParams.toString() ? '?' + urlParams.toString() : ''}`;
+    const url = `${buildBackendUrl('/prompts')}${urlParams.toString() ? '?' + urlParams.toString() : ''}`;
     
     const response = await fetch(url);
     
@@ -730,7 +731,7 @@ export class ApiService {
     // URL encode email and promptName to handle special characters like @ in emails
     const encodedEmail = encodeURIComponent(email);
     const encodedPromptName = encodeURIComponent(promptName);
-    const url = `${buildApiUrl('/prompts')}/${encodedEmail}/${encodedPromptName}`;
+    const url = `${buildBackendUrl('/prompts')}/${encodedEmail}/${encodedPromptName}`;
     
     const response = await fetch(url);
     
@@ -781,7 +782,7 @@ export class ApiService {
     prompt_type: string;
     prompt_active: boolean;
   }): Promise<any> {
-    const url = buildApiUrl('/prompts');
+    const url = buildBackendUrl('/prompts');
     
     const response = await fetch(url, {
       method: 'POST',
@@ -829,7 +830,7 @@ export class ApiService {
     const encodedEmail = encodeURIComponent(email);
     const encodedPromptName = encodeURIComponent(promptName);
     
-    const url = `${buildApiUrl('/prompts')}/${encodedEmail}/${encodedPromptName}`;
+    const url = `${buildBackendUrl('/prompts')}/${encodedEmail}/${encodedPromptName}`;
     
     const response = await fetch(url, {
       method: 'PUT',
@@ -870,7 +871,7 @@ export class ApiService {
     // URL encode email and promptName to handle special characters
     const encodedEmail = encodeURIComponent(email);
     const encodedPromptName = encodeURIComponent(promptName);
-    const url = `${buildApiUrl('/prompts')}/${encodedEmail}/${encodedPromptName}`;
+    const url = `${buildBackendUrl('/prompts')}/${encodedEmail}/${encodedPromptName}`;
     
     const response = await fetch(url, {
       method: 'DELETE',
@@ -930,7 +931,7 @@ export class ApiService {
     };
     message: string;
   }> {
-    const response = await fetch(buildApiUrl('/ai-chat'), {
+    const response = await fetch(buildBackendUrl('/ai-chat'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -957,7 +958,7 @@ export class ApiService {
 
   // Settings API
   async getSettings(): Promise<any> {
-    const url = buildApiUrl(API_CONFIG.endpoints.settings.get);
+    const url = buildBackendUrl(API_CONFIG.endpoints.settings.get);
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch settings: ${response.statusText}`);
@@ -975,7 +976,7 @@ export class ApiService {
       stringSettings[key] = String(value);
     }
     
-    const url = buildApiUrl(API_CONFIG.endpoints.settings.batch);
+    const url = buildBackendUrl(API_CONFIG.endpoints.settings.batch);
     // Send object shape expected by batch endpoint: { settings: { ... }, updated_by }
     const body = { settings: stringSettings, updated_by: updatedBy || 'ui' };
     
@@ -995,7 +996,7 @@ export class ApiService {
 
   // Users API
   async getCurrentUser(): Promise<User> {
-    const response = await fetch(buildApiUrl(API_CONFIG.endpoints.users.getCurrentUser));
+    const response = await fetch(buildUserServiceUrl(API_CONFIG.endpoints.users.getCurrentUser));
     
     if (!response.ok) {
       throw new Error(`Failed to fetch current user: ${response.statusText}`);
@@ -1026,24 +1027,34 @@ export interface RoleDto {
 }
 
 export async function verifyAdmin(): Promise<boolean> {
-  const res = await fetch(buildApiUrl('/users/verify-admin'));
-  if (!res.ok) return false;
+  const url = buildUserServiceUrl('/users/verify-admin');
+  console.log('[verifyAdmin] Calling:', url);
+  const res = await authFetch(url); // Use authFetch for protected route
+  console.log('[verifyAdmin] Response status:', res.status, res.statusText);
+  if (!res.ok) {
+    console.log('[verifyAdmin] Request failed - returning false');
+    return false;
+  }
   try {
     const data = await res.json();
-    return !!data.isAdmin;
-  } catch {
+    console.log('[verifyAdmin] Response data:', data);
+    const isAdmin = !!data.isAdmin;
+    console.log('[verifyAdmin] Final result:', isAdmin);
+    return isAdmin;
+  } catch (error) {
+    console.error('[verifyAdmin] Error parsing response:', error);
     return false;
   }
 }
 
 export async function listUsers(): Promise<UserDto[]> {
-  const res = await fetch(buildApiUrl('/users'));
+  const res = await fetch(buildUserServiceUrl('/users'));
   if (!res.ok) throw new Error('Failed to fetch users');
   return res.json();
 }
 
 export async function getUserRoles(userId: string): Promise<RoleDto[]> {
-  const res = await fetch(buildApiUrl(`/users/${userId}/roles`));
+  const res = await fetch(buildUserServiceUrl(`/users/${userId}/roles`));
   if (!res.ok) throw new Error('Failed to fetch user roles');
   return res.json();
 }
@@ -1052,14 +1063,14 @@ export type AllowlistEntry = { id: string; pattern: string; type: string; create
 
 export async function getAllowlist(search: string = ''): Promise<AllowlistEntry[]> {
   const q = search ? `?search=${encodeURIComponent(search)}` : '';
-  const res = await fetch(buildApiUrl(`/allowlist${q}`));
+  const res = await fetch(buildUserServiceUrl(`/allowlist${q}`));
   if (!res.ok) throw new Error('Failed to fetch allowlist');
   const data = await res.json();
   return Array.isArray(data) ? data : (data.data || []);
 }
 
 export async function addAllowlist(pattern: string): Promise<AllowlistEntry> {
-  const res = await fetch(buildApiUrl('/allowlist'), {
+  const res = await fetch(buildUserServiceUrl('/allowlist'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ pattern }),
@@ -1069,23 +1080,23 @@ export async function addAllowlist(pattern: string): Promise<AllowlistEntry> {
 }
 
 export async function deleteAllowlist(id: string): Promise<void> {
-  const res = await fetch(buildApiUrl(`/allowlist/${id}`), { method: 'DELETE' });
+  const res = await fetch(buildUserServiceUrl(`/allowlist/${id}`), { method: 'DELETE' });
   if (!res.ok) throw new Error('Failed to delete allowlist entry');
 }
 
 export async function deleteUser(userId: string): Promise<void> {
-  const res = await fetch(buildApiUrl(`/users/${userId}`), { method: 'DELETE' });
+  const res = await fetch(buildUserServiceUrl(`/users/${userId}`), { method: 'DELETE' });
   if (!res.ok) throw new Error(await res.text() || 'Failed to delete user');
 }
 
 export async function listRoles(): Promise<RoleDto[]> {
-  const res = await fetch(buildApiUrl('/roles'));
+  const res = await fetch(buildUserServiceUrl('/roles'));
   if (!res.ok) throw new Error('Failed to fetch roles');
   return res.json();
 }
 
 export async function assignRoleToUser(userId: string, roleId: string): Promise<void> {
-  const res = await fetch(buildApiUrl(`/users/${userId}/roles`), {
+  const res = await fetch(buildUserServiceUrl(`/users/${userId}/roles`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ role_id: roleId }),
@@ -1094,7 +1105,7 @@ export async function assignRoleToUser(userId: string, roleId: string): Promise<
 }
 
 export async function unassignRoleFromUser(userId: string, roleId: string): Promise<void> {
-  const res = await fetch(buildApiUrl(`/users/${userId}/roles/${roleId}`), {
+  const res = await fetch(buildUserServiceUrl(`/users/${userId}/roles/${roleId}`), {
     method: 'DELETE',
   });
   if (!res.ok) throw new Error(await res.text() || 'Failed to unassign role');

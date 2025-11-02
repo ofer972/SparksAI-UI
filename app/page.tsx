@@ -80,17 +80,28 @@ export default function Home() {
   useEffect(() => {
     // Bypass admin check on localhost if env var is set
     const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
-    if (isLocalhost && process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true') {
+    const bypassAuth = process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true';
+    
+    console.log('[Admin Check] Starting admin verification...', {
+      isLocalhost,
+      bypassAuth,
+      envVar: process.env.NEXT_PUBLIC_BYPASS_AUTH
+    });
+    
+    if (isLocalhost && bypassAuth) {
+      console.log('[Admin Check] Bypass mode active - setting isAdmin=true without API call');
       setIsAdmin(true); // Assume admin when bypassing auth on localhost
       return;
     }
 
+    console.log('[Admin Check] Making API call to verify-admin endpoint...');
     (async () => {
       try {
         const admin = await verifyAdmin();
+        console.log('[Admin Check] verifyAdmin() returned:', admin);
         setIsAdmin(admin);
       } catch (error) {
-        console.error('Error checking admin status:', error);
+        console.error('[Admin Check] Error checking admin status:', error);
         setIsAdmin(false);
       }
     })();

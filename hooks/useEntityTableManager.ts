@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { EntityConfig, EditableEntityConfig } from '@/lib/entityConfig';
-import { buildApiUrl } from '@/lib/config';
+import { buildBackendUrl } from '@/lib/config';
 
 export interface UseEntityTableManagerReturn<T> {
   data: T[];
@@ -72,7 +72,7 @@ function createGenericDeleteItem<T>(
 
   // Create and return the generic delete function
   return async (id: string) => {
-    const url = `${buildApiUrl(deleteEndpoint!)}/${id}`;
+    const url = `${buildBackendUrl(deleteEndpoint!)}/${id}`;
     
     const response = await fetch(url, {
       method: 'DELETE',
