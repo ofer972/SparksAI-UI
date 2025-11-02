@@ -10,7 +10,6 @@ import {
   RecommendationsResponse,
   SprintMetrics,
   CompletionRate,
-  InProgressCount,
   ClosedSprintsResponse,
   IssuesTrendResponse,
   IssuesTrendDataPoint,
@@ -307,24 +306,13 @@ export class ApiService {
   }
 
   async getCompletionRate(teamName: string): Promise<CompletionRate> {
-    const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.teamMetrics.currentSprintCompletion)}?team_name=${teamName}`);
+    const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.teamMetrics.currentSprintProgress)}?team_name=${teamName}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch completion rate: ${response.statusText}`);
     }
 
     const result: ApiResponse<CompletionRate> = await response.json();
-    return result.data;
-  }
-
-  async getInProgressCount(teamName: string): Promise<InProgressCount> {
-    const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.teamMetrics.countInProgress)}?team_name=${teamName}`);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch in progress count: ${response.statusText}`);
-    }
-
-    const result: ApiResponse<InProgressCount> = await response.json();
     return result.data;
   }
 
@@ -563,16 +551,14 @@ export class ApiService {
 
   // Combined team metrics (for parallel fetching)
   async getTeamMetrics(teamName: string) {
-    const [sprintMetrics, completionRate, inProgressCount] = await Promise.all([
+    const [sprintMetrics, completionRate] = await Promise.all([
       this.getSprintMetrics(teamName),
       this.getCompletionRate(teamName),
-      this.getInProgressCount(teamName),
     ]);
 
     return {
       sprintMetrics,
       completionRate,
-      inProgressCount,
     };
   }
 

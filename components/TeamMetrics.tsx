@@ -18,18 +18,14 @@ interface SprintMetricsData {
 }
 
 interface CompletionData {
-  completion_rate: number;
+  total_issues: number;
+  completed_issues: number;
+  in_progress_issues: number;
+  todo_issues: number;
+  percent_completed: number;
   team_name: string;
 }
 
-interface WorkInProgressData {
-  total_in_progress: number;
-  count_by_type: {
-    Task: number;
-    Story: number;
-  };
-  team_name: string;
-}
 
 interface SprintMetricsResponse {
   success: boolean;
@@ -43,11 +39,6 @@ interface CompletionResponse {
   message: string;
 }
 
-interface WorkInProgressResponse {
-  success: boolean;
-  data: WorkInProgressData;
-  message: string;
-}
 
 const MetricCard = ({ icon, value, label, tooltip, className = "", isLeftmost = false, status }: { 
   icon: string; 
@@ -92,7 +83,19 @@ const MetricCard = ({ icon, value, label, tooltip, className = "", isLeftmost = 
 };
 
 export default function TeamMetrics({ teamName }: TeamMetricsProps) {
-  const { sprintMetrics, completionRate, inProgressCount, loading, error } = useTeamMetrics(teamName);
+  const { sprintMetrics, completionRate, loading, error } = useTeamMetrics(teamName);
+
+  // Calculate Work in Progress status based on velocity comparison
+  const calculateWorkInProgressStatus = (
+    inProgress: number | undefined,
+    velocity: number | undefined
+  ): 'red' | 'yellow' | 'green' | undefined => {
+    if (!velocity || velocity === 0 || !inProgress) return undefined;
+    const percentage = (inProgress / velocity) * 100;
+    if (percentage < 30) return 'green';
+    if (percentage >= 30 && percentage <= 50) return 'yellow';
+    return 'red'; // percentage > 50
+  };
 
   if (loading) {
     return (
@@ -140,7 +143,7 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
         {/* Avg Cycle Time */}
         <MetricCard
           icon="⏱️"
-          value={sprintMetrics?.cycle_time ? `${sprintMetrics.cycle_time}d` : "0d"}
+          value={sprintMetrics?.cycle_time ? `${sprintMetrics.cycle_time.toFixed(1)}d` : "0d"}
           label="Avg Cycle Time"
           tooltip="Average story cycle time in the last five sprints"
           status={sprintMetrics?.cycle_time_status}
@@ -149,7 +152,7 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
         {/* Avg Sprint Predictability */}
         <MetricCard
           icon="📊"
-          value={sprintMetrics?.predictability ? `${sprintMetrics.predictability}%` : "0%"}
+          value={sprintMetrics?.predictability ? `${Math.round(sprintMetrics.predictability)}%` : "0%"}
           label="Avg Sprint Predictability"
           tooltip="Average sprint predictability over last five sprints"
           status={sprintMetrics?.predictability_status}
@@ -158,15 +161,19 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
         {/* Work in Progress */}
         <MetricCard
           icon="🔄"
-          value={inProgressCount?.total_in_progress?.toString() || "0"}
+          value={completionRate?.in_progress_issues?.toString() || "0"}
           label="Work in Progress"
           tooltip="Number of issues in progress in the current active sprint"
+          status={calculateWorkInProgressStatus(
+            completionRate?.in_progress_issues,
+            sprintMetrics?.velocity
+          )}
         />
         
         {/* Completion */}
         <MetricCard
           icon="🎯"
-          value={completionRate?.completion_rate ? `${completionRate.completion_rate}%` : "0%"}
+          value={completionRate?.percent_completed ? `${Math.round(completionRate.percent_completed)}%` : "0%"}
           label="Completion"
           tooltip="Completed issues (%) in the current active sprint"
         />

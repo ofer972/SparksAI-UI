@@ -52,8 +52,7 @@ export const API_CONFIG = {
     // Team Metrics endpoints
     teamMetrics: {
       avgSprintMetrics: '/team-metrics/get-avg-sprint-metrics',
-      countInProgress: '/team-metrics/count-in-progress',
-      currentSprintCompletion: '/team-metrics/current-sprint-completion',
+      currentSprintProgress: '/team-metrics/current-sprint-progress',
       closedSprints: '/team-metrics/closed-sprints',
       issuesTrend: '/team-metrics/issues-trend',
     },
@@ -234,16 +233,11 @@ export interface SprintMetrics {
 }
 
 export interface CompletionRate {
-  completion_rate: number;
-  team_name: string;
-}
-
-export interface InProgressCount {
-  total_in_progress: number;
-  count_by_type: {
-    Task: number;
-    Story: number;
-  };
+  total_issues: number;
+  completed_issues: number;
+  in_progress_issues: number;
+  todo_issues: number;
+  percent_completed: number;
   team_name: string;
 }
 
