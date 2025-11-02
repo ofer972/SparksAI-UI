@@ -4,6 +4,8 @@ import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import AIChatModal from '@/components/AIChatModal';
+import { ViewRecordModal } from '@/components/ViewRecordModal';
+import { recommendationsConfig } from '@/lib/recommendationsConfig';
 
 // Constants
 const RECOMMENDATION_TEXT_MAX_LENGTH = 200;
@@ -142,7 +144,9 @@ export default function RecommendationsInsight({
   emptyMessage = "No recommendations available",
   maxItems = 3
 }: RecommendationsInsightProps) {
+  // State for detail modal
   const [selectedRecommendation, setSelectedRecommendation] = useState<Recommendation | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   // State for AI Chat modal
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
@@ -159,6 +163,16 @@ export default function RecommendationsInsight({
     setIsChatModalOpen(false);
     setSelectedRecommendationId(null);
     setSelectedTeamName('');
+  };
+
+  const handleViewRecommendation = (recommendation: Recommendation) => {
+    setSelectedRecommendation(recommendation);
+    setIsDetailModalOpen(true);
+  };
+
+  const closeDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedRecommendation(null);
   };
 
   if (loading) {
@@ -274,6 +288,14 @@ export default function RecommendationsInsight({
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="text-xs text-gray-500">{formattedDate}</div>
+                    {/* Insight ID Link - positioned next to date on the right */}
+                    <button 
+                      onClick={() => handleViewRecommendation(recommendation)}
+                      className="text-xs text-blue-600 underline hover:text-blue-800 cursor-pointer bg-transparent border-none p-0 font-medium"
+                      title="Click to view details"
+                    >
+                      ID: {recommendation.id}
+                    </button>
                     <div className="relative group">
                       <span className="text-sm cursor-pointer">
                         {priorityIcon}
@@ -304,6 +326,14 @@ export default function RecommendationsInsight({
           }
         })}
       </div>
+
+      {/* Detail Modal */}
+      <ViewRecordModal
+        isOpen={isDetailModalOpen}
+        onClose={closeDetailModal}
+        item={selectedRecommendation}
+        config={recommendationsConfig}
+      />
 
       {/* AI Chat Modal */}
       {selectedRecommendationId !== null && (
