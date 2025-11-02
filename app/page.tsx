@@ -901,14 +901,20 @@ export default function Home() {
             </div>
           
           <div className="flex items-center space-x-3">
-            <PIFilter 
-              selectedPI={selectedPI}
-              onPIChange={setSelectedPI}
-            />
-            <TeamFilter 
-              selectedTeam={selectedTeam}
-              onTeamChange={setSelectedTeam}
-            />
+            {/* Show PI Filter only on views that use it */}
+            {(activeNavItem === 'pi-quarter' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (
+              <PIFilter 
+                selectedPI={selectedPI}
+                onPIChange={setSelectedPI}
+              />
+            )}
+            {/* Show Team Filter only on views that use it */}
+            {(activeNavItem === 'team-ai-insights' || activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'api-test' || activeNavItem === 'upload-transcripts') && (
+              <TeamFilter 
+                selectedTeam={selectedTeam}
+                onTeamChange={setSelectedTeam}
+              />
+            )}
             {(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') && (
               <div className="flex items-center space-x-3" style={{ marginLeft: '150px' }}>
                 <button
