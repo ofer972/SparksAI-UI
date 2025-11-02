@@ -107,4 +107,11 @@ export const teamAICardsConfig: EntityConfig<TeamAICard> = {
   // Field categorization for detail view
   normalFields: ['id', 'card_name', 'card_type', 'priority', 'team_name', 'date', 'source', 'source_job_id'],
   longTextFields: ['description', 'full_information', 'information_json'],
+  
+  // Link fields configuration
+  linkFields: {
+    source_job_id: {
+      type: 'agent-job' as const,
+    },
+  },
 };

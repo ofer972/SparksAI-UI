@@ -73,6 +73,12 @@ export interface EntityConfig<T> {
   normalFields?: (keyof T)[]; // Fields to show in overview grid
   longTextFields?: (keyof T)[]; // Fields to show in details section
   markdownFields?: (keyof T)[]; // Fields to render as markdown
+  
+  // Link fields configuration for detail view
+  linkFields?: Partial<Record<keyof T, {
+    type: 'agent-job' | 'custom';
+    onClick?: (value: any, item: T) => void;
+  }>>; // Fields that should be rendered as clickable links
 }
 
 // Extended configuration for editable entities

@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import { EntityConfig } from '@/lib/entityConfig';
+import AgentJobDetailModal from './AgentJobDetailModal';
 
 interface ViewRecordModalProps<T> {
   isOpen: boolean;
@@ -20,6 +21,8 @@ export function ViewRecordModal<T extends Record<string, any>>({
   const [detailData, setDetailData] = useState<T | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [agentJobModalOpen, setAgentJobModalOpen] = useState(false);
+  const [agentJobId, setAgentJobId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && item && config.fetchDetail) {
@@ -107,13 +110,35 @@ export function ViewRecordModal<T extends Record<string, any>>({
 
   const renderNormalField = (key: keyof T, value: any) => {
     const formattedValue = formatValue(value, key);
+    const linkConfig = config.linkFields?.[key];
+    const isLinkField = !!linkConfig;
+    
+    const handleLinkClick = () => {
+      if (linkConfig?.type === 'agent-job') {
+        // Open AgentJobDetailModal with the value as jobId (keep parent modal open)
+        setAgentJobId(String(value));
+        setAgentJobModalOpen(true);
+      } else if (linkConfig?.onClick) {
+        // Custom onClick handler
+        linkConfig.onClick(value, displayData);
+      }
+    };
     
     return (
       <div key={String(key)} className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-1 items-start">
         <span className="text-sm font-medium text-gray-700">
           {String(key).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:
         </span>
-        <span className="text-sm text-gray-900">{formattedValue}</span>
+        {isLinkField && value !== null && value !== undefined && formattedValue !== '-' ? (
+          <button
+            onClick={handleLinkClick}
+            className="text-sm text-blue-600 hover:text-blue-800 underline cursor-pointer text-left"
+          >
+            {formattedValue}
+          </button>
+        ) : (
+          <span className="text-sm text-gray-900">{formattedValue}</span>
+        )}
       </div>
     );
   };
@@ -274,6 +299,18 @@ export function ViewRecordModal<T extends Record<string, any>>({
           </button>
         </div>
       </div>
+      
+      {/* Agent Job Detail Modal - both modals can be open at the same time */}
+      {agentJobId && (
+        <AgentJobDetailModal
+          isOpen={agentJobModalOpen}
+          onClose={() => {
+            setAgentJobModalOpen(false);
+            setAgentJobId(null);
+          }}
+          jobId={agentJobId}
+        />
+      )}
     </div>
   );
 }
