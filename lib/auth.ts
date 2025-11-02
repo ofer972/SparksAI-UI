@@ -44,7 +44,7 @@ export function getAuthHeaders(init?: HeadersInit): HeadersInit {
 }
 
 export async function login(email: string, password: string): Promise<AuthTokens> {
-  const res = await fetch(`${getBaseUrl()}/api/login`, {
+  const res = await fetch(`${getBaseUrl()}/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
@@ -63,7 +63,7 @@ export async function login(email: string, password: string): Promise<AuthTokens
 }
 
 export async function register(name: string, email: string, password: string): Promise<AuthTokens> {
-  const res = await fetch(`${getBaseUrl()}/api/register`, {
+  const res = await fetch(`${getBaseUrl()}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, email, password }),
@@ -82,7 +82,7 @@ export async function register(name: string, email: string, password: string): P
 }
 
 export function getGoogleLoginUrl(): string {
-  return `${getBaseUrl()}/api/oauth/google/login`;
+  return `${getBaseUrl()}/oauth/google/login`;
 }
 
 export function logout() {
@@ -98,7 +98,7 @@ export async function refreshAccessToken(): Promise<boolean> {
   try {
     // Use native fetch to avoid recursion through authFetch
     const nativeFetch = (globalThis as any).fetch;
-    const res = await nativeFetch(`${getBaseUrl()}/api/auth/refresh`, {
+    const res = await nativeFetch(`${getBaseUrl()}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh_token: refresh }),
