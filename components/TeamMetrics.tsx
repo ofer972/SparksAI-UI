@@ -18,7 +18,8 @@ interface SprintMetricsData {
 }
 
 interface CompletionData {
-  days_left?: string;
+  days_left?: number;
+  days_in_sprint?: number;
   total_issues: number;
   completed_issues: number;
   in_progress_issues: number;
@@ -42,6 +43,59 @@ interface CompletionResponse {
   message: string;
 }
 
+
+// Custom Days Left Card with Progress Bar
+const DaysLeftCard = ({ daysLeft, daysInSprint, tooltip, className = "" }: {
+  daysLeft?: number;
+  daysInSprint?: number;
+  tooltip: string;
+  className?: string;
+}) => {
+  const formatDaysLeft = (days: number | undefined): string => {
+    if (days === undefined || days === null) return "N/A";
+    if (days === 1) return "Last day";
+    return `${days} days left`;
+  };
+
+  const calculateProgress = (): number => {
+    if (!daysLeft || !daysInSprint || daysInSprint === 0) return 0;
+    // Calculate days passed (not days left) for progress bar
+    const daysPassed = daysInSprint - daysLeft;
+    return (daysPassed / daysInSprint) * 100;
+  };
+
+  const progress = calculateProgress();
+
+  return (
+    <div className={`bg-white rounded-lg shadow-sm p-[10.8px] flex flex-col items-center text-center w-[72.45%] relative group ${className}`}>
+      {/* Icon */}
+      <div className="w-[28.8px] h-[28.8px] mb-2 flex items-center justify-center text-lg">
+        📅
+      </div>
+      
+      {/* Progress Bar - takes same space as value in other cards */}
+      <div className="w-full mb-1 flex items-center justify-center" style={{ minHeight: '27.6px' }}>
+        <div className="w-full bg-gray-200 rounded-full h-3">
+          <div
+            className="bg-blue-600 h-3 rounded-full transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+      
+      {/* Days Left Text (formatted) - at bottom like other labels */}
+      <div className="text-xs text-gray-600 mt-auto">
+        {formatDaysLeft(daysLeft)}
+      </div>
+      
+      {/* Tooltip */}
+      <div className={`absolute bottom-full mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10 max-w-xs left-1/2 transform -translate-x-1/2`}>
+        {tooltip}
+        <div className={`absolute top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 left-1/2 transform -translate-x-1/2`}></div>
+      </div>
+    </div>
+  );
+};
 
 const MetricCard = ({ icon, value, label, tooltip, className = "", isLeftmost = false, status }: { 
   icon: string; 
@@ -168,10 +222,9 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
         />
         
         {/* Days Left */}
-        <MetricCard
-          icon="📅"
-          value={completionRate?.days_left || "N/A"}
-          label="Days Left"
+        <DaysLeftCard
+          daysLeft={completionRate?.days_left}
+          daysInSprint={completionRate?.days_in_sprint}
           tooltip="Number of days remaining in the current active sprint"
         />
       </div>
