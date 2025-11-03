@@ -65,6 +65,7 @@ export const API_CONFIG = {
       teamAICardDetail: '/team-ai-cards',
       createTeamJob: '/agent-jobs/create-team-job',
       createPiJob: '/agent-jobs/create-pi-job',
+      createPiJobForTeam: '/agent-jobs/create-pi-job-for-team',
     },
     
     // Transcript Upload endpoints

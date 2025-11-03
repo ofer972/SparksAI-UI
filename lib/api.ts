@@ -607,6 +607,28 @@ export class ApiService {
     return result;
   }
 
+  // Create PI Job for Team
+  async createPiJobForTeam(jobType: string, pi: string, teamName: string): Promise<any> {
+    const response = await fetch(buildBackendUrl(API_CONFIG.endpoints.generalData.createPiJobForTeam), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        pi: pi,
+        team_name: teamName,
+        job_type: jobType,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create PI job for team: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result;
+  }
+
   // Upload Team Transcript
   async uploadTeamTranscript(
     file: File, 

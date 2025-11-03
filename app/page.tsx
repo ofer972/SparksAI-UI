@@ -285,7 +285,7 @@ export default function Home() {
         if (!selectedPI) {
           throw new Error('Please select a PI');
         }
-        await apiService.createPiAgentJob(jobType, selectedPI);
+        await apiService.createPiJobForTeam(jobType, selectedPI, selectedTeam);
       } else {
         if (!selectedTeam) {
           throw new Error('Please select a team');
