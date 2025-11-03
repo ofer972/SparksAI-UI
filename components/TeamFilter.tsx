@@ -64,12 +64,12 @@ export default function TeamFilter({ selectedTeam, onTeamChange, className = '' 
   }
 
   return (
-    <div className={`flex items-center space-x-1 ${className}`}>
-      <span className="text-xs font-medium text-gray-700">Team:</span>
+    <div className={`relative z-10 flex items-center space-x-1 ${className}`}>
+      <span className="text-sm font-medium text-gray-700">Team:</span>
       <select
         value={selectedTeam}
         onChange={(e) => onTeamChange(e.target.value)}
-        className="border border-gray-300 rounded px-2 py-1 text-xs"
+        className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
       >
         {teams.map((team) => (
           <option key={team} value={team}>

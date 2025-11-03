@@ -316,6 +316,8 @@ export class ApiService {
     return result.data;
   }
 
+  // Note: In-progress count is part of CompletionRate API (in_progress_issues). No separate endpoint.
+
   async getClosedSprints(teamName: string, months: number = 3): Promise<ClosedSprintsResponse> {
     const params = new URLSearchParams({
       team_name: teamName,
@@ -559,6 +561,7 @@ export class ApiService {
     return {
       sprintMetrics,
       completionRate,
+      inProgressCount: completionRate?.in_progress_issues ?? 0,
     };
   }
 

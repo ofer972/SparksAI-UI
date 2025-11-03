@@ -28,7 +28,7 @@ export default function LoginPage() {
       if (msg === "email_not_allowed" || msg.includes("email_not_allowed")) {
         setShowUnauthorized(true);
       } else {
-        setError(msg);
+      setError(msg);
       }
     } finally {
       setLoading(false);

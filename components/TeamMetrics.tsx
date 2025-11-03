@@ -66,7 +66,7 @@ const MetricCard = ({ icon, value, label, tooltip, className = "", isLeftmost = 
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm p-3 flex flex-col items-center text-center w-[70%] relative group ${className}`}>
+    <div className={`bg-white rounded-lg shadow-sm p-3 flex flex-col items-center text-center relative group min-w-[110px] ${className}`}>
       <div className="w-8 h-8 mb-2 flex items-center justify-center text-lg">
         {icon}
       </div>
@@ -120,7 +120,7 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
   return (
     <div className="px-3 pt-3">
       <h3 className="text-lg font-semibold mb-1">Team Metrics</h3>
-      <div className="grid grid-cols-5 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
         {/* Avg Velocity */}
         <MetricCard
           icon="📈"

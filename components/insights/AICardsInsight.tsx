@@ -254,8 +254,8 @@ export default function AICardsInsight({
   if (loading) {
     return (
       <div className="h-full">
-        <div className="grid grid-cols-2 gap-3 w-full h-full">
-          {[...Array(4)].map((_, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full h-full">
+          {[...Array(3)].map((_, i) => (
             <div key={i} className="bg-white rounded-lg shadow-lg p-4 border-l-4 border-gray-200 animate-pulse min-h-[170px]">
               <div className="h-4 bg-gray-200 rounded mb-2"></div>
               <div className="h-3 bg-gray-200 rounded mb-1"></div>
@@ -292,18 +292,30 @@ export default function AICardsInsight({
     );
   }
 
+  // Decide which cards have meaningful content to show
+  const hasContent = (c: AICard) => {
+    if (c && typeof c.description === 'string' && c.description.trim().length > 0) return true;
+    // Check parsed JSON content
+    if (c.card_type === 'Sprint Goal') {
+      const sprintGoalItems = parseSprintGoalJson(c.information_json);
+      if (sprintGoalItems && sprintGoalItems.length > 0) return true;
+    }
+    const informationItems = parseInformationJson(c.information_json);
+    if (informationItems && informationItems.length > 0) return true;
+    return false;
+  };
+
+  const visibleCards = Array.isArray(cards) ? cards.filter(hasContent) : [];
+
   return (
     <div className="h-full">
-      <div className="grid grid-cols-2 gap-3 w-full h-full">
-        {[...Array(4)].map((_, index) => {
-          const card = cards[index];
-          
-          if (card) {
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full h-full">
+        {visibleCards.map((card) => {
             const colors = getPriorityColor(card.priority);
             const priorityIcon = getPriorityIcon(card.priority);
             
             return (
-              <div key={card.id} className={`bg-white rounded-lg shadow-lg pt-1 pb-4 px-4 border-l-4 border ${colors.border} ${colors.frame} min-h-[170px] relative`}>
+              <div key={card.id} className={`bg-white rounded-lg shadow-lg pt-1 pb-4 px-4 border-l-4 border ${colors.border} ${colors.frame} min-h-[170px] relative overflow-hidden`}>
                 <div className="flex items-start justify-between mb-1">
                   <div className="flex items-center space-x-2">
                     <div className="relative group">
@@ -317,22 +329,22 @@ export default function AICardsInsight({
                     </div>
                     <h3 className="text-sm font-semibold text-gray-800">{card.card_name}</h3>
                   </div>
-                  <div className="absolute left-1/2 transform -translate-x-1/2 top-0">
+                  <div className="flex flex-col items-end gap-0.5">
+                    <div className="text-xs text-gray-500 font-medium">
+                      {card.card_type}
+                    </div>
                     <button 
                       onClick={() => handleViewCard(card)}
-                      className="text-xs text-blue-600 underline hover:text-blue-800 cursor-pointer bg-transparent border-none p-0 font-medium"
+                      className="text-[10px] text-blue-600 underline hover:text-blue-800 cursor-pointer bg-transparent border-none p-0 font-medium"
                       title="Click to view details"
                     >
                       ID: {card.id}
                     </button>
                   </div>
-                  <div className="text-xs text-gray-500 font-medium">
-                    {card.card_type}
-                  </div>
                 </div>
                 
                 <div className="mb-1 flex-1">
-                  <div className="text-xs text-gray-600 max-w-none w-full h-full overflow-visible">
+                  <div className="text-xs text-gray-600 max-w-none w-full h-full break-words whitespace-normal hyphens-auto overflow-hidden">
                     {(() => {
                       // Handle Sprint Goal cards with JSON table format
                       if (card.card_type === 'Sprint Goal') {
@@ -551,14 +563,6 @@ export default function AICardsInsight({
                 </button>
               </div>
             );
-          } else {
-            // Render empty placeholder card to maintain layout
-            return (
-              <div key={`placeholder-${index}`} className="bg-white rounded-lg shadow-lg p-4 border-l-4 border-gray-200 min-h-[170px]">
-                {/* Empty placeholder to maintain grid structure */}
-              </div>
-            );
-          }
         })}
       </div>
       

@@ -85,12 +85,12 @@ export default function PIFilter({ selectedPI, onPIChange, className = '' }: PIF
   }
 
   return (
-    <div className={`flex items-center space-x-1 ${className}`}>
-      <span className="text-xs font-medium text-gray-700">PI:</span>
+    <div className={`relative z-10 flex items-center space-x-1 ${className}`}>
+      <span className="text-sm font-medium text-gray-700">PI:</span>
       <select
         value={selectedPI}
         onChange={(e) => onPIChange(e.target.value)}
-        className="border border-gray-300 rounded px-2 py-1 text-xs"
+        className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
       >
         {pis.map((pi) => (
           <option key={pi.pi_name} value={pi.pi_name}>

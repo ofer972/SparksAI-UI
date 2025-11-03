@@ -62,24 +62,47 @@ export default function GeneralDataView() {
     <div className="h-full flex flex-col">
       {/* Tab Navigation */}
       <div className="bg-white border-b border-gray-200">
-        <div className="px-6 py-4">
-          <nav className="flex">
-            {tabs.map((tab, index) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 relative ${
-                  activeTab === tab.id
-                    ? 'text-blue-600 border-blue-600 bg-blue-50'
-                    : 'text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300'
-                } ${
-                  index === 0 ? 'ml-0' : ''
-                }`}
-              >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.label}
-              </button>
-            ))}
+        <div className="px-4 md:px-6 py-3 md:py-4 md:overflow-x-auto">
+          {/* Mobile: 3 tabs per row grid */}
+          <nav className="grid grid-cols-3 gap-1 md:hidden">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`
+                    px-2 py-2 text-xs font-medium rounded-t-lg border transition-colors
+                    ${isActive ? 'bg-white text-blue-600 border-gray-300 z-10' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}
+                  `}
+                  style={{ boxShadow: isActive ? '0 -1px 0 0 #ffffff inset' : undefined }}
+                >
+                  <span className="mr-1">{tab.icon}</span>
+                  {tab.label}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Desktop: single row */}
+          <nav className="hidden md:flex md:flex-nowrap gap-1">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`
+                    px-4 py-2 text-sm font-medium rounded-t-lg border transition-colors
+                    ${isActive ? 'bg-white text-blue-600 border-gray-300 z-10' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}
+                  `}
+                  style={{ boxShadow: isActive ? '0 -1px 0 0 #ffffff inset' : undefined }}
+                >
+                  <span className="mr-2">{tab.icon}</span>
+                  {tab.label}
+                </button>
+              );
+            })}
           </nav>
         </div>
       </div>

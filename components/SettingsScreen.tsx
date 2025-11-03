@@ -286,20 +286,20 @@ export default function SettingsScreen() {
     <div className="space-y-4">
       {/* Settings Header */}
       <div className="bg-white rounded-lg shadow-sm p-4">
-        {/* Settings Tabs */}
-        <div className="flex space-x-1 border-b border-gray-200">
+        {/* Settings Tabs (wrap on small screens, single row on md+) */}
+        <div className="flex flex-wrap md:flex-nowrap gap-1 border-b border-gray-200">
           {settingsTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center space-x-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
+              className={`flex items-center gap-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-800'
+                  ? 'border-blue-500 text-blue-600 bg-white'
+                  : 'border-transparent text-gray-600 hover:text-gray-800 bg-gray-50 hover:bg-gray-100'
               }`}
             >
               <span>{tab.icon}</span>
-              <span>{tab.label}</span>
+              <span className="truncate">{tab.label}</span>
             </button>
           ))}
         </div>

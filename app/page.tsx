@@ -52,6 +52,7 @@ export default function Home() {
 
   const [activeNavItem, setActiveNavItem] = useState('team-ai-insights');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState('AutoDesign-Dev');
   const [selectedPI, setSelectedPI] = useState('Q32025'); // Default to Q32025 which has data
   const [selectedPIIssueType, setSelectedPIIssueType] = useState(getDefaultIssueType('burndown')); // Default to Epic
@@ -123,6 +124,61 @@ export default function Home() {
     { id: 'api-test', label: 'API Test', icon: '🔧' },
     ...(isAdmin ? [{ id: 'users-admin', label: 'Users', icon: '👤' }] : []),
   ];
+
+  // Accordion navigation groups for the sidebar UI (beautified)
+  const navigationGroups: Array<{ title: string; items: { id: string; label: string; icon: string }[] }> = [
+    {
+      title: 'Insights',
+      items: [
+        { id: 'team-ai-insights', label: 'Team AI Insights', icon: '🏠' },
+        { id: 'pi-quarter', label: 'PI AI Insights', icon: '🕐' },
+      ],
+    },
+    {
+      title: 'Dashboards',
+      items: [
+        { id: 'team-dashboard', label: 'Team Dashboard', icon: '📊' },
+        { id: 'pi-dashboard', label: 'PI Dashboard', icon: '📈' },
+      ],
+    },
+    {
+      title: 'Management',
+      items: [
+        { id: 'prompts', label: 'Prompts', icon: '🧠' },
+        { id: 'general-data', label: 'View General Data', icon: '📋' },
+        { id: 'create-agent-job', label: 'Create Agent Job', icon: '➕' },
+        { id: 'upload-transcripts', label: 'Upload Transcripts', icon: '📤' },
+      ],
+    },
+    {
+      title: 'Tools',
+      items: [
+        { id: 'api-test', label: 'API Test', icon: '🔧' },
+        { id: 'settings', label: 'Settings', icon: '⚙️' },
+      ],
+    },
+    ...(isAdmin
+      ? [
+          {
+            title: 'Administration',
+            items: [{ id: 'users-admin', label: 'Users', icon: '👤' }],
+          },
+        ]
+      : []),
+  ];
+
+  // Track which accordion groups are expanded
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
+    Insights: true,
+    Dashboards: true,
+    Management: true,
+    Tools: true,
+    Administration: true,
+  });
+
+  const toggleGroup = (title: string) => {
+    setExpandedGroups((prev) => ({ ...prev, [title]: !prev[title] }));
+  };
 
   // Map sidebar items to browser tab titles (no spaces around '-')
   const titles: Record<string, string> = {
@@ -274,20 +330,20 @@ export default function Home() {
       case 'team-ai-insights':
         return (
           <div className="h-full flex flex-col">
-            {/* AI Cards Section - Reduced height with padding */}
-            <div className="bg-white rounded-lg shadow-sm pt-2 pb-2 pr-2 pl-[7px] flex-shrink-0" style={{ height: '45vh' }}>
-              <div className="h-full pb-4">
+            {/* AI Cards Section - responsive height (no wrapper background) */}
+            <div className="pt-2 pb-2 pr-2 pl-[7px] md:flex-shrink-0 md:h-[45vh]">
+              <div className="h-full md:pb-4">
                 <AICards teamName={selectedTeam} />
               </div>
             </div>
             
-            {/* Recommendations Section - Fixed height with top spacing after AI cards */}
-            <div className="flex-shrink-0 mt-2" style={{ height: '200px' }}>
+            {/* Recommendations Section - responsive height */}
+            <div className="mt-2 md:flex-shrink-0 md:h-52">
               <Recommendations teamName={selectedTeam} />
             </div>
             
-            {/* Team Metrics Section - Fixed height, right after recommendations */}
-            <div className="flex-shrink-0 -mt-4" style={{ height: '120px' }}>
+            {/* Team Metrics Section - responsive height, no negative margin */}
+            <div className="mt-2 md:flex-shrink-0 md:h-28">
               <TeamMetrics teamName={selectedTeam} />
             </div>
           </div>
@@ -304,8 +360,8 @@ export default function Home() {
       case 'pi-quarter':
         return (
           <div className="h-full flex flex-col">
-            {/* PI AI Cards Section - Reduced height with padding */}
-            <div className="bg-white rounded-lg shadow-sm p-2 flex-shrink-0" style={{ height: '45vh' }}>
+            {/* PI AI Cards Section - Reduced height with padding (no wrapper background) */}
+            <div className="p-2 md:flex-shrink-0 md:h-[45vh]">
               <div className="h-full pb-4">
                 <PIAICards piName={selectedPI} />
               </div>
@@ -322,74 +378,74 @@ export default function Home() {
           <div className="h-full flex flex-col">
             {/* Dashboard Content */}
             <div className="flex-1 overflow-auto space-y-4">
-              <div className="bg-white rounded-lg shadow-sm pt-2 pb-4 px-4">
-                <div className="flex items-center mb-3">
-                  <button 
-                    onClick={() => setPiBurndownCollapsed(!piBurndownCollapsed)}
-                    className="text-gray-500 hover:text-gray-700 transition-colors mr-2"
-                  >
-                    {piBurndownCollapsed ? '▼' : '▲'}
-                  </button>
-                  <h2 className="text-lg font-semibold">PI Burndown Chart</h2>
-                </div>
-                {!piBurndownCollapsed && (
-                  <div className="space-y-3">
-                    {/* Issue Type Filter */}
-                    <div className="flex items-center">
-                      <div className="flex items-center gap-2">
-                        <label className="text-xs font-medium text-gray-700">Issue Type:</label>
-                        <select
-                          value={selectedPIIssueType}
-                          onChange={(e) => setSelectedPIIssueType(e.target.value)}
-                          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          style={{ 
-                            minWidth: '120px',
-                            backgroundColor: 'white',
-                            zIndex: 9999,
-                            position: 'relative'
-                          }}
-                        >
-                          {getIssueTypes().map((issueType) => (
-                            <option key={issueType.value} value={issueType.value}>
-                              {issueType.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="flex-1 text-center text-sm font-medium text-gray-800" style={{ transform: 'translateX(-80px)' }}>
-                        {selectedPI}
-                      </div>
-                      <div className="w-24"></div> {/* Spacer to balance the layout */}
-                    </div>
-                    
-                    <PIBurndownChart 
-                      piName={selectedPI}
-                      issueType={selectedPIIssueType}
-                      isVisible={!piBurndownCollapsed}
-                    />
-                  </div>
-                )}
+            <div className="bg-white rounded-lg shadow-sm pt-2 pb-4 px-4">
+              <div className="flex items-center mb-3">
+                <button 
+                  onClick={() => setPiBurndownCollapsed(!piBurndownCollapsed)}
+                  className="text-gray-500 hover:text-gray-700 transition-colors mr-2"
+                >
+                  {piBurndownCollapsed ? '▼' : '▲'}
+                </button>
+                <h2 className="text-lg font-semibold">PI Burndown Chart</h2>
               </div>
-              <PIPredictability selectedPI={selectedPI} selectedTeam={selectedTeam} />
-              
-              {/* Epic Scope Changes Chart */}
-              <div className="bg-white rounded-lg shadow-sm p-4">
-                <div className="flex items-center mb-3">
-                  <button 
-                    onClick={() => setScopeChangesCollapsed(!scopeChangesCollapsed)}
-                    className="text-gray-500 hover:text-gray-700 transition-colors mr-2"
-                  >
-                    {scopeChangesCollapsed ? '▼' : '▲'}
-                  </button>
-                  <h2 className="text-lg font-semibold">Epic Scope Changes</h2>
-                </div>
-
-                {!scopeChangesCollapsed && (
-                  <EpicScopeChangesChart 
-                    selectedQuarter={selectedPI} 
-                    isVisible={!scopeChangesCollapsed}
+              {!piBurndownCollapsed && (
+                <div className="space-y-3">
+                  {/* Issue Type Filter */}
+                  <div className="flex items-center">
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs font-medium text-gray-700">Issue Type:</label>
+                      <select
+                        value={selectedPIIssueType}
+                        onChange={(e) => setSelectedPIIssueType(e.target.value)}
+                        className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        style={{ 
+                          minWidth: '120px',
+                          backgroundColor: 'white',
+                          zIndex: 9999,
+                          position: 'relative'
+                        }}
+                      >
+                        {getIssueTypes().map((issueType) => (
+                          <option key={issueType.value} value={issueType.value}>
+                            {issueType.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex-1 text-center text-sm font-medium text-gray-800" style={{ transform: 'translateX(-80px)' }}>
+                      {selectedPI}
+                    </div>
+                    <div className="w-24"></div> {/* Spacer to balance the layout */}
+                  </div>
+                  
+                  <PIBurndownChart 
+                    piName={selectedPI}
+                    issueType={selectedPIIssueType}
+                    isVisible={!piBurndownCollapsed}
                   />
-                )}
+                </div>
+              )}
+            </div>
+            <PIPredictability selectedPI={selectedPI} selectedTeam={selectedTeam} />
+            
+            {/* Epic Scope Changes Chart */}
+            <div className="bg-white rounded-lg shadow-sm p-4 overflow-x-auto">
+              <div className="flex items-center mb-3">
+                <button 
+                  onClick={() => setScopeChangesCollapsed(!scopeChangesCollapsed)}
+                  className="text-gray-500 hover:text-gray-700 transition-colors mr-2"
+                >
+                  {scopeChangesCollapsed ? '▼' : '▲'}
+                </button>
+                <h2 className="text-lg font-semibold">Epic Scope Changes</h2>
+              </div>
+
+              {!scopeChangesCollapsed && (
+                <EpicScopeChangesChart 
+                  selectedQuarter={selectedPI} 
+                  isVisible={!scopeChangesCollapsed}
+                />
+              )}
               </div>
             </div>
           </div>
@@ -421,9 +477,9 @@ export default function Home() {
               
               {/* Sprint Goal Row */}
               <div className="border border-gray-200 rounded-lg p-4 mb-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                   <h3 className="text-lg font-medium text-gray-900 mr-4">Sprint Goal</h3>
-                  <div className="flex items-center space-x-4 flex-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 gap-2 flex-1">
                     <TeamFilter
                       selectedTeam={selectedTeam}
                       onTeamChange={setSelectedTeam}
@@ -431,7 +487,7 @@ export default function Home() {
                     <button
                       onClick={() => handleCreateJob('Sprint Goal')}
                       disabled={loading.sprintGoal || !selectedTeam}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                      className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                     >
                       {loading.sprintGoal ? 'Creating...' : 'Create Job'}
                     </button>
@@ -441,9 +497,9 @@ export default function Home() {
 
               {/* Daily Agent Row */}
               <div className="border border-gray-200 rounded-lg p-4 mb-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                   <h3 className="text-lg font-medium text-gray-900 mr-4">Daily Agent</h3>
-                  <div className="flex items-center space-x-4 flex-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 gap-2 flex-1">
                     <TeamFilter
                       selectedTeam={selectedTeam}
                       onTeamChange={setSelectedTeam}
@@ -451,7 +507,7 @@ export default function Home() {
                     <button
                       onClick={() => handleCreateJob('Daily Agent')}
                       disabled={loading.dailyAgent || !selectedTeam}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                      className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                     >
                       {loading.dailyAgent ? 'Creating...' : 'Create Job'}
                     </button>
@@ -461,9 +517,9 @@ export default function Home() {
 
               {/* PI Sync Row */}
               <div className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                   <h3 className="text-lg font-medium text-gray-900 mr-4">PI Sync</h3>
-                  <div className="flex items-center space-x-4 flex-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 gap-2 flex-1">
                     <PIFilter
                       selectedPI={selectedPI}
                       onPIChange={setSelectedPI}
@@ -471,7 +527,7 @@ export default function Home() {
                     <button
                       onClick={() => handleCreateJob('PI Sync')}
                       disabled={loading.piSync || !selectedPI}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                      className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                     >
                       {loading.piSync ? 'Creating...' : 'Create Job'}
                     </button>
@@ -566,8 +622,8 @@ export default function Home() {
                   </label>
                 )}
               </div>
-              <div className="border rounded">
-                <table className="w-full text-sm">
+              <div className="border rounded overflow-x-auto">
+                <table className="w-full min-w-max text-sm">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="text-left p-2">Pattern</th>
@@ -597,8 +653,8 @@ export default function Home() {
 
             <div className="bg-white rounded-lg shadow-sm p-4">
               <h2 className="text-lg font-semibold mb-3">Users</h2>
-              <div className="border rounded">
-                <table className="w-full text-sm">
+              <div className="border rounded overflow-x-auto">
+                <table className="w-full min-w-max text-sm">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="text-left p-2">Name</th>
@@ -871,9 +927,64 @@ export default function Home() {
 
   return authChecked ? (
     <div className="h-screen bg-gray-50 flex overflow-hidden">
-      {/* Left Sidebar Navigation */}
-      <div className={`bg-white shadow-sm border-r border-gray-200 flex-shrink-0 transition-all duration-300 ${
-        sidebarCollapsed ? 'w-16' : 'w-48'
+      {/* Mobile Sidebar Overlay */}
+      {mobileSidebarOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setMobileSidebarOpen(false)}></div>
+          <div className="absolute inset-y-0 left-0 w-56 bg-white shadow-xl border-r border-gray-200 p-3 flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <div className="w-32">
+                <SparksAILogo collapsed={false} size="small" />
+              </div>
+              <button
+                onClick={() => setMobileSidebarOpen(false)}
+                className="p-2 text-gray-600 hover:text-gray-800"
+                aria-label="Close sidebar"
+              >✕</button>
+            </div>
+            {/* Mobile Nav (uses same groups) */}
+            <nav className="flex-1 overflow-y-auto">
+              <div className="space-y-3">
+                {navigationGroups.map((group) => (
+                  <div key={group.title}>
+                    <button
+                      onClick={() => toggleGroup(group.title)}
+                      className="w-full flex items-center justify-between px-2 py-2 text-[10px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-800"
+                    >
+                      <span>{group.title}</span>
+                      <span className={`transition-transform ${expandedGroups[group.title] ? 'rotate-180' : ''}`}>⌄</span>
+                    </button>
+                    {expandedGroups[group.title] && (
+                      <div className="mt-1 space-y-1">
+                        {group.items.map((item) => (
+                          <button
+                            key={item.id}
+                            onClick={() => { setActiveNavItem(item.id); setMobileSidebarOpen(false); }}
+                            className={`w-full flex items-center space-x-2 px-2 py-1.5 rounded-lg text-left transition-colors ${
+                              activeNavItem === item.id
+                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                : 'text-gray-700 hover:bg-gray-50'
+                            }`}
+                            title={item.label}
+                          >
+                            <span className="text-sm">{item.icon}</span>
+                            <span className="text-xs font-medium">{item.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div className="mx-2 my-2 border-t border-gray-100"></div>
+                  </div>
+                ))}
+              </div>
+            </nav>
+          </div>
+        </div>
+      )}
+
+      {/* Left Sidebar Navigation (desktop) */}
+      <div className={`hidden md:block bg-white shadow-sm border-r border-gray-200 flex-shrink-0 transition-all duration-300 ${
+        sidebarCollapsed ? 'w-16' : 'w-56'
       }`}>
         <div className="p-3 h-full flex flex-col">
           <div className="flex flex-col items-center mb-1">
@@ -882,24 +993,59 @@ export default function Home() {
             </div>
           </div>
           
-          <nav className="space-y-1 flex-1">
-            {navigationItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveNavItem(item.id)}
-                className={`w-full flex items-center ${
-                  sidebarCollapsed ? 'justify-center px-2' : 'space-x-2 px-2'
-                } py-1.5 rounded-lg text-left transition-colors ${
-                  activeNavItem === item.id
-                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-                title={sidebarCollapsed ? item.label : undefined}
-              >
-                <span className="text-sm">{item.icon}</span>
-                {!sidebarCollapsed && <span className="text-xs font-medium">{item.label}</span>}
-              </button>
-            ))}
+          <nav className="flex-1 overflow-y-auto">
+            {sidebarCollapsed ? (
+              <div className="space-y-1">
+                {navigationGroups.flatMap((g) => g.items).map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveNavItem(item.id)}
+                    className={`w-full flex items-center justify-center px-2 py-2 rounded-lg transition-colors ${
+                      activeNavItem === item.id
+                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                    title={item.label}
+                  >
+                    <span className="text-base">{item.icon}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {navigationGroups.map((group) => (
+                  <div key={group.title}>
+                    <button
+                      onClick={() => toggleGroup(group.title)}
+                      className="w-full flex items-center justify-between px-2 py-2 text-[10px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-800"
+                    >
+                      <span>{group.title}</span>
+                      <span className={`transition-transform ${expandedGroups[group.title] ? 'rotate-180' : ''}`}>⌄</span>
+                    </button>
+                    {expandedGroups[group.title] && (
+                      <div className="mt-1 space-y-1">
+                        {group.items.map((item) => (
+                          <button
+                            key={item.id}
+                            onClick={() => setActiveNavItem(item.id)}
+                            className={`w-full flex items-center space-x-2 px-2 py-1.5 rounded-lg text-left transition-colors ${
+                              activeNavItem === item.id
+                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                : 'text-gray-700 hover:bg-gray-50'
+                            }`}
+                            title={item.label}
+                          >
+                            <span className="text-sm">{item.icon}</span>
+                            <span className="text-xs font-medium">{item.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div className="mx-2 my-2 border-t border-gray-100"></div>
+                  </div>
+                ))}
+              </div>
+            )}
           </nav>
 
           <div className="mt-auto pt-2 border-t border-gray-200">
@@ -922,41 +1068,55 @@ export default function Home() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
-          <div className="flex items-center justify-between">
+        <div className="bg-white border-b border-gray-200 px-3 md:px-4 py-2.5 md:py-3 flex-shrink-0 relative z-30">
+          <div className="flex items-center justify-between gap-2">
             {/* Left side: View title and filters */}
-            <div className="flex items-center space-x-4 flex-1 min-w-0">
+            <div className="flex items-center gap-2 md:space-x-4 flex-1 min-w-0">
+              {/* Mobile hamburger */}
+              <button
+                onClick={() => setMobileSidebarOpen(true)}
+                className="md:hidden p-2 rounded hover:bg-gray-100 text-gray-600"
+                aria-label="Open sidebar"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
               <h1 className="text-xl font-semibold text-gray-900 whitespace-nowrap">
                 {navigationItems.find(item => item.id === activeNavItem)?.label || 'SparksAI'}
               </h1>
               
               {/* Team Filter - for views that need it */}
-              {(activeNavItem === 'team-ai-insights' || activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'api-test' || activeNavItem === 'upload-transcripts') && (
-                <TeamFilter 
-                  selectedTeam={selectedTeam}
-                  onTeamChange={setSelectedTeam}
-                />
-              )}
+              <div className="hidden md:block">
+                {(activeNavItem === 'team-ai-insights' || activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'api-test' || activeNavItem === 'upload-transcripts') && (
+                  <TeamFilter 
+                    selectedTeam={selectedTeam}
+                    onTeamChange={setSelectedTeam}
+                  />
+                )}
+              </div>
               
               {/* PI Filter - for views that need it */}
-              {(activeNavItem === 'pi-quarter' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (
-                <PIFilter 
-                  selectedPI={selectedPI}
-                  onPIChange={setSelectedPI}
-                />
-              )}
+              <div className="hidden md:block">
+                {(activeNavItem === 'pi-quarter' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (
+                  <PIFilter 
+                    selectedPI={selectedPI}
+                    onPIChange={setSelectedPI}
+                  />
+                )}
+              </div>
             </div>
             
             {/* Center: Dashboard AI Insights button and Prompt selector */}
             {(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') && (
-              <div className="flex items-center justify-center space-x-3 flex-1">
+              <div className="hidden sm:flex items-center justify-center space-x-3 flex-1">
                 <button
                   onClick={() => setIsDashboardChatModalOpen(true)}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-full text-sm font-medium transition-colors shadow-sm hover:shadow-md whitespace-nowrap"
                 >
-                  Get Dashboard AI Insights
+                  AI Insights
                 </button>
-                <div className="flex items-center space-x-2">
+                <div className="hidden md:flex items-center space-x-2 relative z-10">
                   <label className="text-xs font-medium text-gray-700 whitespace-nowrap">Prompt:</label>
                   <select
                     value={selectedPrompt}
@@ -975,24 +1135,24 @@ export default function Home() {
               </div>
             )}
             
-            {/* Right side: Search and user info */}
-            <div className="flex items-center space-x-4 flex-1 justify-end">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Ask SparksAI..."
-                  className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
-                  <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-              </div>
+            {/* Right side: user info */}
+            <div className="flex items-center space-x-2 md:space-x-4 flex-1 justify-end">
               <div className="flex items-center space-x-3 text-sm text-gray-700">
-                {(() => { const u = getCurrentUser(); if (!u) return <span>Signed in</span>; const label = u.name && u.email ? `${u.name} (${u.email})` : (u.name || u.email || 'Signed in'); return (
-                  <span title={u.email || ''}>{label}</span>
-                ); })()}
+                {(() => {
+                  const u = getCurrentUser();
+                  if (!u) return <span>Signed in</span>;
+                  const fullName = (u.name || '').trim();
+                  const firstName = fullName ? fullName.split(/\s+/)[0] : (u.email ? String(u.email).split('@')[0] : 'Signed in');
+                  const desktopLabel = u.name && u.email ? `${u.name} (${u.email})` : (u.name || u.email || 'Signed in');
+                  return (
+                    <>
+                      {/* Mobile: first name only, no email */}
+                      <span className="md:hidden truncate max-w-[120px]" title={fullName || ''}>{firstName}</span>
+                      {/* Desktop: name (email) */}
+                      <span className="hidden md:inline" title={u.email || ''}>{desktopLabel}</span>
+                    </>
+                  );
+                })()}
                 <button
                   onClick={() => { logout(); try { location.assign('/login'); } catch {} }}
                   className="px-2 py-1 border rounded hover:bg-gray-50"
@@ -1001,6 +1161,54 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </div>
+        {/* Mobile controls panel (everything except title) */}
+        <div className="md:hidden border-t border-gray-200 px-3 py-2 space-y-2 relative z-10">
+          {/* Filters */}
+          <div className="flex flex-col gap-2">
+            {(activeNavItem === 'team-ai-insights' || activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'api-test' || activeNavItem === 'upload-transcripts') && (
+              <TeamFilter 
+                selectedTeam={selectedTeam}
+                onTeamChange={setSelectedTeam}
+              />
+            )}
+            {(activeNavItem === 'pi-quarter' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (
+              <PIFilter 
+                selectedPI={selectedPI}
+                onPIChange={setSelectedPI}
+              />
+            )}
+          </div>
+
+          {/* Dashboard controls */}
+          {(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') && (
+            <div className="flex items-center justify-between gap-2">
+              <button
+                onClick={() => setIsDashboardChatModalOpen(true)}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-full text-sm font-medium transition-colors shadow-sm hover:shadow-md whitespace-nowrap"
+              >
+                AI Insights
+              </button>
+            <div className="flex items-center gap-2 relative z-10">
+                <label className="text-[11px] font-medium text-gray-700 whitespace-nowrap">Prompt:</label>
+                <select
+                  value={selectedPrompt}
+                  onChange={(e) => setSelectedPrompt(e.target.value)}
+                  disabled={loadingPrompts}
+                  className="px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[140px] bg-white"
+                >
+                  <option value="">Select a prompt...</option>
+                  {prompts.map((prompt) => (
+                    <option key={`${prompt.email_address}/${prompt.prompt_name}`} value={prompt.prompt_name}>
+                      {prompt.prompt_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* Search removed on mobile */}
         </div>
 
         {/* Content Area */}
