@@ -66,11 +66,11 @@ const MetricCard = ({ icon, value, label, tooltip, className = "", isLeftmost = 
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm p-3 flex flex-col items-center text-center w-[70%] relative group ${className}`}>
-      <div className="w-8 h-8 mb-2 flex items-center justify-center text-lg">
+    <div className={`bg-white rounded-lg shadow-sm p-[10.8px] flex flex-col items-center text-center w-[72.45%] relative group ${className}`}>
+      <div className="w-[28.8px] h-[28.8px] mb-2 flex items-center justify-center text-lg">
         {icon}
       </div>
-      <div className={`text-2xl font-bold mb-1 ${getStatusColor(status)}`}>
+      <div className={`text-[21.6px] font-bold mb-1 ${getStatusColor(status)}`}>
         {value}
       </div>
       <div className="text-xs text-gray-600">
@@ -91,15 +91,15 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
   if (loading) {
     return (
       <div className="px-3 pt-3">
-        <h3 className="text-lg font-semibold mb-1">Team Metrics</h3>
-        <div className="grid grid-cols-5 gap-6">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg shadow-sm p-3 animate-pulse">
-              <div className="w-8 h-8 bg-gray-200 rounded mb-2"></div>
-              <div className="h-6 bg-gray-200 rounded mb-1"></div>
-              <div className="h-3 bg-gray-200 rounded"></div>
-            </div>
-          ))}
+      <h3 className="text-lg font-semibold mb-1">Team Metrics</h3>
+      <div className="grid grid-cols-6 gap-6">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="bg-white rounded-lg shadow-sm p-[10.8px] animate-pulse">
+            <div className="w-[28.8px] h-[28.8px] bg-gray-200 rounded mb-2"></div>
+            <div className="h-[21.6px] bg-gray-200 rounded mb-1"></div>
+            <div className="h-3 bg-gray-200 rounded"></div>
+          </div>
+        ))}
         </div>
       </div>
     );
@@ -120,7 +120,7 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
   return (
     <div className="px-3 pt-3">
       <h3 className="text-lg font-semibold mb-1">Team Metrics</h3>
-      <div className="grid grid-cols-5 gap-6">
+      <div className="grid grid-cols-6 gap-6">
         {/* Avg Velocity */}
         <MetricCard
           icon="📈"
@@ -165,6 +165,14 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
           label="Completion"
           tooltip="Completed issues (%) in the current active sprint"
           status={completionRate?.percent_completed_status}
+        />
+        
+        {/* Days Left */}
+        <MetricCard
+          icon="📅"
+          value={completionRate?.days_left || "N/A"}
+          label="Days Left"
+          tooltip="Number of days remaining in the current active sprint"
         />
       </div>
     </div>
