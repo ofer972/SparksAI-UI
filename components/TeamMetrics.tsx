@@ -18,7 +18,8 @@ interface SprintMetricsData {
 }
 
 interface CompletionData {
-  days_left?: string;
+  days_left?: number;
+  days_in_sprint?: number;
   total_issues: number;
   completed_issues: number;
   in_progress_issues: number;
@@ -43,6 +44,59 @@ interface CompletionResponse {
 }
 
 
+// Custom Days Left Card with Progress Bar
+const DaysLeftCard = ({ daysLeft, daysInSprint, tooltip, className = "" }: {
+  daysLeft?: number;
+  daysInSprint?: number;
+  tooltip: string;
+  className?: string;
+}) => {
+  const formatDaysLeft = (days: number | undefined): string => {
+    if (days === undefined || days === null) return "N/A";
+    if (days === 1) return "Last day";
+    return `${days} days left`;
+  };
+
+  const calculateProgress = (): number => {
+    if (!daysLeft || !daysInSprint || daysInSprint === 0) return 0;
+    // Calculate days passed (not days left) for progress bar
+    const daysPassed = daysInSprint - daysLeft;
+    return (daysPassed / daysInSprint) * 100;
+  };
+
+  const progress = calculateProgress();
+
+  return (
+    <div className={`bg-white rounded-lg shadow-sm p-[10.8px] flex flex-col items-center text-center w-[72.45%] relative group ${className}`}>
+      {/* Icon */}
+      <div className="w-[28.8px] h-[28.8px] mb-2 flex items-center justify-center text-lg">
+        📅
+      </div>
+      
+      {/* Progress Bar - takes same space as value in other cards */}
+      <div className="w-full mb-1 flex items-center justify-center" style={{ minHeight: '27.6px' }}>
+        <div className="w-full bg-gray-200 rounded-full h-3">
+          <div
+            className="bg-blue-600 h-3 rounded-full transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+      
+      {/* Days Left Text (formatted) - at bottom like other labels */}
+      <div className="text-xs text-gray-600 mt-auto">
+        {formatDaysLeft(daysLeft)}
+      </div>
+      
+      {/* Tooltip */}
+      <div className={`absolute bottom-full mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10 max-w-xs left-1/2 transform -translate-x-1/2`}>
+        {tooltip}
+        <div className={`absolute top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 left-1/2 transform -translate-x-1/2`}></div>
+      </div>
+    </div>
+  );
+};
+
 const MetricCard = ({ icon, value, label, tooltip, className = "", isLeftmost = false, status }: { 
   icon: string; 
   value: string; 
@@ -66,11 +120,11 @@ const MetricCard = ({ icon, value, label, tooltip, className = "", isLeftmost = 
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm p-3 flex flex-col items-center text-center relative group min-w-[110px] ${className}`}>
-      <div className="w-8 h-8 mb-2 flex items-center justify-center text-lg">
+    <div className={`bg-white rounded-lg shadow-sm p-[10.8px] flex flex-col items-center text-center relative group ${className}`}>
+      <div className="w-[28.8px] h-[28.8px] mb-2 flex items-center justify-center text-lg">
         {icon}
       </div>
-      <div className={`text-2xl font-bold mb-1 ${getStatusColor(status)}`}>
+      <div className={`text-[21.6px] font-bold mb-1 ${getStatusColor(status)}`}>
         {value}
       </div>
       <div className="text-xs text-gray-600">
@@ -91,15 +145,15 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
   if (loading) {
     return (
       <div className="px-3 pt-3">
-        <h3 className="text-lg font-semibold mb-1">Team Metrics</h3>
-        <div className="grid grid-cols-5 gap-6">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg shadow-sm p-3 animate-pulse">
-              <div className="w-8 h-8 bg-gray-200 rounded mb-2"></div>
-              <div className="h-6 bg-gray-200 rounded mb-1"></div>
-              <div className="h-3 bg-gray-200 rounded"></div>
-            </div>
-          ))}
+      <h3 className="text-lg font-semibold mb-1">Team Metrics</h3>
+      <div className="grid grid-cols-6 gap-6">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="bg-white rounded-lg shadow-sm p-[10.8px] animate-pulse">
+            <div className="w-[28.8px] h-[28.8px] bg-gray-200 rounded mb-2"></div>
+            <div className="h-[21.6px] bg-gray-200 rounded mb-1"></div>
+            <div className="h-3 bg-gray-200 rounded"></div>
+          </div>
+        ))}
         </div>
       </div>
     );
@@ -120,7 +174,7 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
   return (
     <div className="px-3 pt-3">
       <h3 className="text-lg font-semibold mb-1">Team Metrics</h3>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
+      <div className="grid grid-cols-6 gap-6">
         {/* Avg Velocity */}
         <MetricCard
           icon="📈"
@@ -165,6 +219,13 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
           label="Completion"
           tooltip="Completed issues (%) in the current active sprint"
           status={completionRate?.percent_completed_status}
+        />
+        
+        {/* Days Left */}
+        <DaysLeftCard
+          daysLeft={completionRate?.days_left}
+          daysInSprint={completionRate?.days_in_sprint}
+          tooltip="Number of days remaining in the current active sprint"
         />
       </div>
     </div>

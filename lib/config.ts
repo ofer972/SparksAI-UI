@@ -233,7 +233,8 @@ export interface SprintMetrics {
 }
 
 export interface CompletionRate {
-  days_left?: string;
+  days_left?: number;
+  days_in_sprint?: number;
   total_issues: number;
   completed_issues: number;
   in_progress_issues: number;

@@ -62,6 +62,7 @@ export default function Home() {
     sprintGoal: false,
     dailyAgent: false,
     piSync: false,
+    teamPiInsight: false,
   });
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isDashboardChatModalOpen, setIsDashboardChatModalOpen] = useState(false);
@@ -263,15 +264,24 @@ export default function Home() {
     })();
   }, [activeNavItem, isAdmin]);
 
-  const handleCreateJob = async (jobType: 'Sprint Goal' | 'Daily Agent' | 'PI Sync') => {
+  const handleCreateJob = async (jobType: 'Sprint Goal' | 'Daily Agent' | 'PI Sync' | 'Team PI Insight') => {
     const loadingKey = jobType === 'Sprint Goal' ? 'sprintGoal' : 
-                     jobType === 'Daily Agent' ? 'dailyAgent' : 'piSync';
+                     jobType === 'Daily Agent' ? 'dailyAgent' : 
+                     jobType === 'PI Sync' ? 'piSync' : 'teamPiInsight';
     
     setLoading(prev => ({ ...prev, [loadingKey]: true }));
     setMessage(null);
 
     try {
       if (jobType === 'PI Sync') {
+        if (!selectedPI) {
+          throw new Error('Please select a PI');
+        }
+        await apiService.createPiAgentJob(jobType, selectedPI);
+      } else if (jobType === 'Team PI Insight') {
+        if (!selectedTeam) {
+          throw new Error('Please select a team');
+        }
         if (!selectedPI) {
           throw new Error('Please select a PI');
         }
@@ -516,7 +526,7 @@ export default function Home() {
               </div>
 
               {/* PI Sync Row */}
-              <div className="border border-gray-200 rounded-lg p-4">
+              <div className="border border-gray-200 rounded-lg p-4 mb-4">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                   <h3 className="text-lg font-medium text-gray-900 mr-4">PI Sync</h3>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 gap-2 flex-1">
@@ -530,6 +540,30 @@ export default function Home() {
                       className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                     >
                       {loading.piSync ? 'Creating...' : 'Create Job'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Team PI Insight Row */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium text-gray-900 mr-4">Team PI Insight</h3>
+                  <div className="flex items-center space-x-4 flex-1">
+                    <TeamFilter
+                      selectedTeam={selectedTeam}
+                      onTeamChange={setSelectedTeam}
+                    />
+                    <PIFilter
+                      selectedPI={selectedPI}
+                      onPIChange={setSelectedPI}
+                    />
+                    <button
+                      onClick={() => handleCreateJob('Team PI Insight')}
+                      disabled={loading.teamPiInsight || !selectedTeam || !selectedPI}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {loading.teamPiInsight ? 'Creating...' : 'Create Job'}
                     </button>
                   </div>
                 </div>
