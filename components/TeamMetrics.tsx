@@ -67,7 +67,7 @@ const DaysLeftCard = ({ daysLeft, daysInSprint, tooltip, className = "" }: {
   const progress = calculateProgress();
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm p-[10.8px] flex flex-col items-center text-center w-[72.45%] relative group ${className}`}>
+    <div className={`bg-white rounded-lg shadow-sm p-[10.8px] flex flex-col items-center text-center w-full relative group ${className}`}>
       {/* Icon */}
       <div className="w-[28.8px] h-[28.8px] mb-2 flex items-center justify-center text-lg">
         📅
@@ -120,14 +120,14 @@ const MetricCard = ({ icon, value, label, tooltip, className = "", isLeftmost = 
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm p-[10.8px] flex flex-col items-center text-center relative group ${className}`}>
+    <div className={`bg-white rounded-lg shadow-sm p-[10.8px] flex flex-col items-center text-center w-full relative group ${className}`}>
       <div className="w-[28.8px] h-[28.8px] mb-2 flex items-center justify-center text-lg">
         {icon}
       </div>
       <div className={`text-[21.6px] font-bold mb-1 ${getStatusColor(status)}`}>
         {value}
       </div>
-      <div className="text-xs text-gray-600">
+      <div className="text-xs text-gray-600 break-words text-center">
         {label}
       </div>
       {/* Tooltip */}
@@ -146,7 +146,7 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
     return (
       <div className="px-3 pt-3">
       <h3 className="text-lg font-semibold mb-1">Team Metrics</h3>
-      <div className="grid grid-cols-6 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 lg:gap-6">
         {[...Array(6)].map((_, i) => (
           <div key={i} className="bg-white rounded-lg shadow-sm p-[10.8px] animate-pulse">
             <div className="w-[28.8px] h-[28.8px] bg-gray-200 rounded mb-2"></div>
@@ -174,7 +174,7 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
   return (
     <div className="px-3 pt-3">
       <h3 className="text-lg font-semibold mb-1">Team Metrics</h3>
-      <div className="grid grid-cols-6 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 lg:gap-6">
         {/* Avg Velocity */}
         <MetricCard
           icon="📈"
