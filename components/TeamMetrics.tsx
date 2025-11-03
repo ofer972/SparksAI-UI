@@ -18,11 +18,14 @@ interface SprintMetricsData {
 }
 
 interface CompletionData {
+  days_left?: string;
   total_issues: number;
   completed_issues: number;
   in_progress_issues: number;
   todo_issues: number;
   percent_completed: number;
+  percent_completed_status?: 'red' | 'yellow' | 'green';
+  in_progress_issues_status?: 'red' | 'yellow' | 'green';
   team_name: string;
 }
 
@@ -84,18 +87,6 @@ const MetricCard = ({ icon, value, label, tooltip, className = "", isLeftmost = 
 
 export default function TeamMetrics({ teamName }: TeamMetricsProps) {
   const { sprintMetrics, completionRate, loading, error } = useTeamMetrics(teamName);
-
-  // Calculate Work in Progress status based on velocity comparison
-  const calculateWorkInProgressStatus = (
-    inProgress: number | undefined,
-    velocity: number | undefined
-  ): 'red' | 'yellow' | 'green' | undefined => {
-    if (!velocity || velocity === 0 || !inProgress) return undefined;
-    const percentage = (inProgress / velocity) * 100;
-    if (percentage < 30) return 'green';
-    if (percentage >= 30 && percentage <= 50) return 'yellow';
-    return 'red'; // percentage > 50
-  };
 
   if (loading) {
     return (
@@ -164,10 +155,7 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
           value={completionRate?.in_progress_issues?.toString() || "0"}
           label="Work in Progress"
           tooltip="Number of issues in progress in the current active sprint"
-          status={calculateWorkInProgressStatus(
-            completionRate?.in_progress_issues,
-            sprintMetrics?.velocity
-          )}
+          status={completionRate?.in_progress_issues_status}
         />
         
         {/* Completion */}
@@ -176,6 +164,7 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
           value={completionRate?.percent_completed ? `${Math.round(completionRate.percent_completed)}%` : "0%"}
           label="Completion"
           tooltip="Completed issues (%) in the current active sprint"
+          status={completionRate?.percent_completed_status}
         />
       </div>
     </div>

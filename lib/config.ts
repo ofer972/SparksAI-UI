@@ -233,11 +233,14 @@ export interface SprintMetrics {
 }
 
 export interface CompletionRate {
+  days_left?: string;
   total_issues: number;
   completed_issues: number;
   in_progress_issues: number;
   todo_issues: number;
   percent_completed: number;
+  percent_completed_status?: 'red' | 'yellow' | 'green';
+  in_progress_issues_status?: 'red' | 'yellow' | 'green';
   team_name: string;
 }
 
