@@ -201,6 +201,8 @@ export interface AICard {
   description: string;
   full_information: string;
   information_json?: string;
+  recommendations?: Recommendation[];
+  recommendations_count?: number;
 }
 
 export interface AICardsResponse {

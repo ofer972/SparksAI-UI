@@ -10,12 +10,13 @@ interface UseAICardsReturn {
 }
 
 /**
- * Custom hook for fetching AI cards data for a specific team.
+ * Custom hook for fetching AI cards data for a specific team with recommendations.
  * 
  * @param teamName - The name of the team to fetch AI cards for
+ * @param category - Optional category filter (if multiple selected, uses first one)
  * @returns Object containing cards data, loading state, error state, and refetch function
  */
-export function useAICards(teamName?: string): UseAICardsReturn {
+export function useAICards(teamName?: string, category?: string): UseAICardsReturn {
   const [cards, setCards] = useState<AICard[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +32,9 @@ export function useAICards(teamName?: string): UseAICardsReturn {
       setLoading(true);
       setError(null);
       const apiService = new ApiService();
-      const response = await apiService.getAICards(teamName);
+      // Use the new endpoint with recommendations, pass category if provided
+      const selectedCategory = category || undefined;
+      const response = await apiService.getTeamAICardsWithRecommendations(teamName, selectedCategory);
       setCards(response.ai_cards || []);
     } catch (err) {
       console.error('Error fetching AI cards:', err);
@@ -40,7 +43,7 @@ export function useAICards(teamName?: string): UseAICardsReturn {
     } finally {
       setLoading(false);
     }
-  }, [teamName]);
+  }, [teamName, category]);
 
   useEffect(() => {
     fetchCards();

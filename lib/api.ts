@@ -248,6 +248,25 @@ export class ApiService {
     return result.data;
   }
 
+  async getTeamAICardsWithRecommendations(teamName: string, category?: string): Promise<AICardsResponse> {
+    const params = new URLSearchParams({
+      team_name: teamName,
+    });
+
+    if (category) {
+      params.append('category', category);
+    }
+
+    const response = await fetch(`${buildBackendUrl('/team-ai-cards/getTopCardsWithRecommendations')}?${params}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch AI cards with recommendations: ${response.statusText}`);
+    }
+
+    const result: ApiResponse<AICardsResponse> = await response.json();
+    return result.data;
+  }
+
   // Recommendations API
   async getRecommendations(teamName: string): Promise<RecommendationsResponse> {
     const params = new URLSearchParams({

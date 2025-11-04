@@ -6,6 +6,7 @@ import { getAccessToken, refreshAccessToken, clearTokens, getCurrentUser, logout
 import SettingsScreen from '@/components/SettingsScreen';
 import TeamFilter from '@/components/TeamFilter';
 import PIFilter from '@/components/PIFilter';
+import InsightCategoryFilter from '@/components/InsightCategoryFilter';
 import AICards from '@/components/AICards';
 import Recommendations from '@/components/Recommendations';
 import TeamMetrics from '@/components/TeamMetrics';
@@ -54,6 +55,7 @@ export default function Home() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState('AutoDesign-Dev');
   const [selectedPI, setSelectedPI] = useState('Q32025'); // Default to Q32025 which has data
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedPIIssueType, setSelectedPIIssueType] = useState(getDefaultIssueType('burndown')); // Default to Epic
   const [piBurndownCollapsed, setPiBurndownCollapsed] = useState(false);
   const [scopeChangesCollapsed, setScopeChangesCollapsed] = useState(false);
@@ -332,16 +334,14 @@ export default function Home() {
       case 'team-ai-insights':
         return (
           <div className="h-full flex flex-col">
-            {/* AI Cards Section - responsive height (no wrapper background) */}
-            <div className="pt-2 pb-2 pr-2 pl-[7px] md:flex-shrink-0 md:h-[45vh]">
+            {/* AI Cards Section - responsive height (no wrapper background) - increased to 30% more */}
+            <div className="pt-2 pb-2 pr-2 pl-[7px] md:flex-shrink-0 md:h-[58.5vh]">
               <div className="h-full md:pb-4">
-                <AICards teamName={selectedTeam} />
+                <AICards 
+                  teamName={selectedTeam} 
+                  category={selectedCategories.length > 0 ? selectedCategories[0] : undefined}
+                />
               </div>
-            </div>
-            
-            {/* Recommendations Section - responsive height */}
-            <div className="mt-2 md:flex-shrink-0 md:h-52">
-              <Recommendations teamName={selectedTeam} />
             </div>
             
             {/* Team Metrics Section - responsive height, no negative margin */}
@@ -1113,6 +1113,16 @@ export default function Home() {
                 )}
               </div>
               
+              {/* Insight Category Filter - for team-ai-insights view only */}
+              {activeNavItem === 'team-ai-insights' && (
+                <div className="hidden md:block">
+                  <InsightCategoryFilter
+                    selectedCategories={selectedCategories}
+                    onCategoriesChange={setSelectedCategories}
+                  />
+                </div>
+              )}
+              
               {/* PI Filter - for views that need it */}
               <div className="hidden md:block">
                 {(activeNavItem === 'pi-quarter' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (
@@ -1187,6 +1197,12 @@ export default function Home() {
               <TeamFilter 
                 selectedTeam={selectedTeam}
                 onTeamChange={setSelectedTeam}
+              />
+            )}
+            {activeNavItem === 'team-ai-insights' && (
+              <InsightCategoryFilter
+                selectedCategories={selectedCategories}
+                onCategoriesChange={setSelectedCategories}
               />
             )}
             {(activeNavItem === 'pi-quarter' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (

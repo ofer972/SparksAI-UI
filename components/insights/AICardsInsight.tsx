@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm';
 import { ViewRecordModal } from '@/components/ViewRecordModal';
 import { EntityConfig } from '@/lib/entityConfig';
 import AIChatModal from '@/components/AIChatModal';
+import { Recommendation } from '@/lib/config';
 
 // Constants
 const CARD_DESCRIPTION_MAX_LENGTH = 750;
@@ -21,6 +22,8 @@ interface AICard {
   description: string;
   full_information: string;
   information_json?: string;
+  recommendations?: Recommendation[];
+  recommendations_count?: number;
 }
 
 interface AICardsInsightProps {
@@ -256,7 +259,7 @@ export default function AICardsInsight({
       <div className="h-full">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full h-full">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg shadow-lg p-4 border-l-4 border-gray-200 animate-pulse min-h-[170px]">
+            <div key={i} className="bg-white rounded-lg shadow-lg p-4 border-l-4 border-gray-200 animate-pulse min-h-[221px]">
               <div className="h-4 bg-gray-200 rounded mb-2"></div>
               <div className="h-3 bg-gray-200 rounded mb-1"></div>
               <div className="h-3 bg-gray-200 rounded mb-2"></div>
@@ -306,16 +309,21 @@ export default function AICardsInsight({
   };
 
   const visibleCards = Array.isArray(cards) ? cards.filter(hasContent) : [];
+  
+  // Always show 4 card positions (2x2 grid), even if we have fewer cards
+  const maxCardsToShow = 4;
+  const cardsToDisplay = visibleCards.slice(0, maxCardsToShow);
+  const emptySlots = Math.max(0, maxCardsToShow - cardsToDisplay.length);
 
   return (
     <div className="h-full">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full h-full">
-        {visibleCards.map((card) => {
+        {cardsToDisplay.map((card) => {
             const colors = getPriorityColor(card.priority);
             const priorityIcon = getPriorityIcon(card.priority);
             
             return (
-              <div key={card.id} className={`bg-white rounded-lg shadow-lg pt-1 pb-4 px-4 border-l-4 border ${colors.border} ${colors.frame} min-h-[170px] relative overflow-hidden`}>
+              <div key={card.id} className={`bg-white rounded-lg shadow-lg pt-1 pb-4 px-4 border-l-4 border ${colors.border} ${colors.frame} min-h-[221px] relative overflow-hidden flex flex-col`}>
                 <div className="flex items-start justify-between mb-1">
                   <div className="flex items-center space-x-2">
                     <div className="relative group">
@@ -554,16 +562,72 @@ export default function AICardsInsight({
                   </div>
                 </div>
                 
+                {/* Recommendations Section - inside each card */}
+                {card.recommendations && card.recommendations.length > 0 && (
+                  <div className="mt-2 border-t border-gray-200 pt-1.5 flex-shrink-0">
+                    <h4 className="text-xs font-semibold text-gray-700 mb-1">Recommendations</h4>
+                    <div className="border border-gray-300 rounded overflow-hidden" style={{ width: '90%', maxWidth: '90%', height: '60px' }}>
+                      <style dangerouslySetInnerHTML={{__html: `
+                        .recommendations-table-scroll::-webkit-scrollbar {
+                          width: 8px;
+                          display: block;
+                        }
+                        .recommendations-table-scroll::-webkit-scrollbar-track {
+                          background: #f7fafc;
+                          border-radius: 4px;
+                        }
+                        .recommendations-table-scroll::-webkit-scrollbar-thumb {
+                          background: #94a3b8;
+                          border-radius: 4px;
+                        }
+                        .recommendations-table-scroll::-webkit-scrollbar-thumb:hover {
+                          background: #64748b;
+                        }
+                      `}} />
+                      <div className="h-full overflow-y-scroll recommendations-table-scroll" style={{ scrollbarWidth: 'thin', scrollbarColor: '#94a3b8 #f7fafc' }}>
+                        <div className="space-y-0">
+                          {card.recommendations.map((rec: Recommendation) => {
+                            const recPriorityIcon = getPriorityIcon(rec.priority);
+                            
+                            return (
+                              <div key={rec.id} className="flex items-start border-b border-gray-200 py-1 px-2 last:border-b-0">
+                                <div className="flex-shrink-0 w-8 flex items-center justify-center">
+                                  <span className="text-sm">{recPriorityIcon}</span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  {rec.rational && (
+                                    <span className="text-xs font-bold text-purple-600">
+                                      {rec.rational}
+                                    </span>
+                                  )}
+                                  <span className="text-xs text-gray-700 ml-1">
+                                    {rec.action_text}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 {/* Fixed AI Chat Button - positioned at bottom-right */}
                 <button 
                   onClick={() => handleAIChat(card)}
-                  className="absolute bottom-2 right-2 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-full text-xs font-medium transition-colors shadow-sm hover:shadow-md"
+                  className="absolute bottom-2 right-2 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-full text-xs font-medium transition-colors shadow-sm hover:shadow-md z-10"
                 >
                   AI Chat
                 </button>
               </div>
             );
         })}
+        {/* Empty placeholder slots to maintain fixed grid size */}
+        {Array.from({ length: emptySlots }).map((_, index) => (
+          <div key={`empty-${index}`} className="bg-white rounded-lg shadow-lg border-l-4 border-gray-200 min-h-[221px] opacity-0 pointer-events-none" aria-hidden="true">
+          </div>
+        ))}
       </div>
       
       {/* Detail Modal */}
