@@ -67,7 +67,7 @@ const DaysLeftCard = ({ daysLeft, daysInSprint, tooltip, className = "" }: {
   const progress = calculateProgress();
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm p-[10.8px] flex flex-col items-center text-center w-[80%] max-w-[80%] mx-auto relative group lg:-mx-[2.5px] ${className}`}>
+    <div className={`bg-white rounded-lg shadow-sm p-[10.8px] flex flex-col items-center text-center w-full lg:w-[80%] lg:max-w-[80%] lg:mx-auto relative group lg:-mx-[5px] ${className}`}>
       {/* Icon */}
       <div className="w-[28.8px] h-[28.8px] mb-2 flex items-center justify-center text-lg">
         📅
@@ -120,7 +120,7 @@ const MetricCard = ({ icon, value, label, tooltip, className = "", isLeftmost = 
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm p-[10.8px] flex flex-col items-center text-center w-[80%] max-w-[80%] mx-auto relative group lg:-mx-[2.5px] ${className}`}>
+    <div className={`bg-white rounded-lg shadow-sm p-[10.8px] flex flex-col items-center text-center w-full lg:w-[80%] lg:max-w-[80%] lg:mx-auto relative group lg:-mx-[5px] ${className}`}>
       <div className="w-[28.8px] h-[28.8px] mb-2 flex items-center justify-center text-lg">
         {icon}
       </div>
@@ -144,8 +144,8 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
 
   if (loading) {
     return (
-      <div className="pl-1 pr-0 pt-3">
-      <h3 className="text-lg font-semibold mb-1 pl-2">Team Metrics</h3>
+      <div className="px-3 lg:pl-1 lg:pr-0 pt-3">
+      <h3 className="text-lg font-semibold mb-1 lg:pl-2">Team Metrics</h3>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 lg:gap-1">
         {[...Array(6)].map((_, i) => (
           <div key={i} className="bg-white rounded-lg shadow-sm p-[10.8px] animate-pulse">
@@ -161,8 +161,8 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
 
   if (error) {
     return (
-      <div className="pl-1 pr-0 pt-3">
-        <h3 className="text-lg font-semibold mb-1 pl-2">Team Metrics</h3>
+      <div className="px-3 lg:pl-1 lg:pr-0 pt-3">
+        <h3 className="text-lg font-semibold mb-1 lg:pl-2">Team Metrics</h3>
         <div className="text-center py-4">
           <div className="text-red-500 text-2xl mb-2">⚠️</div>
           <p className="text-xs text-gray-600">Error loading metrics</p>
@@ -172,8 +172,8 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
   }
 
   return (
-    <div className="pl-1 pr-0 pt-3">
-      <h3 className="text-lg font-semibold mb-1 pl-2">Team Metrics</h3>
+    <div className="px-3 lg:pl-1 lg:pr-0 pt-3">
+      <h3 className="text-lg font-semibold mb-1 lg:pl-2">Team Metrics</h3>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 lg:gap-1">
         {/* Avg Velocity */}
         <MetricCard
