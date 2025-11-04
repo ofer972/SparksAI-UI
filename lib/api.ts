@@ -16,7 +16,10 @@ import {
   PIPredictabilityResponse,
   PIPredictabilityData,
   ScopeChangesResponse,
-  ScopeChangesDataPoint
+  ScopeChangesDataPoint,
+  InsightTypesResponse,
+  InsightType,
+  InsightCategoriesResponse
 } from './config';
 import { getAuthHeaders, refreshAccessToken, clearTokens } from './auth';
 
@@ -1003,6 +1006,132 @@ export class ApiService {
     
     const text = await response.text();
     throw new Error(`Failed to update settings: ${response.status} ${response.statusText}${text ? ` - ${text}` : ''}`);
+  }
+
+  // Insight Types API
+  async getInsightTypes(): Promise<InsightTypesResponse> {
+    const url = buildBackendUrl(API_CONFIG.endpoints.insightTypes.get);
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch insight types: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    
+    // Handle array response directly
+    if (Array.isArray(result)) {
+      return {
+        insight_types: result,
+        count: result.length,
+      };
+    }
+    
+    // Support wrapped response format
+    if (result.success && result.data) {
+      // Check if data is an array
+      if (Array.isArray(result.data)) {
+        return {
+          insight_types: result.data,
+          count: result.data.length,
+        };
+      }
+      // If data has insight_types property
+      return result.data;
+    }
+    
+    // If response is direct object with insight_types
+    if (result.insight_types) {
+      return result;
+    }
+    
+    // Fallback: assume it's an array
+    return {
+      insight_types: Array.isArray(result) ? result : [],
+      count: Array.isArray(result) ? result.length : 0,
+    };
+  }
+
+  async getInsightCategories(): Promise<InsightCategoriesResponse> {
+    const url = buildBackendUrl(API_CONFIG.endpoints.insightTypes.getCategories);
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch insight categories: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    
+    // Handle wrapped response format: { success: true, data: { categories: [...], count: N } }
+    if (result.success && result.data) {
+      if (result.data.categories && Array.isArray(result.data.categories)) {
+        return {
+          categories: result.data.categories,
+          count: result.data.count || result.data.categories.length,
+        };
+      }
+    }
+    
+    // Handle direct array response
+    if (Array.isArray(result)) {
+      return {
+        categories: result,
+        count: result.length,
+      };
+    }
+    
+    // Fallback
+    return {
+      categories: [],
+      count: 0,
+    };
+  }
+
+  async updateInsightType(id: number, data: {
+    insight_type?: string;
+    insight_description?: string;
+    insight_categories?: string[];
+    active?: boolean;
+  }): Promise<InsightType> {
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.insightTypes.update)}/${id}`;
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorText = await response.text();
+        if (errorText) {
+          console.error('Update insight type API error:', response.status, errorText);
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.message || errorJson.error || errorMessage;
+          } catch {
+            if (errorText.length < 200) {
+              errorMessage = errorText;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error reading error response:', e);
+      }
+      throw new Error(`Failed to update insight type: ${errorMessage}`);
+    }
+
+    const result: ApiResponse<InsightType> = await response.json();
+    
+    // Support both wrapped and direct response formats
+    if (result.success && result.data) {
+      return result.data;
+    }
+    
+    return result as unknown as InsightType;
   }
 
   // Users API

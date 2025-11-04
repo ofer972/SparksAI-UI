@@ -11,7 +11,6 @@ import Recommendations from '@/components/Recommendations';
 import TeamMetrics from '@/components/TeamMetrics';
 import PIAICards from '@/components/PIAICards';
 import PIRecommendations from '@/components/PIRecommendations';
-import ApiTest from '@/components/ApiTest';
 import TeamDashboard from '@/components/TeamDashboard';
 import SparksAILogo from '@/components/SparksAILogo';
 import PIPredictability from '@/components/PIPredictability';
@@ -118,11 +117,10 @@ export default function Home() {
     { id: 'pi-quarter', label: 'PI AI Insights', icon: '🕐' },
     { id: 'pi-dashboard', label: 'PI Dashboard', icon: '📈' },
     { id: 'prompts', label: 'Prompts', icon: '🧠' },
-    { id: 'settings', label: 'Settings', icon: '⚙️' },
+    { id: 'settings', label: 'System Settings', icon: '⚙️' },
     { id: 'general-data', label: 'View General Data', icon: '📋' },
     { id: 'create-agent-job', label: 'Create Agent Job', icon: '➕' },
     { id: 'upload-transcripts', label: 'Upload Transcripts', icon: '📤' },
-    { id: 'api-test', label: 'API Test', icon: '🔧' },
     ...(isAdmin ? [{ id: 'users-admin', label: 'Users', icon: '👤' }] : []),
   ];
 
@@ -147,22 +145,18 @@ export default function Home() {
       items: [
         { id: 'prompts', label: 'Prompts', icon: '🧠' },
         { id: 'general-data', label: 'View General Data', icon: '📋' },
-        { id: 'create-agent-job', label: 'Create Agent Job', icon: '➕' },
         { id: 'upload-transcripts', label: 'Upload Transcripts', icon: '📤' },
-      ],
-    },
-    {
-      title: 'Tools',
-      items: [
-        { id: 'api-test', label: 'API Test', icon: '🔧' },
-        { id: 'settings', label: 'Settings', icon: '⚙️' },
       ],
     },
     ...(isAdmin
       ? [
           {
             title: 'Administration',
-            items: [{ id: 'users-admin', label: 'Users', icon: '👤' }],
+            items: [
+              { id: 'settings', label: 'System Settings', icon: '⚙️' },
+              { id: 'create-agent-job', label: 'Create Agent Job', icon: '➕' },
+              { id: 'users-admin', label: 'Users', icon: '👤' },
+            ],
           },
         ]
       : []),
@@ -173,7 +167,6 @@ export default function Home() {
     Insights: true,
     Dashboards: true,
     Management: true,
-    Tools: true,
     Administration: true,
   });
 
@@ -188,11 +181,10 @@ export default function Home() {
     'pi-quarter': 'SparksAI-PI AI Insights',
     'pi-dashboard': 'SparksAI-PI Dashboard',
     'prompts': 'SparksAI-Prompts',
-    'settings': 'SparksAI-Settings',
+    'settings': 'SparksAI-System Settings',
     'general-data': 'SparksAI-General Data',
     'create-agent-job': 'SparksAI-Create Agent Job',
     'upload-transcripts': 'SparksAI-Upload Transcripts',
-    'api-test': 'SparksAI-API Test',
     'users-admin': 'SparksAI-Users',
   };
 
@@ -598,15 +590,6 @@ export default function Home() {
             {/* Content */}
             <div className="flex-1 overflow-auto">
               <UploadTranscripts selectedTeam={selectedTeam} selectedPI={selectedPI} onTeamChange={setSelectedTeam} onPIChange={setSelectedPI} />
-            </div>
-          </div>
-        );
-      case 'api-test':
-        return (
-          <div className="h-full flex flex-col">
-            {/* Content */}
-            <div className="flex-1 overflow-auto">
-              <ApiTest teamName={selectedTeam} />
             </div>
           </div>
         );
@@ -1122,7 +1105,7 @@ export default function Home() {
               
               {/* Team Filter - for views that need it */}
               <div className="hidden md:block">
-                {(activeNavItem === 'team-ai-insights' || activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'api-test' || activeNavItem === 'upload-transcripts') && (
+                {(activeNavItem === 'team-ai-insights' || activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (
                   <TeamFilter 
                     selectedTeam={selectedTeam}
                     onTeamChange={setSelectedTeam}
@@ -1200,7 +1183,7 @@ export default function Home() {
         <div className="md:hidden border-t border-gray-200 px-3 py-2 space-y-2 relative z-10">
           {/* Filters */}
           <div className="flex flex-col gap-2">
-            {(activeNavItem === 'team-ai-insights' || activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'api-test' || activeNavItem === 'upload-transcripts') && (
+            {(activeNavItem === 'team-ai-insights' || activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (
               <TeamFilter 
                 selectedTeam={selectedTeam}
                 onTeamChange={setSelectedTeam}

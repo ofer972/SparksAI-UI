@@ -81,6 +81,13 @@ export const API_CONFIG = {
       batch: '/settings/batch',
     },
 
+    // Insight Types endpoints
+    insightTypes: {
+      get: '/insight-types',
+      update: '/insight-types',
+      getCategories: '/insight-types/categories',
+    },
+
     // Users endpoints
     users: {
       getCurrentUser: '/users/get-current-user',
@@ -306,4 +313,26 @@ export interface ScopeChangesResponse {
   scope_data: ScopeChangesDataPoint[];
   count: number;
   quarters: string[];
+}
+
+export interface InsightType {
+  id: number;
+  insight_type: string;
+  insight_description: string;
+  insight_category?: string; // Legacy field, may not be present
+  insight_categories?: string[]; // Array of category names this insight type uses
+  categories?: string[]; // Alias for insight_categories for backward compatibility
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InsightTypesResponse {
+  insight_types: InsightType[];
+  count: number;
+}
+
+export interface InsightCategoriesResponse {
+  categories: string[];
+  count: number;
 }
