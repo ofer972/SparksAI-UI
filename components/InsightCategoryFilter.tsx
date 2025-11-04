@@ -124,28 +124,28 @@ export default function InsightCategoryFilter({
     <div className={`relative z-10 ${className}`} ref={dropdownRef}>
       <div className="flex items-center space-x-1">
         <span className="text-sm font-medium text-gray-700">Categories:</span>
-        <button
-          onClick={handleToggleDropdown}
-          className="border border-gray-300 rounded px-2 py-1 text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center space-x-1 min-w-[300px] justify-between"
-        >
-          <span className="truncate">
-            {selectedCategories.length === 0 
-              ? 'All' 
-              : selectedCategories.join(', ')}
-          </span>
-          <svg 
-            className={`w-4 h-4 transition-transform flex-shrink-0 ${isOpen ? 'transform rotate-180' : ''}`}
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
+        <div className="relative">
+          <button
+            onClick={handleToggleDropdown}
+            className="border border-gray-300 rounded px-2 py-1 text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center space-x-1 min-w-[300px] justify-between"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-      </div>
+            <span className="truncate">
+              {selectedCategories.length === 0 
+                ? 'All' 
+                : selectedCategories.join(', ')}
+            </span>
+            <svg 
+              className={`w-4 h-4 transition-transform flex-shrink-0 ${isOpen ? 'transform rotate-180' : ''}`}
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
 
-      {isOpen && (
-        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 min-w-[300px] max-h-60 overflow-y-auto">
+          {isOpen && (
+            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 min-w-[300px] max-h-60 overflow-y-auto">
           <div className="p-2">
             {categories.length === 0 ? (
               <div className="text-sm text-gray-500 py-2">No Team categories available</div>
@@ -167,7 +167,9 @@ export default function InsightCategoryFilter({
             )}
           </div>
         </div>
-      )}
+          )}
+        </div>
+      </div>
     </div>
   );
 }

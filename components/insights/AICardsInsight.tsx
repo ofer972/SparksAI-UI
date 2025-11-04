@@ -230,6 +230,20 @@ export default function AICardsInsight({
   const [selectedInsightId, setSelectedInsightId] = useState<number | null>(null);
   const [selectedTeamName, setSelectedTeamName] = useState<string>('');
 
+  // State for expanded recommendations per card (cardId -> boolean)
+  const [expandedRecommendations, setExpandedRecommendations] = useState<Record<number, boolean>>({});
+
+  const toggleRecommendation = (cardId: number) => {
+    setExpandedRecommendations(prev => ({
+      ...prev,
+      [cardId]: !prev[cardId]
+    }));
+  };
+
+  const isRecommendationExpanded = (cardId: number) => {
+    return expandedRecommendations[cardId] || false;
+  };
+
   const handleAIChat = (card: AICard) => {
     setSelectedInsightId(card.id);
     // For PI insights, use card.team_name if available, otherwise empty
@@ -322,8 +336,12 @@ export default function AICardsInsight({
             const colors = getPriorityColor(card.priority);
             const priorityIcon = getPriorityIcon(card.priority);
             
+            // Calculate card height: PI insights are 25% smaller than Team insights, then 5% taller
+            const isPIInsight = chatType === "PI_insights";
+            const cardMinHeight = isPIInsight ? 'min-h-[174px]' : 'min-h-[221px]';
+            
             return (
-              <div key={card.id} className={`bg-white rounded-lg shadow-lg pt-1 pb-4 px-4 border-l-4 border ${colors.border} ${colors.frame} min-h-[221px] relative overflow-hidden flex flex-col`}>
+              <div key={card.id} className={`bg-white rounded-lg shadow-lg pt-1 pb-4 px-4 border-l-4 border ${colors.border} ${colors.frame} ${cardMinHeight} relative overflow-hidden flex flex-col`}>
                 <div className="flex items-start justify-between mb-1">
                   <div className="flex items-center space-x-2">
                     <div className="relative group">
@@ -563,60 +581,87 @@ export default function AICardsInsight({
                 </div>
                 
                 {/* Recommendations Section - inside each card */}
-                {card.recommendations && card.recommendations.length > 0 && (
-                  <div className="mt-2 border-t border-gray-200 pt-1.5 flex-shrink-0">
-                    <h4 className="text-xs font-semibold text-gray-700 mb-1">Recommendations</h4>
-                    <div className="border border-gray-300 rounded overflow-hidden" style={{ width: '90%', maxWidth: '90%', height: '60px' }}>
-                      <style dangerouslySetInnerHTML={{__html: `
-                        .recommendations-table-scroll::-webkit-scrollbar {
-                          width: 8px;
-                          display: block;
-                        }
-                        .recommendations-table-scroll::-webkit-scrollbar-track {
-                          background: #f7fafc;
-                          border-radius: 4px;
-                        }
-                        .recommendations-table-scroll::-webkit-scrollbar-thumb {
-                          background: #94a3b8;
-                          border-radius: 4px;
-                        }
-                        .recommendations-table-scroll::-webkit-scrollbar-thumb:hover {
-                          background: #64748b;
-                        }
-                      `}} />
-                      <div className="h-full overflow-y-scroll recommendations-table-scroll" style={{ scrollbarWidth: 'thin', scrollbarColor: '#94a3b8 #f7fafc' }}>
-                        <div className="space-y-0">
-                          {card.recommendations.map((rec: Recommendation) => {
-                            const recPriorityIcon = getPriorityIcon(rec.priority);
-                            
-                            return (
-                              <div key={rec.id} className="flex items-start border-b border-gray-200 py-1 px-2 last:border-b-0">
-                                <div className="flex-shrink-0 w-8 flex items-center justify-center">
-                                  <span className="text-sm">{recPriorityIcon}</span>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  {rec.rational && (
-                                    <span className="text-xs font-bold text-purple-600">
-                                      {rec.rational}
+                {card.recommendations && card.recommendations.length > 0 && (() => {
+                  const isExpanded = isRecommendationExpanded(card.id);
+                  const recommendationsToShow = isExpanded ? card.recommendations : card.recommendations.slice(0, 1);
+                  
+                  return (
+                    <div className="mt-1 pt-0.5 flex-shrink-0">
+                      <div className="flex items-center mb-1">
+                        <button
+                          onClick={() => toggleRecommendation(card.id)}
+                          className="flex items-center hover:opacity-70 transition-opacity"
+                        >
+                          <span className={`text-sm transition-transform duration-200 inline-block mr-1.5 ${isExpanded ? 'rotate-180' : ''}`}>
+                            ⯆
+                          </span>
+                        </button>
+                        <h4 className="text-xs font-semibold text-gray-700">Recommendations</h4>
+                      </div>
+                      <div className="border border-gray-300 rounded overflow-hidden" style={{ width: '90%', maxWidth: '90%', height: isExpanded ? 'auto' : '32px', maxHeight: isExpanded ? '200px' : '32px' }}>
+                        <style dangerouslySetInnerHTML={{__html: `
+                          .recommendations-table-scroll {
+                            overflow-y: auto;
+                            scrollbar-width: none;
+                            -ms-overflow-style: none;
+                          }
+                          .recommendations-table-scroll::-webkit-scrollbar {
+                            display: none;
+                          }
+                          .recommendations-table-scroll:hover {
+                            scrollbar-width: thin;
+                            scrollbar-color: #94a3b8 #f7fafc;
+                          }
+                          .recommendations-table-scroll:hover::-webkit-scrollbar {
+                            display: block;
+                            width: 8px;
+                          }
+                          .recommendations-table-scroll:hover::-webkit-scrollbar-track {
+                            background: #f7fafc;
+                            border-radius: 4px;
+                          }
+                          .recommendations-table-scroll:hover::-webkit-scrollbar-thumb {
+                            background: #94a3b8;
+                            border-radius: 4px;
+                          }
+                          .recommendations-table-scroll:hover::-webkit-scrollbar-thumb:hover {
+                            background: #64748b;
+                          }
+                        `}} />
+                        <div className={`recommendations-table-scroll ${isExpanded ? 'max-h-[200px]' : 'h-full'}`} style={{ overflowY: 'auto' }}>
+                          <div className="space-y-0">
+                            {recommendationsToShow.map((rec: Recommendation) => {
+                              const recPriorityIcon = getPriorityIcon(rec.priority);
+                              return (
+                                <div key={rec.id} className={`flex items-start border-b border-gray-200 ${isExpanded ? 'py-1 px-2' : 'py-0.5 px-2'} last:border-b-0`}>
+                                  <div className="flex-shrink-0 w-6 flex items-center justify-center mr-2" style={{ paddingTop: '3px' }}>
+                                    <span className="text-xs">{recPriorityIcon}</span>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    {rec.rational && (
+                                      <span className="text-xs font-bold text-purple-600">
+                                        {rec.rational}
+                                      </span>
+                                    )}
+                                    {rec.rational && rec.action_text && <span className="mx-1 text-gray-400 text-xs">-</span>}
+                                    <span className={`text-xs text-gray-600 ${!isExpanded ? 'truncate' : ''}`}>
+                                      {rec.action_text}
                                     </span>
-                                  )}
-                                  <span className="text-xs text-gray-700 ml-1">
-                                    {rec.action_text}
-                                  </span>
+                                  </div>
                                 </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
                 
                 {/* Fixed AI Chat Button - positioned at bottom-right */}
                 <button 
                   onClick={() => handleAIChat(card)}
-                  className="absolute bottom-2 right-2 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-full text-xs font-medium transition-colors shadow-sm hover:shadow-md z-10"
+                  className="absolute bottom-4 right-2 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-full text-xs font-medium transition-colors shadow-sm hover:shadow-md z-10"
                 >
                   AI Chat
                 </button>
