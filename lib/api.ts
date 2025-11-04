@@ -1062,21 +1062,29 @@ export class ApiService {
     
     const result = await response.json();
     
-    // Handle wrapped response format: { success: true, data: { categories: [...], count: N } }
+    // Handle wrapped response format: { success: true, data: { categories: [{name: string, class: string}], count: N } }
     if (result.success && result.data) {
       if (result.data.categories && Array.isArray(result.data.categories)) {
+        // Extract name from each category object (ignore class for now)
+        const categoryNames = result.data.categories.map((cat: { name: string; class?: string }) => 
+          typeof cat === 'string' ? cat : cat.name
+        );
         return {
-          categories: result.data.categories,
-          count: result.data.count || result.data.categories.length,
+          categories: categoryNames,
+          count: result.data.count || categoryNames.length,
         };
       }
     }
     
-    // Handle direct array response
+    // Handle direct array response (legacy format - array of strings)
     if (Array.isArray(result)) {
+      // Check if it's an array of objects or strings
+      const categoryNames = result.map((cat: string | { name: string; class?: string }) => 
+        typeof cat === 'string' ? cat : cat.name
+      );
       return {
-        categories: result,
-        count: result.length,
+        categories: categoryNames,
+        count: categoryNames.length,
       };
     }
     

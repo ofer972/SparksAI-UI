@@ -37,7 +37,7 @@ export default function SettingsScreen() {
   const [insightTypesError, setInsightTypesError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedInsightType, setSelectedInsightType] = useState<InsightType | null>(null);
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'id', desc: false }]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
