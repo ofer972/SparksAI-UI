@@ -97,7 +97,7 @@ export default function PIPredictability({ selectedPI, selectedTeam, isLoading =
       return {
         key,
         label,
-        align: isLeftAlign ? 'left' : 'center',
+        align: (isLeftAlign ? 'left' : 'center') as 'left' | 'center' | 'right',
         sortable: true,
         order, // Get order from preferred list (used only for sorting columns array)
         render: (value: any, row: PIPredictabilityData) => {

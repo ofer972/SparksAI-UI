@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import { EntityConfig, ColumnConfig } from '@/lib/entityConfig';
 
 export interface Column<T> {
   key: string;
@@ -18,11 +19,18 @@ export interface SortConfig {
   direction: 'asc' | 'desc';
 }
 
+// Legacy sort config type for backward compatibility
+export type LegacySortConfig<T> = {
+  key: keyof T | null;
+  direction: 'asc' | 'desc';
+};
+
 export interface DataTableProps<T> {
+  // New interface props
   data: T[];
-  columns: Column<T>[];
-  sortConfig?: SortConfig;
-  onSort?: (key: string) => void;
+  columns?: Column<T>[];
+  sortConfig?: SortConfig | LegacySortConfig<T>;
+  onSort?: ((key: string) => void) | ((key: keyof T) => void);
   filterText?: string;
   onFilterChange?: (text: string) => void;
   filterPlaceholder?: string;
@@ -34,12 +42,22 @@ export interface DataTableProps<T> {
   rowKey?: (row: T, index: number) => string | number;
   striped?: boolean;
   hoverable?: boolean;
+  
+  // Legacy interface props (for backward compatibility)
+  config?: EntityConfig<T>;
+  onViewItem?: (item: T) => void;
+  onDeleteItem?: (item: T) => void;
+  onEditItem?: (item: T) => void;
+  onCreateItem?: () => void;
+  onRefresh?: () => void;
+  allowEdit?: boolean;
+  allowCreate?: boolean;
 }
 
-export default function DataTable<T extends Record<string, any>>({
+function DataTable<T extends Record<string, any>>({
   data,
-  columns,
-  sortConfig,
+  columns: providedColumns,
+  sortConfig: providedSortConfig,
   onSort,
   filterText = '',
   onFilterChange,
@@ -52,7 +70,72 @@ export default function DataTable<T extends Record<string, any>>({
   rowKey,
   striped = true,
   hoverable = true,
+  // Legacy props
+  config,
+  onViewItem,
+  onDeleteItem,
+  onEditItem,
+  onCreateItem,
+  onRefresh,
+  allowEdit,
+  allowCreate,
 }: DataTableProps<T>) {
+  // Convert EntityConfig columns to Column format if config is provided
+  const columns: Column<T>[] = useMemo(() => {
+    if (providedColumns) {
+      return providedColumns;
+    }
+    
+    if (config?.columns) {
+      return config.columns.map((col: ColumnConfig<T>) => ({
+        key: String(col.key),
+        label: col.label,
+        align: col.align || 'left',
+        sortable: col.sortable !== false,
+        width: col.width,
+        render: col.render ? (value: any, row: T) => col.render!(value, row) : undefined,
+      }));
+    }
+    
+    // Auto-discover columns from data
+    if (data.length === 0) return [];
+    
+    const firstRow = data[0];
+    return Object.keys(firstRow).map(key => ({
+      key,
+      label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      align: 'left' as const,
+      sortable: true,
+    }));
+  }, [providedColumns, config, data]);
+
+  // Add actions column if legacy props are provided
+  const finalColumns = useMemo(() => {
+    if (onViewItem || onDeleteItem || onEditItem) {
+      return [...columns, {
+        key: '__actions__',
+        label: 'Actions',
+        align: 'right' as const,
+        sortable: false,
+      }];
+    }
+    return columns;
+  }, [columns, onViewItem, onDeleteItem, onEditItem]);
+
+  // Handle sortConfig conversion if using legacy interface
+  const sortConfig: SortConfig | undefined = useMemo(() => {
+    if (providedSortConfig) {
+      return {
+        key: providedSortConfig.key === null 
+          ? null 
+          : typeof providedSortConfig.key === 'string' 
+            ? providedSortConfig.key 
+            : String(providedSortConfig.key),
+        direction: providedSortConfig.direction,
+      };
+    }
+    return undefined;
+  }, [providedSortConfig]);
   const filteredData = useMemo(() => {
     if (!filterText) return data;
     
@@ -183,7 +266,7 @@ export default function DataTable<T extends Record<string, any>>({
 
   const SkeletonRow = () => (
     <tr className="border-b border-gray-200">
-      {columns.map((column, index) => (
+      {finalColumns.map((column, index) => (
         <td key={index} className="py-4 px-4">
           <div className={`h-4 bg-gray-200 rounded animate-pulse ${
             column.align === 'left' ? 'w-3/4' : column.align === 'right' ? 'ml-auto w-1/2' : 'w-16 mx-auto'
@@ -195,31 +278,44 @@ export default function DataTable<T extends Record<string, any>>({
 
   return (
     <div className={`bg-white rounded-lg shadow-sm border border-gray-200 ${className}`}>
-      {/* Filter Input */}
-      {onFilterChange && (
-        <div className="p-4 border-b border-gray-200">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder={filterPlaceholder}
-              value={filterText}
-              onChange={(e) => onFilterChange(e.target.value)}
-              className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            />
-            <svg
-              className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+      {/* Header with Create Button and Filter */}
+      {(onCreateItem || onFilterChange) && (
+        <div className="p-4 border-b border-gray-200 flex items-center gap-3">
+          {onCreateItem && allowCreate && (
+            <button
+              onClick={onCreateItem}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-2"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Create
+            </button>
+          )}
+          {onFilterChange && (
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder={filterPlaceholder}
+                value={filterText}
+                onChange={(e) => onFilterChange(e.target.value)}
+                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
-            </svg>
-          </div>
+              <svg
+                className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+          )}
         </div>
       )}
 
@@ -228,7 +324,7 @@ export default function DataTable<T extends Record<string, any>>({
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
             <tr>
-              {columns.map((column) => (
+              {finalColumns.map((column) => (
                 <th
                   key={column.key}
                   className={`px-4 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider ${
@@ -237,7 +333,12 @@ export default function DataTable<T extends Record<string, any>>({
                     'text-center'
                   } ${column.sortable !== false && onSort ? 'cursor-pointer hover:bg-gray-100 transition-colors group' : ''}`}
                   style={{ width: column.width }}
-                  onClick={() => column.sortable !== false && onSort ? onSort(column.key) : undefined}
+                  onClick={() => {
+                    if (column.sortable !== false && onSort && column.key !== '__actions__') {
+                      // Call onSort - it accepts both string and keyof T
+                      (onSort as (key: string) => void)(column.key);
+                    }
+                  }}
                 >
                   <div className={`flex items-center gap-2 ${
                     column.align === 'right' ? 'justify-end' :
@@ -245,7 +346,7 @@ export default function DataTable<T extends Record<string, any>>({
                     'justify-center'
                   }`}>
                     <span>{column.label}</span>
-                    {column.sortable !== false && onSort && (
+                    {column.sortable !== false && onSort && column.key !== '__actions__' && (
                       <SortIcon columnKey={column.key} />
                     )}
                   </div>
@@ -263,7 +364,7 @@ export default function DataTable<T extends Record<string, any>>({
               </>
             ) : error ? (
               <tr>
-                <td colSpan={columns.length} className="py-8 text-center">
+                <td colSpan={finalColumns.length} className="py-8 text-center">
                   <div className="flex flex-col items-center justify-center">
                     <svg className="w-12 h-12 text-red-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -274,7 +375,7 @@ export default function DataTable<T extends Record<string, any>>({
               </tr>
             ) : sortedData.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="py-8 text-center">
+                <td colSpan={finalColumns.length} className="py-8 text-center">
                   <div className="flex flex-col items-center justify-center">
                     <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
@@ -291,7 +392,44 @@ export default function DataTable<T extends Record<string, any>>({
                     striped ? (index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50') : 'bg-white'
                   } ${hoverable ? 'hover:bg-blue-50/50' : ''}`}
                 >
-                  {columns.map((column) => {
+                  {finalColumns.map((column) => {
+                    // Handle actions column
+                    if (column.key === '__actions__') {
+                      return (
+                        <td
+                          key={column.key}
+                          className="px-4 py-3 text-sm text-gray-900 text-right"
+                        >
+                          <div className="flex items-center justify-end gap-2">
+                            {onViewItem && (
+                              <button
+                                onClick={() => onViewItem(row)}
+                                className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                              >
+                                View
+                              </button>
+                            )}
+                            {onEditItem && (
+                              <button
+                                onClick={() => onEditItem(row)}
+                                className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                              >
+                                Edit
+                              </button>
+                            )}
+                            {onDeleteItem && (
+                              <button
+                                onClick={() => onDeleteItem(row)}
+                                className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      );
+                    }
+
                     const value = row[column.key];
                     const cellContent = column.render
                       ? column.render(value, row, index)
@@ -346,3 +484,7 @@ export default function DataTable<T extends Record<string, any>>({
     </div>
   );
 }
+
+// Export as both default and named for compatibility
+export default DataTable;
+export { DataTable };
