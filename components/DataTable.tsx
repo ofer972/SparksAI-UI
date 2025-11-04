@@ -1,86 +1,93 @@
-import React from 'react';
-import { ColumnConfig, EntityConfig } from '@/lib/entityConfig';
+'use client';
 
-interface DataTableProps<T> {
-  config: EntityConfig<T>;
-  data: T[];
-  loading: boolean;
-  error: string | null;
-  sortConfig: { key: keyof T; direction: 'asc' | 'desc' };
-  filterText: string;
-  onSort: (key: keyof T) => void;
-  onFilterChange: (text: string) => void;
-  onViewItem: (item: T) => void;
-  onDeleteItem: (item: T) => void;
-  onEditItem?: (item: T) => void;
-  onCreateItem?: () => void;
-  onRefresh: () => void;
-  allowEdit?: boolean;
-  allowCreate?: boolean;
+import React, { useMemo, useState } from 'react';
+
+export interface Column<T> {
+  key: string;
+  label: string;
+  align?: 'left' | 'center' | 'right';
+  sortable?: boolean;
+  render?: (value: any, row: T, index: number) => React.ReactNode;
+  width?: string;
+  expandable?: boolean;
+  maxLength?: number; // Character limit before showing "read more"
 }
 
-export function DataTable<T extends Record<string, any>>({
-  config,
+export interface SortConfig {
+  key: string | null;
+  direction: 'asc' | 'desc';
+}
+
+export interface DataTableProps<T> {
+  data: T[];
+  columns: Column<T>[];
+  sortConfig?: SortConfig;
+  onSort?: (key: string) => void;
+  filterText?: string;
+  onFilterChange?: (text: string) => void;
+  filterPlaceholder?: string;
+  loading?: boolean;
+  error?: string | null;
+  emptyMessage?: string;
+  maxHeight?: string;
+  className?: string;
+  rowKey?: (row: T, index: number) => string | number;
+  striped?: boolean;
+  hoverable?: boolean;
+}
+
+export default function DataTable<T extends Record<string, any>>({
   data,
-  loading,
-  error,
+  columns,
   sortConfig,
-  filterText,
   onSort,
+  filterText = '',
   onFilterChange,
-  onViewItem,
-  onDeleteItem,
-  onEditItem,
-  onCreateItem,
-  onRefresh,
-  allowEdit = false,
-  allowCreate = false,
+  filterPlaceholder = 'Filter data...',
+  loading = false,
+  error = null,
+  emptyMessage = 'No data found.',
+  maxHeight = '600px',
+  className = '',
+  rowKey,
+  striped = true,
+  hoverable = true,
 }: DataTableProps<T>) {
-  
-  // Simple auto-discovery of columns
-  const autoDiscoverColumns = (data: T[]): ColumnConfig<T>[] => {
-    if (!data || data.length === 0) return [];
+  const filteredData = useMemo(() => {
+    if (!filterText) return data;
     
-    return Object.keys(data[0]).map(key => ({
-      key: key as keyof T,
-      label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      sortable: true,
-      searchable: true,
-      width: '120px', // Default width
-      align: 'left',  // Default alignment
-    }));
-  };
+    return data.filter((row) =>
+      Object.values(row).some((value) =>
+        typeof value === 'string' && value.toLowerCase().includes(filterText.toLowerCase()) ||
+        typeof value === 'number' && value.toString().includes(filterText)
+      )
+    );
+  }, [data, filterText]);
 
-  // Get final columns (config overrides or auto-discovered)
-  const finalColumns = config.columns || autoDiscoverColumns(data);
-  
-  // Apply column overrides if provided
-  if (config.columnOverrides) {
-    finalColumns.forEach(col => {
-      const override = config.columnOverrides![col.key];
-      if (override) {
-        Object.assign(col, override);
-      }
+  const sortedData = useMemo(() => {
+    if (!sortConfig?.key || !onSort) return filteredData;
+    
+    return [...filteredData].sort((a, b) => {
+      const aValue = a[sortConfig.key!];
+      const bValue = b[sortConfig.key!];
+      
+      if (aValue === null || aValue === undefined) return 1;
+      if (bValue === null || bValue === undefined) return -1;
+      
+      if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
     });
-  }
+  }, [filteredData, sortConfig, onSort]);
 
-  // Filter out hidden fields
-  const visibleColumns = finalColumns.filter(col => 
-    !config.hiddenFields?.includes(col.key)
-  );
-  
-  const SortIcon = ({ columnKey }: { columnKey: keyof T }) => {
-    // Show sort indicator for the current sort key or primary key by default
-    const isActive = sortConfig.key === columnKey || (sortConfig.key === config.primaryKey && columnKey === config.primaryKey);
-    
-    if (!isActive) {
+  const SortIcon = ({ columnKey }: { columnKey: string }) => {
+    if (!sortConfig || sortConfig.key !== columnKey) {
       return (
-        <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
         </svg>
       );
     }
-    
     return sortConfig.direction === 'asc' ? (
       <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -92,124 +99,161 @@ export function DataTable<T extends Record<string, any>>({
     );
   };
 
+  const ExpandableCell = ({ content, maxLength = 100 }: { 
+    content: React.ReactNode; 
+    maxLength?: number;
+  }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    
+    // Convert ReactNode to string for length checking
+    let contentString = '';
+    let isStringContent = false;
+    
+    if (typeof content === 'string') {
+      contentString = content;
+      isStringContent = true;
+    } else if (React.isValidElement(content)) {
+      // For React elements, try to extract text content
+      const textContent = (content as any)?.props?.children;
+      if (typeof textContent === 'string') {
+        contentString = textContent;
+        isStringContent = true;
+      }
+    } else {
+      contentString = String(content);
+      isStringContent = true;
+    }
+    
+    const needsTruncation = contentString.length > maxLength;
+    
+    if (!needsTruncation) {
+      return <>{content}</>;
+    }
+    
+    return (
+      <div className="relative">
+        {isExpanded ? (
+          <div className="whitespace-pre-wrap break-words">
+            {isStringContent ? contentString : content}
+          </div>
+        ) : (
+          <div 
+            className="whitespace-pre-wrap break-words line-clamp-1 overflow-hidden"
+            style={{ maxHeight: '1.5rem' }}
+          >
+            {isStringContent ? (
+              <>
+                {contentString.substring(0, maxLength)}
+                {contentString.length > maxLength && (
+                  <span className="opacity-70">...</span>
+                )}
+              </>
+            ) : (
+              content
+            )}
+          </div>
+        )}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsExpanded(!isExpanded);
+          }}
+          className="mt-1 text-blue-600 hover:text-blue-800 text-xs font-medium flex items-center gap-1 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 rounded"
+          aria-label={isExpanded ? 'Collapse content' : 'Expand content'}
+        >
+          {isExpanded ? (
+            <>
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+              </svg>
+              Read less
+            </>
+          ) : (
+            <>
+              Read more
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </>
+          )}
+        </button>
+      </div>
+    );
+  };
+
   const SkeletonRow = () => (
     <tr className="border-b border-gray-200">
-      {[...Array(visibleColumns.length + 1)].map((_, index) => (
-        <td key={index} className={`py-2 px-3 ${
-          index < visibleColumns.length ? 'border-r border-gray-200' : 'border-l border-gray-200'
-        }`}>
-          <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+      {columns.map((column, index) => (
+        <td key={index} className="py-4 px-4">
+          <div className={`h-4 bg-gray-200 rounded animate-pulse ${
+            column.align === 'left' ? 'w-3/4' : column.align === 'right' ? 'ml-auto w-1/2' : 'w-16 mx-auto'
+          }`}></div>
         </td>
       ))}
     </tr>
   );
 
-  const formatCellValue = (value: any, key: keyof T, item: T) => {
-    if (config.formatCellValue) {
-      return config.formatCellValue(value, key, item);
-    }
-    
-    if (value === null || value === undefined) return '-';
-    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-    if (typeof value === 'object') return JSON.stringify(value);
-    
-    if (typeof value === 'string' && value.length > 50) {
-      return value.substring(0, 50) + '...';
-    }
-    return String(value);
-  };
-
-  const getCellClassName = (column: ColumnConfig<T>, item: T) => {
-    let className = `py-2 px-3 ${
-      column.align === 'center' ? 'text-center' : 
-      column.align === 'right' ? 'text-right' : 'text-left'
-    }`;
-    
-    // Add field color if configured
-    if (config.fieldColors && config.fieldColors[String(column.key)]) {
-      className += ` ${config.fieldColors[String(column.key)](item[column.key])}`;
-    }
-    
-    // Add custom column class
-    if (column.className) {
-      className += ` ${column.className}`;
-    }
-    
-    return className;
-  };
-
   return (
-    <div className="bg-white rounded-lg shadow-sm">
-      {/* Header */}
-      <div className="px-4 py-2 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-900">{config.title}</h2>
-          <div className="flex gap-2">
-            {allowCreate && onCreateItem && (
-              <button
-                onClick={onCreateItem}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Create
-              </button>
-            )}
-            <button
-              onClick={onRefresh}
-              disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 ${className}`}>
+      {/* Filter Input */}
+      {onFilterChange && (
+        <div className="p-4 border-b border-gray-200">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder={filterPlaceholder}
+              value={filterText}
+              onChange={(e) => onFilterChange(e.target.value)}
+              className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            />
+            <svg
+              className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              {loading ? 'Refreshing...' : 'Refresh'}
-            </button>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
           </div>
         </div>
-        
-        {/* Search Filter */}
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            placeholder={`Filter ${config.title.toLowerCase()}...`}
-            value={filterText}
-            onChange={(e) => onFilterChange(e.target.value)}
-            className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
-        </div>
-      </div>
+      )}
 
-      {/* Table */}
-      <div className="overflow-x-auto max-h-[600px] overflow-y-auto px-2 border border-gray-200 rounded-md">
-        <table className="w-full text-xs border-collapse">
-          <thead>
-            <tr className="border-b-2 border-gray-300 bg-gray-50">
-              {visibleColumns.map((column, index) => (
-                <th 
-                  key={String(column.key)}
-                  className={`py-2 px-3 font-semibold text-gray-700 ${
-                    column.align === 'center' ? 'text-center' : 
-                    column.align === 'right' ? 'text-right' : 'text-left'
-                  } ${
-                    index < visibleColumns.length - 1 ? 'border-r border-gray-200' : ''
-                  }`}
-                  onClick={() => column.sortable && onSort(column.key)}
-                  style={{ cursor: column.sortable ? 'pointer' : 'default' }}
+      {/* Table Container with Sticky Header */}
+      <div className="overflow-auto" style={{ maxHeight }}>
+        <table className="w-full">
+          <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+            <tr>
+              {columns.map((column) => (
+                <th
+                  key={column.key}
+                  className={`px-4 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider ${
+                    column.align === 'left' ? 'text-left' : 
+                    column.align === 'right' ? 'text-right' : 
+                    'text-center'
+                  } ${column.sortable !== false && onSort ? 'cursor-pointer hover:bg-gray-100 transition-colors group' : ''}`}
+                  style={{ width: column.width }}
+                  onClick={() => column.sortable !== false && onSort ? onSort(column.key) : undefined}
                 >
-                  <div className={`flex items-center gap-1 ${
-                    column.align === 'center' ? 'justify-center' : ''
+                  <div className={`flex items-center gap-2 ${
+                    column.align === 'right' ? 'justify-end' :
+                    column.align === 'left' ? 'justify-start' :
+                    'justify-center'
                   }`}>
-                    {column.label}
-                    {column.sortable && <SortIcon columnKey={column.key} />}
+                    <span>{column.label}</span>
+                    {column.sortable !== false && onSort && (
+                      <SortIcon columnKey={column.key} />
+                    )}
                   </div>
                 </th>
               ))}
-              <th className="py-2 px-3 text-center text-gray-500 font-semibold border-l border-gray-200">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-white divide-y divide-gray-200">
             {loading ? (
               <>
                 <SkeletonRow />
@@ -219,67 +263,70 @@ export function DataTable<T extends Record<string, any>>({
               </>
             ) : error ? (
               <tr>
-                <td colSpan={visibleColumns.length + 1} className="py-8 text-center text-red-600">
-                  Error: {error}
-                  <div className="text-xs text-gray-500 mt-2">Check console for more details</div>
+                <td colSpan={columns.length} className="py-8 text-center">
+                  <div className="flex flex-col items-center justify-center">
+                    <svg className="w-12 h-12 text-red-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-red-600 font-medium">{error}</span>
+                  </div>
                 </td>
               </tr>
-            ) : visibleColumns.length === 0 ? (
+            ) : sortedData.length === 0 ? (
               <tr>
-                <td colSpan={10} className="py-8 text-center text-gray-500">
-                  No data available. Waiting for API response...
+                <td colSpan={columns.length} className="py-8 text-center">
+                  <div className="flex flex-col items-center justify-center">
+                    <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                    </svg>
+                    <span className="text-gray-500">{emptyMessage}</span>
+                  </div>
                 </td>
               </tr>
             ) : (
-              data.map((item, index) => (
-                <tr key={index} className={`border-b border-gray-200 ${
-                  index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
-                }`}>
-                  {visibleColumns.map((column, colIndex) => (
-                    <td 
-                      key={String(column.key)}
-                      className={getCellClassName(column, item)}
-                    >
-                      {column.render 
-                        ? column.render(item[column.key], item)
-                        : formatCellValue(item[column.key], column.key, item)
-                      }
-                    </td>
-                  ))}
-                  <td className="py-2 px-3 text-center border-l border-gray-200">
-                    <div className="flex items-center justify-center gap-2">
-                      {allowEdit && onEditItem && (
-                        <button
-                          onClick={() => onEditItem(item)}
-                          className="text-green-600 hover:text-green-800 transition-colors p-1 rounded hover:bg-green-50"
-                          title="Edit"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                      )}
-                      <button
-                        onClick={() => onViewItem(item)}
-                        className="text-blue-600 hover:text-blue-800 transition-colors p-1 rounded hover:bg-blue-50"
-                        title="View Details"
+              sortedData.map((row, index) => (
+                <tr
+                  key={rowKey ? rowKey(row, index) : index}
+                  className={`transition-colors ${
+                    striped ? (index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50') : 'bg-white'
+                  } ${hoverable ? 'hover:bg-blue-50/50' : ''}`}
+                >
+                  {columns.map((column) => {
+                    const value = row[column.key];
+                    const cellContent = column.render
+                      ? column.render(value, row, index)
+                      : value !== null && value !== undefined
+                      ? String(value)
+                      : '-';
+
+                    // Check if this column should be expandable
+                    // Check the raw value length, not the rendered content
+                    const rawValueString = typeof value === 'string' ? value : String(value || '');
+                    const isExpandable = column.expandable !== false && (
+                      column.expandable === true || 
+                      (rawValueString.length > (column.maxLength || 100))
+                    );
+
+                    return (
+                      <td
+                        key={column.key}
+                        className={`px-4 py-3 text-sm text-gray-900 ${
+                          column.align === 'left' ? 'text-left' : 
+                          column.align === 'right' ? 'text-right' : 
+                          'text-center'
+                        } ${isExpandable && column.align !== 'center' ? 'max-w-md' : ''}`}
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => onDeleteItem(item)}
-                        className="text-red-600 hover:text-red-800 transition-colors p-1 rounded hover:bg-red-50"
-                        title="Delete"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
+                        {isExpandable ? (
+                          <ExpandableCell 
+                            content={cellContent} 
+                            maxLength={column.maxLength || 100}
+                          />
+                        ) : (
+                          cellContent
+                        )}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))
             )}
@@ -287,9 +334,13 @@ export function DataTable<T extends Record<string, any>>({
         </table>
       </div>
 
-      {data.length === 0 && !loading && !error && (
-        <div className="text-center py-8 text-gray-500">
-          No {config.title.toLowerCase()} found.
+      {/* Footer with row count */}
+      {!loading && !error && sortedData.length > 0 && (
+        <div className="px-4 py-2 bg-gray-50 border-t border-gray-200">
+          <span className="text-xs text-gray-500">
+            Showing {sortedData.length} {sortedData.length === 1 ? 'row' : 'rows'}
+            {filterText && ` (filtered from ${data.length} total)`}
+          </span>
         </div>
       )}
     </div>
