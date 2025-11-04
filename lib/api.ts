@@ -35,23 +35,12 @@ const nativeFetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Resp
 let refreshPromise: Promise<boolean> | null = null;
 
 export async function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  // Detect localhost and bypass settings
-  const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
-  const bypassAuth = isLocalhost && process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true';
-  
   const doFetch = async () => {
-    const headers = bypassAuth 
-      ? (init?.headers || {}) 
-      : getAuthHeaders(init?.headers as HeadersInit);
+    const headers = getAuthHeaders(init?.headers as HeadersInit);
     return nativeFetch(input, { ...(init || {}), headers });
   };
   
   let res = await doFetch();
-  
-  // Skip token refresh logic if bypassing auth
-  if (bypassAuth) {
-    return res;
-  }
   
   // Handle both 401 and 403 - expired tokens might come as either
   if (res.status === 401 || res.status === 403) {

@@ -1,16 +1,6 @@
 // API Configuration
-// Helper to detect if we should bypass auth/gateway (localhost only)
-const shouldBypassGateway = () => {
-  if (typeof window === 'undefined') return false; // Server-side: no bypass
-  const isLocalhost = window.location.hostname === 'localhost';
-  return isLocalhost && process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true';
-};
-
-// Get base URL dynamically (handles localhost bypass)
+// Get base URL for API calls
 const getBaseUrl = () => {
-  if (shouldBypassGateway()) {
-    return process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-  }
   return process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 };
 
@@ -136,15 +126,9 @@ export const buildBackendUrl = (endpoint: string): string => {
   // Build versioned path: /v1/teams/getNames
   const versionedPath = `/${version}${cleanEndpoint}`;
   
-  if (shouldBypassGateway()) {
-    // Bypass mode (direct backend): add /api prefix
-    // Result: http://localhost:8000/api/v1/teams/getNames
-    return `${baseUrl}/api${versionedPath}`;
-  } else {
-    // Gateway mode: Next.js rewrite preserves /api, builds normal path
-    // Result: /api/v1/teams/getNames
-    return `${baseUrl}${versionedPath}`;
-  }
+  // Gateway mode: Next.js rewrite preserves /api, builds normal path
+  // Result: /api/v1/teams/getNames
+  return `${baseUrl}${versionedPath}`;
 };
 
 // Type definitions for API responses

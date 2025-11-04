@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { buildBackendUrl, API_CONFIG } from '@/lib/config';
+import { authFetch } from '@/lib/api';
 
 interface InsightCategory {
   name: string;
@@ -34,7 +35,7 @@ export default function InsightCategoryFilter({
         // Fetch raw response to get class field
         const url = buildBackendUrl(API_CONFIG.endpoints.insightTypes.getCategories);
         
-        const response = await fetch(url);
+        const response = await authFetch(url);
         if (!response.ok) {
           throw new Error(`Failed to fetch categories: ${response.statusText}`);
         }
