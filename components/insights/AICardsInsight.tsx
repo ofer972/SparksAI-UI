@@ -598,7 +598,7 @@ export default function AICardsInsight({
                         </button>
                         <h4 className="text-xs font-semibold text-gray-700">Recommendations</h4>
                       </div>
-                      <div className="border border-gray-300 rounded overflow-hidden" style={{ width: '90%', maxWidth: '90%', height: isExpanded ? 'auto' : '44px', maxHeight: isExpanded ? '212px' : '44px' }}>
+                      <div className="border border-gray-300 rounded overflow-hidden" style={{ width: '90%', maxWidth: '90%', height: '44px' }}>
                         <style dangerouslySetInnerHTML={{__html: `
                           .recommendations-table-scroll {
                             overflow-y: auto;
@@ -628,7 +628,7 @@ export default function AICardsInsight({
                             background: #64748b;
                           }
                         `}} />
-                        <div className={`recommendations-table-scroll ${isExpanded ? 'max-h-[212px]' : 'h-full'}`} style={{ overflowY: 'auto' }}>
+                        <div className="recommendations-table-scroll h-full" style={{ overflowY: isExpanded ? 'auto' : 'hidden', maxHeight: '44px' }}>
                           <div className="space-y-0">
                             {recommendationsToShow.map((rec: Recommendation) => {
                               const recPriorityIcon = getPriorityIcon(rec.priority);
