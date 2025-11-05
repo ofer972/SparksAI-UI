@@ -502,8 +502,7 @@ function DataTable<T extends Record<string, any>>({
                     };
 
                     // Boolean checkbox renderer
-                    const renderBoolean = (b: any) => {
-                      const checked = Boolean(b);
+                    const renderBoolean = (checked: boolean) => {
                       return (
                         <input
                           type="checkbox"
@@ -516,18 +515,39 @@ function DataTable<T extends Record<string, any>>({
                       );
                     };
 
+                    // Robust boolean coercion for common representations
+                    const deriveBoolean = (val: any): boolean => {
+                      if (typeof val === 'boolean') return val;
+                      if (typeof val === 'number') return val === 1;
+                      if (typeof val === 'string') {
+                        const v = val.trim().toLowerCase();
+                        if (['true', '1', 'yes', 'y', 'on'].includes(v)) return true;
+                        if (['false', '0', 'no', 'n', 'off', ''].includes(v)) return false;
+                      }
+                      return false;
+                    };
+
                     // Choose rendering
                     let rendered: React.ReactNode;
                     if (column.render) {
                       rendered = column.render(value, row, index);
-                    } else if (typeof value === 'boolean' || keyLower.startsWith('is_') || keyLower.endsWith('_enabled')) {
-                      rendered = renderBoolean(value);
-                    } else if (isDateLikeKey || (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value))) {
-                      rendered = formatHumanDate(value);
-                    } else if (isStatusLikeKey) {
-                      rendered = renderStatusBadge(value);
                     } else {
-                      rendered = value !== null && value !== undefined ? String(value) : '-';
+                      const isBooleanColumn = (
+                        typeof value === 'boolean' ||
+                        keyLower.startsWith('is_') ||
+                        keyLower.endsWith('_enabled') ||
+                        keyLower.endsWith('_flag')
+                      );
+
+                      if (isBooleanColumn) {
+                        rendered = renderBoolean(deriveBoolean(value));
+                      } else if (isDateLikeKey || (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value))) {
+                        rendered = formatHumanDate(value);
+                      } else if (isStatusLikeKey) {
+                        rendered = renderStatusBadge(value);
+                      } else {
+                        rendered = value !== null && value !== undefined ? String(value) : '-';
+                      }
                     }
 
                     // Expandable logic
