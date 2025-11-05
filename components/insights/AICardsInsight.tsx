@@ -586,7 +586,7 @@ export default function AICardsInsight({
                   const recommendationsToShow = isExpanded ? card.recommendations : card.recommendations.slice(0, 1);
                   
                   return (
-                    <div className="mt-1 pt-0.5 flex-shrink-0">
+                    <div className="mt-1 pt-0.5 flex-shrink-0 relative" id={`rec-${card.id}`}>
                       <div className="flex items-center mb-1">
                         <button
                           onClick={() => toggleRecommendation(card.id)}
@@ -598,7 +598,7 @@ export default function AICardsInsight({
                         </button>
                         <h4 className="text-xs font-semibold text-gray-700">Recommendations</h4>
                       </div>
-                      <div className="border border-gray-300 rounded overflow-hidden" style={{ width: '90%', maxWidth: '90%', height: isExpanded ? 'auto' : '32px', maxHeight: isExpanded ? '200px' : '32px' }}>
+                      <div className="border border-gray-300 rounded overflow-hidden" style={{ width: '90%', maxWidth: '90%', height: isExpanded ? 'auto' : '44px', maxHeight: isExpanded ? '212px' : '44px' }}>
                         <style dangerouslySetInnerHTML={{__html: `
                           .recommendations-table-scroll {
                             overflow-y: auto;
@@ -628,23 +628,23 @@ export default function AICardsInsight({
                             background: #64748b;
                           }
                         `}} />
-                        <div className={`recommendations-table-scroll ${isExpanded ? 'max-h-[200px]' : 'h-full'}`} style={{ overflowY: 'auto' }}>
+                        <div className={`recommendations-table-scroll ${isExpanded ? 'max-h-[212px]' : 'h-full'}`} style={{ overflowY: 'auto' }}>
                           <div className="space-y-0">
                             {recommendationsToShow.map((rec: Recommendation) => {
                               const recPriorityIcon = getPriorityIcon(rec.priority);
                               return (
-                                <div key={rec.id} className={`flex items-start border-b border-gray-200 ${isExpanded ? 'py-1 px-2' : 'py-0.5 px-2'} last:border-b-0`}>
+                                <div key={rec.id} className={`flex items-start border-b border-gray-200 ${isExpanded ? 'px-2 pt-2' : 'px-2 pt-2'} last:border-b-0`}>
                                   <div className="flex-shrink-0 w-6 flex items-center justify-center mr-2" style={{ paddingTop: '3px' }}>
                                     <span className="text-xs">{recPriorityIcon}</span>
                                   </div>
-                                  <div className="flex-1 min-w-0">
-                                    {rec.rational && (
-                                      <span className="text-xs font-bold text-purple-600">
-                                        {rec.rational}
-                                      </span>
-                                    )}
-                                    {rec.rational && rec.action_text && <span className="mx-1 text-gray-400 text-xs">-</span>}
-                                    <span className={`text-xs text-gray-600 ${!isExpanded ? 'truncate' : ''}`}>
+                                  <div className="flex-1 min-w-0 break-words" style={{ margin: 0, padding: 0 }}>
+                                    <span className="text-xs text-gray-600 whitespace-normal" style={{ lineHeight: '1.3', display: 'block', margin: 0, padding: 0 }}>
+                                      {rec.rational && (
+                                        <span className="font-bold text-purple-600">
+                                          {rec.rational}
+                                        </span>
+                                      )}
+                                      {rec.rational && rec.action_text && <span className="mx-1 text-gray-400">-</span>}
                                       {rec.action_text}
                                     </span>
                                   </div>
@@ -658,10 +658,14 @@ export default function AICardsInsight({
                   );
                 })()}
                 
-                {/* Fixed AI Chat Button - positioned at bottom-right */}
+                {/* AI Chat Button - positioned at bottom right, vertically aligned with recommendation box center */}
                 <button 
                   onClick={() => handleAIChat(card)}
-                  className="absolute bottom-4 right-2 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-full text-xs font-medium transition-colors shadow-sm hover:shadow-md z-10"
+                  className="absolute right-2 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-full text-xs font-medium transition-colors shadow-sm hover:shadow-md z-10"
+                  style={{ 
+                    bottom: card.recommendations && card.recommendations.length > 0 ? '12px' : '16px',
+                    transform: card.recommendations && card.recommendations.length > 0 ? 'translateY(-50%)' : 'none'
+                  }}
                 >
                   AI Chat
                 </button>
