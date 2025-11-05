@@ -27,12 +27,28 @@ export default function EpicScopeChangesChart({ selectedQuarter, isVisible = tru
 
   // Transform API data to chart format
   const chartData = useMemo((): StackedGroupedBarChartData[] => {
-    return data.map(item => ({
-      quarter: item['Quarter Name'],
-      stackGroup: item['Stack Group'],
-      metricName: item['Metric Name'],
-      value: item.Value
-    }));
+    const transformed = data.map(item => {
+      // API returns "Issue Keys" (capitalized, with space) as a comma-separated string
+      const rawItem = item as any;
+      const issueKeysRaw = rawItem['Issue Keys'] || rawItem['issue_keys'] || rawItem.issue_keys || rawItem.issueKeys || '';
+      
+      // Parse comma-separated string into array and trim whitespace
+      let issueKeys: string[] = [];
+      if (typeof issueKeysRaw === 'string' && issueKeysRaw.trim()) {
+        issueKeys = issueKeysRaw.split(',').map(key => key.trim()).filter(key => key.length > 0);
+      } else if (Array.isArray(issueKeysRaw)) {
+        issueKeys = issueKeysRaw.map(key => typeof key === 'string' ? key.trim() : String(key).trim()).filter(key => key.length > 0);
+      }
+      
+      return {
+        quarter: item['Quarter Name'],
+        stackGroup: item['Stack Group'],
+        metricName: item['Metric Name'],
+        value: item.Value,
+        issueKeys: issueKeys
+      };
+    });
+    return transformed;
   }, [data]);
 
   useEffect(() => {

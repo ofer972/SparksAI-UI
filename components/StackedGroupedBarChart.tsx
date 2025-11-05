@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,8 +11,9 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Chart } from 'react-chartjs-2';
+import { Chart, getElementAtEvent } from 'react-chartjs-2';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { API_CONFIG } from '@/lib/config';
 
 // Register Chart.js components
 ChartJS.register(
@@ -30,6 +31,7 @@ export interface StackedGroupedBarChartData {
   stackGroup: string;
   metricName: string;
   value: number;
+  issueKeys?: string[];
 }
 
 export interface StackedGroupedBarChartProps {
@@ -58,6 +60,22 @@ export default function StackedGroupedBarChart({
   error = null
 }: StackedGroupedBarChartProps) {
   
+  const chartRef = useRef<ChartJS>(null);
+
+  // Create lookup map for issue_keys: (quarter, metricName) -> issue_keys[]
+  const issueKeysMap = useMemo(() => {
+    const map = new Map<string, string[]>();
+    
+    data.forEach((item) => {
+      if (item.issueKeys && Array.isArray(item.issueKeys) && item.issueKeys.length > 0) {
+        const key = `${item.quarter}|||${item.metricName}`;
+        map.set(key, item.issueKeys);
+      }
+    });
+    
+    return map;
+  }, [data]);
+
   // Transform data for Chart.js
   const chartData = useMemo(() => {
     if (!data.length) return null;
@@ -105,6 +123,26 @@ export default function StackedGroupedBarChart({
     };
   }, [data, colorScheme, defaultColors]);
 
+  // Build Jira search URL with issue keys
+  const buildJiraUrl = (issueKeys: string[]): string => {
+    if (!issueKeys || issueKeys.length === 0) return '';
+    
+    // Check if Jira URL is configured in config.ts
+    // Check if the property exists (will be added later to config.ts)
+    const config = API_CONFIG as any;
+    const jiraUrl = 'jiraUrl' in config ? (typeof config.jiraUrl === 'function' ? config.jiraUrl() : config.jiraUrl) : undefined;
+    
+    if (!jiraUrl) {
+      alert('Jira URL is not configured. Contact admin.');
+      return '';
+    }
+    
+    // Format: key IN (KEY1, KEY2, KEY3)
+    const jql = `key IN (${issueKeys.join(', ')})`;
+    const encodedJql = encodeURIComponent(jql);
+    return `${jiraUrl}/issues/?jql=${encodedJql}`;
+  };
+
   const options = useMemo(() => {
     if (!chartData) return {};
 
@@ -115,6 +153,72 @@ export default function StackedGroupedBarChart({
     return {
       responsive: true,
       maintainAspectRatio: false,
+      onClick: (event: any, activeElements: any[]) => {
+        if (!activeElements || activeElements.length === 0) {
+          return;
+        }
+
+        if (!chartData || !chartData.datasets || !chartData.labels) {
+          return;
+        }
+
+        const chart = chartRef.current;
+        if (!chart) {
+          return;
+        }
+
+        // Use Chart.js built-in method to get the nearest element at click position
+        const elements = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, false);
+        
+        if (!elements || elements.length === 0) {
+          return;
+        }
+
+        // Get the clicked element (should be the specific segment in stacked bar)
+        const clickedElement = elements[0];
+        const datasetIndex = clickedElement.datasetIndex;
+        const dataIndex = clickedElement.index;
+        
+        // Get the metric name from the dataset - this identifies the specific bar segment
+        const metricName = chartData.datasets[datasetIndex]?.label || '';
+        // Get the quarter from the label
+        const quarter = chartData.labels[dataIndex] || '';
+        
+        // Look up issue_keys for this SPECIFIC data point (quarter + metric combination)
+        const mapKey = `${quarter}|||${metricName}`;
+        const issueKeys = issueKeysMap.get(mapKey);
+        
+        if (issueKeys && issueKeys.length > 0) {
+          const jiraUrl = buildJiraUrl(issueKeys);
+          if (jiraUrl) {
+            window.open(jiraUrl, '_blank');
+          }
+        }
+      },
+      onHover: (event: any, activeElements: any[]) => {
+        const canvas = event.native?.target as HTMLCanvasElement;
+        if (!canvas) return;
+        
+        if (activeElements.length > 0) {
+          const clickedElement = activeElements[0];
+          const datasetIndex = clickedElement.datasetIndex;
+          const dataIndex = clickedElement.index;
+          
+          const metricName = chartData.datasets[datasetIndex].label || '';
+          const quarter = chartData.labels[dataIndex] || '';
+          const mapKey = `${quarter}|||${metricName}`;
+          const issueKeys = issueKeysMap.get(mapKey);
+          
+          // Change cursor to pointer if issue_keys exist
+          if (issueKeys && issueKeys.length > 0) {
+            canvas.style.cursor = 'pointer';
+          } else {
+            canvas.style.cursor = 'default';
+          }
+        } else {
+          canvas.style.cursor = 'default';
+        }
+      },
       plugins: {
         legend: {
           position: 'top' as const,
@@ -150,6 +254,10 @@ export default function StackedGroupedBarChart({
           borderWidth: 1,
           cornerRadius: 6,
           displayColors: true,
+          position: 'nearest' as const,
+          xAlign: 'center' as const,
+          yAlign: 'bottom' as const,
+          padding: 8,
           callbacks: {
             title: function(context: any) {
               return context[0].label;
@@ -165,7 +273,7 @@ export default function StackedGroupedBarChart({
           display: true,
           color: '#000',
           font: {
-            size: 10,
+            size: 14,
             weight: 'bold' as const,
           },
           formatter: function(value: number) {
@@ -217,7 +325,78 @@ export default function StackedGroupedBarChart({
         intersect: false,
       },
     };
-  }, [chartData, title, xAxisLabel, yAxisLabel]);
+  }, [chartData, title, xAxisLabel, yAxisLabel, issueKeysMap]);
+
+  // Add direct click handler as fallback
+  // MUST be called before any early returns to follow Rules of Hooks
+  useEffect(() => {
+    if (!chartData) {
+      return;
+    }
+
+    let canvas: HTMLCanvasElement | null = null;
+    let cleanup: (() => void) | null = null;
+
+    // Wait a bit for chart to render
+    const timeoutId = setTimeout(() => {
+      const chart = chartRef.current;
+      if (!chart) {
+        return;
+      }
+
+      canvas = chart.canvas;
+      if (!canvas) {
+        return;
+      }
+
+
+      const handleCanvasClick = (event: MouseEvent) => {
+        try {
+          // Use Chart.js built-in method to get the nearest element at click position
+          const elements = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, false);
+          
+          if (!elements || elements.length === 0) {
+            return;
+          }
+
+          // Get the clicked element (should be the specific segment in stacked bar)
+          const clickedElement = elements[0];
+          const datasetIndex = clickedElement.datasetIndex;
+          const dataIndex = clickedElement.index;
+          
+          // Get the metric name from the dataset - this identifies the specific bar segment
+          const metricName = chartData.datasets[datasetIndex]?.label || '';
+          // Get the quarter from the label
+          const quarter = chartData.labels[dataIndex] || '';
+          
+          // Look up issue_keys for this SPECIFIC data point (quarter + metric combination)
+          const mapKey = `${quarter}|||${metricName}`;
+          const issueKeys = issueKeysMap.get(mapKey);
+          
+          if (issueKeys && issueKeys.length > 0) {
+            const jiraUrl = buildJiraUrl(issueKeys);
+            if (jiraUrl) {
+              window.open(jiraUrl, '_blank');
+            }
+          }
+        } catch (error) {
+          console.error('Error in canvas click handler:', error);
+        }
+      };
+
+      // Use capture phase to catch clicks before plugins
+      canvas.addEventListener('click', handleCanvasClick, true);
+      
+      cleanup = () => {
+        canvas?.removeEventListener('click', handleCanvasClick, true);
+      };
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (cleanup) cleanup();
+    };
+  }, [chartData, issueKeysMap]);
 
   if (loading) {
     return (
@@ -249,6 +428,7 @@ export default function StackedGroupedBarChart({
   return (
     <div className="w-full" style={{ height }}>
       <Chart 
+        ref={chartRef}
         type="bar" 
         data={chartData} 
         options={options}

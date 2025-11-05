@@ -15,6 +15,7 @@ import {
   Filler,
 } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { ApiService, IssuesTrendDataPoint, IssuesTrendResponse } from '@/lib/api';
 import { getIssueTypes, getDefaultIssueType } from '@/lib/issueTypes';
 import { format, parseISO } from 'date-fns';
@@ -225,6 +226,58 @@ export default function IssuesTrendChart({
           },
         },
       },
+      datalabels: {
+        display: function(context: any) {
+          // Show labels for all datasets
+          return true;
+        },
+        color: function(context: any) {
+          // Different colors for different datasets
+          const datasetLabel = context.dataset.label || '';
+          if (datasetLabel === 'Issues Left Open (Trend)') {
+            return '#4169E1'; // Blue for trend line
+          }
+          return '#000'; // Black for bars
+        },
+        font: function(context: any) {
+          const datasetLabel = context.dataset.label || '';
+          if (datasetLabel === 'Issues Left Open (Trend)') {
+            return {
+              size: 14,
+              weight: 'bold' as const,
+            };
+          }
+          return {
+            size: 12,
+            weight: 'bold' as const,
+          };
+        },
+        formatter: function(value: number) {
+          // Only show if value is not null/undefined and greater than 0
+          return value != null && value > 0 ? value : '';
+        },
+        anchor: function(context: any) {
+          const datasetLabel = context.dataset.label || '';
+          if (datasetLabel === 'Issues Left Open (Trend)') {
+            return 'center' as const; // Center for line chart points
+          }
+          return 'end' as const; // Top of bars
+        },
+        align: function(context: any) {
+          const datasetLabel = context.dataset.label || '';
+          if (datasetLabel === 'Issues Left Open (Trend)') {
+            return 'bottom' as const; // Bottom align for trend line (position above point)
+          }
+          return 'end' as const; // Top of bars
+        },
+        offset: function(context: any) {
+          const datasetLabel = context.dataset.label || '';
+          if (datasetLabel === 'Issues Left Open (Trend)') {
+            return -25; // Higher offset above line points for better visibility
+          }
+          return -5; // Offset above bars
+        },
+      },
     },
     scales: {
       x: {
@@ -391,7 +444,7 @@ export default function IssuesTrendChart({
       {/* Chart */}
       <div className="overflow-x-auto" style={{ height: '425px' }}>
         <div style={{ width: chartWidth, height: '425px' }}>
-          <Chart type="bar" data={chartData} options={options} />
+          <Chart type="bar" data={chartData} options={options} plugins={[ChartDataLabels]} />
         </div>
       </div>
     </div>
