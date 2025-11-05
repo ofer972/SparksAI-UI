@@ -418,25 +418,38 @@ function DataTable<T extends Record<string, any>>({
                             {onViewItem && (
                               <button
                                 onClick={() => onViewItem(row)}
-                                className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                className="p-1.5 rounded hover:bg-blue-50 text-blue-600 transition-colors"
+                                title="View"
+                                aria-label="View"
                               >
-                                View
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
                               </button>
                             )}
                             {onEditItem && (
                               <button
                                 onClick={() => onEditItem(row)}
-                                className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                                className="p-1.5 rounded hover:bg-green-50 text-green-600 transition-colors"
+                                title="Edit"
+                                aria-label="Edit"
                               >
-                                Edit
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5h2m2 0h2m-6 0H9m10 6l-6 6H9v-4l6-6m4-2a2.121 2.121 0 00-3 0l-1 1 3 3 1-1a2.121 2.121 0 000-3z" />
+                                </svg>
                               </button>
                             )}
                             {onDeleteItem && (
                               <button
                                 onClick={() => onDeleteItem(row)}
-                                className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                                className="p-1.5 rounded hover:bg-red-50 text-red-600 transition-colors"
+                                title="Delete"
+                                aria-label="Delete"
                               >
-                                Delete
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-9 0h10" />
+                                </svg>
                               </button>
                             )}
                           </div>
@@ -445,14 +458,79 @@ function DataTable<T extends Record<string, any>>({
                     }
 
                     const value = row[column.key];
-                    const cellContent = column.render
-                      ? column.render(value, row, index)
-                      : value !== null && value !== undefined
-                      ? String(value)
-                      : '-';
 
-                    // Check if this column should be expandable
-                    // Check the raw value length, not the rendered content
+                    // Auto-format common types
+                    const keyLower = String(column.key).toLowerCase();
+                    const isDateLikeKey = keyLower.includes('date') || keyLower.endsWith('_at');
+                    const isStatusLikeKey = keyLower.includes('status') || keyLower.endsWith('_status');
+
+                    // Date formatter (human readable)
+                    const formatHumanDate = (input: any): string => {
+                      if (!input) return '-';
+                      const d = new Date(input);
+                      if (isNaN(d.getTime())) return String(input);
+                      // If time part present, show time; else only date
+                      const hasTime = d.getHours() !== 0 || d.getMinutes() !== 0 || d.getSeconds() !== 0;
+                      const datePart = d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+                      const timePart = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+                      return hasTime ? `${datePart} ${timePart}` : datePart;
+                    };
+
+                    // Status badge
+                    const renderStatusBadge = (raw: any) => {
+                      const val = String(raw ?? '-');
+                      const v = val.toLowerCase();
+                      let color = 'bg-gray-100 text-gray-800 border-gray-200';
+                      if (['success', 'completed', 'done', 'active', 'enabled', 'green', 'ok'].some(s => v.includes(s))) {
+                        color = 'bg-green-100 text-green-800 border-green-200';
+                      } else if (['warning', 'pending', 'in progress', 'yellow'].some(s => v.includes(s))) {
+                        color = 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                      } else if (['failed', 'error', 'red', 'inactive', 'disabled', 'blocked'].some(s => v.includes(s))) {
+                        color = 'bg-red-100 text-red-800 border-red-200';
+                      } else if (['info', 'blue'].some(s => v.includes(s))) {
+                        color = 'bg-blue-100 text-blue-800 border-blue-200';
+                      } else if (['open'].some(s => v.includes(s))) {
+                        color = 'bg-indigo-100 text-indigo-800 border-indigo-200';
+                      } else if (['closed', 'archived'].some(s => v.includes(s))) {
+                        color = 'bg-gray-200 text-gray-800 border-gray-300';
+                      }
+                      return (
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${color}`}>
+                          {val}
+                        </span>
+                      );
+                    };
+
+                    // Boolean checkbox renderer
+                    const renderBoolean = (b: any) => {
+                      const checked = Boolean(b);
+                      return (
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          readOnly
+                          className="w-3.5 h-3.5 align-middle accent-blue-600 cursor-default"
+                          aria-checked={checked}
+                          aria-label={checked ? 'True' : 'False'}
+                        />
+                      );
+                    };
+
+                    // Choose rendering
+                    let rendered: React.ReactNode;
+                    if (column.render) {
+                      rendered = column.render(value, row, index);
+                    } else if (typeof value === 'boolean' || keyLower.startsWith('is_') || keyLower.endsWith('_enabled')) {
+                      rendered = renderBoolean(value);
+                    } else if (isDateLikeKey || (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value))) {
+                      rendered = formatHumanDate(value);
+                    } else if (isStatusLikeKey) {
+                      rendered = renderStatusBadge(value);
+                    } else {
+                      rendered = value !== null && value !== undefined ? String(value) : '-';
+                    }
+
+                    // Expandable logic
                     const rawValueString = typeof value === 'string' ? value : String(value || '');
                     const isExpandable = column.expandable !== false && (
                       column.expandable === true || 
@@ -470,11 +548,11 @@ function DataTable<T extends Record<string, any>>({
                       >
                         {isExpandable ? (
                           <ExpandableCell 
-                            content={cellContent} 
+                            content={rendered as any}
                             maxLength={column.maxLength || 100}
                           />
                         ) : (
-                          cellContent
+                          rendered
                         )}
                       </td>
                     );
