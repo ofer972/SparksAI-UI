@@ -9,6 +9,9 @@ export const API_CONFIG = {
     return getBaseUrl();
   },
   version: process.env.NEXT_PUBLIC_API_VERSION || 'v1',
+  get jiraUrl() {
+    return process.env.NEXT_PUBLIC_JIRA_URL || '';
+  },
   
   endpoints: {
     // Team endpoints
