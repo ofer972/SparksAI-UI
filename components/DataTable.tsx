@@ -278,22 +278,36 @@ function DataTable<T extends Record<string, any>>({
 
   return (
     <div className={`bg-white rounded-lg shadow-sm border border-gray-200 ${className}`}>
-      {/* Header with Create Button and Filter */}
-      {(onCreateItem || onFilterChange) && (
+      {/* Header with Create Button, Refresh Button, and Filter */}
+      {(onCreateItem || onFilterChange || onRefresh) && (
         <div className="p-4 border-b border-gray-200 flex items-center gap-3">
-          {onCreateItem && allowCreate && (
-            <button
-              onClick={onCreateItem}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Create
-            </button>
-          )}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {onCreateItem && allowCreate && (
+              <button
+                onClick={onCreateItem}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Create
+              </button>
+            )}
+            {onRefresh && (
+              <button
+                onClick={onRefresh}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2 whitespace-nowrap shadow-sm"
+                title="Refresh data"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+              </button>
+            )}
+          </div>
           {onFilterChange && (
-            <div className="relative flex-1">
+            <div className="relative flex-1 min-w-0">
               <input
                 type="text"
                 placeholder={filterPlaceholder}
