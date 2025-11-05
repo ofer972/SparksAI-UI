@@ -96,7 +96,7 @@ export default function InsightCategoryFilter({
   if (loading) {
     return (
       <div className={`relative z-10 flex items-center space-x-1 ${className}`}>
-        <span className="text-sm font-medium text-gray-700">Categories:</span>
+        <span className="text-sm font-medium text-gray-700">Today:</span>
         <button 
           className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
           disabled
@@ -110,7 +110,7 @@ export default function InsightCategoryFilter({
   if (error) {
     return (
       <div className={`relative z-10 flex items-center space-x-1 ${className}`}>
-        <span className="text-sm font-medium text-gray-700">Categories:</span>
+        <span className="text-sm font-medium text-gray-700">Today:</span>
         <button 
           className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
           disabled
@@ -124,7 +124,7 @@ export default function InsightCategoryFilter({
   return (
     <div className={`relative z-10 ${className}`} ref={dropdownRef}>
       <div className="flex items-center space-x-1">
-        <span className="text-sm font-medium text-gray-700">Categories:</span>
+        <span className="text-sm font-medium text-gray-700">Today:</span>
         <div className="relative">
           <button
             onClick={handleToggleDropdown}
