@@ -197,6 +197,7 @@ export default function ClosedSprints({ selectedTeam, isLoading = false, isVisib
             rowKey={(row) => row.sprint_id}
             striped={true}
             hoverable={true}
+            onRefresh={() => refetch(selectedTeam, selectedTimePeriod)}
           />
         </div>
       )}

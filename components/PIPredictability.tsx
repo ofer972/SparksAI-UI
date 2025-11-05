@@ -19,7 +19,7 @@ export default function PIPredictability({ selectedPI, selectedTeam, isLoading =
     direction: 'asc',
   });
   const [filterText, setFilterText] = useState('');
-  const { data, loading: dataLoading, error } = usePIPredictability(selectedPI, selectedTeam);
+  const { data, loading: dataLoading, error, refetch } = usePIPredictability(selectedPI, selectedTeam);
   
   // Keep visibility/collapse gating here (no refetch needed, just avoid rendering expensive UI)
   useEffect(() => {
@@ -212,6 +212,7 @@ export default function PIPredictability({ selectedPI, selectedTeam, isLoading =
           rowKey={(row, index) => `${row.pi_name || 'pi'}-${row.team_name || 'team'}-${index}`}
           striped={true}
           hoverable={true}
+          onRefresh={refetch}
         />
       )}
     </div>
