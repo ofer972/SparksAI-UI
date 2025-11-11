@@ -143,7 +143,7 @@ export async function refreshAccessToken(): Promise<boolean> {
   }
 }
 
-export function getCurrentUser(): { email?: string; name?: string } | null {
+export function getCurrentUser(): { id?: string; email?: string; name?: string } | null {
   const token = getAccessToken();
   if (!token) return null;
   const parts = token.split('.');
@@ -152,7 +152,8 @@ export function getCurrentUser(): { email?: string; name?: string } | null {
     const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
     const email = payload.email || payload.Email || payload.sub || undefined;
     const name = payload.name || payload.Name || undefined;
-    return { email, name };
+    const userid = payload.id || payload.ID || payload.user_id || payload.UserID || undefined;
+    return { id: userid, email, name };
   } catch {
     return null;
   }

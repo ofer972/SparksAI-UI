@@ -71,6 +71,9 @@ export default function BurndownChart({
           pointHoverBorderWidth: 2,
           fill: false,
           tension: 0,
+          datalabels: {
+            display: false,
+          },
         },
         {
           label: 'Ideal Burndown',
@@ -82,6 +85,9 @@ export default function BurndownChart({
           pointRadius: 0,
           fill: false,
           tension: 0,
+          datalabels: {
+            display: false,
+          },
         },
         {
           label: 'Total Scope',
@@ -93,6 +99,9 @@ export default function BurndownChart({
           pointRadius: 0,
           fill: false,
           tension: 0,
+          datalabels: {
+            display: false,
+          },
         },
         {
           label: 'Issues Removed',
@@ -111,6 +120,9 @@ export default function BurndownChart({
           pointHoverBackgroundColor: '#ff0000',
           pointHoverBorderColor: '#ff0000',
           pointHoverBorderWidth: 1,
+          datalabels: {
+            display: false,
+          },
         },
         {
           label: 'Issues Completed',
@@ -125,6 +137,9 @@ export default function BurndownChart({
           fill: false,
           tension: 0,
           showLine: false,
+          datalabels: {
+            display: false,
+          },
         },
       ],
     };
@@ -158,8 +173,12 @@ export default function BurndownChart({
           bottom: 5,
         },
       },
-      title: {
+      datalabels: {
         display: false,
+      },
+      title: {
+        display: true,
+        text: 'Burndown Chart',
       },
       tooltip: {
         mode: 'index' as const,
@@ -283,8 +302,8 @@ export default function BurndownChart({
   }
 
   return (
-    <div className="w-full" style={{ height: '425px' }}>
-      <Line data={chartData} options={options} />
+    <div className="relative h-full">
+      <Line options={options} data={chartData} />
     </div>
   );
 }

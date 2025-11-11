@@ -87,16 +87,32 @@ export default function StackedGroupedBarChart({
     // Define metric order for proper stacking
     const metricOrder = [
       'Issues Planned',
-      'Issues Added', 
+      'Issues Added',
       'Issues Completed',
       'Issues Not Completed',
-      'Issues Removed'
+      'Issues Removed',
     ];
-    
+
+    const stackGroupMap: { [metric: string]: string } = {
+      'Issues Planned': 'Plan/Add',
+      'Issues Added': 'Plan/Add',
+      'Issues Completed': 'Res/NotRes/Rem',
+      'Issues Not Completed': 'Res/NotRes/Rem',
+      'Issues Removed': 'Res/NotRes/Rem',
+    };
+
     // Get metrics in the defined order, then add any others
-    const orderedMetrics = [...metricOrder.filter(m => data.some(d => d.metricName === m))];
-    const otherMetrics = Array.from(new Set(data.map(d => d.metricName))).filter(m => !metricOrder.includes(m));
-    const metrics = [...orderedMetrics, ...otherMetrics];
+    const metrics = Array.from(new Set(data.map((d) => d.metricName)));
+    metrics.sort((a, b) => {
+      const indexA = metricOrder.indexOf(a);
+      const indexB = metricOrder.indexOf(b);
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return a.localeCompare(b);
+    });
 
     // Create datasets for each metric
     const datasets = metrics.map((metric, index) => {
@@ -111,9 +127,7 @@ export default function StackedGroupedBarChart({
         backgroundColor: color,
         borderColor: color,
         borderWidth: 1,
-        stack: stackGroups.find(group => 
-          data.some(d => d.stackGroup === group && d.metricName === metric)
-        ),
+        stack: stackGroupMap[metric] || 'Unknown',
       };
     });
 

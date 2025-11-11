@@ -31,9 +31,6 @@ export interface DataTableProps<T> {
   columns?: Column<T>[];
   sortConfig?: SortConfig | LegacySortConfig<T>;
   onSort?: ((key: string) => void) | ((key: keyof T) => void);
-  filterText?: string;
-  onFilterChange?: (text: string) => void;
-  filterPlaceholder?: string;
   loading?: boolean;
   error?: string | null;
   emptyMessage?: string;
@@ -59,9 +56,6 @@ function DataTable<T extends Record<string, any>>({
   columns: providedColumns,
   sortConfig: providedSortConfig,
   onSort,
-  filterText = '',
-  onFilterChange,
-  filterPlaceholder = 'Filter data...',
   loading = false,
   error = null,
   emptyMessage = 'No data found.',
@@ -136,21 +130,10 @@ function DataTable<T extends Record<string, any>>({
     }
     return undefined;
   }, [providedSortConfig]);
-  const filteredData = useMemo(() => {
-    if (!filterText) return data;
-    
-    return data.filter((row) =>
-      Object.values(row).some((value) =>
-        typeof value === 'string' && value.toLowerCase().includes(filterText.toLowerCase()) ||
-        typeof value === 'number' && value.toString().includes(filterText)
-      )
-    );
-  }, [data, filterText]);
-
   const sortedData = useMemo(() => {
-    if (!sortConfig?.key || !onSort) return filteredData;
+    if (!sortConfig?.key || !onSort) return data;
     
-    return [...filteredData].sort((a, b) => {
+    return [...data].sort((a, b) => {
       const aValue = a[sortConfig.key!];
       const bValue = b[sortConfig.key!];
       
@@ -161,7 +144,7 @@ function DataTable<T extends Record<string, any>>({
       if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [filteredData, sortConfig, onSort]);
+  }, [data, sortConfig, onSort]);
 
   const SortIcon = ({ columnKey }: { columnKey: string }) => {
     if (!sortConfig || sortConfig.key !== columnKey) {
@@ -279,7 +262,7 @@ function DataTable<T extends Record<string, any>>({
   return (
     <div className={`bg-white rounded-lg shadow-sm border border-gray-200 ${className}`}>
       {/* Header with Create Button, Refresh Button, and Filter */}
-      {(onCreateItem || onFilterChange || onRefresh) && (
+      {(onCreateItem || onRefresh) && (
         <div className="p-4 border-b border-gray-200 flex items-center gap-3">
           <div className="flex items-center gap-2 flex-shrink-0">
             {onCreateItem && allowCreate && (
@@ -306,30 +289,6 @@ function DataTable<T extends Record<string, any>>({
               </button>
             )}
           </div>
-          {onFilterChange && (
-            <div className="relative flex-1 min-w-0">
-              <input
-                type="text"
-                placeholder={filterPlaceholder}
-                value={filterText}
-                onChange={(e) => onFilterChange(e.target.value)}
-                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              />
-              <svg
-                className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </div>
-          )}
         </div>
       )}
 
@@ -589,7 +548,6 @@ function DataTable<T extends Record<string, any>>({
         <div className="px-4 py-2 bg-gray-50 border-t border-gray-200">
           <span className="text-xs text-gray-500">
             Showing {sortedData.length} {sortedData.length === 1 ? 'row' : 'rows'}
-            {filterText && ` (filtered from ${data.length} total)`}
           </span>
         </div>
       )}

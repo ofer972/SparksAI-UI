@@ -9,10 +9,62 @@ import {
   SortingState,
   flexRender,
 } from '@tanstack/react-table';
-import { ApiService } from '../lib/api';
-import { InsightType } from '../lib/config';
+import { ApiService, verifySystem } from '../lib/api';
+import { InsightType, DashboardViewConfig, ReportDefinition } from '../lib/config';
 import EditInsightTypeModal from './EditInsightTypeModal';
 import Toast from './Toast';
+
+const DASHBOARD_VIEWS = ['team-dashboard', 'pi-dashboard'];
+const DEFAULT_ALLOWED_VIEW = 'every-dashboard';
+
+const normalizeAllowedViews = (report?: ReportDefinition): string[] => {
+  if (!report) {
+    return [DEFAULT_ALLOWED_VIEW];
+  }
+
+  const rawAllowed = Array.isArray(report.meta_schema?.allowed_views)
+    ? report.meta_schema.allowed_views
+    : [DEFAULT_ALLOWED_VIEW];
+
+  const normalized = rawAllowed
+    .map((view) => (typeof view === 'string' ? view.trim().toLowerCase() : ''))
+    .filter((view): view is string => view.length > 0);
+
+  if (normalized.length === 0) {
+    normalized.push(DEFAULT_ALLOWED_VIEW);
+  }
+
+  return Array.from(new Set(normalized));
+};
+
+const isReportAllowedForView = (report: ReportDefinition | undefined, view: string): boolean => {
+  const allowedViews = normalizeAllowedViews(report);
+  return allowedViews.includes(DEFAULT_ALLOWED_VIEW) || allowedViews.includes(view);
+};
+
+const sanitizeDashboardLayout = (
+  layout: Record<string, string[]>,
+  reports: ReportDefinition[]
+): Record<string, string[]> => {
+  const reportMap = new Map<string, ReportDefinition>();
+  reports.forEach((report) => {
+    reportMap.set(report.report_id, report);
+  });
+
+  const sanitized: Record<string, string[]> = {};
+  const allViews = new Set<string>([...DASHBOARD_VIEWS, ...Object.keys(layout)]);
+
+  allViews.forEach((view) => {
+    const selected = layout[view] ?? [];
+    const filtered = selected.filter((id) => {
+      const report = reportMap.get(id);
+      return report ? isReportAllowedForView(report, view) : false;
+    });
+    sanitized[view] = filtered;
+  });
+
+  return sanitized;
+};
 
 export default function SettingsScreen() {
   const [activeTab, setActiveTab] = useState('ai-config');
@@ -40,6 +92,74 @@ export default function SettingsScreen() {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'id', desc: false }]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const [isSystemUser, setIsSystemUser] = useState(false);
+  const [availableReports, setAvailableReports] = useState<ReportDefinition[]>([]);
+  const [selectedReportsByView, setSelectedReportsByView] = useState<Record<string, string[]>>({
+    'team-dashboard': [],
+    'pi-dashboard': [],
+  });
+  const [originalReportsByView, setOriginalReportsByView] = useState<Record<string, string[]>>({
+    'team-dashboard': [],
+    'pi-dashboard': [],
+  });
+  const [layoutLoading, setLayoutLoading] = useState(false);
+  const [layoutError, setLayoutError] = useState<string | null>(null);
+  const [layoutSaving, setLayoutSaving] = useState(false);
+  const [layoutDirty, setLayoutDirty] = useState(false);
+  const [layoutLoaded, setLayoutLoaded] = useState(false);
+
+  const cloneViewMap = (source: Record<string, string[]>): Record<string, string[]> => {
+    const clone: Record<string, string[]> = {};
+    for (const [view, reports] of Object.entries(source)) {
+      clone[view] = [...reports];
+    }
+    return clone;
+  };
+
+  const normalizeConfigsToMap = (configs?: DashboardViewConfig[]): Record<string, string[]> => {
+    const map: Record<string, string[]> = {};
+    configs?.forEach((cfg) => {
+      const view = cfg.view?.trim();
+      if (!view) {
+        return;
+      }
+      const rawReportIds = Array.isArray(cfg.reportIds)
+        ? cfg.reportIds
+        : Array.isArray((cfg as any).report_ids)
+          ? (cfg as any).report_ids
+          : [];
+      map[view] = rawReportIds.map((id: unknown) => String(id));
+    });
+    DASHBOARD_VIEWS.forEach((view) => {
+      if (!map[view]) {
+        map[view] = [];
+      }
+    });
+    return map;
+  };
+
+  const computeLayoutDirty = (next: Record<string, string[]>, base: Record<string, string[]>): boolean => {
+    const views = Array.from(new Set<string>([...Object.keys(next), ...Object.keys(base)]));
+    for (const view of views) {
+      const nextValue = (next[view] ?? []).join('|');
+      const baseValue = (base[view] ?? []).join('|');
+      if (nextValue !== baseValue) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const getViewLabel = (view: string): string => {
+    switch (view) {
+      case 'team-dashboard':
+        return 'Team Dashboard';
+      case 'pi-dashboard':
+        return 'PI Dashboard';
+      default:
+        return view;
+    }
+  };
 
   // TanStack Table column helper
   const columnHelper = createColumnHelper<InsightType>();
@@ -301,6 +421,75 @@ export default function SettingsScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    const checkSystemRole = async () => {
+      try {
+        const result = await verifySystem();
+        if (!cancelled) {
+          setIsSystemUser(result);
+        }
+      } catch (error) {
+        console.error('Failed to verify system role', error);
+      }
+    };
+    checkSystemRole();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'dashboard-layout' && !isSystemUser) {
+      setActiveTab('ai-config');
+    }
+  }, [activeTab, isSystemUser]);
+
+  useEffect(() => {
+    if (activeTab !== 'dashboard-layout' || !isSystemUser || layoutLoaded) {
+      return;
+    }
+
+    let cancelled = false;
+    const loadDashboardLayout = async () => {
+      setLayoutLoading(true);
+      setLayoutError(null);
+      try {
+        const api = new ApiService();
+        const [reports, configs] = await Promise.all([
+          api.getReportDefinitions(),
+          api.getDashboardViewConfigs(),
+        ]);
+        if (cancelled) {
+          return;
+        }
+        setAvailableReports(reports);
+        const normalized = normalizeConfigsToMap(configs);
+        const sanitized = sanitizeDashboardLayout(normalized, reports);
+        const cloned = cloneViewMap(sanitized);
+        setSelectedReportsByView(cloned);
+        setOriginalReportsByView(cloneViewMap(sanitized));
+        setLayoutDirty(false);
+        setLayoutLoaded(true);
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to load dashboard layout', error);
+          setLayoutError(error instanceof Error ? error.message : 'Failed to load dashboard layout');
+        }
+      } finally {
+        if (!cancelled) {
+          setLayoutLoading(false);
+        }
+      }
+    };
+
+    loadDashboardLayout();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, isSystemUser, layoutLoaded]);
+
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -343,12 +532,93 @@ export default function SettingsScreen() {
     }
   };
 
-  const settingsTabs = [
-    { id: 'ai-config', label: 'AI Configuration', icon: '🤖' },
-    { id: 'insight-types', label: 'Insight Types', icon: '💡' },
-    { id: 'notifications', label: 'Notifications', icon: '🔔' },
-    { id: 'integrations', label: 'Integrations', icon: '🔗' },
-  ];
+  const reportDefinitionById = useMemo(() => {
+    const map = new Map<string, ReportDefinition>();
+    availableReports.forEach((report) => {
+      map.set(report.report_id, report);
+    });
+    return map;
+  }, [availableReports]);
+
+  const sortedReports = useMemo(() => {
+    return Array.from(reportDefinitionById.values()).sort((a, b) =>
+      a.report_name.localeCompare(b.report_name)
+    );
+  }, [reportDefinitionById]);
+
+  const reportNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    reportDefinitionById.forEach((report, id) => {
+      map.set(id, report.report_name);
+    });
+    return map;
+  }, [reportDefinitionById]);
+
+  const handleToggleReport = (view: string, reportId: string) => {
+    setSelectedReportsByView((prev) => {
+      const reportDefinition = reportDefinitionById.get(reportId);
+      if (!reportDefinition || !isReportAllowedForView(reportDefinition, view)) {
+        return prev;
+      }
+
+      const current = prev[view] ? [...prev[view]] : [];
+      let nextList: string[];
+      if (current.includes(reportId)) {
+        nextList = current.filter((id) => id !== reportId);
+      } else {
+        nextList = [...current, reportId];
+      }
+      const nextMap = { ...prev, [view]: nextList };
+      setLayoutDirty(computeLayoutDirty(nextMap, originalReportsByView));
+      return nextMap;
+    });
+  };
+
+  const handleResetLayouts = () => {
+    setSelectedReportsByView(cloneViewMap(originalReportsByView));
+    setLayoutDirty(false);
+  };
+
+  const handleSaveLayouts = async () => {
+    try {
+      setLayoutSaving(true);
+      setLayoutError(null);
+      const api = new ApiService();
+      const sanitizedSelection = sanitizeDashboardLayout(selectedReportsByView, availableReports);
+      const payload = Object.entries(sanitizedSelection).map(([view, reportIds]) => ({
+        view,
+        reportIds,
+      }));
+      const response = await api.updateDashboardViewConfigs(payload);
+      const normalized = normalizeConfigsToMap(response);
+      const sanitizedResponse = sanitizeDashboardLayout(normalized, availableReports);
+      const cloned = cloneViewMap(sanitizedResponse);
+      setSelectedReportsByView(cloned);
+      setOriginalReportsByView(cloneViewMap(sanitizedResponse));
+      setLayoutDirty(false);
+      setToastType('success');
+      setToastMessage('Dashboard layout updated successfully');
+    } catch (error) {
+      console.error('Failed to save dashboard layout', error);
+      setToastType('error');
+      setToastMessage(error instanceof Error ? error.message : 'Failed to save dashboard layout');
+    } finally {
+      setLayoutSaving(false);
+    }
+  };
+
+  const settingsTabs = useMemo(() => {
+    const tabs = [
+      { id: 'ai-config', label: 'AI Configuration', icon: '🤖' },
+      { id: 'insight-types', label: 'Insight Types', icon: '💡' },
+      { id: 'notifications', label: 'Notifications', icon: '🔔' },
+      { id: 'integrations', label: 'Integrations', icon: '🔗' },
+    ];
+    if (isSystemUser) {
+      tabs.push({ id: 'dashboard-layout', label: 'Dashboard Layout', icon: '🗂️' });
+    }
+    return tabs;
+  }, [isSystemUser]);
 
   const geminiModels = [
     { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
@@ -363,6 +633,12 @@ export default function SettingsScreen() {
     { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
     { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
   ];
+
+  const viewOrder = useMemo(() => {
+    const set = new Set<string>(DASHBOARD_VIEWS);
+    Object.keys(selectedReportsByView).forEach((view) => set.add(view));
+    return Array.from(set);
+  }, [selectedReportsByView]);
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -402,7 +678,18 @@ export default function SettingsScreen() {
                     ))}
                   </select>
                 </div>
-                
+                <div className="flex items-center space-x-4">
+                  <span className="text-xs text-gray-600 w-20">Temperature:</span>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="1"
+                    value={geminiTemperature}
+                    onChange={(e) => setGeminiTemperature(parseFloat(e.target.value))}
+                    className="border border-gray-300 rounded px-2 py-1 text-xs w-20"
+                  />
+                </div>
                 <div className="flex items-center space-x-4">
                   <span className="text-xs text-gray-600 w-20">API Key:</span>
                   <input
@@ -410,31 +697,13 @@ export default function SettingsScreen() {
                     value={geminiApiKey}
                     onChange={(e) => setGeminiApiKey(e.target.value)}
                     placeholder="Enter Gemini API key"
-                    className="border border-gray-300 rounded px-2 py-1 text-xs w-40"
+                    className="border border-gray-300 rounded px-2 py-1 text-xs w-64"
                   />
-                </div>
-                
-                <div className="flex items-center space-x-4">
-                  <span className="text-xs text-gray-600 w-20">Temperature:</span>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="range"
-                      min="0"
-                      max="2"
-                      step="0.1"
-                      value={geminiTemperature}
-                      onChange={(e) => setGeminiTemperature(parseFloat(e.target.value))}
-                      className="w-24"
-                    />
-                    <span className="text-xs bg-gray-100 px-2 py-1 rounded w-8 text-center">
-                      {geminiTemperature}
-                    </span>
-                  </div>
                 </div>
               </div>
             </div>
 
-            {/* OpenAI ChatGPT Configuration */}
+            {/* OpenAI Configuration */}
             <div className="bg-white rounded-lg shadow-sm p-4">
               <h3 className="text-sm font-semibold mb-4">OpenAI ChatGPT Configuration</h3>
               <div className="space-y-3">
@@ -452,53 +721,164 @@ export default function SettingsScreen() {
                     ))}
                   </select>
                 </div>
-                
+                <div className="flex items-center space-x-4">
+                  <span className="text-xs text-gray-600 w-20">Temperature:</span>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="1"
+                    value={openaiTemperature}
+                    onChange={(e) => setOpenaiTemperature(parseFloat(e.target.value))}
+                    className="border border-gray-300 rounded px-2 py-1 text-xs w-20"
+                  />
+                </div>
                 <div className="flex items-center space-x-4">
                   <span className="text-xs text-gray-600 w-20">API Key:</span>
                   <input
                     type="password"
                     value={openaiApiKey}
                     onChange={(e) => setOpenaiApiKey(e.target.value)}
-                    placeholder="Enter OpenAI API key"
-                    className="border border-gray-300 rounded px-2 py-1 text-xs w-40"
+                    placeholder="Enter ChatGPT API key"
+                    className="border border-gray-300 rounded px-2 py-1 text-xs w-64"
                   />
-                </div>
-                
-                <div className="flex items-center space-x-4">
-                  <span className="text-xs text-gray-600 w-20">Temperature:</span>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="range"
-                      min="0"
-                      max="2"
-                      step="0.1"
-                      value={openaiTemperature}
-                      onChange={(e) => setOpenaiTemperature(parseFloat(e.target.value))}
-                      className="w-24"
-                    />
-                    <span className="text-xs bg-gray-100 px-2 py-1 rounded w-8 text-center">
-                      {openaiTemperature}
-                    </span>
-                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Save Button */}
-            <div className="flex flex-col items-start space-y-2">
-              <button onClick={handleSave} disabled={saving} className={`bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium transition-all ${saving ? 'opacity-60 cursor-not-allowed' : 'hover:from-blue-600 hover:to-blue-700'}`}>
-                Save AI Configuration
+            <div className="flex items-center justify-end">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className={`px-3 py-1.5 text-xs rounded ${
+                  saving ? 'bg-blue-300 text-white cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                {saving ? 'Saving...' : 'Save Settings'}
               </button>
-              {saveMessage && (
-                <span className="text-xs text-green-600">{saveMessage}</span>
-              )}
-              {saveError && (
-                <span className="text-xs text-red-600">{saveError}</span>
-              )}
+            </div>
+
+            {(saveMessage || saveError) && (
+              <div
+                className={`text-xs mt-2 ${saveError ? 'text-red-600' : 'text-green-600'}`}
+              >
+                {saveError || saveMessage}
+              </div>
+            )}
+          </div>
+        );
+      case 'dashboard-layout':
+        if (!isSystemUser) {
+          return (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-800">
+              You need the system role to configure dashboard layouts.
+            </div>
+          );
+        }
+        return (
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-xs text-blue-800">
+              Choose which reports should appear on each dashboard. Changes are saved for all users who can access these dashboards.
+            </div>
+            {layoutError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 text-sm">
+                {layoutError}
+              </div>
+            )}
+            {layoutLoading ? (
+              <div className="flex items-center justify-center h-48">
+                <div className="flex flex-col items-center gap-2 text-gray-600 text-sm">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  Loading dashboard layout...
+                </div>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2">
+                {viewOrder.map((view) => {
+                  const selected = selectedReportsByView[view] ?? [];
+                  return (
+                    <div key={view} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-gray-900">{getViewLabel(view)}</h3>
+                        <span className="text-xs text-gray-500">{selected.length} selected</span>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {selected.length > 0
+                          ? `Currently: ${selected.map((id) => reportNameMap.get(id) ?? id).join(', ')}`
+                          : 'No reports selected yet.'}
+                      </div>
+                      <div className="border border-gray-200 rounded-md divide-y divide-gray-200 max-h-64 overflow-auto">
+                        {(() => {
+                          const reportsForView = sortedReports.filter((report) =>
+                            isReportAllowedForView(report, view)
+                          );
+
+                          if (reportsForView.length === 0) {
+                            return (
+                              <div className="p-3 text-sm text-gray-500">
+                                No reports available for this dashboard.
+                              </div>
+                            );
+                          }
+
+                          return reportsForView.map((report) => {
+                            const checked = selected.includes(report.report_id);
+                            return (
+                              <label
+                                key={`${view}-${report.report_id}`}
+                                className="flex items-start gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
+                              >
+                                <input
+                                  type="checkbox"
+                                  className="mt-0.5 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                  checked={checked}
+                                  onChange={() => handleToggleReport(view, report.report_id)}
+                                  disabled={layoutSaving}
+                                />
+                                <div>
+                                  <div className="font-medium text-gray-900">{report.report_name}</div>
+                                  {report.description && (
+                                    <div className="text-xs text-gray-500">{report.description}</div>
+                                  )}
+                                </div>
+                              </label>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleResetLayouts}
+                disabled={layoutSaving || !layoutDirty}
+                className={`px-3 py-1.5 text-sm rounded-md border ${
+                  layoutSaving || !layoutDirty
+                    ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveLayouts}
+                disabled={layoutSaving || !layoutDirty}
+                className={`px-3 py-1.5 text-sm rounded-md text-white ${
+                  layoutSaving || !layoutDirty
+                    ? 'bg-blue-300 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+              >
+                {layoutSaving ? 'Saving...' : 'Save Layout'}
+              </button>
             </div>
           </div>
         );
-
       case 'insight-types':
         return (
           <div className="bg-white rounded-lg shadow-sm p-4">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAccessToken, refreshAccessToken, clearTokens, getCurrentUser, logout } from '@/lib/auth';
 import SettingsScreen from '@/components/SettingsScreen';
@@ -14,15 +14,15 @@ import PIAICards from '@/components/PIAICards';
 import PIRecommendations from '@/components/PIRecommendations';
 import TeamDashboard from '@/components/TeamDashboard';
 import SparksAILogo from '@/components/SparksAILogo';
-import PIPredictability from '@/components/PIPredictability';
-import PIBurndownChart from '@/components/PIBurndownChart';
-import EpicScopeChangesChart from '@/components/EpicScopeChangesChart';
+import ReportPanel from '@/components/ReportPanel';
+import PIDashboardView from '@/components/PIDashboardView';
 import GeneralDataView from '@/components/GeneralDataView';
 import PromptsTab from '@/components/PromptsTab';
 import UploadTranscripts from '@/components/UploadTranscripts';
 import AIChatModal from '@/components/AIChatModal';
 import { getIssueTypes, getDefaultIssueType } from '@/lib/issueTypes';
 import { ApiService, verifyAdmin, listUsers, getUserRoles, getAllowlist, addAllowlist, deleteAllowlist, deleteUser, listRoles, assignRoleToUser, unassignRoleFromUser, getPendingRoles, assignPendingRole, unassignPendingRole, RoleDto, UserDto } from '@/lib/api';
+import DashboardAIMenu from '@/components/DashboardAIMenu';
 
 export default function Home() {
   const router = useRouter();
@@ -49,9 +49,6 @@ export default function Home() {
   const [selectedTeam, setSelectedTeam] = useState('AutoDesign-Dev');
   const [selectedPI, setSelectedPI] = useState('Q32025'); // Default to Q32025 which has data
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedPIIssueType, setSelectedPIIssueType] = useState(getDefaultIssueType('burndown')); // Default to Epic
-  const [piBurndownCollapsed, setPiBurndownCollapsed] = useState(false);
-  const [scopeChangesCollapsed, setScopeChangesCollapsed] = useState(false);
   const [loading, setLoading] = useState({
     sprintGoal: false,
     dailyAgent: false,
@@ -342,80 +339,7 @@ export default function Home() {
         );
       case 'pi-dashboard':
         return (
-          <div className="h-full flex flex-col">
-            {/* Dashboard Content */}
-            <div className="flex-1 overflow-auto space-y-4">
-            <div className="bg-white rounded-lg shadow-sm pt-2 pb-4 px-4">
-              <div className="flex items-center mb-3">
-                <button 
-                  onClick={() => setPiBurndownCollapsed(!piBurndownCollapsed)}
-                  className="text-gray-500 hover:text-gray-700 transition-colors mr-2"
-                >
-                  {piBurndownCollapsed ? '▼' : '▲'}
-                </button>
-                <h2 className="text-lg font-semibold">PI Burndown Chart</h2>
-              </div>
-              {!piBurndownCollapsed && (
-                <div className="space-y-3">
-                  {/* Issue Type Filter */}
-                  <div className="flex items-center">
-                    <div className="flex items-center gap-2">
-                      <label className="text-xs font-medium text-gray-700">Issue Type:</label>
-                      <select
-                        value={selectedPIIssueType}
-                        onChange={(e) => setSelectedPIIssueType(e.target.value)}
-                        className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        style={{ 
-                          minWidth: '120px',
-                          backgroundColor: 'white',
-                          zIndex: 9999,
-                          position: 'relative'
-                        }}
-                      >
-                        {getIssueTypes().map((issueType) => (
-                          <option key={issueType.value} value={issueType.value}>
-                            {issueType.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="flex-1 text-center text-sm font-medium text-gray-800" style={{ transform: 'translateX(-80px)' }}>
-                      {selectedPI}
-                    </div>
-                    <div className="w-24"></div> {/* Spacer to balance the layout */}
-                  </div>
-                  
-                  <PIBurndownChart 
-                    piName={selectedPI}
-                    issueType={selectedPIIssueType}
-                    isVisible={!piBurndownCollapsed}
-                  />
-                </div>
-              )}
-            </div>
-            <PIPredictability selectedPI={selectedPI} selectedTeam={selectedTeam} />
-            
-            {/* Epic Scope Changes Chart */}
-            <div className="bg-white rounded-lg shadow-sm p-4 overflow-x-auto">
-              <div className="flex items-center mb-3">
-                <button 
-                  onClick={() => setScopeChangesCollapsed(!scopeChangesCollapsed)}
-                  className="text-gray-500 hover:text-gray-700 transition-colors mr-2"
-                >
-                  {scopeChangesCollapsed ? '▼' : '▲'}
-                </button>
-                <h2 className="text-lg font-semibold">Epic Scope Changes</h2>
-              </div>
-
-              {!scopeChangesCollapsed && (
-                <EpicScopeChangesChart 
-                  selectedQuarter={selectedPI} 
-                  isVisible={!scopeChangesCollapsed}
-                />
-              )}
-              </div>
-            </div>
-          </div>
+          <PIDashboardView selectedPI={selectedPI} selectedTeam={selectedTeam} />
         );
       case 'prompts':
         return (
@@ -908,7 +832,7 @@ export default function Home() {
   };
 
   return authChecked ? (
-    <div className="h-screen bg-gray-50 flex overflow-hidden">
+    <div className="h-screen bg-white flex overflow-hidden">
       {/* Mobile Sidebar Overlay */}
       {mobileSidebarOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
@@ -1099,36 +1023,17 @@ export default function Home() {
               </div>
             </div>
             
-            {/* Center: Dashboard AI Insights button and Prompt selector */}
-            {(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') && (
-              <div className="hidden sm:flex items-center justify-center space-x-3 flex-1">
-                <button
-                  onClick={() => setIsDashboardChatModalOpen(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-full text-sm font-medium transition-colors shadow-sm hover:shadow-md whitespace-nowrap"
-                >
-                  AI Insights
-                </button>
-                <div className="hidden md:flex items-center space-x-2 relative z-10">
-                  <label className="text-xs font-medium text-gray-700 whitespace-nowrap">Prompt:</label>
-                  <select
-                    value={selectedPrompt}
-                    onChange={(e) => setSelectedPrompt(e.target.value)}
-                    disabled={loadingPrompts}
-                    className="px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[200px] bg-white"
-                  >
-                    <option value="">Select a prompt...</option>
-                    {prompts.map((prompt) => (
-                      <option key={`${prompt.email_address}/${prompt.prompt_name}`} value={prompt.prompt_name}>
-                        {prompt.prompt_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            )}
-            
-            {/* Right side: user info */}
+            {/* Right side: user info and AI Menu */}
             <div className="flex items-center space-x-2 md:space-x-4 flex-1 justify-end">
+              {(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') && (
+                <DashboardAIMenu
+                  onOpenAIChat={() => setIsDashboardChatModalOpen(true)}
+                  prompts={prompts}
+                  selectedPrompt={selectedPrompt}
+                  onPromptChange={setSelectedPrompt}
+                  loadingPrompts={loadingPrompts}
+                />
+              )}
               <div className="flex items-center space-x-3 text-sm text-gray-700">
                 {(() => {
                   const u = getCurrentUser();
@@ -1181,28 +1086,13 @@ export default function Home() {
           {/* Dashboard controls */}
           {(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') && (
             <div className="flex items-center justify-between gap-2">
-              <button
-                onClick={() => setIsDashboardChatModalOpen(true)}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-full text-sm font-medium transition-colors shadow-sm hover:shadow-md whitespace-nowrap"
-              >
-                AI Insights
-              </button>
-            <div className="flex items-center gap-2 relative z-10">
-                <label className="text-[11px] font-medium text-gray-700 whitespace-nowrap">Prompt:</label>
-                <select
-                  value={selectedPrompt}
-                  onChange={(e) => setSelectedPrompt(e.target.value)}
-                  disabled={loadingPrompts}
-                  className="px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[140px] bg-white"
-                >
-                  <option value="">Select a prompt...</option>
-                  {prompts.map((prompt) => (
-                    <option key={`${prompt.email_address}/${prompt.prompt_name}`} value={prompt.prompt_name}>
-                      {prompt.prompt_name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <DashboardAIMenu
+                onOpenAIChat={() => setIsDashboardChatModalOpen(true)}
+                prompts={prompts}
+                selectedPrompt={selectedPrompt}
+                onPromptChange={setSelectedPrompt}
+                loadingPrompts={loadingPrompts}
+              />
             </div>
           )}
 

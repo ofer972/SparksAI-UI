@@ -8,6 +8,7 @@ interface MultiPIFilterProps {
   onPIsChange: (pis: string[]) => void;
   className?: string;
   maxSelections?: number;
+  autoSelectFirst?: boolean;
 }
 
 interface PI {
@@ -32,7 +33,8 @@ export default function MultiPIFilter({
   selectedPIs, 
   onPIsChange, 
   className = '',
-  maxSelections = 4 
+  maxSelections = 4,
+  autoSelectFirst = true,
 }: MultiPIFilterProps) {
   const [pis, setPis] = useState<PI[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,8 +50,8 @@ export default function MultiPIFilter({
         
         if (response.pis) {
           setPis(response.pis);
-          // Set default PI if none selected
-          if (selectedPIs.length === 0 && response.pis.length > 0) {
+          // Set default PI if none selected and allowed
+          if (autoSelectFirst && selectedPIs.length === 0 && response.pis.length > 0) {
             onPIsChange([response.pis[0].pi_name]);
           }
         } else {
@@ -66,7 +68,8 @@ export default function MultiPIFilter({
     };
 
     fetchPIs();
-  }, [selectedPIs, onPIsChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onPIsChange, autoSelectFirst]);
 
   const handlePIChange = (piName: string, checked: boolean) => {
     if (checked) {

@@ -10,6 +10,7 @@ import {
   RecommendationsResponse,
   SprintMetrics,
   CompletionRate,
+  ClosedSprint,
   ClosedSprintsResponse,
   IssuesTrendResponse,
   IssuesTrendDataPoint,
@@ -19,9 +20,12 @@ import {
   ScopeChangesDataPoint,
   InsightTypesResponse,
   InsightType,
-  InsightCategoriesResponse
+  InsightCategoriesResponse,
+  ReportDefinition,
+  ReportInstancePayload,
+  DashboardViewConfig
 } from './config';
-import { getAuthHeaders, refreshAccessToken, clearTokens } from './auth';
+import { getAuthHeaders, refreshAccessToken, clearTokens, getCurrentUser } from './auth';
 
 // Re-export types for convenience
 export type { IssuesTrendDataPoint, IssuesTrendResponse, PIPredictabilityResponse, PIPredictabilityData, ScopeChangesResponse, ScopeChangesDataPoint };
@@ -129,11 +133,86 @@ export interface PIBurndownResponse {
   message: string;
 }
 
+type PrimitiveFilter = string | number | boolean;
+type ReportFilterValue = PrimitiveFilter | null | undefined | PrimitiveFilter[];
+
 export class ApiService {
   private baseUrl: string;
 
   constructor() {
     this.baseUrl = API_CONFIG.baseUrl;
+  }
+
+  private buildReportQuery(filters?: Record<string, string | number | boolean | (string | number | boolean)[] | null | undefined>): string {
+    if (!filters) {
+      return '';
+    }
+
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value === null || value === undefined) {
+        continue;
+      }
+      if (Array.isArray(value)) {
+        value.forEach(item => {
+          if (item !== null && item !== undefined && String(item).trim() !== '') {
+            params.append(key, String(item));
+          }
+        });
+      } else {
+        const stringValue = String(value);
+        if (stringValue.trim() === '') {
+          continue;
+        }
+        params.append(key, stringValue);
+      }
+    }
+
+    return params.toString();
+  }
+
+  private normalizeDashboardConfigs(payload: any): DashboardViewConfig[] {
+    const items = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.data)
+        ? payload.data
+        : [];
+
+    if (!Array.isArray(items)) {
+      return [];
+    }
+
+    return items
+      .map((entry) => {
+        const view = typeof entry?.view === 'string'
+          ? entry.view.trim()
+          : typeof entry?.view_name === 'string'
+            ? entry.view_name.trim()
+            : '';
+
+        const rawReportIds = Array.isArray(entry?.reportIds)
+          ? entry.reportIds
+          : Array.isArray(entry?.report_ids)
+            ? entry.report_ids
+            : Array.isArray(entry?.reportIDs)
+              ? entry.reportIDs
+              : [];
+
+        const reportIds = (rawReportIds as unknown[])
+          .filter((id: unknown) => id !== null && id !== undefined)
+          .map((id: unknown) => String(id).trim())
+          .filter((id: string) => id.length > 0);
+
+        if (!view) {
+          return null;
+        }
+
+        return {
+          view,
+          reportIds,
+        } as DashboardViewConfig;
+      })
+      .filter((cfg): cfg is DashboardViewConfig => cfg !== null);
   }
 
   // Teams API
@@ -145,6 +224,59 @@ export class ApiService {
     }
 
     const result: ApiResponse<TeamsResponse> = await response.json();
+    return result.data;
+  }
+
+  // Reports API
+  async getReportDefinitions(): Promise<ReportDefinition[]> {
+    const url = buildBackendUrl(API_CONFIG.endpoints.reports.list);
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch report definitions: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+
+    if (result?.success === false) {
+      throw new Error(result?.message || 'Failed to fetch report definitions');
+    }
+
+    if (result?.success && Array.isArray(result.data)) {
+      return result.data as ReportDefinition[];
+    }
+
+    if (result?.success && result.data?.reports && Array.isArray(result.data.reports)) {
+      return result.data.reports as ReportDefinition[];
+    }
+
+    return Array.isArray(result?.data) ? (result.data as ReportDefinition[]) : [];
+  }
+
+  async getReport<T = any>(
+    reportId: string,
+    filters?: Record<string, ReportFilterValue>
+  ): Promise<ReportInstancePayload<T>> {
+    const encodedId = encodeURIComponent(reportId);
+    const baseUrl = buildBackendUrl(API_CONFIG.endpoints.reports.detail);
+    const query = this.buildReportQuery(filters);
+    const url = query ? `${baseUrl}/${encodedId}?${query}` : `${baseUrl}/${encodedId}`;
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      throw new Error(
+        `Failed to fetch report '${reportId}': ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`
+      );
+    }
+
+    const result: ApiResponse<ReportInstancePayload<T>> = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.message || `Failed to fetch report '${reportId}'`);
+    }
+
     return result.data;
   }
 
@@ -330,19 +462,19 @@ export class ApiService {
   // Note: In-progress count is part of CompletionRate API (in_progress_issues). No separate endpoint.
 
   async getClosedSprints(teamName: string, months: number = 3): Promise<ClosedSprintsResponse> {
-    const params = new URLSearchParams({
+    const payload = await this.getReport<ClosedSprint[]>('team-closed-sprints', {
       team_name: teamName,
-      months: months.toString(),
+      months,
     });
 
-    const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.teamMetrics.closedSprints)}?${params}`);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch closed sprints: ${response.statusText}`);
-    }
+    const rows = Array.isArray(payload.result) ? payload.result : [];
 
-    const result: ApiResponse<ClosedSprintsResponse> = await response.json();
-    return result.data;
+    return {
+      closed_sprints: rows,
+      count: rows.length,
+      team_name: teamName,
+      months_looked_back: months,
+    };
   }
 
   async getIssuesTrend(
@@ -350,82 +482,48 @@ export class ApiService {
     issueType: string = 'Bug',
     months: number = 6
   ): Promise<IssuesTrendResponse> {
-    const params = new URLSearchParams({
+    const payload = await this.getReport<IssuesTrendDataPoint[]>('team-issues-trend', {
       team_name: teamName,
       issue_type: issueType,
-      months: months.toString(),
+      months,
     });
 
-    const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.teamMetrics.issuesTrend)}?${params}`);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch issues trend data: ${response.statusText}`);
-    }
+    const trendData = Array.isArray(payload.result) ? payload.result : [];
 
-    const result: ApiResponse<IssuesTrendResponse> = await response.json();
-    return result.data;
+    return {
+      team_name: teamName,
+      issue_type: issueType,
+      months,
+      trend_data: trendData,
+      count: trendData.length,
+    };
   }
 
   // Scope Changes API
   async getScopeChanges(quarter: string | string[]): Promise<ScopeChangesResponse> {
-    const params = new URLSearchParams();
-    
-    if (Array.isArray(quarter)) {
-      quarter.forEach(q => params.append('quarter', q));
-    } else {
-      params.append('quarter', quarter);
-    }
+    const quarters = Array.isArray(quarter) ? quarter : [quarter];
+    const payload = await this.getReport<ScopeChangesDataPoint[]>('epic-scope-changes', {
+      quarters,
+    });
 
-    const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.pis.getScopeChanges)}?${params}`);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch scope changes data: ${response.statusText}`);
-    }
+    const scopeData = Array.isArray(payload.result) ? payload.result : [];
 
-    const result: ApiResponse<ScopeChangesResponse> = await response.json();
-    return result.data;
+    return {
+      scope_data: scopeData,
+      count: scopeData.length,
+      quarters,
+    };
   }
 
   // PI Predictability API
   async getPIPredictability(piNames: string | string[], teamName?: string): Promise<any> {
-    const params = new URLSearchParams();
-    
-    if (Array.isArray(piNames)) {
-      params.append('pi_names', piNames.join(','));
-    } else {
-      params.append('pi_names', piNames);
-    }
+    const piList = Array.isArray(piNames) ? piNames : [piNames];
+    const payload = await this.getReport<any[]>('pi-predictability', {
+      pi_names: piList,
+      team_name: teamName,
+    });
 
-    const url = `${buildBackendUrl(API_CONFIG.endpoints.pis.getPredictability)}?${params}`;
-    
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('PI Predictability API Error:', response.status, errorText);
-      throw new Error(`Failed to fetch PI predictability data: ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    
-    // Handle the actual API response structure
-    // The API returns: { success: bool, data: { predictability_data: [...], count: number, ... }, message: string }
-    if (result.data && typeof result.data === 'object' && !Array.isArray(result.data)) {
-      // Check if predictability_data exists and is an array
-      if ('predictability_data' in result.data && Array.isArray(result.data.predictability_data)) {
-        return result.data.predictability_data;
-      }
-    }
-    
-    // Fallback for other possible structures
-    if (result.data && Array.isArray(result.data)) {
-      return result.data;
-    } else if (Array.isArray(result)) {
-      return result;
-    }
-    
-    // Last resort
-    return [];
+    return Array.isArray(payload.result) ? payload.result : [];
   }
 
   // Team AI Cards API
@@ -1151,22 +1249,37 @@ export class ApiService {
   }
 
   // Users API
-  async getCurrentUser(): Promise<User> {
-    const response = await fetch(buildUserServiceUrl(API_CONFIG.endpoints.users.getCurrentUser));
     
-    if (!response.ok) {
-      throw new Error(`Failed to fetch current user: ${response.statusText}`);
-    }
 
-    const result = await response.json();
-    
-    // Check if response is wrapped in ApiResponse format
-    if (result.success && result.data) {
-      return result.data as User;
+  async getDashboardViewConfigs(): Promise<DashboardViewConfig[]> {
+    const response = await fetch('/api/dashboard/views');
+    if (!response.ok) {
+      throw new Error(`Failed to fetch dashboard view configuration: ${response.status} ${response.statusText}`);
     }
-    
-    // If response is direct object (no wrapper), return it directly
-    return result as User;
+    const data = await response.json();
+    return this.normalizeDashboardConfigs(data);
+  }
+
+  async updateDashboardViewConfigs(configs: DashboardViewConfig[]): Promise<DashboardViewConfig[]> {
+    const payload = configs.map((cfg) => ({
+      view: cfg.view,
+      report_ids: Array.isArray(cfg.reportIds)
+        ? cfg.reportIds.filter((id) => id !== null && id !== undefined).map((id) => String(id))
+        : [],
+    }));
+    const response = await fetch('/api/dashboard/views', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || `Failed to update dashboard view configuration: ${response.status} ${response.statusText}`);
+    }
+    const data = await response.json();
+    return this.normalizeDashboardConfigs(data);
   }
 }
 
@@ -1199,6 +1312,22 @@ export async function verifyAdmin(): Promise<boolean> {
     return isAdmin;
   } catch (error) {
     console.error('[verifyAdmin] Error parsing response:', error);
+    return false;
+  }
+}
+
+export async function verifySystem(): Promise<boolean> {
+  try {
+    const api = new ApiService();
+    const user = await getCurrentUser();
+    const userId = String(user?.id ?? '');
+    if (!userId) {
+      return false;
+    }
+    const roles = await getUserRoles(userId);
+    return roles.some((role) => role.roleName === 'SYSTEM');
+  } catch (error) {
+    console.error('[verifySystem] Failed to verify system role:', error);
     return false;
   }
 }

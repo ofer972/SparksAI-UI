@@ -32,6 +32,12 @@ export const API_CONFIG = {
       sprintBurndown: '/team-metrics/sprint-burndown',
     },
     
+    // Reports endpoints
+    reports: {
+      list: '/reports',
+      detail: '/reports',
+    },
+    
     // AI Cards endpoints
     aiCards: {
       getCards: '/team-ai-cards/getCards',
@@ -81,12 +87,18 @@ export const API_CONFIG = {
       getCategories: '/insight-types/categories',
     },
 
-    // Users endpoints
-    users: {
-      getCurrentUser: '/users/get-current-user',
-    },
+    
   },
 } as const;
+
+export const getJiraUrl = (): string => {
+  return API_CONFIG.jiraUrl || 'https://argus-sec.atlassian.net/';
+};
+
+export const getCleanJiraUrl = (): string => {
+  const jiraUrl = getJiraUrl();
+  return jiraUrl.endsWith('/') ? jiraUrl.slice(0, -1) : jiraUrl;
+};
 
 /**
  * Build URL for USER SERVICE / USER ENDPOINTS
@@ -296,12 +308,120 @@ export interface ScopeChangesDataPoint {
   'Stack Group': string;
   'Metric Name': string;
   Value: number;
+  [key: string]: any;
+}
+
+export interface IssueByPriority {
+  priority: string;
+  status_category: string;
+  issue_count: number;
+}
+
+export interface IssuesByTeamPriority {
+  priority: string;
+  issue_count: number;
+}
+
+export interface IssuesByTeam {
+  team_name: string;
+  priorities: IssuesByTeamPriority[];
+  total_issues: number;
+}
+
+export interface StatusDuration {
+  status_name: string;
+  avg_duration_days: number;
+}
+
+export interface IssueStatusDurationIssue {
+  issue_key: string;
+  summary: string | null;
+  duration_days: number;
+  time_entered?: string | null;
+  time_exited?: string | null;
+  team_name?: string | null;
+  issue_type?: string | null;
+}
+
+export interface MonthlyStatusDurationDataset {
+  label: string;
+  data: number[];
+}
+
+export interface SprintPredictabilityItem {
+  sprint_name: string;
+  sprint_official_end_date?: string;
+  sprint_predictability?: number;
+  avg_story_cycle_time?: number;
+  completed_issue_keys?: string[];
+  total_committed_issue_keys?: string[];
+  issues_not_completed_keys?: string[];
+}
+
+export interface ReleasePredictabilityItem {
+  version_name?: string;
+  project_key?: string;
+  release_start_date?: string;
+  release_date?: string;
+  total_epics_in_scope?: number;
+  epics_completed?: number;
+  epic_percent_completed?: number;
+  total_other_issues_in_scope?: number;
+  other_issues_completed?: number;
+  other_issues_percent_completed?: number;
+}
+
+export interface EpicDependencyItem {
+  [key: string]: any;
+}
+
+export interface HierarchyItem {
+  key: string;
+  parent: string | null;
+  [key: string]: any;
+}
+
+export interface PIMetricsSummaryData {
+  pi_name?: string;
+  progress_delta_pct?: number;
+  progress_delta_pct_status?: 'red' | 'yellow' | 'green' | 'gray';
+  total_issues?: number;
+  remaining_epics?: number;
+  ideal_remaining?: number;
+  [key: string]: any;
 }
 
 export interface ScopeChangesResponse {
   scope_data: ScopeChangesDataPoint[];
   count: number;
   quarters: string[];
+}
+
+export interface ReportDefinition {
+  report_id: string;
+  report_name: string;
+  chart_type: string;
+  data_source: string;
+  description: string;
+  default_filters: Record<string, any>;
+  meta_schema: {
+    required_filters: string[];
+    optional_filters: string[];
+    parameters: Record<string, { type: string; description: string; items?: { type: string } }>;
+    allowed_views?: string[];
+  };
+}
+
+export interface ReportInstancePayload<T = any> {
+  definition: ReportDefinition;
+  filters: Record<string, any>;
+  result: T;
+  meta: Record<string, any>;
+}
+
+export interface DashboardViewConfig {
+  view: string;
+  reportIds: string[];
 }
 
 export interface InsightType {

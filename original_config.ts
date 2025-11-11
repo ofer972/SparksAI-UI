@@ -65,9 +65,6 @@ export const API_CONFIG = {
     },
 
     // Users endpoints
-    users: {
-      getCurrentUser: '/api/v1/users/get-current-user',
-    },
   },
 } as const;
 

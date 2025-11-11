@@ -1,24 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import BurndownChart from './SprintBurndownChart';
-import ClosedSprints from './ClosedSprints';
-import IssuesTrendChart from './IssuesTrendChart';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import ReportPanel from './ReportPanel';
+import type { ReportInstancePayload } from '@/lib/config';
+import { ApiService } from '@/lib/api';
 
 interface TeamDashboardProps {
   selectedTeam: string;
 }
 
-export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
-  const [burndownCollapsed, setBurndownCollapsed] = useState(false);
-  const [issuesTrendCollapsed, setIssuesTrendCollapsed] = useState(false);
-  const [selectedSprint, setSelectedSprint] = useState('');
-  const [currentSprintName, setCurrentSprintName] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+const TEAM_DASHBOARD_DEFAULTS = ['team-current-sprint-progress', 'team-closed-sprints', 'team-sprint-burndown', 'team-issues-trend', 'sprint-predictability'];
 
-  // Sample sprint data - in the future this will come from API
-  const sprintOptions = [
-    { value: '', label: 'All Sprints' },
+const SPRINT_OPTIONS = [
+  { value: '', label: 'Current Sprint' },
     { value: 'IDPS-DEV-2025-10-19', label: 'IDPS-DEV-2025-10-19' },
     { value: 'IDPS-DEV-2025-10-05', label: 'IDPS-DEV-2025-10-05' },
     { value: 'IDPS-DEV-2025-09-21', label: 'IDPS-DEV-2025-09-21' },
@@ -30,94 +24,182 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
     { value: 'IDPS-DEV-2025-06-29', label: 'IDPS-DEV-2025-06-29' },
   ];
 
-  // Simulate loading when team changes
+export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
+  const [dashboardReports, setDashboardReports] = useState<string[]>([]);
+  const [loadingConfig, setLoadingConfig] = useState(true);
+  const [configError, setConfigError] = useState<string | null>(null);
+
   useEffect(() => {
-    setIsLoading(true);
-    setSelectedSprint(''); // Clear sprint selection when team changes
-    setCurrentSprintName(''); // Clear current sprint name
-    // Simulate API call delay
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 800); // Reduced from 1500ms to 800ms
-    
-    return () => clearTimeout(timer);
+    const fetchConfig = async () => {
+      setLoadingConfig(true);
+      setConfigError(null);
+      try {
+        const apiService = new ApiService();
+        const config = await apiService.getDashboardViewConfigs();
+        const teamDashboardConfig = config.find((c) => c.view === 'team-dashboard');
+        if (teamDashboardConfig) {
+          setDashboardReports(teamDashboardConfig.reportIds);
+        } else {
+          setDashboardReports(TEAM_DASHBOARD_DEFAULTS);
+        }
+      } catch (err) {
+        console.error('Failed to fetch dashboard config:', err);
+        setConfigError('Failed to load dashboard configuration.');
+        setDashboardReports(TEAM_DASHBOARD_DEFAULTS);
+      } finally {
+        setLoadingConfig(false);
+      }
+    };
+    fetchConfig();
+  }, []);
+
+  const [selectedSprint, setSelectedSprint] = useState('');
+  const [currentSprintName, setCurrentSprintName] = useState('');
+
+  useEffect(() => {
+    setSelectedSprint('');
+    setCurrentSprintName('');
   }, [selectedTeam]);
+
+  const handleBurndownResolved = useCallback((payload: ReportInstancePayload) => {
+    const sprintFromMeta = payload?.meta?.sprint_name;
+    if (sprintFromMeta) {
+      setCurrentSprintName(sprintFromMeta);
+    }
+  }, []);
+
+  const commonPanelProps = useMemo(
+    () => ({
+      loadingFallback: (
+        <div className="flex items-center justify-center h-96">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+            <div className="text-sm text-gray-600">Loading report...</div>
+          </div>
+        </div>
+      ),
+      errorFallback: (errorMessage: string) => (
+        <div className="flex items-center justify-center h-96">
+          <div className="text-red-500">Error: {errorMessage}</div>
+        </div>
+      ),
+    }),
+    []
+  );
+
+  if (loadingConfig) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+          <div className="text-sm text-gray-600">Loading dashboard configuration...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (configError) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
+        <p>{configError}</p>
+        <p>Displaying default dashboard reports.</p>
+      </div>
+    );
+  }
+
+  if (!selectedTeam) {
+    return (
+      <div className="p-6 text-center text-gray-500">
+        Select a team to view dashboard insights.
+      </div>
+    );
+  }
+
+  const renderReportSection = (reportId: string) => {
+    switch (reportId) {
+      case 'team-closed-sprints':
+        return (
+          <ReportPanel
+            reportId="team-closed-sprints"
+            initialFilters={{ months: 3 }}
+            controlledFilters={{ team_name: selectedTeam }}
+            enabled
+            {...commonPanelProps}
+          />
+        );
+      case 'team-sprint-burndown':
+        return (
+          <ReportPanel
+            reportId="team-sprint-burndown"
+            initialFilters={{ issue_type: 'all' }}
+            controlledFilters={{
+              team_name: selectedTeam,
+              sprint_name: selectedSprint || null,
+            }}
+            enabled
+            componentProps={{
+              sprintOptions: SPRINT_OPTIONS,
+              onSprintChange: setSelectedSprint,
+              currentSprintName,
+            }}
+            onResolved={handleBurndownResolved}
+            {...commonPanelProps}
+          />
+        );
+      case 'team-issues-trend':
+        return (
+          <ReportPanel
+            reportId="team-issues-trend"
+            initialFilters={{ issue_type: 'Bug', months: 6 }}
+            controlledFilters={{ team_name: selectedTeam }}
+            enabled
+            {...commonPanelProps}
+          />
+        );
+      case 'sprint-predictability':
+        return (
+          <ReportPanel
+            reportId="sprint-predictability"
+            initialFilters={{ months: 3 }}
+            controlledFilters={{ team_name: selectedTeam }}
+            enabled={Boolean(selectedTeam)}
+            {...commonPanelProps}
+          />
+        );
+      default:
+        return (
+          <ReportPanel
+            reportId={reportId}
+            controlledFilters={{ team_name: selectedTeam }}
+            enabled={Boolean(selectedTeam)}
+            {...commonPanelProps}
+          />
+        );
+    }
+  };
 
   return (
     <div className="space-y-4">
-      <ClosedSprints 
-        selectedTeam={selectedTeam} 
-        isLoading={isLoading} 
-        isVisible={true}
-      />
-      
-      <div className="bg-white rounded-lg shadow-sm pt-2 pb-4 px-4">
-        <div className="flex items-center mb-3">
-          <button 
-            onClick={() => setBurndownCollapsed(!burndownCollapsed)}
-            className="text-gray-500 hover:text-gray-700 transition-colors mr-2"
-          >
-            {burndownCollapsed ? '▼' : '▲'}
-          </button>
-          <h2 className="text-lg font-semibold">Sprint Burndown Chart</h2>
+      {dashboardReports.length === 0 ? (
+        <div className="p-4 text-gray-500">
+          No reports are configured for the team dashboard yet.
         </div>
-        {!burndownCollapsed && (
-          <div className="space-y-3">
-            {/* Sprint Filter and Name */}
-            <div className="flex items-center">
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-medium text-gray-700">Sprint:</label>
-                <select
-                  value={selectedSprint}
-                  onChange={(e) => setSelectedSprint(e.target.value)}
-                  className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  {sprintOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 items-stretch">
+          {dashboardReports.map((reportId, index) => {
+            const isLast = index === dashboardReports.length - 1;
+            const shouldSpan = dashboardReports.length % 2 === 1 && isLast;
+            return (
+              <div
+                key={reportId}
+                className={`${shouldSpan ? 'md:col-span-2' : ''} h-full`}
+              >
+                {renderReportSection(reportId)}
               </div>
-              <div className="flex-1 text-center text-sm font-medium text-gray-800" style={{ transform: 'translateX(-80px)' }}>
-                {currentSprintName || 'Loading...'}
-              </div>
-              <div className="w-24"></div> {/* Spacer to balance the layout */}
-            </div>
-            
-            <BurndownChart
-              teamName={selectedTeam}
-              issueType="all"
-              sprintName={selectedSprint || undefined}
-              onSprintNameChange={setCurrentSprintName}
-              isVisible={!burndownCollapsed}
-            />
-          </div>
-        )}
-      </div>
-      
-      {/* Issues Trend Chart */}
-      <div className="bg-white rounded-lg shadow-sm pt-2 pb-4 px-4">
-        <div className="flex items-center mb-3">
-          <button 
-            onClick={() => setIssuesTrendCollapsed(!issuesTrendCollapsed)}
-            className="text-gray-500 hover:text-gray-700 transition-colors mr-2"
-          >
-            {issuesTrendCollapsed ? '▼' : '▲'}
-          </button>
-          <h2 className="text-lg font-semibold">Bugs Created and Resolved Over Time</h2>
+            );
+          })}
         </div>
-        {!issuesTrendCollapsed && (
-          <IssuesTrendChart
-            teamName={selectedTeam}
-            issueType="Bug"
-            months={6}
-            isVisible={!issuesTrendCollapsed}
-          />
-        )}
-      </div>
-      
-      {/* Future charts and components will be added here */}
+      )}
     </div>
   );
 }
