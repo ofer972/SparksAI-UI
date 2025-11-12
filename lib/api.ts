@@ -207,9 +207,13 @@ export class ApiService {
           return null;
         }
 
+        // Extract layout_config if present
+        const layoutConfig = entry?.layout_config || entry?.layoutConfig || undefined;
+
         return {
           view,
           reportIds,
+          layout_config: layoutConfig,
         } as DashboardViewConfig;
       })
       .filter((cfg): cfg is DashboardViewConfig => cfg !== null);
@@ -1266,6 +1270,7 @@ export class ApiService {
       report_ids: Array.isArray(cfg.reportIds)
         ? cfg.reportIds.filter((id) => id !== null && id !== undefined).map((id) => String(id))
         : [],
+      layout_config: cfg.layout_config || undefined,
     }));
     const response = await fetch('/api/dashboard/views', {
       method: 'PUT',

@@ -13,6 +13,7 @@ import { ApiService, verifySystem } from '../lib/api';
 import { InsightType, DashboardViewConfig, ReportDefinition } from '../lib/config';
 import EditInsightTypeModal from './EditInsightTypeModal';
 import Toast from './Toast';
+import DashboardLayoutArranger, { DashboardLayout } from './DashboardLayoutArranger';
 
 const DASHBOARD_VIEWS = ['team-dashboard', 'pi-dashboard'];
 const DEFAULT_ALLOWED_VIEW = 'every-dashboard';
@@ -107,6 +108,9 @@ export default function SettingsScreen() {
   const [layoutSaving, setLayoutSaving] = useState(false);
   const [layoutDirty, setLayoutDirty] = useState(false);
   const [layoutLoaded, setLayoutLoaded] = useState(false);
+  const [isArrangeMode, setIsArrangeMode] = useState(false);
+  const [currentArrangeView, setCurrentArrangeView] = useState<string | null>(null);
+  const [dashboardLayouts, setDashboardLayouts] = useState<Record<string, DashboardLayout>>({});
 
   const cloneViewMap = (source: Record<string, string[]>): Record<string, string[]> => {
     const clone: Record<string, string[]> = {};
@@ -469,6 +473,16 @@ export default function SettingsScreen() {
         const cloned = cloneViewMap(sanitized);
         setSelectedReportsByView(cloned);
         setOriginalReportsByView(cloneViewMap(sanitized));
+        
+        // Load layout configurations
+        const layouts: Record<string, DashboardLayout> = {};
+        configs.forEach((config) => {
+          if (config.layout_config && config.layout_config.rows && config.layout_config.rows.length > 0) {
+            layouts[config.view] = config.layout_config;
+          }
+        });
+        setDashboardLayouts(layouts);
+        
         setLayoutDirty(false);
         setLayoutLoaded(true);
       } catch (error) {
@@ -576,6 +590,8 @@ export default function SettingsScreen() {
 
   const handleResetLayouts = () => {
     setSelectedReportsByView(cloneViewMap(originalReportsByView));
+    // Reload layouts from original data
+    setLayoutLoaded(false); // This will trigger a reload
     setLayoutDirty(false);
   };
 
@@ -588,6 +604,7 @@ export default function SettingsScreen() {
       const payload = Object.entries(sanitizedSelection).map(([view, reportIds]) => ({
         view,
         reportIds,
+        layout_config: dashboardLayouts[view] || undefined,
       }));
       const response = await api.updateDashboardViewConfigs(payload);
       const normalized = normalizeConfigsToMap(response);
@@ -775,10 +792,64 @@ export default function SettingsScreen() {
             </div>
           );
         }
+
+        // If in arrange mode, show the arranger
+        if (isArrangeMode && currentArrangeView) {
+          const reportsForView = sortedReports.filter((report) =>
+            isReportAllowedForView(report, currentArrangeView)
+          );
+          // Get saved layout or create default 2-per-row layout
+          let currentLayout = dashboardLayouts[currentArrangeView];
+          
+          if (!currentLayout) {
+            // Create default layout with 2 reports per row
+            const reportIds = selectedReportsByView[currentArrangeView] || [];
+            const rows: { id: string; reportIds: string[] }[] = [];
+            
+            for (let i = 0; i < reportIds.length; i += 2) {
+              rows.push({
+                id: `row-${i / 2 + 1}`,
+                reportIds: reportIds.slice(i, i + 2),
+              });
+            }
+            
+            currentLayout = { 
+              rows: rows.length > 0 ? rows : [{ id: 'row-1', reportIds: [] }] 
+            };
+          }
+
+          return (
+            <DashboardLayoutArranger
+              view={currentArrangeView}
+              availableReports={reportsForView}
+              initialLayout={currentLayout}
+              onLayoutChange={(newLayout) => {
+                setDashboardLayouts((prev) => ({
+                  ...prev,
+                  [currentArrangeView]: newLayout,
+                }));
+                // Update selected reports based on the layout
+                const allReportIds = newLayout.rows.flatMap((row) => row.reportIds);
+                setSelectedReportsByView((prev) => ({
+                  ...prev,
+                  [currentArrangeView]: allReportIds,
+                }));
+                setLayoutDirty(true);
+                setIsArrangeMode(false);
+                setCurrentArrangeView(null);
+              }}
+              onCancel={() => {
+                setIsArrangeMode(false);
+                setCurrentArrangeView(null);
+              }}
+            />
+          );
+        }
+
         return (
           <div className="space-y-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-xs text-blue-800">
-              Choose which reports should appear on each dashboard. Changes are saved for all users who can access these dashboards.
+              Choose which reports should appear on each dashboard. Use the &quot;Arrange&quot; button to organize reports in rows with custom column layouts.
             </div>
             {layoutError && (
               <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 text-sm">
@@ -800,7 +871,19 @@ export default function SettingsScreen() {
                     <div key={view} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-3">
                       <div className="flex items-center justify-between">
                         <h3 className="text-sm font-semibold text-gray-900">{getViewLabel(view)}</h3>
+                        <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-500">{selected.length} selected</span>
+                          <button
+                            onClick={() => {
+                              setCurrentArrangeView(view);
+                              setIsArrangeMode(true);
+                            }}
+                            disabled={layoutSaving || selected.length === 0}
+                            className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            📐 Arrange
+                          </button>
+                        </div>
                       </div>
                       <div className="text-xs text-gray-500">
                         {selected.length > 0

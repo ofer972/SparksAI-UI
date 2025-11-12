@@ -260,7 +260,7 @@ function DataTable<T extends Record<string, any>>({
   );
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 ${className}`}>
+    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-2.5 ${className}`}>
       {/* Header with Create Button, Refresh Button, and Filter */}
       {(onCreateItem || onRefresh) && (
         <div className="p-4 border-b border-gray-200 flex items-center gap-3">

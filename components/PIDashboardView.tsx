@@ -3,7 +3,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import ReportPanel from './ReportPanel';
 import { ApiService } from '@/lib/api';
-import type { ReportDefinition } from '@/lib/config';
+import type { ReportDefinition, LayoutConfig } from '@/lib/config';
 
 interface PIDashboardViewProps {
   selectedPI?: string;
@@ -17,6 +17,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   selectedTeam,
 }) => {
   const [reportOrder, setReportOrder] = useState<string[] | null>(null);
+  const [layoutConfig, setLayoutConfig] = useState<LayoutConfig | null>(null);
   const [configLoaded, setConfigLoaded] = useState(false);
 
   useEffect(() => {
@@ -76,10 +77,13 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
 
         if (configuredReports.length > 0) {
           setReportOrder(configuredReports);
+          setLayoutConfig(viewConfig?.layout_config || null);
         } else if (fallbackReports.length > 0) {
           setReportOrder(fallbackReports);
+          setLayoutConfig(null);
         } else {
           setReportOrder(PI_DASHBOARD_DEFAULTS);
+          setLayoutConfig(null);
         }
       } catch (error) {
         if (!cancelled) {
@@ -222,6 +226,38 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     );
   }
 
+  // Render with layout configuration if available
+  if (layoutConfig && layoutConfig.rows && layoutConfig.rows.length > 0) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="flex-1 overflow-auto">
+          <div className="space-y-4">
+            {layoutConfig.rows.map((row) => (
+              <div
+                key={row.id}
+                className="grid gap-4 items-stretch mb-4"
+                style={{
+                  gridTemplateColumns: `repeat(${row.reportIds.length}, minmax(0, 1fr))`,
+                  height: '500px',
+                }}
+              >
+                {row.reportIds.map((reportId) => {
+                  const panelKey = buildPanelKey(reportId);
+                  return (
+                    <div key={panelKey} className="h-full overflow-hidden">
+                      {renderReportSection(reportId, panelKey)}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback to default layout
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-auto">

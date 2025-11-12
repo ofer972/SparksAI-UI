@@ -419,9 +419,19 @@ export interface ReportInstancePayload<T = any> {
   meta: Record<string, any>;
 }
 
+export interface LayoutRow {
+  id: string;
+  reportIds: string[];
+}
+
+export interface LayoutConfig {
+  rows: LayoutRow[];
+}
+
 export interface DashboardViewConfig {
   view: string;
   reportIds: string[];
+  layout_config?: LayoutConfig;
 }
 
 export interface InsightType {

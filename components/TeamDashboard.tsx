@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import ReportPanel from './ReportPanel';
-import type { ReportInstancePayload } from '@/lib/config';
+import type { ReportInstancePayload, LayoutConfig } from '@/lib/config';
 import { ApiService } from '@/lib/api';
 
 interface TeamDashboardProps {
@@ -26,6 +26,7 @@ const SPRINT_OPTIONS = [
 
 export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
   const [dashboardReports, setDashboardReports] = useState<string[]>([]);
+  const [layoutConfig, setLayoutConfig] = useState<LayoutConfig | null>(null);
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [configError, setConfigError] = useState<string | null>(null);
 
@@ -39,13 +40,16 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
         const teamDashboardConfig = config.find((c) => c.view === 'team-dashboard');
         if (teamDashboardConfig) {
           setDashboardReports(teamDashboardConfig.reportIds);
+          setLayoutConfig(teamDashboardConfig.layout_config || null);
         } else {
           setDashboardReports(TEAM_DASHBOARD_DEFAULTS);
+          setLayoutConfig(null);
         }
       } catch (err) {
         console.error('Failed to fetch dashboard config:', err);
         setConfigError('Failed to load dashboard configuration.');
         setDashboardReports(TEAM_DASHBOARD_DEFAULTS);
+        setLayoutConfig(null);
       } finally {
         setLoadingConfig(false);
       }
@@ -178,6 +182,31 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
     }
   };
 
+  // Render with layout configuration if available
+  if (layoutConfig && layoutConfig.rows && layoutConfig.rows.length > 0) {
+    return (
+      <div className="space-y-4">
+        {layoutConfig.rows.map((row) => (
+          <div
+            key={row.id}
+            className="grid gap-4 items-stretch mb-4"
+            style={{
+              gridTemplateColumns: `repeat(${row.reportIds.length}, minmax(0, 1fr))`,
+              height: '500px',
+            }}
+          >
+            {row.reportIds.map((reportId) => (
+              <div key={reportId} className="h-full overflow-hidden">
+                {renderReportSection(reportId)}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Fallback to default layout
   return (
     <div className="space-y-4">
       {dashboardReports.length === 0 ? (

@@ -55,7 +55,7 @@ export default function StackedGroupedBarChart({
   xAxisLabel = 'Category',
   colorScheme = {},
   defaultColors = ['#0066cc', '#800080', '#00ff00', '#ff8c00', '#00ffff', '#ff0000', '#ffc0cb', '#808080'],
-  height = '425px',
+  height = '100%',
   loading = false,
   error = null
 }: StackedGroupedBarChartProps) {
@@ -440,7 +440,7 @@ export default function StackedGroupedBarChart({
   }
 
   return (
-    <div className="w-full" style={{ height }}>
+    <div className="w-full h-full">
       <Chart 
         ref={chartRef}
         type="bar" 
