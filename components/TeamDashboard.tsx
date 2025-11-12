@@ -185,14 +185,15 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
   // Render with layout configuration if available
   if (layoutConfig && layoutConfig.rows && layoutConfig.rows.length > 0) {
     return (
-      <div className="space-y-4">
-        {layoutConfig.rows.map((row) => (
+      <div className="space-y-4 p-4">
+        {layoutConfig.rows.map((row, idx) => (
           <div
             key={row.id}
-            className="grid gap-4 items-stretch mb-4"
+            className="grid gap-4 items-stretch"
             style={{
               gridTemplateColumns: `repeat(${row.reportIds.length}, minmax(0, 1fr))`,
               height: '500px',
+              marginBottom: idx < layoutConfig.rows.length - 1 ? '16px' : '0',
             }}
           >
             {row.reportIds.map((reportId) => (

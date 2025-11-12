@@ -229,30 +229,27 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   // Render with layout configuration if available
   if (layoutConfig && layoutConfig.rows && layoutConfig.rows.length > 0) {
     return (
-      <div className="h-full flex flex-col">
-        <div className="flex-1 overflow-auto">
-          <div className="space-y-4">
-            {layoutConfig.rows.map((row) => (
-              <div
-                key={row.id}
-                className="grid gap-4 items-stretch mb-4"
-                style={{
-                  gridTemplateColumns: `repeat(${row.reportIds.length}, minmax(0, 1fr))`,
-                  height: '500px',
-                }}
-              >
-                {row.reportIds.map((reportId) => {
-                  const panelKey = buildPanelKey(reportId);
-                  return (
-                    <div key={panelKey} className="h-full overflow-hidden">
-                      {renderReportSection(reportId, panelKey)}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
+      <div className="space-y-4 p-4">
+        {layoutConfig.rows.map((row, idx) => (
+          <div
+            key={row.id}
+            className="grid gap-4 items-stretch"
+            style={{
+              gridTemplateColumns: `repeat(${row.reportIds.length}, minmax(0, 1fr))`,
+              height: '500px',
+              marginBottom: idx < layoutConfig.rows.length - 1 ? '16px' : '0',
+            }}
+          >
+            {row.reportIds.map((reportId) => {
+              const panelKey = buildPanelKey(reportId);
+              return (
+                <div key={panelKey} className="h-full overflow-hidden">
+                  {renderReportSection(reportId, panelKey)}
+                </div>
+              );
+            })}
           </div>
-        </div>
+        ))}
       </div>
     );
   }
