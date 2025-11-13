@@ -188,7 +188,6 @@ const ReleasePredictabilityView: React.FC<ReleasePredictabilityViewProps> = ({
           columns={columns}
           loading={loading}
           emptyMessage="No release predictability data available."
-          maxHeight="600px"
           rowKey={(row, index) => `${row.version_name || 'release'}-${index}`}
         />
       )}

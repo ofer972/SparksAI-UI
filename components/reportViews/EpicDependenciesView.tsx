@@ -99,27 +99,29 @@ const EpicDependenciesView: React.FC<EpicDependenciesViewProps> = ({
       )}
 
       {!error && (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          <div className="border border-gray-200 rounded-lg p-4">
-            <h3 className="text-md font-semibold text-gray-900 mb-3">Outbound Dependency Metrics</h3>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 h-full">
+          <div className="border border-gray-200 rounded-lg p-4 flex flex-col">
+            <h3 className="text-md font-semibold text-gray-900 mb-3 flex-shrink-0">Outbound Dependency Metrics</h3>
+            <div className="flex-1 min-h-0">
             <DataTable<EpicDependencyItem>
               data={outbound}
               columns={outboundColumns.length ? outboundColumns : undefined}
               loading={loading}
               emptyMessage="No outbound dependencies found."
-              maxHeight="420px"
             />
+            </div>
           </div>
 
-          <div className="border border-gray-200 rounded-lg p-4">
-            <h3 className="text-md font-semibold text-gray-900 mb-3">Inbound Dependency Load</h3>
+          <div className="border border-gray-200 rounded-lg p-4 flex flex-col">
+            <h3 className="text-md font-semibold text-gray-900 mb-3 flex-shrink-0">Inbound Dependency Load</h3>
+            <div className="flex-1 min-h-0">
             <DataTable<EpicDependencyItem>
               data={inbound}
               columns={inboundColumns.length ? inboundColumns : undefined}
               loading={loading}
               emptyMessage="No inbound dependencies found."
-              maxHeight="420px"
             />
+            </div>
           </div>
         </div>
       )}

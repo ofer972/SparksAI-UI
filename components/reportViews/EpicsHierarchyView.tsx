@@ -147,7 +147,6 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
           loading={loading}
           error={undefined}
           emptyMessage="No epics found for the selected filters."
-          maxHeight="600px"
           rowKey={(row, index) => row.key ?? index}
       />
       )}

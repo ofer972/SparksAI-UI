@@ -201,7 +201,6 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
         loading={loading}
         error={error || undefined}
         emptyMessage="No sprints found matching the filter criteria."
-        maxHeight="600px"
         rowKey={(row) => row.sprint_id}
         striped
         hoverable

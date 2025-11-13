@@ -205,7 +205,6 @@ const SprintPredictabilityView: React.FC<SprintPredictabilityViewProps> = ({
           columns={columns}
           loading={loading}
           emptyMessage="No sprint predictability data available."
-          maxHeight="600px"
           rowKey={(row, index) => `${row.sprint_name || 'sprint'}-${index}`}
         />
       )}

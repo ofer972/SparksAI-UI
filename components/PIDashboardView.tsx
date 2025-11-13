@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import ReportPanel from './ReportPanel';
+import ResizableGrid from './ResizableGrid';
 import { ApiService } from '@/lib/api';
 import type { ReportDefinition, LayoutConfig } from '@/lib/config';
 
@@ -105,14 +106,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
 
   const commonPanelProps = useMemo(
     () => ({
-      loadingFallback: (
-        <div className="flex items-center justify-center h-96">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-            <div className="text-sm text-gray-600">Loading report...</div>
-          </div>
-        </div>
-      ),
+      // No loadingFallback - let report views handle loading within ReportCard
       errorFallback: (errorMessage: string) => (
         <div className="flex items-center justify-center h-96">
           <div className="text-red-500">Error: {errorMessage}</div>
@@ -228,28 +222,21 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
 
   // Render with layout configuration if available
   if (layoutConfig && layoutConfig.rows && layoutConfig.rows.length > 0) {
-    return (
-      <div className="space-y-4 p-4">
-        {layoutConfig.rows.map((row, idx) => (
-          <div
-            key={row.id}
-            className="grid gap-4 items-stretch"
-            style={{
-              gridTemplateColumns: `repeat(${row.reportIds.length}, minmax(0, 1fr))`,
-              height: '500px',
-              marginBottom: idx < layoutConfig.rows.length - 1 ? '16px' : '0',
-            }}
-          >
-            {row.reportIds.map((reportId) => {
-              const panelKey = buildPanelKey(reportId);
-              return (
-                <div key={panelKey} className="h-full overflow-hidden">
-                  {renderReportSection(reportId, panelKey)}
-                </div>
-              );
-            })}
+    const gridRows = layoutConfig.rows.map((row) => ({
+      id: row.id,
+      children: row.reportIds.map((reportId) => {
+        const panelKey = buildPanelKey(reportId);
+        return (
+          <div key={panelKey} className="h-full overflow-hidden">
+            {renderReportSection(reportId, panelKey)}
           </div>
-        ))}
+        );
+      }),
+    }));
+
+    return (
+      <div className="p-4">
+        <ResizableGrid rows={gridRows} defaultRowHeight={500} minRowHeight={500} />
       </div>
     );
   }

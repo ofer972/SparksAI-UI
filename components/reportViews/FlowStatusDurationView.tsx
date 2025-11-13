@@ -435,7 +435,6 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
                 columns={detailColumns}
                 loading={loading}
                 emptyMessage="No issues found for this status."
-                maxHeight="400px"
                 rowKey={(row, index) => `${row.issue_key || 'issue'}-${index}`}
               />
             </div>

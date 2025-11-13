@@ -267,7 +267,6 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
         loading={loading}
         error={error || undefined}
         emptyMessage={error ? undefined : 'No data found matching the filter criteria.'}
-        maxHeight="600px"
         rowKey={(row, index) => `${row.pi_name || 'pi'}-${row.team_name || 'team'}-${index}`}
         striped
         hoverable

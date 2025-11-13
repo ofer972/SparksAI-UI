@@ -26,7 +26,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
   className = '',
 }) => {
   const [collapsed, setCollapsed] = React.useState(defaultCollapsed);
-  const [filtersCollapsed, setFiltersCollapsed] = React.useState(false);
+  const [filtersCollapsed, setFiltersCollapsed] = React.useState(true);
 
   const handleToggleCollapse = React.useCallback(() => {
     setCollapsed((prev) => !prev);
@@ -62,6 +62,19 @@ const ReportCard: React.FC<ReportCardProps> = ({
         </div>
         <div className="flex items-center gap-2">
           {actions}
+          {filters && (
+            <button
+              type="button"
+              onClick={handleToggleFilters}
+              className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label={filtersCollapsed ? 'Show filters' : 'Hide filters'}
+              title={filtersCollapsed ? 'Show filters' : 'Hide filters'}
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+            </button>
+          )}
           {onRefresh && (
             <button
               type="button"
@@ -78,44 +91,21 @@ const ReportCard: React.FC<ReportCardProps> = ({
       </div>
 
       {!collapsed && (
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden border-b border-l border-r border-gray-200 rounded-b-lg">
-          {filters && (
-            <div className="border-b border-gray-100">
-              <div className="px-4 py-2 bg-gray-50 flex items-center justify-between">
-                <span className="text-xs font-semibold text-gray-700">Filters</span>
-                <button
-                  type="button"
-                  onClick={handleToggleFilters}
-                  className="inline-flex items-center justify-center h-6 w-6 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors"
-                  aria-label={filtersCollapsed ? 'Expand filters' : 'Collapse filters'}
-                >
-                  {filtersCollapsed ? (
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  ) : (
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-              {!filtersCollapsed && (
-                <div className="px-4 py-3 border-t border-gray-100">
-                  {filters}
-                </div>
-              )}
+        <div className="flex-1 flex flex-col min-h-0 border-b border-l border-r border-gray-200 rounded-b-lg">
+          {filters && !filtersCollapsed && (
+            <div className="flex-shrink-0 px-4 py-3 border-b border-gray-100 bg-gray-50">
+              {filters}
             </div>
           )}
 
-          <div className="flex-1 overflow-auto flex flex-col">
-            <div className="h-full">
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+            <div className="h-full w-full overflow-auto">
               {children}
             </div>
           </div>
 
           {footer && (
-            <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
+            <div className="flex-shrink-0 px-4 py-3 border-t border-gray-100 bg-gray-50">
               {footer}
             </div>
           )}

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import ReportPanel from './ReportPanel';
+import ResizableGrid from './ResizableGrid';
 import type { ReportInstancePayload, LayoutConfig } from '@/lib/config';
 import { ApiService } from '@/lib/api';
 
@@ -74,14 +75,7 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
 
   const commonPanelProps = useMemo(
     () => ({
-      loadingFallback: (
-        <div className="flex items-center justify-center h-96">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-            <div className="text-sm text-gray-600">Loading report...</div>
-          </div>
-        </div>
-      ),
+      // No loadingFallback - let report views handle loading within ReportCard
       errorFallback: (errorMessage: string) => (
         <div className="flex items-center justify-center h-96">
           <div className="text-red-500">Error: {errorMessage}</div>
@@ -184,25 +178,18 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
 
   // Render with layout configuration if available
   if (layoutConfig && layoutConfig.rows && layoutConfig.rows.length > 0) {
+    const gridRows = layoutConfig.rows.map((row) => ({
+      id: row.id,
+      children: row.reportIds.map((reportId) => (
+        <div key={reportId} className="h-full overflow-hidden">
+          {renderReportSection(reportId)}
+        </div>
+      )),
+    }));
+
     return (
-      <div className="space-y-4 p-4">
-        {layoutConfig.rows.map((row, idx) => (
-          <div
-            key={row.id}
-            className="grid gap-4 items-stretch"
-            style={{
-              gridTemplateColumns: `repeat(${row.reportIds.length}, minmax(0, 1fr))`,
-              height: '500px',
-              marginBottom: idx < layoutConfig.rows.length - 1 ? '16px' : '0',
-            }}
-          >
-            {row.reportIds.map((reportId) => (
-              <div key={reportId} className="h-full overflow-hidden">
-                {renderReportSection(reportId)}
-              </div>
-            ))}
-          </div>
-        ))}
+      <div className="p-4">
+        <ResizableGrid rows={gridRows} defaultRowHeight={500} minRowHeight={500} />
       </div>
     );
   }

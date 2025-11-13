@@ -260,10 +260,10 @@ function DataTable<T extends Record<string, any>>({
   );
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-2.5 ${className}`}>
+    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-2.5 h-full flex flex-col ${className}`}>
       {/* Header with Create Button, Refresh Button, and Filter */}
       {(onCreateItem || onRefresh) && (
-        <div className="p-4 border-b border-gray-200 flex items-center gap-3">
+        <div className="p-4 border-b border-gray-200 flex items-center gap-3 flex-shrink-0">
           <div className="flex items-center gap-2 flex-shrink-0">
             {onCreateItem && allowCreate && (
               <button
@@ -293,7 +293,7 @@ function DataTable<T extends Record<string, any>>({
       )}
 
       {/* Table Container with Sticky Header */}
-      <div className="overflow-auto" style={{ maxHeight }}>
+      <div className="flex-1 overflow-auto min-h-0">
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
             <tr>
@@ -545,7 +545,7 @@ function DataTable<T extends Record<string, any>>({
 
       {/* Footer with row count */}
       {!loading && !error && sortedData.length > 0 && (
-        <div className="px-4 py-2 bg-gray-50 border-t border-gray-200">
+        <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 flex-shrink-0">
           <span className="text-xs text-gray-500">
             Showing {sortedData.length} {sortedData.length === 1 ? 'row' : 'rows'}
           </span>
