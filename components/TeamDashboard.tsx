@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import ReportPanel from './ReportPanel';
-import ResizableGrid from './ResizableGrid';
+import DraggableResizableGrid from './DraggableResizableGrid';
 import type { ReportInstancePayload, LayoutConfig } from '@/lib/config';
 import { ApiService } from '@/lib/api';
 
@@ -30,6 +30,19 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
   const [layoutConfig, setLayoutConfig] = useState<LayoutConfig | null>(null);
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [configError, setConfigError] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -178,18 +191,36 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
 
   // Render with layout configuration if available
   if (layoutConfig && layoutConfig.rows && layoutConfig.rows.length > 0) {
-    const gridRows = layoutConfig.rows.map((row) => ({
-      id: row.id,
-      children: row.reportIds.map((reportId) => (
-        <div key={reportId} className="h-full overflow-hidden">
-          {renderReportSection(reportId)}
+    // On mobile, render as single column regardless of layout
+    if (isMobile) {
+      const allReportIds = layoutConfig.rows.flatMap((row) => row.reportIds);
+      return (
+        <div className="space-y-4 p-2">
+          {allReportIds.map((reportId) => (
+            <div key={reportId} style={{ height: '500px' }}>
+              {renderReportSection(reportId)}
+            </div>
+          ))}
         </div>
-      )),
-    }));
+      );
+    }
+
+    // Desktop: use draggable and resizable grid
+    const handleLayoutChange = (newLayout: LayoutConfig) => {
+      setLayoutConfig(newLayout);
+      // TODO: Save to user preferences/localStorage
+      localStorage.setItem(`dashboard-layout-team-${selectedTeam}`, JSON.stringify(newLayout));
+    };
 
     return (
       <div className="p-4">
-        <ResizableGrid rows={gridRows} defaultRowHeight={500} minRowHeight={500} />
+        <DraggableResizableGrid
+          layout={layoutConfig}
+          onLayoutChange={handleLayoutChange}
+          renderReport={renderReportSection}
+          defaultRowHeight={500}
+          minRowHeight={500}
+        />
       </div>
     );
   }

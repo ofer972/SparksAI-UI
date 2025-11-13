@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import ReportPanel from './ReportPanel';
-import ResizableGrid from './ResizableGrid';
+import DraggableResizableGrid from './DraggableResizableGrid';
 import { ApiService } from '@/lib/api';
 import type { ReportDefinition, LayoutConfig } from '@/lib/config';
 
@@ -20,6 +20,19 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   const [reportOrder, setReportOrder] = useState<string[] | null>(null);
   const [layoutConfig, setLayoutConfig] = useState<LayoutConfig | null>(null);
   const [configLoaded, setConfigLoaded] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -222,21 +235,39 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
 
   // Render with layout configuration if available
   if (layoutConfig && layoutConfig.rows && layoutConfig.rows.length > 0) {
-    const gridRows = layoutConfig.rows.map((row) => ({
-      id: row.id,
-      children: row.reportIds.map((reportId) => {
-        const panelKey = buildPanelKey(reportId);
-        return (
-          <div key={panelKey} className="h-full overflow-hidden">
-            {renderReportSection(reportId, panelKey)}
-          </div>
-        );
-      }),
-    }));
+    // On mobile, render as single column regardless of layout
+    if (isMobile) {
+      const allReportIds = layoutConfig.rows.flatMap((row) => row.reportIds);
+      return (
+        <div className="space-y-4 p-2">
+          {allReportIds.map((reportId) => {
+            const panelKey = buildPanelKey(reportId);
+            return (
+              <div key={panelKey} style={{ height: '500px' }}>
+                {renderReportSection(reportId, panelKey)}
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    // Desktop: use draggable and resizable grid
+    const handleLayoutChange = (newLayout: LayoutConfig) => {
+      setLayoutConfig(newLayout);
+      // Save to user preferences/localStorage
+      localStorage.setItem(`dashboard-layout-pi-${selectedPI}`, JSON.stringify(newLayout));
+    };
 
     return (
       <div className="p-4">
-        <ResizableGrid rows={gridRows} defaultRowHeight={500} minRowHeight={500} />
+        <DraggableResizableGrid
+          layout={layoutConfig}
+          onLayoutChange={handleLayoutChange}
+          renderReport={(reportId) => renderReportSection(reportId, buildPanelKey(reportId))}
+          defaultRowHeight={500}
+          minRowHeight={500}
+        />
       </div>
     );
   }
