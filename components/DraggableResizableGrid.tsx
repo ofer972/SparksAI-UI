@@ -102,6 +102,7 @@ export default function DraggableResizableGrid({
 }: DraggableResizableGridProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeReportId, setActiveReportId] = useState<string | null>(null);
+  const [collapsedReports, setCollapsedReports] = useState<Set<string>>(new Set());
   const [rowHeights, setRowHeights] = useState<number[]>(() =>
     layout.rows.map(() => defaultRowHeight)
   );
@@ -112,6 +113,30 @@ export default function DraggableResizableGrid({
     });
     return widths;
   });
+
+  // Listen for collapse events from report cards
+  useEffect(() => {
+    const handleReportCollapse = (event: CustomEvent) => {
+      const { reportId, collapsed } = event.detail;
+      setCollapsedReports((prev) => {
+        const next = new Set(prev);
+        if (collapsed) {
+          next.add(reportId);
+        } else {
+          next.delete(reportId);
+        }
+        return next;
+      });
+    };
+
+    window.addEventListener('report-collapse' as any, handleReportCollapse);
+    return () => window.removeEventListener('report-collapse' as any, handleReportCollapse);
+  }, []);
+
+  // Check if all reports in a row are collapsed
+  const isRowCollapsed = useCallback((row: { id: string; reportIds: string[] }) => {
+    return row.reportIds.length > 0 && row.reportIds.every((id) => collapsedReports.has(id));
+  }, [collapsedReports]);
 
   // Vertical resizing state
   const [isDraggingVertical, setIsDraggingVertical] = useState(false);
@@ -362,7 +387,8 @@ export default function DraggableResizableGrid({
                   ref={(el) => { containerRefs.current[row.id] = el; }}
                   className="flex"
                   style={{
-                    height: `${rowHeights[rowIndex]}px`,
+                    height: isRowCollapsed(row) ? '60px' : `${rowHeights[rowIndex]}px`,
+                    transition: 'height 0.3s ease-in-out',
                   }}
                 >
                   {row.reportIds.map((reportId, colIndex) => (

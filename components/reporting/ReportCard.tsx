@@ -4,6 +4,7 @@ import React from 'react';
 
 interface ReportCardProps {
   title: string;
+  reportId?: string;
   defaultCollapsed?: boolean;
   filters?: React.ReactNode;
   actions?: React.ReactNode;
@@ -17,6 +18,7 @@ const iconStyles = 'h-5 w-5 text-gray-500';
 
 const ReportCard: React.FC<ReportCardProps> = ({
   title,
+  reportId,
   defaultCollapsed = false,
   filters,
   actions,
@@ -29,8 +31,20 @@ const ReportCard: React.FC<ReportCardProps> = ({
   const [filtersCollapsed, setFiltersCollapsed] = React.useState(true);
 
   const handleToggleCollapse = React.useCallback(() => {
-    setCollapsed((prev) => !prev);
-  }, []);
+    setCollapsed((prev) => {
+      const newCollapsed = !prev;
+      
+      // Emit custom event for collapse state change (for dashboard layout)
+      if (reportId) {
+        const event = new CustomEvent('report-collapse', {
+          detail: { reportId, collapsed: newCollapsed },
+        });
+        window.dispatchEvent(event);
+      }
+      
+      return newCollapsed;
+    });
+  }, [reportId]);
 
   const handleToggleFilters = React.useCallback(() => {
     setFiltersCollapsed((prev) => !prev);

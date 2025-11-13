@@ -90,6 +90,7 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
   filters,
   setFilters,
   refresh,
+  componentProps,
 }) => {
   const issueType = (filters.issue_type as string) ?? '';
   const teamName = (filters.team_name as string) ?? '';
@@ -391,7 +392,12 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
   );
 
   return (
-    <ReportCard title="Flow Status Duration" filters={filtersContent} onRefresh={refresh}>
+    <ReportCard 
+      title="Flow Status Duration" 
+      reportId={componentProps?.reportId}
+      filters={filtersContent} 
+      onRefresh={refresh}
+    >
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
           {error}

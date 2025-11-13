@@ -54,6 +54,7 @@ const IssuesTrendChartView: React.FC<IssuesTrendChartViewProps> = ({
   filters,
   setFilters,
   refresh,
+  componentProps,
 }) => {
   const issueType = (filters.issue_type as string) ?? 'Bug';
   const months = Number(filters.months ?? 6);
@@ -357,7 +358,12 @@ const IssuesTrendChartView: React.FC<IssuesTrendChartViewProps> = ({
   );
 
   return (
-    <ReportCard title="Bugs Created and Resolved Over Time" filters={filtersContent} onRefresh={refresh}>
+    <ReportCard 
+      title="Bugs Created and Resolved Over Time" 
+      reportId={componentProps?.reportId}
+      filters={filtersContent} 
+      onRefresh={refresh}
+    >
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
           {error}

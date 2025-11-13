@@ -157,6 +157,7 @@ const SprintPredictabilityView: React.FC<SprintPredictabilityViewProps> = ({
   filters,
   setFilters,
   refresh,
+  componentProps,
 }) => {
   const months = Number(filters.months ?? 3);
   const jiraUrl = getCleanJiraUrl();
@@ -192,7 +193,12 @@ const SprintPredictabilityView: React.FC<SprintPredictabilityViewProps> = ({
   );
 
   return (
-    <ReportCard title="Sprint Predictability" filters={filtersContent} onRefresh={refresh}>
+    <ReportCard 
+      title="Sprint Predictability" 
+      reportId={componentProps?.reportId}
+      filters={filtersContent} 
+      onRefresh={refresh}
+    >
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
           {error}

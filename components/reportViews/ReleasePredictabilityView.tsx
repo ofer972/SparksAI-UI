@@ -140,6 +140,7 @@ const ReleasePredictabilityView: React.FC<ReleasePredictabilityViewProps> = ({
   filters,
   setFilters,
   refresh,
+  componentProps,
 }) => {
   const months = Number(filters.months ?? 3);
   const jiraUrl = getCleanJiraUrl();
@@ -175,7 +176,12 @@ const ReleasePredictabilityView: React.FC<ReleasePredictabilityViewProps> = ({
   );
 
   return (
-    <ReportCard title="Release Predictability" filters={filtersContent} onRefresh={refresh}>
+    <ReportCard 
+      title="Release Predictability" 
+      reportId={componentProps?.reportId}
+      filters={filtersContent} 
+      onRefresh={refresh}
+    >
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
           {error}

@@ -25,6 +25,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
   filters,
   setFilters,
   refresh,
+  componentProps,
 }) => {
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: null,
@@ -190,6 +191,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
   return (
     <ReportCard
       title="Closed Sprints"
+      reportId={componentProps?.reportId}
       filters={filtersContent}
       onRefresh={refresh}
     >

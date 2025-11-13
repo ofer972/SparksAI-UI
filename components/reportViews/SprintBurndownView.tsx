@@ -114,7 +114,12 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
   const currentSprintName = componentProps?.currentSprintName as string | undefined;
 
   return (
-    <ReportCard title="Sprint Burndown" filters={filtersContent} onRefresh={refresh}>
+    <ReportCard 
+      title="Sprint Burndown" 
+      reportId={componentProps?.reportId} 
+      filters={filtersContent} 
+      onRefresh={refresh}
+    >
       <div className="w-full h-full flex flex-col">
         <div className="relative flex-1">
           <BurndownChart

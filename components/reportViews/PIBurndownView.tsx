@@ -19,7 +19,7 @@ interface PIBurndownViewProps {
   setFilters: (updater: ReportFiltersUpdater) => void;
   refresh: () => void;
   meta?: Record<string, any>;
-  componentProps?: { isDashboard?: boolean };
+  componentProps?: { isDashboard?: boolean; reportId?: string };
 }
 
 const PIBurndownView: React.FC<PIBurndownViewProps> = ({
@@ -81,7 +81,12 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
   );
 
   return (
-    <ReportCard title="PI Burndown" filters={filtersContent} onRefresh={refresh}>
+    <ReportCard 
+      title="PI Burndown" 
+      reportId={componentProps?.reportId} 
+      filters={filtersContent} 
+      onRefresh={refresh}
+    >
       <div className="w-full h-full flex flex-col">
         <div className="relative flex-1">
           <BurndownChart

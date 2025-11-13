@@ -23,6 +23,7 @@ interface CurrentSprintProgressViewProps {
   error: string | null;
   filters: Record<string, any>;
   refresh: () => void;
+  componentProps?: Record<string, any>;
 }
 
 const ProgressBar: React.FC<{ value: number; colorClass: string }> = ({ value, colorClass }) => (
@@ -60,10 +61,15 @@ const CurrentSprintProgressView: React.FC<CurrentSprintProgressViewProps> = ({
   error,
   filters,
   refresh,
+  componentProps,
 }) => {
   if (loading) {
     return (
-      <ReportCard title="Current Sprint Progress" onRefresh={refresh}>
+      <ReportCard 
+        title="Current Sprint Progress" 
+        reportId={componentProps?.reportId}
+        onRefresh={refresh}
+      >
         <div className="flex items-center justify-center h-full">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
@@ -73,7 +79,11 @@ const CurrentSprintProgressView: React.FC<CurrentSprintProgressViewProps> = ({
 
   if (error) {
     return (
-      <ReportCard title="Current Sprint Progress" onRefresh={refresh}>
+      <ReportCard 
+        title="Current Sprint Progress" 
+        reportId={componentProps?.reportId}
+        onRefresh={refresh}
+      >
         <div className="text-red-500 p-4">{error}</div>
       </ReportCard>
     );
@@ -81,7 +91,11 @@ const CurrentSprintProgressView: React.FC<CurrentSprintProgressViewProps> = ({
   
   if (!data) {
     return (
-      <ReportCard title="Current Sprint Progress" onRefresh={refresh}>
+      <ReportCard 
+        title="Current Sprint Progress" 
+        reportId={componentProps?.reportId}
+        onRefresh={refresh}
+      >
         <div className="text-gray-500 p-4">No active sprint found for team '{filters.team_name}'.</div>
       </ReportCard>
     );
@@ -108,7 +122,11 @@ const CurrentSprintProgressView: React.FC<CurrentSprintProgressViewProps> = ({
   };
 
   return (
-    <ReportCard title="Current Sprint Progress" onRefresh={refresh}>
+    <ReportCard 
+      title="Current Sprint Progress" 
+      reportId={componentProps?.reportId}
+      onRefresh={refresh}
+    >
       <div className="p-4 h-full flex flex-col justify-between">
         <div className="text-center mb-4">
           <h3 className="text-lg font-semibold">{sprint_name}</h3>

@@ -34,6 +34,7 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
   filters,
   setFilters,
   refresh,
+  componentProps,
 }) => {
   const [filterText, setFilterText] = useState('');
 
@@ -131,6 +132,7 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
   return (
     <ReportCard
       title="Epics Hierarchy"
+      reportId={componentProps?.reportId}
       filters={filterRow}
       onRefresh={refresh}
     >

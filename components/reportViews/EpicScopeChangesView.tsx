@@ -161,6 +161,7 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
   return (
     <ReportCard
       title="Epic Scope Changes"
+      reportId={componentProps?.reportId}
       filters={filtersContent}
       onRefresh={refresh}
     >

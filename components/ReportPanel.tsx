@@ -147,7 +147,7 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
             filters: currentFilters,
             setFilters,
             refresh,
-            componentProps,
+            componentProps: { ...componentProps, reportId },
             missingFilters: context.missingFilters,
             requiredFilters: context.requiredFilters,
           };

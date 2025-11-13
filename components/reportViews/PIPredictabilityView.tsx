@@ -16,7 +16,7 @@ export interface PIPredictabilityViewProps {
   filters: Record<string, any>;
   setFilters: (updater: ReportFiltersUpdater) => void;
   refresh: () => void;
-  componentProps?: { isDashboard?: boolean };
+  componentProps?: { isDashboard?: boolean; reportId?: string };
 }
 
 const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
@@ -258,7 +258,12 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
   );
 
   return (
-    <ReportCard title="PI Predictability" filters={filtersContent} onRefresh={refresh}>
+    <ReportCard 
+      title="PI Predictability" 
+      reportId={componentProps?.reportId}
+      filters={filtersContent} 
+      onRefresh={refresh}
+    >
       <DataTable<PIPredictabilityData>
         data={filteredData}
         columns={columns}

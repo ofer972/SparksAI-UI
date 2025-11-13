@@ -62,6 +62,7 @@ const EpicDependenciesView: React.FC<EpicDependenciesViewProps> = ({
   filters,
   setFilters,
   refresh,
+  componentProps,
 }) => {
   const piName = (filters.pi as string) ?? '';
 
@@ -91,7 +92,12 @@ const EpicDependenciesView: React.FC<EpicDependenciesViewProps> = ({
   );
 
   return (
-    <ReportCard title="Epic Dependencies" filters={filtersContent} onRefresh={refresh}>
+    <ReportCard 
+      title="Epic Dependencies" 
+      reportId={componentProps?.reportId}
+      filters={filtersContent} 
+      onRefresh={refresh}
+    >
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
           {error}

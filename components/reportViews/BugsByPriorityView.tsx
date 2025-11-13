@@ -122,6 +122,7 @@ const BugsByPriorityView: React.FC<BugsByPriorityViewProps> = ({
   setFilters,
   meta,
   refresh,
+  componentProps,
 }) => {
   const issueType = (filters.issue_type as string) ?? 'Bug';
   const teamName = (filters.team_name as string) ?? '';
@@ -291,6 +292,7 @@ const BugsByPriorityView: React.FC<BugsByPriorityViewProps> = ({
   return (
     <ReportCard
       title="Bugs by Priority"
+      reportId={componentProps?.reportId}
       filters={filtersContent}
       onRefresh={refresh}
     >
