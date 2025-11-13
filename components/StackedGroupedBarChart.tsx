@@ -439,6 +439,15 @@ export default function StackedGroupedBarChart({
     );
   }
 
+  // Additional safety check
+  if (!chartData || !chartData.labels || !chartData.datasets) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-gray-500">Invalid chart data</div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-full">
       <Chart 

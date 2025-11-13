@@ -379,14 +379,16 @@ const IssuesTrendChartView: React.FC<IssuesTrendChartViewProps> = ({
         </div>
       )}
 
-      {!loading && !error && (!chartData || !chartData.labels || !chartData.datasets || !chartData.labels.length) ? (
+      {!loading && !error && (!chartData || !chartData.labels || !chartData.datasets || !chartData.labels.length) && (
         <div className="flex items-center justify-center h-96">
           <div className="text-gray-500">No data available</div>
         </div>
-      ) : (
+      )}
+
+      {!loading && !error && chartData && chartData.labels && chartData.datasets && chartData.labels.length > 0 && (
         <div className="overflow-x-auto h-full" style={{ minHeight: '425px' }}>
           <div className="relative w-full h-full">
-            <Chart type="bar" data={chartData!} options={options} plugins={[ChartDataLabels]} />
+            <Chart type="bar" data={chartData} options={options} plugins={[ChartDataLabels]} />
           </div>
         </div>
       )}
