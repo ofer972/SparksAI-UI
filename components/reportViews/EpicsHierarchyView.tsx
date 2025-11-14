@@ -3,7 +3,8 @@
 import React, { useMemo, useCallback, useState } from 'react';
 import type { HierarchyItem } from '@/lib/config';
 import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
-import DataTable from '../DataTable';
+import HierarchyTable from '../hierarchyTable/HierarchyTable';
+import type { ColumnConfig } from '../hierarchyTable/types';
 import ReportCard from '../reporting/ReportCard';
 import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
@@ -37,26 +38,72 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
   componentProps,
 }) => {
   const [filterText, setFilterText] = useState('');
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const issues = Array.isArray(data?.issues) ? data!.issues : [];
+
+  // Normalize the data to match HierarchyItem interface
+  const normalizedIssues = useMemo<HierarchyItem[]>(() => {
+    return issues.map((issue: any) => ({
+      ...issue,
+      key: issue.Key || issue.key,
+      parent: issue['Parent Key'] || issue.parent || null,
+    }));
+  }, [issues]);
 
   const filteredIssues = useMemo(() => {
     const query = filterText.trim().toLowerCase();
     if (!query) {
-      return issues;
+      return normalizedIssues;
     }
-    return issues.filter((issue) =>
+    return normalizedIssues.filter((issue) =>
       Object.values(issue).some((value) =>
         value !== null &&
         value !== undefined &&
         String(value).toLowerCase().includes(query)
       )
     );
-  }, [issues, filterText]);
+  }, [normalizedIssues, filterText]);
 
   const teamInput = (filters.team_name as string) ?? '';
   const piInput = (filters.pi as string) ?? '';
   const limitInput = Math.min(Number(filters.limit ?? DEFAULT_LIMIT), 1000);
+
+  // Build tree to get all parent keys for expand/collapse all
+  const allParentKeys = useMemo(() => {
+    const keys: string[] = [];
+    const hasChildren = new Set<string>();
+    
+    normalizedIssues.forEach((issue) => {
+      if (issue.parent) {
+        hasChildren.add(issue.parent);
+      }
+    });
+    
+    normalizedIssues.forEach((issue) => {
+      if (issue.key && hasChildren.has(issue.key)) {
+        keys.push(issue.key);
+      }
+    });
+    
+    return keys;
+  }, [normalizedIssues]);
+
+  const toggleAllExpanded = useCallback(() => {
+    const hasExpanded = Object.keys(expanded).length > 0 && Object.values(expanded).some((v) => v);
+    
+    if (hasExpanded) {
+      // Collapse all
+      setExpanded({});
+    } else {
+      // Expand all
+      const newExpanded: Record<string, boolean> = {};
+      allParentKeys.forEach((key) => {
+        newExpanded[key] = true;
+      });
+      setExpanded(newExpanded);
+    }
+  }, [expanded, allParentKeys]);
 
   const filterRow = (
     <ReportFiltersRow>
@@ -115,19 +162,62 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
           className="w-48 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
       </ReportFilterField>
+
+      <ReportFilterField label="Hierarchy">
+        <button
+          type="button"
+          onClick={toggleAllExpanded}
+          className="px-3 py-1 border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        >
+          {Object.keys(expanded).length > 0 && Object.values(expanded).some((v) => v) ? 'Collapse All' : 'Expand All'}
+        </button>
+      </ReportFilterField>
     </ReportFiltersRow>
   );
 
-  const autoColumns = useMemo(() => {
-    if (!issues.length) {
+  const columns = useMemo<ColumnConfig[]>(() => {
+    if (!normalizedIssues.length) {
       return [];
     }
-    const firstRow = issues[0];
-    return Object.keys(firstRow).map((key) => ({
-      key,
-      label: key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
-    }));
-  }, [issues]);
+    const firstRow = normalizedIssues[0];
+    const allKeys = Object.keys(firstRow);
+
+    // Define only the columns to show (in order)
+    const columnsToShow = [
+      { key: 'Key', header: 'Key', renderer: 'link' as const, minWidth: 120 },
+      { key: 'Type', header: 'Type', minWidth: 100 },
+      { key: 'Issue Summary', header: 'Summary', minWidth: 250 },
+      { key: 'Status', header: 'Status', minWidth: 120 },
+      { key: 'Status of Epic', header: 'Status of Epic', minWidth: 140 },
+      { key: 'Epic Progress %', header: 'Epic Progress', minWidth: 120 },
+      { key: 'Dependency', header: 'Dependency', minWidth: 80 },
+      { key: 'Team Name', header: 'Team Name', minWidth: 150 },
+      { key: 'quarter_pi', header: 'Quarter PI', minWidth: 100 },
+      { key: '# Flagged Issues', header: 'Flagged Issues', minWidth: 100 },
+    ];
+
+    // Create columns only for the specified fields that exist in the data
+    const orderedColumns: ColumnConfig[] = [];
+    
+    columnsToShow.forEach((colDef) => {
+      if (allKeys.includes(colDef.key)) {
+        const config: ColumnConfig = {
+          id: colDef.key,
+          header: colDef.header,
+          accessorKey: colDef.key,
+          minWidth: colDef.minWidth,
+        };
+
+        if (colDef.renderer) {
+          config.renderer = colDef.renderer;
+        }
+
+        orderedColumns.push(config);
+      }
+    });
+
+    return orderedColumns;
+  }, [normalizedIssues]);
 
   return (
     <ReportCard
@@ -143,15 +233,23 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
         </div>
       )}
 
-      {!loading && !error && (
-        <DataTable<HierarchyItem>
-          data={filteredIssues}
-          columns={autoColumns.length ? autoColumns : undefined}
-          loading={loading}
-          error={undefined}
-          emptyMessage="No epics found for the selected filters."
-          rowKey={(row, index) => row.key ?? index}
-      />
+      {!loading && !error && columns.length > 0 && (
+        <div className="h-full px-4 py-3">
+          <HierarchyTable
+            data={filteredIssues}
+            columns={columns}
+            defaultExpanded={false}
+            expanded={expanded}
+            onExpandedChange={setExpanded}
+            showControls={false}
+          />
+        </div>
+      )}
+
+      {!loading && !error && normalizedIssues.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          No epics found for the selected filters.
+        </div>
       )}
     </ReportCard>
   );

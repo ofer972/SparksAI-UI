@@ -85,18 +85,79 @@ export function getColumnKeys(items: HierarchyItem[]): string[] {
 }
 
 export function getStatusCategoryColor(statusCategory: string): string {
-  const categoryLower = (statusCategory || '').toLowerCase();
+  const categoryLower = (statusCategory || '').toLowerCase().trim();
 
-  if (categoryLower === 'done') {
+  // Done/Completed statuses - Green
+  if (
+    categoryLower === 'done' ||
+    categoryLower === 'closed' ||
+    categoryLower === 'resolved' ||
+    categoryLower === 'completed' ||
+    categoryLower === 'complete'
+  ) {
     return 'bg-green-100 text-green-800 border-green-200';
   }
-  if (categoryLower === 'in progress' || categoryLower === 'in-progress' || categoryLower === 'in_progress') {
-    return 'bg-blue-100 text-blue-800 border-blue-200';
-  }
-  if (categoryLower === 'to do' || categoryLower === 'todo') {
+
+  // In Progress statuses - Blue
+  if (
+    categoryLower === 'in progress' ||
+    categoryLower === 'in-progress' ||
+    categoryLower === 'in_progress' ||
+    categoryLower === 'in development' ||
+    categoryLower === 'in review' ||
+    categoryLower === 'in code review' ||
+    categoryLower === 'development' ||
+    categoryLower === 'review'
+  ) {
     return 'bg-blue-100 text-blue-800 border-blue-200';
   }
 
+  // Testing/QA statuses - Yellow
+  if (
+    categoryLower === 'testing' ||
+    categoryLower === 'in testing' ||
+    categoryLower === 'qa' ||
+    categoryLower === 'in qa' ||
+    categoryLower === 'ready for testing' ||
+    categoryLower === 'ready for qa'
+  ) {
+    return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+  }
+
+  // Blocked/On Hold statuses - Red/Orange
+  if (
+    categoryLower === 'blocked' ||
+    categoryLower === 'on hold' ||
+    categoryLower === 'paused' ||
+    categoryLower === 'waiting'
+  ) {
+    return 'bg-red-100 text-red-800 border-red-200';
+  }
+
+  // Cancelled/Won't Do statuses - Gray
+  if (
+    categoryLower === 'cancelled' ||
+    categoryLower === 'canceled' ||
+    categoryLower === "won't do" ||
+    categoryLower === 'wont do' ||
+    categoryLower === 'rejected'
+  ) {
+    return 'bg-gray-100 text-gray-600 border-gray-300';
+  }
+
+  // To Do/Open/Backlog statuses - Light Blue/Gray
+  if (
+    categoryLower === 'to do' ||
+    categoryLower === 'todo' ||
+    categoryLower === 'open' ||
+    categoryLower === 'backlog' ||
+    categoryLower === 'new' ||
+    categoryLower === 'ready'
+  ) {
+    return 'bg-slate-100 text-slate-700 border-slate-200';
+  }
+
+  // Default - Gray
   return 'bg-gray-100 text-gray-800 border-gray-200';
 }
 

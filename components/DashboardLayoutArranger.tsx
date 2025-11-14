@@ -392,15 +392,6 @@ export default function DashboardLayoutArranger({
            <div className="divide-y-2 divide-gray-300 min-w-max">
              {layout.rows.map((row, rowIndex) => (
                <div key={row.id} className="relative hover:bg-blue-50 transition-colors">
-                 <button
-                   onClick={() => removeRow(row.id)}
-                   disabled={layout.rows.length === 1}
-                   className="absolute right-2 top-2 z-10 text-red-600 hover:text-white hover:bg-red-600 text-xs px-2 py-1 rounded transition-colors font-medium disabled:opacity-30 disabled:cursor-not-allowed bg-white shadow-sm border border-gray-300"
-                   title="Remove this row"
-                 >
-                   🗑️
-                 </button>
-                
                 <SortableContext
                   items={row.reportIds.map((id) => `${row.id}-${id}`)}
                   strategy={rectSortingStrategy}
@@ -422,20 +413,13 @@ export default function DashboardLayoutArranger({
                            return (
                              <div 
                                key={`${row.id}-${reportId}`} 
-                               className={`relative group p-3 min-h-[80px] ${
+                               className={`relative p-3 min-h-[80px] ${
                                  colIndex < row.reportIds.length - 1 ? 'border-r-2 border-gray-300' : ''
                                }`}
                              >
                                <div className="h-full">
                                  <SortableReportCard report={report} rowId={row.id} />
                                </div>
-                               <button
-                                 onClick={() => removeReportFromRow(row.id, reportId)}
-                                 className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all text-xs shadow-md z-10"
-                                 title="Remove from this row"
-                               >
-                                 ×
-                               </button>
                              </div>
                            );
                         })}

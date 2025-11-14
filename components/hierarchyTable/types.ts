@@ -27,5 +27,8 @@ export interface HierarchyTableProps {
   defaultExpanded?: boolean;
   onRowClick?: (item: HierarchyItem) => void;
   className?: string;
+  expanded?: Record<string, boolean>;
+  onExpandedChange?: (expanded: Record<string, boolean>) => void;
+  showControls?: boolean;
 }
 
