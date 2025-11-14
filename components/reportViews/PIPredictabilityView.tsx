@@ -16,7 +16,7 @@ export interface PIPredictabilityViewProps {
   filters: Record<string, any>;
   setFilters: (updater: ReportFiltersUpdater) => void;
   refresh: () => void;
-  componentProps?: { isDashboard?: boolean; reportId?: string };
+  componentProps?: { isDashboard?: boolean; reportId?: string; onClose?: () => void };
 }
 
 const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
@@ -263,6 +263,7 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
       reportId={componentProps?.reportId}
       filters={filtersContent} 
       onRefresh={refresh}
+      onClose={componentProps?.onClose}
     >
       <DataTable<PIPredictabilityData>
         data={filteredData}

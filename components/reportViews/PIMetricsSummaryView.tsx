@@ -37,7 +37,7 @@ interface PIMetricsSummaryViewProps {
   filters: Record<string, any>;
   setFilters: (updater: ReportFiltersUpdater) => void;
   refresh: () => void;
-  componentProps?: { isDashboard?: boolean; reportId?: string };
+  componentProps?: { isDashboard?: boolean; reportId?: string; onClose?: () => void };
 }
 
 interface MetricCardProps {
@@ -213,6 +213,7 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
       reportId={componentProps?.reportId}
       filters={filterRow} 
       onRefresh={refresh}
+      onClose={componentProps?.onClose}
     >
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">

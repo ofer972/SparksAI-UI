@@ -3,6 +3,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import ReportPanel from './ReportPanel';
 import DraggableResizableGrid from './DraggableResizableGrid';
+import AddReportsModal from './AddReportsModal';
 import { ApiService } from '@/lib/api';
 import type { ReportDefinition, LayoutConfig } from '@/lib/config';
 
@@ -21,6 +22,8 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   const [layoutConfig, setLayoutConfig] = useState<LayoutConfig | null>(null);
   const [configLoaded, setConfigLoaded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isAddReportsModalOpen, setIsAddReportsModalOpen] = useState(false);
+  const [availableReports, setAvailableReports] = useState<ReportDefinition[]>([]);
 
   // Detect mobile screen size
   useEffect(() => {
@@ -32,6 +35,16 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     window.addEventListener('resize', checkMobile);
     
     return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Listen for open modal event from top bar
+  useEffect(() => {
+    const handleOpenModal = () => {
+      setIsAddReportsModalOpen(true);
+    };
+    
+    window.addEventListener('open-add-reports-modal', handleOpenModal);
+    return () => window.removeEventListener('open-add-reports-modal', handleOpenModal);
   }, []);
 
   useEffect(() => {
@@ -51,6 +64,13 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
         definitions.forEach((definition) => {
           definitionMap[definition.report_id] = definition;
         });
+
+        // Filter reports for PI dashboard
+        const piReports = definitions.filter((r) => {
+          const allowedViews = r.meta_schema?.allowed_views || ['every-dashboard'];
+          return allowedViews.includes('every-dashboard') || allowedViews.includes('pi-dashboard');
+        });
+        setAvailableReports(piReports);
 
         const viewConfig = configs.find((cfg) => cfg.view === 'pi-dashboard');
 
@@ -255,18 +275,99 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     // Desktop: use draggable and resizable grid
     const handleLayoutChange = (newLayout: LayoutConfig) => {
       setLayoutConfig(newLayout);
-      // Save to user preferences/localStorage
       localStorage.setItem(`dashboard-layout-pi-${selectedPI}`, JSON.stringify(newLayout));
     };
 
+    const handleRemoveReport = (reportId: string) => {
+      const newLayout: LayoutConfig = {
+        rows: layoutConfig.rows.map((row) => ({
+          ...row,
+          reportIds: row.reportIds.filter((id) => id !== reportId),
+        })).filter((row) => row.reportIds.length > 0),
+      };
+      
+      // If all rows are empty, create one empty row
+      if (newLayout.rows.length === 0) {
+        newLayout.rows = [{ id: 'row-1', reportIds: [] }];
+      }
+      
+      setLayoutConfig(newLayout);
+      localStorage.setItem(`dashboard-layout-pi-${selectedPI}`, JSON.stringify(newLayout));
+    };
+
+    const handleUpdateReports = (reportIds: string[]) => {
+      let newLayout: LayoutConfig = { ...layoutConfig };
+      
+      // Get reports to add and remove
+      const reportsToAdd = reportIds.filter(id => !currentReportIds.includes(id));
+      const reportsToRemove = currentReportIds.filter(id => !reportIds.includes(id));
+      
+      // Remove unchecked reports from layout
+      if (reportsToRemove.length > 0) {
+        newLayout.rows = newLayout.rows
+          .map((row) => ({
+            ...row,
+            reportIds: row.reportIds.filter((id) => !reportsToRemove.includes(id)),
+          }))
+          .filter((row) => row.reportIds.length > 0); // Remove empty rows
+      }
+      
+      // Add new reports - 2 per row
+      if (reportsToAdd.length > 0) {
+        // If layout is completely empty, create fresh rows
+        if (newLayout.rows.length === 0 || newLayout.rows.every(r => r.reportIds.length === 0)) {
+          const newRows: { id: string; reportIds: string[] }[] = [];
+          for (let i = 0; i < reportsToAdd.length; i += 2) {
+            newRows.push({
+              id: `row-${Date.now()}-${i}`,
+              reportIds: reportsToAdd.slice(i, i + 2),
+            });
+          }
+          newLayout.rows = newRows;
+        } else {
+          // Add to existing layout
+          const newRows: { id: string; reportIds: string[] }[] = [];
+          for (let i = 0; i < reportsToAdd.length; i += 2) {
+            newRows.push({
+              id: `row-${Date.now()}-${i}`,
+              reportIds: reportsToAdd.slice(i, i + 2),
+            });
+          }
+          newLayout.rows = [...newLayout.rows, ...newRows];
+        }
+      }
+      
+      setLayoutConfig(newLayout);
+      localStorage.setItem(`dashboard-layout-pi-${selectedPI}`, JSON.stringify(newLayout));
+    };
+
+    const currentReportIds = layoutConfig.rows.flatMap((row) => row.reportIds);
+    
+    // Filter to only show reports that are in the configured list (from system settings)
+    const configuredReportIds = reportOrder ? new Set(reportOrder) : new Set();
+    const filteredAvailableReports = availableReports.filter((report) => 
+      configuredReportIds.has(report.report_id)
+    );
+
     return (
-      <div className="p-4">
-        <DraggableResizableGrid
-          layout={layoutConfig}
-          onLayoutChange={handleLayoutChange}
-          renderReport={(reportId) => renderReportSection(reportId, buildPanelKey(reportId))}
-          defaultRowHeight={500}
-          minRowHeight={500}
+      <div className="h-full flex flex-col">
+        <div className="flex-1 px-4 pb-4 overflow-auto">
+          <DraggableResizableGrid
+            layout={layoutConfig}
+            onLayoutChange={handleLayoutChange}
+            renderReport={(reportId) => renderReportSection(reportId, buildPanelKey(reportId))}
+            onRemoveReport={handleRemoveReport}
+            defaultRowHeight={500}
+            minRowHeight={500}
+          />
+        </div>
+
+        <AddReportsModal
+          isOpen={isAddReportsModalOpen}
+          onClose={() => setIsAddReportsModalOpen(false)}
+          availableReports={filteredAvailableReports}
+          currentReportIds={currentReportIds}
+          onUpdateReports={handleUpdateReports}
         />
       </div>
     );
@@ -275,19 +376,17 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   // Fallback to default layout
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto p-4">
         {reportOrder.length === 0 ? (
           <div className="p-4 text-gray-500">
             No reports are configured for the PI dashboard yet.
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 items-stretch">
+          <div className="space-y-4">
             {reportOrder.map((reportId, index) => {
-              const isLast = index === reportOrder.length - 1;
-              const shouldSpan = reportOrder.length % 2 === 1 && isLast;
               const panelKey = buildPanelKey(reportId);
               return (
-                <div key={panelKey} className={`${shouldSpan ? 'md:col-span-2' : ''} h-full`}>
+                <div key={panelKey} style={{ height: '500px' }}>
                   {renderReportSection(reportId, panelKey)}
                 </div>
               );

@@ -194,6 +194,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
       reportId={componentProps?.reportId}
       filters={filtersContent}
       onRefresh={refresh}
+      onClose={componentProps?.onClose}
     >
       <DataTable<ClosedSprint>
         data={data}

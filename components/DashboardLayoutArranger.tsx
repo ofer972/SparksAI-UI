@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -54,8 +54,9 @@ export interface DashboardLayout {
 interface DashboardLayoutArrangerProps {
   view: string;
   availableReports: ReportDefinition[];
-  initialLayout?: DashboardLayout;
+  layout: DashboardLayout;
   onLayoutChange: (layout: DashboardLayout) => void;
+  onReportRemoved?: (reportId: string) => void;
   onCancel: () => void;
 }
 
@@ -91,13 +92,13 @@ function SortableReportCard({ report, rowId }: SortableReportCardProps) {
       style={style}
       {...attributes}
       {...listeners}
-      className={`h-full w-full bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 text-blue-900 rounded-lg px-3 py-3 shadow-sm hover:shadow-lg hover:border-blue-300 flex items-center justify-center ${
+      className={`h-full w-full bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 text-blue-900 rounded-lg px-2 py-2 shadow-sm hover:shadow-lg hover:border-blue-300 flex items-center justify-center ${
         isDragging ? 'opacity-20 scale-95' : 'opacity-100'
       }`}
     >
-      <div className="flex items-center gap-2 whitespace-nowrap">
-        <span className="text-lg flex-shrink-0">{icon}</span>
-        <div className="font-semibold text-xs">{report.report_name}</div>
+      <div className="flex items-center gap-1.5 overflow-hidden">
+        <span className="text-base flex-shrink-0">{icon}</span>
+        <div className="font-semibold text-xs truncate">{report.report_name}</div>
       </div>
     </div>
   );
@@ -112,17 +113,17 @@ function ReportCard({ report }: ReportCardProps) {
 
   return (
     <div 
-      className="bg-gradient-to-br from-blue-200 to-indigo-200 border-4 border-blue-600 text-blue-900 rounded-lg px-4 py-3 shadow-2xl"
+      className="bg-gradient-to-br from-blue-200 to-indigo-200 border-2 border-blue-600 text-blue-900 rounded-lg px-2 py-2 shadow-2xl"
       style={{ 
         cursor: 'grabbing',
-        transform: 'scale(1.1) rotate(2deg)',
+        transform: 'scale(1.05)',
         opacity: 1,
         zIndex: 9999,
       }}
     >
-      <div className="flex items-center gap-2 whitespace-nowrap">
-        <span className="text-2xl flex-shrink-0">{icon}</span>
-        <div className="font-bold text-sm">{report.report_name}</div>
+      <div className="flex items-center gap-1.5 overflow-hidden">
+        <span className="text-base flex-shrink-0">{icon}</span>
+        <div className="font-semibold text-xs truncate">{report.report_name}</div>
       </div>
     </div>
   );
@@ -156,8 +157,9 @@ function DroppableRow({ rowId, children, isEmpty }: DroppableRowProps) {
 export default function DashboardLayoutArranger({
   view,
   availableReports,
-  initialLayout,
+  layout,
   onLayoutChange,
+  onReportRemoved,
   onCancel,
 }: DashboardLayoutArrangerProps) {
   const reportMap = useMemo(() => {
@@ -166,27 +168,8 @@ export default function DashboardLayoutArranger({
     return map;
   }, [availableReports]);
 
-  const [layout, setLayout] = useState<DashboardLayout>(() => {
-    if (initialLayout && initialLayout.rows.length > 0) {
-      return initialLayout;
-    }
-    // Create initial layout with 2 reports per row
-    const rows: LayoutRow[] = [];
-    const reportIds = availableReports.map((r) => r.report_id);
-    
-    for (let i = 0; i < reportIds.length; i += 2) {
-      rows.push({
-        id: `row-${i / 2 + 1}`,
-        reportIds: reportIds.slice(i, i + 2),
-      });
-    }
-    
-    return { rows: rows.length > 0 ? rows : [{ id: 'row-1', reportIds: [] }] };
-  });
-
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeReport, setActiveReport] = useState<ReportDefinition | null>(null);
-  const [availableReportsPool, setAvailableReportsPool] = useState<string[]>([]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -279,130 +262,121 @@ export default function DashboardLayoutArranger({
 
     // If same row, reorder within row
     if (activeRowId === overRowId && overData?.report) {
-      const overReportId = overData.report.report_id; // Extract before callback
+      const overReportId = overData.report.report_id;
       
-      setLayout((prev) => {
-        const newRows = [...prev.rows];
-        const rowIndex = newRows.findIndex((r) => r.id === activeData.rowId);
-        if (rowIndex === -1) return prev;
+      const newRows = [...layout.rows];
+      const rowIndex = newRows.findIndex((r) => r.id === activeData.rowId);
+      if (rowIndex === -1) return;
 
-        const reportIds = newRows[rowIndex].reportIds;
-        const oldIndex = reportIds.indexOf(activeData.report.report_id);
-        const newIndex = reportIds.indexOf(overReportId);
+      const reportIds = newRows[rowIndex].reportIds;
+      const oldIndex = reportIds.indexOf(activeData.report.report_id);
+      const newIndex = reportIds.indexOf(overReportId);
 
-        if (oldIndex !== -1 && newIndex !== -1) {
-          newRows[rowIndex] = {
-            ...newRows[rowIndex],
-            reportIds: arrayMove(reportIds, oldIndex, newIndex),
-          };
-        }
-
-        return { rows: newRows };
-      });
+      if (oldIndex !== -1 && newIndex !== -1) {
+        newRows[rowIndex] = {
+          ...newRows[rowIndex],
+          reportIds: arrayMove(reportIds, oldIndex, newIndex),
+        };
+        onLayoutChange({ rows: newRows });
+      }
     } else if (activeRowId !== overRowId) {
       // Move to different row
-      setLayout((prev) => {
-        const newRows = [...prev.rows];
-        const activeRowIndex = newRows.findIndex((r) => r.id === activeRowId);
-        const overRowIndex = newRows.findIndex((r) => r.id === overRowId);
+      const newRows = [...layout.rows];
+      const activeRowIndex = newRows.findIndex((r) => r.id === activeRowId);
+      const overRowIndex = newRows.findIndex((r) => r.id === overRowId);
 
-        if (activeRowIndex === -1 || overRowIndex === -1) return prev;
+      if (activeRowIndex === -1 || overRowIndex === -1) return;
 
-        const reportId = activeData.report.report_id;
-        
-        // Check if report is already in the target row
-        if (newRows[overRowIndex].reportIds.includes(reportId)) return prev;
+      const reportId = activeData.report.report_id;
+      
+      // Check if report is already in the target row
+      if (newRows[overRowIndex].reportIds.includes(reportId)) return;
 
-        // Remove from active row
-        newRows[activeRowIndex] = {
-          ...newRows[activeRowIndex],
-          reportIds: newRows[activeRowIndex].reportIds.filter((id) => id !== reportId),
-        };
+      // Remove from active row
+      newRows[activeRowIndex] = {
+        ...newRows[activeRowIndex],
+        reportIds: newRows[activeRowIndex].reportIds.filter((id: string) => id !== reportId),
+      };
 
-        // Add to over row
-        newRows[overRowIndex] = {
-          ...newRows[overRowIndex],
-          reportIds: [...newRows[overRowIndex].reportIds, reportId],
-        };
+      // Add to over row
+      newRows[overRowIndex] = {
+        ...newRows[overRowIndex],
+        reportIds: [...newRows[overRowIndex].reportIds, reportId],
+      };
 
-        // Clean up empty rows (except if it's the last row)
-        const filteredRows = newRows.filter((r, idx) => 
-          r.reportIds.length > 0 || newRows.length === 1
-        );
+      // Clean up empty rows
+      const filteredRows = newRows.filter((r) => 
+        r.reportIds.length > 0 || newRows.length === 1
+      );
 
-        // If we removed the last report from a row and there are other rows, 
-        // create a new empty row at the end
-        return { rows: filteredRows.length > 0 ? filteredRows : [{ id: `row-${Date.now()}`, reportIds: [] }] };
+      onLayoutChange({ 
+        rows: filteredRows.length > 0 ? filteredRows : [{ id: `row-${Date.now()}`, reportIds: [] }] 
       });
     }
   };
 
   const addRow = () => {
-    setLayout((prev) => ({
+    const newLayout = {
       rows: [
-        ...prev.rows,
+        ...layout.rows,
         {
           id: `row-${Date.now()}`,
           reportIds: [],
         },
       ],
-    }));
+    };
+    onLayoutChange(newLayout);
   };
 
   const removeRow = (rowId: string) => {
-    setLayout((prev) => {
-      const rowToRemove = prev.rows.find((r) => r.id === rowId);
-      if (!rowToRemove) return prev;
+    const rowToRemove = layout.rows.find((r) => r.id === rowId);
+    if (!rowToRemove) return;
 
-      // Add removed reports back to the pool or to the first row
-      const remainingRows = prev.rows.filter((r) => r.id !== rowId);
-      if (remainingRows.length === 0) {
-        // Create a new row with the reports
-        return {
-          rows: [
-            {
-              id: `row-${Date.now()}`,
-              reportIds: rowToRemove.reportIds,
-            },
-          ],
-        };
-      }
-
-      // Add reports to the first row
-      remainingRows[0] = {
-        ...remainingRows[0],
-        reportIds: [...remainingRows[0].reportIds, ...rowToRemove.reportIds],
+    // Add removed reports back to the pool or to the first row
+    const remainingRows = layout.rows.filter((r) => r.id !== rowId);
+    let newLayout;
+    
+    if (remainingRows.length === 0) {
+      // Create a new row with the reports
+      newLayout = {
+        rows: [
+          {
+            id: `row-${Date.now()}`,
+            reportIds: rowToRemove.reportIds,
+          },
+        ],
       };
+    } else {
+      // Add reports to the first row
+      const updatedRows = [...remainingRows];
+      updatedRows[0] = {
+        ...updatedRows[0],
+        reportIds: [...updatedRows[0].reportIds, ...rowToRemove.reportIds],
+      };
+      newLayout = { rows: updatedRows };
+    }
 
-      return { rows: remainingRows };
-    });
+    onLayoutChange(newLayout);
   };
 
   const removeReportFromRow = (rowId: string, reportId: string) => {
-    setLayout((prev) => ({
-      rows: prev.rows.map((r) =>
+    const newLayout = {
+      rows: layout.rows.map((r) =>
         r.id === rowId
           ? { ...r, reportIds: r.reportIds.filter((id) => id !== reportId) }
           : r
-      ),
-    }));
-  };
-
-  const handleSave = () => {
-    onLayoutChange(layout);
+      ).filter((r) => r.reportIds.length > 0), // Remove empty rows
+    };
+    onLayoutChange(newLayout);
+    
+    // Notify parent to uncheck this report in the list
+    if (onReportRemoved) {
+      onReportRemoved(reportId);
+    }
   };
 
   return (
     <div className="space-y-3">
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3 shadow-sm">
-        <h3 className="text-sm font-semibold text-blue-900 mb-1 flex items-center gap-2">
-          📐 Dashboard Layout Arranger
-        </h3>
-        <p className="text-xs text-blue-700">
-          Drag reports between rows to organize your dashboard. Each row displays its reports side by side.
-        </p>
-      </div>
-
       <DndContext
         sensors={sensors}
         collisionDetection={pointerWithin}
@@ -410,12 +384,12 @@ export default function DashboardLayoutArranger({
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="bg-white rounded-lg border-2 border-gray-300 shadow-sm overflow-hidden mx-6">
-          <div className="text-xs text-gray-600 p-3 text-center bg-gray-50 border-b-2 border-gray-300">
+        <div className="bg-white rounded-lg border-2 border-gray-300 shadow-sm overflow-x-auto overflow-y-auto mx-6">
+          <div className="text-xs text-gray-600 p-3 text-center bg-gray-50 border-b-2 border-gray-300 sticky top-0 z-10">
             Drag reports to any row to organize. Each row can have any number of reports.
           </div>
           
-           <div className="divide-y-2 divide-gray-300">
+           <div className="divide-y-2 divide-gray-300 min-w-max">
              {layout.rows.map((row, rowIndex) => (
                <div key={row.id} className="relative hover:bg-blue-50 transition-colors">
                  <button
@@ -440,7 +414,7 @@ export default function DashboardLayoutArranger({
                          </div>
                        </div>
                     ) : (
-                      <div className="grid gap-0" style={{ gridTemplateColumns: `repeat(${row.reportIds.length}, 1fr)` }}>
+                      <div className="grid gap-0" style={{ gridTemplateColumns: `repeat(${row.reportIds.length}, minmax(120px, 1fr))` }}>
                         {row.reportIds.map((reportId, colIndex) => {
                           const report = reportMap.get(reportId);
                           if (!report) return null;
@@ -488,7 +462,7 @@ export default function DashboardLayoutArranger({
         </DragOverlay>
       </DndContext>
 
-      <div className="flex items-center justify-between pt-3 mx-6">
+      <div className="flex items-center justify-start pt-3 mx-6">
         <button
           onClick={addRow}
           className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center gap-2"
@@ -496,21 +470,6 @@ export default function DashboardLayoutArranger({
           <span>➕</span>
           <span>Add Row</span>
         </button>
-        
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onCancel}
-            className="border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-md text-sm font-semibold transition-all"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold shadow-sm hover:shadow-md transition-all"
-          >
-            ✓ Apply Layout
-          </button>
-        </div>
       </div>
 
     </div>

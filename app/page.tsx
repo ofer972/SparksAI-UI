@@ -1013,17 +1013,50 @@ export default function Home() {
               )}
               
               {/* PI Filter - for views that need it */}
-              <div className="hidden md:block">
-                {(activeNavItem === 'pi-quarter' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (
+              {(activeNavItem === 'pi-quarter' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (
+                <div className="hidden md:flex items-center">
                   <PIFilter 
                     selectedPI={selectedPI}
                     onPIChange={setSelectedPI}
                   />
-                )}
-              </div>
+                  {/* Manage Reports Button - right after PI filter for dashboards */}
+                  {activeNavItem === 'pi-dashboard' && (
+                    <button
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent('open-add-reports-modal'));
+                      }}
+                      className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-gray-300 text-gray-500 hover:text-green-600 hover:border-green-400 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all ml-3"
+                      title="Manage dashboard reports"
+                      aria-label="Manage reports"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              )}
+              
+              {/* Manage Reports Button - right after team filter for team dashboard */}
+              {activeNavItem === 'team-dashboard' && (
+                <div className="hidden md:block">
+                  <button
+                    onClick={() => {
+                      window.dispatchEvent(new CustomEvent('open-add-reports-modal'));
+                    }}
+                    className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-gray-300 text-gray-500 hover:text-green-600 hover:border-green-400 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
+                    title="Manage dashboard reports"
+                    aria-label="Manage reports"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </button>
+                </div>
+              )}
             </div>
             
-            {/* Right side: user info and AI Menu */}
+            {/* Right side: AI Menu and user info */}
             <div className="flex items-center space-x-2 md:space-x-4 flex-1 justify-end">
               {(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') && (
                 <DashboardAIMenu

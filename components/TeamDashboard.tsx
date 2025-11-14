@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import ReportPanel from './ReportPanel';
 import DraggableResizableGrid from './DraggableResizableGrid';
-import type { ReportInstancePayload, LayoutConfig } from '@/lib/config';
+import AddReportsModal from './AddReportsModal';
+import type { ReportInstancePayload, LayoutConfig, ReportDefinition } from '@/lib/config';
 import { ApiService } from '@/lib/api';
 
 interface TeamDashboardProps {
@@ -31,6 +32,8 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [configError, setConfigError] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [isAddReportsModalOpen, setIsAddReportsModalOpen] = useState(false);
+  const [availableReports, setAvailableReports] = useState<ReportDefinition[]>([]);
 
   // Detect mobile screen size
   useEffect(() => {
@@ -44,13 +47,34 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Listen for open modal event from top bar
+  useEffect(() => {
+    const handleOpenModal = () => {
+      setIsAddReportsModalOpen(true);
+    };
+    
+    window.addEventListener('open-add-reports-modal', handleOpenModal);
+    return () => window.removeEventListener('open-add-reports-modal', handleOpenModal);
+  }, []);
+
   useEffect(() => {
     const fetchConfig = async () => {
       setLoadingConfig(true);
       setConfigError(null);
       try {
         const apiService = new ApiService();
-        const config = await apiService.getDashboardViewConfigs();
+        const [config, reports] = await Promise.all([
+          apiService.getDashboardViewConfigs(),
+          apiService.getReportDefinitions(),
+        ]);
+        
+        // Filter reports for team dashboard
+        const teamReports = reports.filter((r) => {
+          const allowedViews = r.meta_schema?.allowed_views || ['every-dashboard'];
+          return allowedViews.includes('every-dashboard') || allowedViews.includes('team-dashboard');
+        });
+        setAvailableReports(teamReports);
+        
         const teamDashboardConfig = config.find((c) => c.view === 'team-dashboard');
         if (teamDashboardConfig) {
           setDashboardReports(teamDashboardConfig.reportIds);
@@ -208,18 +232,110 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
     // Desktop: use draggable and resizable grid
     const handleLayoutChange = (newLayout: LayoutConfig) => {
       setLayoutConfig(newLayout);
-      // TODO: Save to user preferences/localStorage
       localStorage.setItem(`dashboard-layout-team-${selectedTeam}`, JSON.stringify(newLayout));
     };
 
+    const handleRemoveReport = (reportId: string) => {
+      const newLayout: LayoutConfig = {
+        rows: layoutConfig.rows.map((row) => ({
+          ...row,
+          reportIds: row.reportIds.filter((id) => id !== reportId),
+        })).filter((row) => row.reportIds.length > 0),
+      };
+      
+      // If all rows are empty, create one empty row
+      if (newLayout.rows.length === 0) {
+        newLayout.rows = [{ id: 'row-1', reportIds: [] }];
+      }
+      
+      setLayoutConfig(newLayout);
+      localStorage.setItem(`dashboard-layout-team-${selectedTeam}`, JSON.stringify(newLayout));
+    };
+
+    const handleUpdateReports = (reportIds: string[]) => {
+      console.log('handleUpdateReports called with:', reportIds);
+      console.log('Current reports:', currentReportIds);
+      
+      let newLayout: LayoutConfig = { ...layoutConfig };
+      
+      // Get reports to add and remove
+      const reportsToAdd = reportIds.filter(id => !currentReportIds.includes(id));
+      const reportsToRemove = currentReportIds.filter(id => !reportIds.includes(id));
+      
+      console.log('Reports to add:', reportsToAdd);
+      console.log('Reports to remove:', reportsToRemove);
+      
+      // Remove unchecked reports from layout
+      if (reportsToRemove.length > 0) {
+        newLayout.rows = newLayout.rows
+          .map((row) => ({
+            ...row,
+            reportIds: row.reportIds.filter((id) => !reportsToRemove.includes(id)),
+          }))
+          .filter((row) => row.reportIds.length > 0); // Remove empty rows
+        
+        console.log('After removal, rows:', newLayout.rows);
+      }
+      
+      // Add new reports - 2 per row
+      if (reportsToAdd.length > 0) {
+        // If layout is completely empty, create fresh rows
+        if (newLayout.rows.length === 0 || newLayout.rows.every(r => r.reportIds.length === 0)) {
+          const newRows: { id: string; reportIds: string[] }[] = [];
+          for (let i = 0; i < reportsToAdd.length; i += 2) {
+            newRows.push({
+              id: `row-${Date.now()}-${i}`,
+              reportIds: reportsToAdd.slice(i, i + 2),
+            });
+          }
+          newLayout.rows = newRows;
+        } else {
+          // Add to existing layout
+          const newRows: { id: string; reportIds: string[] }[] = [];
+          for (let i = 0; i < reportsToAdd.length; i += 2) {
+            newRows.push({
+              id: `row-${Date.now()}-${i}`,
+              reportIds: reportsToAdd.slice(i, i + 2),
+            });
+          }
+          newLayout.rows = [...newLayout.rows, ...newRows];
+        }
+        
+        console.log('After adding, rows:', newLayout.rows);
+      }
+      
+      console.log('Setting new layout:', newLayout);
+      setLayoutConfig(newLayout);
+      localStorage.setItem(`dashboard-layout-team-${selectedTeam}`, JSON.stringify(newLayout));
+    };
+
+    const currentReportIds = layoutConfig.rows.flatMap((row) => row.reportIds);
+    
+    // Filter to only show reports that are in the configured list (from system settings)
+    const configuredReportIds = new Set(dashboardReports);
+    const filteredAvailableReports = availableReports.filter((report) => 
+      configuredReportIds.has(report.report_id)
+    );
+
     return (
-      <div className="p-4">
-        <DraggableResizableGrid
-          layout={layoutConfig}
-          onLayoutChange={handleLayoutChange}
-          renderReport={renderReportSection}
-          defaultRowHeight={500}
-          minRowHeight={500}
+      <div className="h-full flex flex-col">
+        <div className="flex-1 px-4 pb-4 overflow-auto">
+          <DraggableResizableGrid
+            layout={layoutConfig}
+            onLayoutChange={handleLayoutChange}
+            renderReport={renderReportSection}
+            onRemoveReport={handleRemoveReport}
+            defaultRowHeight={500}
+            minRowHeight={500}
+          />
+        </div>
+
+        <AddReportsModal
+          isOpen={isAddReportsModalOpen}
+          onClose={() => setIsAddReportsModalOpen(false)}
+          availableReports={filteredAvailableReports}
+          currentReportIds={currentReportIds}
+          onUpdateReports={handleUpdateReports}
         />
       </div>
     );
@@ -227,27 +343,24 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
 
   // Fallback to default layout
   return (
-    <div className="space-y-4">
-      {dashboardReports.length === 0 ? (
-        <div className="p-4 text-gray-500">
-          No reports are configured for the team dashboard yet.
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 items-stretch">
-          {dashboardReports.map((reportId, index) => {
-            const isLast = index === dashboardReports.length - 1;
-            const shouldSpan = dashboardReports.length % 2 === 1 && isLast;
-            return (
-              <div
-                key={reportId}
-                className={`${shouldSpan ? 'md:col-span-2' : ''} h-full`}
-              >
-                {renderReportSection(reportId)}
-              </div>
-            );
-          })}
-        </div>
-      )}
+    <div className="h-full flex flex-col">
+      <div className="flex-1 overflow-auto p-4">
+        {dashboardReports.length === 0 ? (
+          <div className="p-4 text-gray-500">
+            No reports are configured for the team dashboard yet.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {dashboardReports.map((reportId) => {
+              return (
+                <div key={reportId} style={{ height: '500px' }}>
+                  {renderReportSection(reportId)}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

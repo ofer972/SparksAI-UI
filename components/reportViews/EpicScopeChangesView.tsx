@@ -164,6 +164,7 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
       reportId={componentProps?.reportId}
       filters={filtersContent}
       onRefresh={refresh}
+      onClose={componentProps?.onClose}
     >
       <div className="h-full w-full flex flex-col">
         {loading && (

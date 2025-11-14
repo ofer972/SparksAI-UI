@@ -19,7 +19,7 @@ interface PIBurndownViewProps {
   setFilters: (updater: ReportFiltersUpdater) => void;
   refresh: () => void;
   meta?: Record<string, any>;
-  componentProps?: { isDashboard?: boolean; reportId?: string };
+  componentProps?: { isDashboard?: boolean; reportId?: string; onClose?: () => void };
 }
 
 const PIBurndownView: React.FC<PIBurndownViewProps> = ({
@@ -86,6 +86,7 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
       reportId={componentProps?.reportId} 
       filters={filtersContent} 
       onRefresh={refresh}
+      onClose={componentProps?.onClose}
     >
       <div className="w-full h-full flex flex-col">
         <div className="relative flex-1">

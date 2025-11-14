@@ -119,6 +119,7 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
       reportId={componentProps?.reportId} 
       filters={filtersContent} 
       onRefresh={refresh}
+      onClose={componentProps?.onClose}
     >
       <div className="w-full h-full flex flex-col">
         <div className="relative flex-1">

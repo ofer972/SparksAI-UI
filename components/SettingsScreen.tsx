@@ -69,6 +69,8 @@ const sanitizeDashboardLayout = (
 
 export default function SettingsScreen() {
   const [activeTab, setActiveTab] = useState('ai-config');
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
+  const [pendingTab, setPendingTab] = useState<string | null>(null);
   const [aiProvider, setAiProvider] = useState('openai');
   const [geminiModel, setGeminiModel] = useState('gemini-2.5-flash');
   const [openaiModel, setOpenaiModel] = useState('gpt-4o-mini');
@@ -111,6 +113,7 @@ export default function SettingsScreen() {
   const [isArrangeMode, setIsArrangeMode] = useState(false);
   const [currentArrangeView, setCurrentArrangeView] = useState<string | null>(null);
   const [dashboardLayouts, setDashboardLayouts] = useState<Record<string, DashboardLayout>>({});
+  const [selectedDashboardView, setSelectedDashboardView] = useState<string>('team-dashboard');
 
   const cloneViewMap = (source: Record<string, string[]>): Record<string, string[]> => {
     const clone: Record<string, string[]> = {};
@@ -577,13 +580,72 @@ export default function SettingsScreen() {
 
       const current = prev[view] ? [...prev[view]] : [];
       let nextList: string[];
-      if (current.includes(reportId)) {
+      const isRemoving = current.includes(reportId);
+      
+      if (isRemoving) {
         nextList = current.filter((id) => id !== reportId);
       } else {
         nextList = [...current, reportId];
       }
+      
+      // Remove duplicates
+      nextList = Array.from(new Set(nextList));
+      
       const nextMap = { ...prev, [view]: nextList };
       setLayoutDirty(computeLayoutDirty(nextMap, originalReportsByView));
+      
+      // Update layout intelligently - preserve existing structure
+      setDashboardLayouts((prevLayouts) => {
+        const currentLayout = prevLayouts[view] || { rows: [] };
+        
+        if (isRemoving) {
+          // Remove report from layout, keep structure
+          const newRows = currentLayout.rows
+            .map((row) => ({
+              ...row,
+              reportIds: row.reportIds.filter((id) => id !== reportId),
+            }))
+            .filter((row) => row.reportIds.length > 0); // Remove empty rows
+          
+          return {
+            ...prevLayouts,
+            [view]: { rows: newRows },
+          };
+        } else {
+          // Add report to layout - preserve existing structure
+          const newLayout = { rows: [...currentLayout.rows] };
+          
+          // Check if report already exists in layout
+          const alreadyExists = newLayout.rows.some(row => row.reportIds.includes(reportId));
+          
+          if (!alreadyExists) {
+            if (newLayout.rows.length === 0) {
+              // Create first row with the report
+              newLayout.rows = [{ id: 'row-1', reportIds: [reportId] }];
+            } else {
+              const lastRowIndex = newLayout.rows.length - 1;
+              const lastRow = { ...newLayout.rows[lastRowIndex] };
+              
+              if (lastRow.reportIds.length >= 2) {
+                // Create new row
+                newLayout.rows.push({ id: `row-${Date.now()}`, reportIds: [reportId] });
+              } else {
+                // Add to last row (create new array to avoid mutation)
+                newLayout.rows[lastRowIndex] = {
+                  ...lastRow,
+                  reportIds: [...lastRow.reportIds, reportId],
+                };
+              }
+            }
+          }
+          
+          return {
+            ...prevLayouts,
+            [view]: newLayout,
+          };
+        }
+      });
+      
       return nextMap;
     });
   };
@@ -622,6 +684,29 @@ export default function SettingsScreen() {
     } finally {
       setLayoutSaving(false);
     }
+  };
+
+  const handleTabChange = (tabId: string) => {
+    if (layoutDirty && activeTab === 'dashboard-layout') {
+      setPendingTab(tabId);
+      setShowUnsavedWarning(true);
+    } else {
+      setActiveTab(tabId);
+    }
+  };
+
+  const confirmTabChange = () => {
+    setShowUnsavedWarning(false);
+    if (pendingTab) {
+      setActiveTab(pendingTab);
+      setPendingTab(null);
+      setLayoutDirty(false);
+    }
+  };
+
+  const cancelTabChange = () => {
+    setShowUnsavedWarning(false);
+    setPendingTab(null);
   };
 
   const settingsTabs = useMemo(() => {
@@ -793,69 +878,79 @@ export default function SettingsScreen() {
           );
         }
 
-        // If in arrange mode, show the arranger
-        if (isArrangeMode && currentArrangeView) {
-          const reportsForView = sortedReports.filter((report) =>
-            isReportAllowedForView(report, currentArrangeView)
-          );
-          // Get saved layout or create default 2-per-row layout
-          let currentLayout = dashboardLayouts[currentArrangeView];
-          
-          if (!currentLayout) {
-            // Create default layout with 2 reports per row
-            const reportIds = selectedReportsByView[currentArrangeView] || [];
-            const rows: { id: string; reportIds: string[] }[] = [];
-            
-            for (let i = 0; i < reportIds.length; i += 2) {
-              rows.push({
-                id: `row-${i / 2 + 1}`,
-                reportIds: reportIds.slice(i, i + 2),
-              });
-            }
-            
-            currentLayout = { 
-              rows: rows.length > 0 ? rows : [{ id: 'row-1', reportIds: [] }] 
-            };
-          }
-
-          return (
-            <DashboardLayoutArranger
-              view={currentArrangeView}
-              availableReports={reportsForView}
-              initialLayout={currentLayout}
-              onLayoutChange={(newLayout) => {
-                setDashboardLayouts((prev) => ({
-                  ...prev,
-                  [currentArrangeView]: newLayout,
-                }));
-                // Update selected reports based on the layout
-                const allReportIds = newLayout.rows.flatMap((row) => row.reportIds);
-                setSelectedReportsByView((prev) => ({
-                  ...prev,
-                  [currentArrangeView]: allReportIds,
-                }));
-                setLayoutDirty(true);
-                setIsArrangeMode(false);
-                setCurrentArrangeView(null);
-              }}
-              onCancel={() => {
-                setIsArrangeMode(false);
-                setCurrentArrangeView(null);
-              }}
-            />
-          );
-        }
-
         return (
           <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-xs text-blue-800">
-              Choose which reports should appear on each dashboard. Use the &quot;Arrange&quot; button to organize reports in rows with custom column layouts.
-            </div>
             {layoutError && (
               <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 text-sm">
                 {layoutError}
               </div>
             )}
+            
+            {/* Header: Dashboard Selector and Action Buttons */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-semibold text-gray-700">Dashboard:</label>
+                <div className="inline-flex rounded-lg border border-gray-300 bg-white">
+                  <button
+                    onClick={() => setSelectedDashboardView('team-dashboard')}
+                    className={`px-4 py-2 text-sm font-medium rounded-l-lg transition-colors ${
+                      selectedDashboardView === 'team-dashboard'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    Team Dashboard
+                  </button>
+                  <button
+                    onClick={() => setSelectedDashboardView('pi-dashboard')}
+                    className={`px-4 py-2 text-sm font-medium rounded-r-lg border-l border-gray-300 transition-colors ${
+                      selectedDashboardView === 'pi-dashboard'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    PI Dashboard
+                  </button>
+                </div>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                {layoutDirty && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <svg className="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span className="text-xs font-medium text-yellow-800">Unsaved</span>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={handleResetLayouts}
+                  disabled={layoutSaving || !layoutDirty}
+                  className={`px-4 py-2 text-sm rounded-md border ${
+                    layoutSaving || !layoutDirty
+                      ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Reset
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveLayouts}
+                  disabled={layoutSaving || !layoutDirty}
+                  className={`px-4 py-2 text-sm rounded-md text-white shadow-sm ${
+                    layoutSaving || !layoutDirty
+                      ? 'bg-blue-300 cursor-not-allowed'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+                >
+                  {layoutSaving ? 'Saving...' : '💾 Save Layout'}
+                </button>
+              </div>
+            </div>
+            
             {layoutLoading ? (
               <div className="flex items-center justify-center h-48">
                 <div className="flex flex-col items-center gap-2 text-gray-600 text-sm">
@@ -864,102 +959,119 @@ export default function SettingsScreen() {
                 </div>
               </div>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2">
-                {viewOrder.map((view) => {
-                  const selected = selectedReportsByView[view] ?? [];
-                  return (
-                    <div key={view} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-semibold text-gray-900">{getViewLabel(view)}</h3>
-                        <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">{selected.length} selected</span>
-                          <button
-                            onClick={() => {
-                              setCurrentArrangeView(view);
-                              setIsArrangeMode(true);
-                            }}
-                            disabled={layoutSaving || selected.length === 0}
-                            className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            📐 Arrange
-                          </button>
+              (() => {
+                const view = selectedDashboardView;
+                const selected = selectedReportsByView[view] ?? [];
+                const selectedReports = Array.from(new Set(selected));
+                
+                // Use existing layout or build default
+                let currentLayout = dashboardLayouts[view];
+                
+                if (!currentLayout || currentLayout.rows.length === 0) {
+                  // Build default layout from current selection (2 per row)
+                  const rows: { id: string; reportIds: string[] }[] = [];
+                  for (let i = 0; i < selectedReports.length; i += 2) {
+                    rows.push({
+                      id: `row-${i / 2 + 1}`,
+                      reportIds: selectedReports.slice(i, i + 2),
+                    });
+                  }
+                  currentLayout = { 
+                    rows: rows.length > 0 ? rows : [{ id: 'row-1', reportIds: [] }] 
+                  };
+                }
+                
+                const reportsForView = availableReports.filter((report) => 
+                  isReportAllowedForView(report, view)
+                );
+                const selectedReportsForView = reportsForView.filter((report) =>
+                  selectedReports.includes(report.report_id)
+                );
+
+                return (
+                  <div className="bg-white rounded-lg shadow-sm border-2 border-gray-300 p-6 flex flex-col" style={{ height: 'calc(100vh - 280px)' }}>
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
+                      {/* Left: Report Selection List */}
+                      <div className="lg:col-span-3 flex flex-col min-h-0">
+                        <div className="flex items-center justify-between mb-3 flex-shrink-0">
+                          <h4 className="text-sm font-semibold text-gray-700">Available Reports</h4>
+                          <span className="text-xs text-gray-500">{selectedReports.length} selected</span>
+                        </div>
+                        
+                        <div className="border border-gray-200 rounded-md divide-y divide-gray-200 overflow-auto flex-1">
+                          {reportsForView.length === 0 ? (
+                            <div className="p-3 text-sm text-gray-500">
+                              No reports available for this dashboard.
+                            </div>
+                          ) : (
+                            reportsForView.map((report) => {
+                              const checked = selectedReports.includes(report.report_id);
+                              return (
+                                <label
+                                  key={`${view}-${report.report_id}`}
+                                  className="flex items-start gap-2 px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    className="mt-0.5 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    checked={checked}
+                                    onChange={() => handleToggleReport(view, report.report_id)}
+                                    disabled={layoutSaving}
+                                  />
+                                  <div>
+                                    <div className="font-medium text-gray-900">{report.report_name}</div>
+                                    {report.description && (
+                                      <div className="text-xs text-gray-500">{report.description}</div>
+                                    )}
+                                  </div>
+                                </label>
+                              );
+                            })
+                          )}
                         </div>
                       </div>
-                      <div className="text-xs text-gray-500">
-                        {selected.length > 0
-                          ? `Currently: ${selected.map((id) => reportNameMap.get(id) ?? id).join(', ')}`
-                          : 'No reports selected yet.'}
-                      </div>
-                      <div className="border border-gray-200 rounded-md divide-y divide-gray-200 max-h-64 overflow-auto">
-                        {(() => {
-                          const reportsForView = sortedReports.filter((report) =>
-                            isReportAllowedForView(report, view)
-                          );
-
-                          if (reportsForView.length === 0) {
-                            return (
-                              <div className="p-3 text-sm text-gray-500">
-                                No reports available for this dashboard.
-                              </div>
-                            );
-                          }
-
-                          return reportsForView.map((report) => {
-                            const checked = selected.includes(report.report_id);
-                            return (
-                              <label
-                                key={`${view}-${report.report_id}`}
-                                className="flex items-start gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
-                              >
-                                <input
-                                  type="checkbox"
-                                  className="mt-0.5 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                  checked={checked}
-                                  onChange={() => handleToggleReport(view, report.report_id)}
-                                  disabled={layoutSaving}
-                                />
-                                <div>
-                                  <div className="font-medium text-gray-900">{report.report_name}</div>
-                                  {report.description && (
-                                    <div className="text-xs text-gray-500">{report.description}</div>
-                                  )}
-                                </div>
-                              </label>
-                            );
-                          });
-                        })()}
+                      
+                      {/* Right: Layout Preview */}
+                      <div className="lg:col-span-9 flex flex-col min-h-0">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3 flex-shrink-0">Layout Preview</h4>
+                        <div className="flex-1 overflow-auto min-h-0">
+                          {selectedReports.length === 0 ? (
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center text-gray-500 h-full flex flex-col items-center justify-center">
+                              <svg className="w-16 h-16 mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              <div className="text-sm">Select reports from the left to preview the layout</div>
+                            </div>
+                          ) : (
+                          <DashboardLayoutArranger
+                            view={view}
+                            availableReports={selectedReportsForView}
+                            layout={currentLayout}
+                            onLayoutChange={(newLayout) => {
+                              setDashboardLayouts((prev) => ({
+                                ...prev,
+                                [view]: newLayout,
+                              }));
+                              setLayoutDirty(true);
+                            }}
+                            onReportRemoved={(reportId) => {
+                              // Uncheck the report in the list
+                              setSelectedReportsByView((prev) => ({
+                                ...prev,
+                                [view]: (prev[view] || []).filter((id) => id !== reportId),
+                              }));
+                              setLayoutDirty(true);
+                            }}
+                            onCancel={() => {}}
+                          />
+                          )}
+                        </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })()
             )}
-            <div className="flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={handleResetLayouts}
-                disabled={layoutSaving || !layoutDirty}
-                className={`px-3 py-1.5 text-sm rounded-md border ${
-                  layoutSaving || !layoutDirty
-                    ? 'border-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'border-gray-300 text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                Reset
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveLayouts}
-                disabled={layoutSaving || !layoutDirty}
-                className={`px-3 py-1.5 text-sm rounded-md text-white ${
-                  layoutSaving || !layoutDirty
-                    ? 'bg-blue-300 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700'
-                }`}
-              >
-                {layoutSaving ? 'Saving...' : 'Save Layout'}
-              </button>
-            </div>
           </div>
         );
       case 'insight-types':
@@ -1139,7 +1251,7 @@ export default function SettingsScreen() {
           {settingsTabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={`flex items-center gap-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
                   ? 'border-blue-500 text-blue-600 bg-white'
@@ -1193,6 +1305,39 @@ export default function SettingsScreen() {
         }}
       />
       <Toast message={toastMessage} type={toastType} onClose={() => setToastMessage(null)} />
+
+      {/* Unsaved Changes Warning Modal */}
+      {showUnsavedWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <svg className="w-6 h-6 text-yellow-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Unsaved Changes</h3>
+                <p className="text-sm text-gray-600 mt-2">
+                  You have unsaved changes to the dashboard layout. If you leave now, your changes will be lost.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={cancelTabChange}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+              >
+                Stay Here
+              </button>
+              <button
+                onClick={confirmTabChange}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+              >
+                Leave Without Saving
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

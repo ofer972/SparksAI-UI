@@ -25,6 +25,7 @@ interface DraggableResizableGridProps {
   layout: LayoutConfig;
   onLayoutChange: (layout: LayoutConfig) => void;
   renderReport: (reportId: string) => React.ReactNode;
+  onRemoveReport?: (reportId: string) => void;
   defaultRowHeight?: number;
   minRowHeight?: number;
 }
@@ -33,9 +34,10 @@ interface DraggableReportCardProps {
   reportId: string;
   rowId: string;
   children: React.ReactNode;
+  onRemove?: () => void;
 }
 
-function DraggableReportCard({ reportId, rowId, children }: DraggableReportCardProps) {
+function DraggableReportCard({ reportId, rowId, children, onRemove }: DraggableReportCardProps) {
   const {
     attributes,
     listeners,
@@ -54,6 +56,16 @@ function DraggableReportCard({ reportId, rowId, children }: DraggableReportCardP
     transition: isDragging ? 'none' : transition,
   };
 
+  // Clone children and inject onClose through componentProps
+  const enhancedChildren = React.isValidElement(children)
+    ? React.cloneElement(children as React.ReactElement<any>, {
+        componentProps: {
+          ...(children.props.componentProps || {}),
+          onClose: onRemove,
+        },
+      })
+    : children;
+
   return (
     <div
       ref={setNodeRef}
@@ -68,11 +80,11 @@ function DraggableReportCard({ reportId, rowId, children }: DraggableReportCardP
         className="absolute top-3 left-14 h-8 z-30 cursor-grab active:cursor-grabbing hover:bg-blue-50 hover:bg-opacity-30 rounded transition-colors"
         style={{ 
           touchAction: 'none',
-          width: 'calc(100% - 180px)', // Leave space for collapse button on left (~56px) and action buttons on right (~120px)
+          width: 'calc(100% - 210px)', // Leave space for collapse button on left and more buttons on right
         }}
         title="Drag from title to move this report"
       />
-      {children}
+      {enhancedChildren}
     </div>
   );
 }
@@ -97,6 +109,7 @@ export default function DraggableResizableGrid({
   layout,
   onLayoutChange,
   renderReport,
+  onRemoveReport,
   defaultRowHeight = 500,
   minRowHeight = 500,
 }: DraggableResizableGridProps) {
@@ -106,6 +119,17 @@ export default function DraggableResizableGrid({
   const [rowHeights, setRowHeights] = useState<number[]>(() =>
     layout.rows.map(() => defaultRowHeight)
   );
+
+  // Update row heights when layout changes (rows added or removed)
+  useEffect(() => {
+    setRowHeights((prevHeights) => {
+      // Always ensure heights array matches rows length
+      const newHeights = layout.rows.map((_, index) => 
+        prevHeights[index] !== undefined ? prevHeights[index] : defaultRowHeight
+      );
+      return newHeights;
+    });
+  }, [layout.rows.length, defaultRowHeight]);
   const [columnWidths, setColumnWidths] = useState<Record<string, number[]>>(() => {
     const widths: Record<string, number[]> = {};
     layout.rows.forEach((row) => {
@@ -113,6 +137,7 @@ export default function DraggableResizableGrid({
     });
     return widths;
   });
+  const prevLayoutRef = useRef<LayoutConfig>(layout);
 
   // Listen for collapse events from report cards
   useEffect(() => {
@@ -244,16 +269,75 @@ export default function DraggableResizableGrid({
       // Remove empty rows
       newLayout.rows = newLayout.rows.filter((r) => r.reportIds.length > 0);
 
-      // Redistribute column widths equally in both affected rows
-      const newWidths = { ...columnWidths };
-      newLayout.rows.forEach((row) => {
-        newWidths[row.id] = Array(row.reportIds.length).fill(100 / row.reportIds.length);
-      });
-      setColumnWidths(newWidths);
-
       onLayoutChange(newLayout);
+      
+      // Redistribute column widths equally in all rows after layout change
+      setTimeout(() => {
+        const newWidths = { ...columnWidths };
+        newLayout.rows.forEach((row) => {
+          newWidths[row.id] = Array(row.reportIds.length).fill(100 / row.reportIds.length);
+        });
+        setColumnWidths(newWidths);
+      }, 0);
     }
   };
+
+  // Handle report removal and redistribute widths
+  const handleReportRemove = useCallback((reportId: string) => {
+    if (!onRemoveReport) return;
+    
+    onRemoveReport(reportId);
+  }, [onRemoveReport]);
+
+  // Watch for layout changes and adjust column widths
+  useEffect(() => {
+    const prevLayout = prevLayoutRef.current;
+    
+    setColumnWidths((prevWidths) => {
+      const newWidths: Record<string, number[]> = {};
+      
+      layout.rows.forEach((row) => {
+        const oldRow = prevLayout.rows.find(r => r.id === row.id);
+        const oldWidths = prevWidths[row.id] || [];
+        const oldReportIds = oldRow?.reportIds || [];
+        
+        // If same number of reports and same reports, keep widths
+        if (oldWidths.length === row.reportIds.length && 
+            row.reportIds.every((id, idx) => id === oldReportIds[idx])) {
+          newWidths[row.id] = oldWidths;
+        }
+        // Reports were removed - preserve proportions
+        else if (oldWidths.length > row.reportIds.length) {
+          const remainingWidths: number[] = [];
+          let totalRemainingWidth = 0;
+          
+          row.reportIds.forEach((reportId) => {
+            const oldIndex = oldReportIds.indexOf(reportId);
+            if (oldIndex !== -1 && oldWidths[oldIndex]) {
+              remainingWidths.push(oldWidths[oldIndex]);
+              totalRemainingWidth += oldWidths[oldIndex];
+            }
+          });
+          
+          // Normalize to 100% while preserving proportions
+          if (totalRemainingWidth > 0 && remainingWidths.length === row.reportIds.length) {
+            newWidths[row.id] = remainingWidths.map(w => (w / totalRemainingWidth) * 100);
+          } else {
+            newWidths[row.id] = Array(row.reportIds.length).fill(100 / row.reportIds.length);
+          }
+        }
+        // Reports were added or reordered - distribute equally
+        else {
+          newWidths[row.id] = Array(row.reportIds.length).fill(100 / row.reportIds.length);
+        }
+      });
+      
+      return newWidths;
+    });
+    
+    // Update previous layout reference
+    prevLayoutRef.current = layout;
+  }, [layout]);
 
   // Vertical resize handlers
   const handleVerticalMouseDown = useCallback((index: number) => (e: React.MouseEvent) => {
@@ -397,7 +481,11 @@ export default function DraggableResizableGrid({
                         style={{ width: `${columnWidths[row.id]?.[colIndex] || 100 / row.reportIds.length}%` }}
                         className="flex-shrink-0 h-full"
                       >
-                        <DraggableReportCard reportId={reportId} rowId={row.id}>
+                        <DraggableReportCard 
+                          reportId={reportId} 
+                          rowId={row.id}
+                          onRemove={onRemoveReport ? () => handleReportRemove(reportId) : undefined}
+                        >
                           {renderReport(reportId)}
                         </DraggableReportCard>
                       </div>
