@@ -201,6 +201,20 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
             {...commonPanelProps}
           />
         );
+      case 'issues-bugs-by-priority':
+        return (
+          <ReportPanel
+            reportId="issues-bugs-by-priority"
+            initialFilters={{ 
+              issue_type: 'Bug',
+              team_name: selectedTeam,
+              status_category: null,
+              include_done: false
+            }}
+            enabled={Boolean(selectedTeam)}
+            {...commonPanelProps}
+          />
+        );
       default:
         return (
           <ReportPanel

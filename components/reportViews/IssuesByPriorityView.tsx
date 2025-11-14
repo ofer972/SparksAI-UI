@@ -87,6 +87,18 @@ const IssuesByPriorityView: React.FC<IssuesByPriorityViewProps> = ({
 
   const availableIssueTypes = useMemo(() => getIssueTypes(), []);
 
+  // Get plural form of issue type for dynamic header
+  const issueTypePlural = useMemo(() => {
+    const type = issueType.toLowerCase();
+    if (type === 'story') return 'Stories';
+    if (type === 'bug') return 'Bugs';
+    if (type === 'epic') return 'Epics';
+    if (type === 'task') return 'Tasks';
+    if (type === 'sub-task' || type === 'subtask') return 'Sub-tasks';
+    // Default: add 's' to the end
+    return issueType.charAt(0).toUpperCase() + issueType.slice(1) + 's';
+  }, [issueType]);
+
   const availableTeams = useMemo(() => {
     if (meta && Array.isArray(meta.available_teams)) {
       return meta.available_teams as string[];
@@ -260,7 +272,7 @@ const IssuesByPriorityView: React.FC<IssuesByPriorityViewProps> = ({
       {!error && (
         <div className="border border-gray-200 rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Issues by Priority</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{issueTypePlural} by Priority</h3>
             <span className="text-sm text-gray-500">Total: {totalCount}</span>
           </div>
           <div className="h-96">

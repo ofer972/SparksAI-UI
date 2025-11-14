@@ -4,7 +4,8 @@ import PIPredictabilityView from './reportViews/PIPredictabilityView';
 import EpicScopeChangesView from './reportViews/EpicScopeChangesView';
 import SprintBurndownView from './reportViews/SprintBurndownView';
 import PIBurndownView from './reportViews/PIBurndownView';
-import BugsByPriorityView from './reportViews/BugsByPriorityView';
+import IssuesByPriorityView from './reportViews/IssuesByPriorityView';
+import IssuesByTeamView from './reportViews/IssuesByTeamView';
 import FlowStatusDurationView from './reportViews/FlowStatusDurationView';
 import EpicsHierarchyView from './reportViews/EpicsHierarchyView';
 import EpicDependenciesView from './reportViews/EpicDependenciesView';
@@ -98,7 +99,7 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
     }),
   },
   'bugs-by-priority': {
-    component: BugsByPriorityView,
+    component: IssuesByPriorityView,
     requiredFilters: ['team_name'],
     mapProps: ({ result, loading, error }) => ({
       data: Array.isArray(result) ? result : [],
@@ -125,7 +126,16 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
     }),
   },
   'issues-bugs-by-priority': {
-    component: BugsByPriorityView,
+    component: IssuesByPriorityView,
+    mapProps: ({ result, loading, error, meta }) => ({
+      data: (result as any) ?? null,
+      loading,
+      error,
+      meta,
+    }),
+  },
+  'issues-bugs-by-team': {
+    component: IssuesByTeamView,
     mapProps: ({ result, loading, error, meta }) => ({
       data: (result as any) ?? null,
       loading,
