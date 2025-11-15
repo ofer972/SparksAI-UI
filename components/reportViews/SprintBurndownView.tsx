@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback, useEffect, useRef } from 'react';
 import BurndownChart from '../BurndownChart';
 import type { BurndownDataPoint } from '@/lib/api';
 import type {
@@ -42,6 +42,13 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
   const sprintName = (filters.sprint_name as string) ?? '';
   const teamName = (filters.team_name as string) ?? '';
 
+  const availableTeams = useMemo(() => {
+    if (meta && Array.isArray(meta.available_teams)) {
+      return meta.available_teams as string[];
+    }
+    return [];
+  }, [meta]);
+
   const sprintOptions: Array<{ value: string; label: string }> = useMemo(() => {
     if (Array.isArray(componentProps?.sprintOptions)) {
       return componentProps!.sprintOptions;
@@ -55,12 +62,21 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
     return [];
   }, [componentProps?.sprintOptions, meta?.available_sprints]);
 
+  const hasAutoSelectedRef = useRef(false);
+
   const handleIssueTypeChange = (value: string) => {
     setFilters((prev) => ({
       ...prev,
       issue_type: value,
     }));
   };
+
+  const handleTeamNameChange = useCallback((value: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      team_name: value || null,
+    }));
+  }, [setFilters]);
 
   const handleSprintChange = (value: string) => {
     setFilters((prev) => ({
@@ -72,10 +88,35 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
     }
   };
 
+  // Auto-select first team if none selected
+  useEffect(() => {
+    // Skip if still loading or no available teams
+    if (loading || availableTeams.length === 0) {
+      return;
+    }
+
+    // Auto-select the first team if no team is selected and we haven't auto-selected yet
+    if (!teamName && !hasAutoSelectedRef.current) {
+      hasAutoSelectedRef.current = true;
+      handleTeamNameChange(availableTeams[0]);
+    }
+  }, [availableTeams, teamName, handleTeamNameChange, loading]);
+
   const filtersContent = (
     <ReportFiltersRow>
       <ReportFilterField label="Team">
-        <span className="text-sm text-gray-700">{teamName || 'Select a team'}</span>
+        <select
+          value={teamName}
+          onChange={(event) => handleTeamNameChange(event.target.value)}
+          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[140px]"
+        >
+          <option value="">Select Team</option>
+          {availableTeams.map((team) => (
+            <option key={team} value={team}>
+              {team}
+            </option>
+          ))}
+        </select>
       </ReportFilterField>
 
       <ReportFilterField label="Issue Type">

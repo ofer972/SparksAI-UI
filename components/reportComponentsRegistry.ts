@@ -44,7 +44,7 @@ export type ReportComponentRegistry = Record<string, ReportComponentConfig>;
 export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
   'team-sprint-burndown': {
     component: SprintBurndownView,
-    requiredFilters: ['team_name'],
+    requiredFilters: [],
     mapProps: ({ result, loading, error, meta }) => ({
       data: Array.isArray(result) ? result : [],
       loading,
@@ -54,7 +54,7 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
   },
   'pi-burndown': {
     component: PIBurndownView,
-    requiredFilters: ['pi'],
+    requiredFilters: [],
     mapProps: ({ result, loading, error, meta }) => ({
       data: Array.isArray(result) ? result : [],
       loading,
@@ -64,11 +64,12 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
   },
   'team-closed-sprints': {
     component: ClosedSprintsView,
-    requiredFilters: ['team_name'],
-    mapProps: ({ result, loading, error }) => ({
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, meta }) => ({
       data: Array.isArray(result) ? result : [],
       loading,
       error,
+      meta,
     }),
   },
   'team-issues-trend': {
@@ -111,20 +112,22 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
   },
   'flow-status-duration': {
     component: FlowStatusDurationView,
-    requiredFilters: ['team_name'],
-    mapProps: ({ result, loading, error }) => ({
-      data: Array.isArray(result) ? result : [],
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, meta }) => ({
+      data: result,
       loading,
       error,
+      meta,
     }),
   },
   'epics-hierarchy': {
     component: EpicsHierarchyView,
-    requiredFilters: ['team_name'],
-    mapProps: ({ result, loading, error }) => ({
-      data: Array.isArray(result) ? result : [],
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, meta }) => ({
+      data: (result as any) ?? null,
       loading,
       error,
+      meta,
     }),
   },
   'issues-bugs-by-priority': {
@@ -147,10 +150,11 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
   },
   'issues-flow-status-duration': {
     component: FlowStatusDurationView,
-    mapProps: ({ result, loading, error }) => ({
+    mapProps: ({ result, loading, error, meta }) => ({
       data: (result as any) ?? null,
       loading,
       error,
+      meta,
     }),
   },
   'issues-epics-hierarchy': {

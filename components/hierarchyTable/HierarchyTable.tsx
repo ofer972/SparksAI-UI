@@ -304,24 +304,24 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
     <div className={`flex flex-col h-full ${className}`}>
       {showControls && (
         <div className="flex-shrink-0 flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={globalFilter}
-              onChange={(event) => setGlobalFilter(event.target.value)}
-              placeholder="Search..."
-              className="px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              type="button"
-              onClick={toggleAllExpanded}
-              className="px-2 py-1 text-xs text-gray-600 border border-gray-200 rounded hover:bg-gray-50"
-            >
-              {Object.keys(expanded).length === 0 ? 'Expand all' : 'Collapse all'}
-            </button>
-          </div>
-          <div className="text-sm text-gray-500">Rows: {flatData.length}</div>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={globalFilter}
+            onChange={(event) => setGlobalFilter(event.target.value)}
+            placeholder="Search..."
+            className="px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            type="button"
+            onClick={toggleAllExpanded}
+            className="px-2 py-1 text-xs text-gray-600 border border-gray-200 rounded hover:bg-gray-50"
+          >
+            {Object.keys(expanded).length === 0 ? 'Expand all' : 'Collapse all'}
+          </button>
         </div>
+        <div className="text-sm text-gray-500">Rows: {flatData.length}</div>
+      </div>
       )}
 
       <div className="flex-1 overflow-auto border border-gray-200 rounded-lg">

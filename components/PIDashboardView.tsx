@@ -159,10 +159,10 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             key={panelKey}
             reportId="pi-burndown"
             initialFilters={{
+              pi: selectedPI || null,
               issue_type: 'Epic',
-              ...(selectedPI ? { pi: selectedPI } : {}),
             }}
-            enabled={Boolean(selectedPI)}
+            enabled={true}
             componentProps={{ isDashboard: true }}
             {...commonPanelProps}
           />
@@ -211,11 +211,11 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           <ReportPanel
             key={panelKey}
             reportId="pi-metrics-summary"
-            controlledFilters={{
-              ...(selectedPI ? { pi: selectedPI } : {}),
-              ...(selectedTeam ? { team_name: selectedTeam } : {}),
+            initialFilters={{
+              pi: selectedPI || null,
+              team_name: selectedTeam || null,
             }}
-            enabled={Boolean(selectedPI)}
+            enabled={true}
             componentProps={{ isDashboard: true }}
             {...commonPanelProps}
           />

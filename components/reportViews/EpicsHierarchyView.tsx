@@ -8,6 +8,7 @@ import type { ColumnConfig } from '../hierarchyTable/types';
 import ReportCard from '../reporting/ReportCard';
 import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
+import MultiPIFilter from '../MultiPIFilter';
 
 interface EpicsHierarchyResult {
   issues?: HierarchyItem[];
@@ -35,12 +36,27 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
   filters,
   setFilters,
   refresh,
+  meta,
   componentProps,
 }) => {
   const [filterText, setFilterText] = useState('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const issues = Array.isArray(data?.issues) ? data!.issues : [];
+
+  const availablePIs = useMemo(() => {
+    if (meta && Array.isArray(meta.available_pis)) {
+      return meta.available_pis as string[];
+    }
+    return [];
+  }, [meta]);
+
+  const availableTeams = useMemo(() => {
+    if (meta && Array.isArray(meta.available_teams)) {
+      return meta.available_teams as string[];
+    }
+    return [];
+  }, [meta]);
 
   // Normalize the data to match HierarchyItem interface
   const normalizedIssues = useMemo<HierarchyItem[]>(() => {
@@ -65,9 +81,32 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
     );
   }, [normalizedIssues, filterText]);
 
-  const teamInput = (filters.team_name as string) ?? '';
-  const piInput = (filters.pi as string) ?? '';
+  const teamName = (filters.team_name as string) ?? '';
+  const piNames = useMemo(() => {
+    const pi = filters.pi;
+    if (Array.isArray(pi)) {
+      return pi;
+    }
+    if (typeof pi === 'string' && pi.trim()) {
+      return [pi.trim()];
+    }
+    return [];
+  }, [filters.pi]);
   const limitInput = Math.min(Number(filters.limit ?? DEFAULT_LIMIT), 1000);
+
+  const handlePIsChange = useCallback((selectedPIs: string[]) => {
+    setFilters((prev) => ({
+      ...prev,
+      pi: selectedPIs.length > 0 ? selectedPIs : null,
+    }));
+  }, [setFilters]);
+
+  const handleTeamNameChange = useCallback((value: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      team_name: value || null,
+    }));
+  }, [setFilters]);
 
   // Build tree to get all parent keys for expand/collapse all
   const allParentKeys = useMemo(() => {
@@ -107,34 +146,29 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
 
   const filterRow = (
     <ReportFiltersRow>
-      <ReportFilterField label="PI">
-          <input
-            type="text"
-          value={piInput}
-          onChange={(event) =>
-            setFilters((prev) => ({
-              ...prev,
-              pi: event.target.value.trim() || null,
-            }))
-          }
-          placeholder="e.g. 2025-Q1"
-          className="w-40 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
+      <ReportFilterField label="PIs">
+        <MultiPIFilter
+          selectedPIs={piNames}
+          onPIsChange={handlePIsChange}
+          maxSelections={100}
+          autoSelectFirst={false}
+          pis={availablePIs}
+        />
       </ReportFilterField>
 
       <ReportFilterField label="Team">
-          <input
-            type="text"
-          value={teamInput}
-          onChange={(event) =>
-            setFilters((prev) => ({
-              ...prev,
-              team_name: event.target.value.trim() || null,
-            }))
-          }
-          placeholder="All teams"
-          className="w-40 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
+        <select
+          value={teamName}
+          onChange={(event) => handleTeamNameChange(event.target.value)}
+          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[140px]"
+        >
+          <option value="">All Teams</option>
+          {availableTeams.map((team) => (
+            <option key={team} value={team}>
+              {team}
+            </option>
+          ))}
+        </select>
       </ReportFilterField>
 
       <ReportFilterField label="Limit">
@@ -227,8 +261,17 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
       onRefresh={refresh}
       onClose={componentProps?.onClose}
     >
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
+      {loading && (
+        <div className="flex-1 flex items-center justify-center h-64">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+            <div className="text-sm text-gray-600">Loading epics hierarchy...</div>
+          </div>
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="flex items-center justify-center bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 h-64">
           {error}
         </div>
       )}
@@ -236,7 +279,7 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
       {!loading && !error && columns.length > 0 && (
         <div className="h-full px-4 py-3">
           <HierarchyTable
-            data={filteredIssues}
+          data={filteredIssues}
             columns={columns}
             defaultExpanded={false}
             expanded={expanded}

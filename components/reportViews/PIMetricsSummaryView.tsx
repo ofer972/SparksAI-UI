@@ -37,6 +37,7 @@ interface PIMetricsSummaryViewProps {
   filters: Record<string, any>;
   setFilters: (updater: ReportFiltersUpdater) => void;
   refresh: () => void;
+  meta?: Record<string, any> | null;
   componentProps?: { isDashboard?: boolean; reportId?: string; onClose?: () => void };
 }
 
@@ -98,9 +99,9 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
   filters,
   setFilters,
   refresh,
+  meta,
   componentProps,
 }) => {
-  const [availablePIs, setAvailablePIs] = useState<string[]>([]);
   const statusRecord = useMemo(
     () => (Array.isArray(data?.status_today) && data!.status_today.length > 0 ? data!.status_today[0] : null),
     [data?.status_today]
@@ -120,22 +121,26 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
   const gracePeriod = Number(filters.plan_grace_period ?? 5);
   const isDashboard = componentProps?.isDashboard;
 
-  useEffect(() => {
-    const apiService = new ApiService();
-    const fetchPIs = async () => {
-      try {
-        const pis = await apiService.getPIs();
-        if (pis?.pis?.length) {
-          setAvailablePIs(pis.pis.map((pi: any) => pi.pi_name));
-        }
-      } catch (e) {
-        console.error('Error fetching PIs:', e);
-      }
-    };
-    if (!isDashboard) {
-      fetchPIs();
+  const availablePIs = useMemo(() => {
+    if (meta && Array.isArray(meta.available_pis)) {
+      return meta.available_pis as string[];
     }
-  }, [isDashboard]);
+    return [];
+  }, [meta]);
+
+  const availableTeams = useMemo(() => {
+    if (meta && Array.isArray(meta.available_teams)) {
+      return meta.available_teams as string[];
+    }
+    return [];
+  }, [meta]);
+
+  const availableIssueTypes = useMemo(() => {
+    if (meta && Array.isArray(meta.available_issue_types)) {
+      return meta.available_issue_types as string[];
+    }
+    return [];
+  }, [meta]);
 
   const handleFilterChange = useCallback(
     (key: string, value: string | number | null) => {
@@ -150,49 +155,47 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
   const filterRow = (
     <ReportFiltersRow>
       <ReportFilterField label="PI">
-        {isDashboard ? (
-          <span className="text-sm text-gray-700">{piName}</span>
-        ) : (
-          <input
-            type="text"
-            value={piName}
-            onChange={(event) => handleFilterChange('pi', event.target.value.trim() || null)}
-            placeholder="e.g. Q32025"
-            list="pi-names-list"
-            className="w-40 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
-        )}
-        {!isDashboard && availablePIs.length > 0 && (
-          <datalist id="pi-names-list">
-            {availablePIs.map((pi) => (
-              <option key={pi} value={pi} />
-            ))}
-          </datalist>
-        )}
-      </ReportFilterField>
-
-      <ReportFilterField label="Project">
-        <input
-          type="text"
-          value={project}
-          onChange={(event) => handleFilterChange('project', event.target.value.trim() || null)}
-          placeholder="Project key"
-          className="w-40 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-        />
+        <select
+          value={piName}
+          onChange={(event) => handleFilterChange('pi', event.target.value || null)}
+          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[140px]"
+        >
+          <option value="">Select PI</option>
+          {availablePIs.map((pi) => (
+            <option key={pi} value={pi}>
+              {pi}
+            </option>
+          ))}
+        </select>
       </ReportFilterField>
 
       <ReportFilterField label="Issue Type">
-        <input
-          type="text"
+        <select
           value={issueType}
-          onChange={(event) => handleFilterChange('issue_type', event.target.value.trim() || 'Epic')}
-          placeholder="Epic"
-          className="w-32 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-        />
+          onChange={(event) => handleFilterChange('issue_type', event.target.value || 'Epic')}
+          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[120px]"
+        >
+          {availableIssueTypes.map((type) => (
+            <option key={type} value={type}>
+              {type}
+            </option>
+          ))}
+        </select>
       </ReportFilterField>
 
       <ReportFilterField label="Team">
-        <span className="text-sm text-gray-700">{teamName || 'All Teams'}</span>
+        <select
+          value={teamName}
+          onChange={(event) => handleFilterChange('team_name', event.target.value || null)}
+          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[140px]"
+        >
+          <option value="">All Teams</option>
+          {availableTeams.map((team) => (
+            <option key={team} value={team}>
+              {team}
+            </option>
+          ))}
+        </select>
       </ReportFilterField>
 
       <ReportFilterField label="Grace Period (days)">
@@ -202,6 +205,16 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
           value={gracePeriod}
           onChange={(event) => handleFilterChange('plan_grace_period', Number(event.target.value) || 5)}
           className="w-24 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
+      </ReportFilterField>
+
+      <ReportFilterField label="Project">
+        <input
+          type="text"
+          value={project}
+          onChange={(event) => handleFilterChange('project', event.target.value.trim() || null)}
+          placeholder="Project key"
+          className="w-40 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
       </ReportFilterField>
     </ReportFiltersRow>

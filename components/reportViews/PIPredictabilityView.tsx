@@ -255,34 +255,28 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
   const filtersContent = (
     <ReportFiltersRow>
       <ReportFilterField label="PIs">
-        {isDashboard ? (
-          <span className="text-sm text-gray-700">{piNames.join(', ')}</span>
-        ) : (
-          <MultiPIFilter
-            selectedPIs={piNames}
-            onPIsChange={handlePIsChange}
-            maxSelections={100}
-            autoSelectFirst={false}
-            pis={availablePIs}
-          />
-        )}
+        <MultiPIFilter
+          selectedPIs={piNames}
+          onPIsChange={handlePIsChange}
+          maxSelections={100}
+          autoSelectFirst={false}
+          pis={availablePIs}
+        />
       </ReportFilterField>
-      {!isDashboard && (
-        <ReportFilterField label="Team">
-          <select
-            value={teamName}
-            onChange={(event) => handleTeamNameChange(event.target.value)}
-            className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[140px]"
-          >
-            <option value="">All Teams</option>
-            {availableTeams.map((team) => (
-              <option key={team} value={team}>
-                {team}
-              </option>
-            ))}
-          </select>
-        </ReportFilterField>
-      )}
+      <ReportFilterField label="Team">
+        <select
+          value={teamName}
+          onChange={(event) => handleTeamNameChange(event.target.value)}
+          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[140px]"
+        >
+          <option value="">All Teams</option>
+          {availableTeams.map((team) => (
+            <option key={team} value={team}>
+              {team}
+            </option>
+          ))}
+        </select>
+      </ReportFilterField>
       <ReportFilterField label="Search">
         <input
           type="text"
@@ -303,18 +297,35 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
       onRefresh={refresh}
       onClose={componentProps?.onClose}
     >
-      <DataTable<PIPredictabilityData>
-        data={filteredData}
-        columns={columns}
-        sortConfig={sortConfig}
-        onSort={handleSort}
-        loading={loading}
-        error={error || undefined}
-        emptyMessage={error ? undefined : 'No data found matching the filter criteria.'}
-        rowKey={(row, index) => `${row.pi_name || 'pi'}-${row.team_name || 'team'}-${index}`}
-        striped
-        hoverable
-      />
+      {loading && (
+        <div className="flex-1 flex items-center justify-center h-64">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+            <div className="text-sm text-gray-600">Loading PI predictability data...</div>
+          </div>
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="flex items-center justify-center bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 h-64">
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && (
+        <DataTable<PIPredictabilityData>
+          data={filteredData}
+          columns={columns}
+          sortConfig={sortConfig}
+          onSort={handleSort}
+          loading={false}
+          error={undefined}
+          emptyMessage="No data found matching the filter criteria."
+          rowKey={(row, index) => `${row.pi_name || 'pi'}-${row.team_name || 'team'}-${index}`}
+          striped
+          hoverable
+        />
+      )}
     </ReportCard>
   );
 };

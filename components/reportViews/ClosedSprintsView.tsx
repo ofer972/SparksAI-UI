@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { ClosedSprint } from '@/lib/config';
 import DataTable, { Column, SortConfig } from '../DataTable';
 import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
@@ -15,6 +15,7 @@ export interface ClosedSprintsViewProps {
   filters: Record<string, any>;
   setFilters: (updater: ReportFiltersUpdater) => void;
   refresh: () => void;
+  meta?: Record<string, any> | null;
   componentProps?: Record<string, any>;
 }
 
@@ -25,6 +26,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
   filters,
   setFilters,
   refresh,
+  meta,
   componentProps,
 }) => {
   const [sortConfig, setSortConfig] = useState<SortConfig>({
@@ -34,6 +36,15 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
 
   const months = Number(filters.months ?? 3);
   const teamName = (filters.team_name as string) ?? '';
+
+  const availableTeams = useMemo(() => {
+    if (meta && Array.isArray(meta.available_teams)) {
+      return meta.available_teams as string[];
+    }
+    return [];
+  }, [meta]);
+
+  const hasAutoSelectedRef = useRef(false);
 
   const handleSort = useCallback((key: string) => {
     setSortConfig((prev) => {
@@ -56,6 +67,28 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
     },
     [setFilters]
   );
+
+  const handleTeamNameChange = useCallback(
+    (value: string) => {
+      setFilters((prev) => ({
+        ...prev,
+        team_name: value || null,
+      }));
+    },
+    [setFilters]
+  );
+
+  // Auto-select first team if none selected
+  useEffect(() => {
+    if (loading || availableTeams.length === 0) {
+      return;
+    }
+
+    if (!teamName && !hasAutoSelectedRef.current) {
+      hasAutoSelectedRef.current = true;
+      handleTeamNameChange(availableTeams[0]);
+    }
+  }, [availableTeams, teamName, loading, handleTeamNameChange]);
 
   const formatDate = useCallback((dateString: string) => {
     const date = new Date(dateString);
@@ -167,9 +200,18 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
   const filtersContent = (
     <ReportFiltersRow>
       <ReportFilterField label="Team">
-        <span className="text-sm text-gray-700">
-          {teamName ? teamName : 'All Teams'}
-        </span>
+        <select
+          value={teamName}
+          onChange={(e) => handleTeamNameChange(e.target.value)}
+          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[140px]"
+        >
+          <option value="">Select Team</option>
+          {availableTeams.map((team) => (
+            <option key={team} value={team}>
+              {team}
+            </option>
+          ))}
+        </select>
       </ReportFilterField>
 
       <ReportFilterField label="Time Period">
@@ -196,18 +238,35 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
       onRefresh={refresh}
       onClose={componentProps?.onClose}
     >
-      <DataTable<ClosedSprint>
-        data={data}
-        columns={columns}
-        sortConfig={sortConfig}
-        onSort={handleSort}
-        loading={loading}
-        error={error || undefined}
-        emptyMessage="No sprints found matching the filter criteria."
-        rowKey={(row) => row.sprint_id}
-        striped
-        hoverable
-      />
+      {loading && (
+        <div className="flex-1 flex items-center justify-center h-64">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+            <div className="text-sm text-gray-600">Loading sprints...</div>
+          </div>
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="flex items-center justify-center bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 h-64">
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && (
+        <DataTable<ClosedSprint>
+          data={data}
+          columns={columns}
+          sortConfig={sortConfig}
+          onSort={handleSort}
+          loading={false}
+          error={undefined}
+          emptyMessage="No sprints found matching the filter criteria."
+          rowKey={(row) => row.sprint_id}
+          striped
+          hoverable
+        />
+      )}
     </ReportCard>
   );
 };

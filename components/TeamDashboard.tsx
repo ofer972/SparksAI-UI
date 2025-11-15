@@ -156,8 +156,10 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
         return (
           <ReportPanel
             reportId="team-closed-sprints"
-            initialFilters={{ months: 3 }}
-            controlledFilters={{ team_name: selectedTeam }}
+            initialFilters={{ 
+              months: 3,
+              team_name: selectedTeam || null
+            }}
             enabled
             {...commonPanelProps}
           />
@@ -166,9 +168,9 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
         return (
           <ReportPanel
             reportId="team-sprint-burndown"
-            initialFilters={{ issue_type: 'all' }}
-            controlledFilters={{
-              team_name: selectedTeam,
+            initialFilters={{
+              team_name: selectedTeam || null,
+              issue_type: 'all',
               sprint_name: selectedSprint || null,
             }}
             enabled

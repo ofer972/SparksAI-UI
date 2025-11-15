@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback, useEffect, useRef } from 'react';
 import BurndownChart from '../BurndownChart';
 import type { BurndownDataPoint } from '@/lib/api';
 import type {
@@ -39,20 +39,52 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
 
   const issueTypeOptions = useMemo(() => getIssueTypes(), []);
 
-  const handleFilterChange = (key: string, value: string | null) => {
+  const availablePIs = useMemo(() => {
+    if (meta && Array.isArray(meta.available_pis)) {
+      return meta.available_pis as string[];
+    }
+    return [];
+  }, [meta]);
+
+  const hasAutoSelectedRef = useRef(false);
+
+  const handleFilterChange = useCallback((key: string, value: string | null) => {
     setFilters((prev) => ({
       ...prev,
       [key]: value,
     }));
-  };
+  }, [setFilters]);
+
+  // Auto-select current PI if available and no PI is selected
+  useEffect(() => {
+    // Skip if still loading or no available PIs
+    if (loading || availablePIs.length === 0) {
+      return;
+    }
+
+    // Auto-select the first PI (most recent) if no PI is selected and we haven't auto-selected yet
+    if (!piName && !hasAutoSelectedRef.current) {
+      hasAutoSelectedRef.current = true;
+      handleFilterChange('pi', availablePIs[0]); // Select the first (most recent) PI
+    }
+  }, [availablePIs, piName, handleFilterChange, loading]);
 
   const filtersContent = (
     <ReportFiltersRow>
-      {!isDashboard && (
-        <ReportFilterField label="PI">
-          <span className="text-sm text-gray-700">{piName || 'Select a PI'}</span>
-        </ReportFilterField>
-      )}
+      <ReportFilterField label="PI">
+        <select
+          value={piName}
+          onChange={(event) => handleFilterChange('pi', event.target.value || null)}
+          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[140px]"
+        >
+          <option value="">Select PI</option>
+          {availablePIs.map((pi) => (
+            <option key={pi} value={pi}>
+              {pi}
+            </option>
+          ))}
+        </select>
+      </ReportFilterField>
 
       <ReportFilterField label="Issue Type">
         <select

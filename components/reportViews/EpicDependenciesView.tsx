@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
 import ReportCard from '../reporting/ReportCard';
 import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
 import DataTable, { Column } from '../DataTable';
+import MultiPIFilter from '../MultiPIFilter';
 
 interface EpicDependencyItem {
   [key: string]: any;
@@ -62,9 +63,33 @@ const EpicDependenciesView: React.FC<EpicDependenciesViewProps> = ({
   filters,
   setFilters,
   refresh,
+  meta,
   componentProps,
 }) => {
-  const piName = (filters.pi as string) ?? '';
+  const availablePIs = useMemo(() => {
+    if (meta && Array.isArray(meta.available_pis)) {
+      return meta.available_pis as string[];
+    }
+    return [];
+  }, [meta]);
+
+  const piNames = useMemo(() => {
+    const pi = filters.pi;
+    if (Array.isArray(pi)) {
+      return pi;
+    }
+    if (typeof pi === 'string' && pi.trim()) {
+      return [pi.trim()];
+    }
+    return [];
+  }, [filters.pi]);
+
+  const handlePIsChange = useCallback((selectedPIs: string[]) => {
+    setFilters((prev) => ({
+      ...prev,
+      pi: selectedPIs.length > 0 ? selectedPIs : null,
+    }));
+  }, [setFilters]);
 
   const outbound = Array.isArray(data?.outbound) ? data!.outbound : [];
   const inbound = Array.isArray(data?.inbound) ? data!.inbound : [];
@@ -74,18 +99,13 @@ const EpicDependenciesView: React.FC<EpicDependenciesViewProps> = ({
 
   const filtersContent = (
     <ReportFiltersRow>
-      <ReportFilterField label="PI">
-        <input
-          type="text"
-          value={piName}
-          onChange={(event) =>
-            setFilters((prev) => ({
-              ...prev,
-              pi: event.target.value.trim() || null,
-            }))
-          }
-          placeholder="e.g. 2025-Q1"
-          className="w-40 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+      <ReportFilterField label="PIs">
+        <MultiPIFilter
+          selectedPIs={piNames}
+          onPIsChange={handlePIsChange}
+          maxSelections={100}
+          autoSelectFirst={false}
+          pis={availablePIs}
         />
       </ReportFilterField>
     </ReportFiltersRow>

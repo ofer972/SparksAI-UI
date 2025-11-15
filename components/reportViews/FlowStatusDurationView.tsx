@@ -90,12 +90,27 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
   filters,
   setFilters,
   refresh,
+  meta,
   componentProps,
 }) => {
   const issueType = (filters.issue_type as string) ?? '';
   const teamName = (filters.team_name as string) ?? '';
   const months = Number(filters.months ?? 3);
   const viewMode = (filters.view_mode as ViewMode) ?? 'total';
+
+  const availableTeams = useMemo(() => {
+    if (meta && Array.isArray(meta.available_teams)) {
+      return meta.available_teams as string[];
+    }
+    return [];
+  }, [meta]);
+
+  const availableIssueTypes = useMemo(() => {
+    if (meta && Array.isArray(meta.available_issue_types)) {
+      return meta.available_issue_types as string[];
+    }
+    return [];
+  }, [meta]);
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailStatus, setDetailStatus] = useState<string>('');
@@ -292,33 +307,43 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
   const filtersContent = (
     <ReportFiltersRow>
       <ReportFilterField label="Team">
-        <input
-          type="text"
+        <select
           value={teamName}
           onChange={(event) =>
             setFilters((prev) => ({
               ...prev,
-              team_name: event.target.value.trim() || null,
+              team_name: event.target.value || null,
             }))
           }
-          placeholder="All teams"
-          className="w-40 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-        />
+          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[140px]"
+        >
+          <option value="">All Teams</option>
+          {availableTeams.map((team) => (
+            <option key={team} value={team}>
+              {team}
+            </option>
+          ))}
+        </select>
       </ReportFilterField>
 
       <ReportFilterField label="Issue Type">
-        <input
-          type="text"
+        <select
           value={issueType}
           onChange={(event) =>
             setFilters((prev) => ({
               ...prev,
-              issue_type: event.target.value.trim() || null,
+              issue_type: event.target.value || null,
             }))
           }
-          placeholder="All issue types"
-          className="w-40 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-        />
+          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[140px]"
+        >
+          <option value="">All Issue Types</option>
+          {availableIssueTypes.map((type) => (
+            <option key={type} value={type}>
+              {type}
+            </option>
+          ))}
+        </select>
       </ReportFilterField>
 
       <ReportFilterField label="Months">
@@ -399,13 +424,22 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
       onRefresh={refresh}
       onClose={componentProps?.onClose}
     >
-      {error && (
+      {loading && (
+        <div className="flex-1 flex items-center justify-center h-64">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+            <div className="text-sm text-gray-600">Loading flow status duration...</div>
+          </div>
+        </div>
+      )}
+
+      {!loading && error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
           {error}
         </div>
       )}
 
-      {!error && (
+      {!loading && !error && (
         <div className="space-y-4 h-full flex flex-col">
           <div className="border border-gray-200 rounded-lg p-4 h-full flex flex-col">
             <h3 className="text-md font-semibold text-gray-900 mb-3">
@@ -440,7 +474,7 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
               <DataTable<IssueStatusDurationIssue>
                 data={detailIssues}
                 columns={detailColumns}
-                loading={loading}
+                loading={false}
                 emptyMessage="No issues found for this status."
                 rowKey={(row, index) => `${row.issue_key || 'issue'}-${index}`}
               />
