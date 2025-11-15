@@ -172,10 +172,11 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           <ReportPanel
             key={panelKey}
             reportId="pi-predictability"
-            controlledFilters={{
+            initialFilters={{
               pi_names: selectedPI ? [selectedPI] : [],
+              team_name: selectedTeam || null,
             }}
-            enabled={Boolean(selectedPI)}
+            enabled={true}
             componentProps={{ isDashboard: true }}
             {...commonPanelProps}
           />
@@ -197,8 +198,10 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           <ReportPanel
             key={panelKey}
             reportId="epic-scope-changes"
-            controlledFilters={selectedPI ? { quarters: [selectedPI] } : { quarters: [] }}
-            enabled={Boolean(selectedPI)}
+            initialFilters={{
+              quarters: selectedPI ? [selectedPI] : [],
+            }}
+            enabled={true}
             componentProps={{ autoSelectFirst: false, selectedPI, isDashboard: true }}
             {...commonPanelProps}
           />

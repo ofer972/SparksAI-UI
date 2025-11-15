@@ -82,20 +82,22 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
   },
   'pi-predictability': {
     component: PIPredictabilityView,
-    requiredFilters: ['pi_names'],
-    mapProps: ({ result, loading, error }) => ({
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, meta }) => ({
       data: Array.isArray(result) ? result : [],
       loading,
       error,
+      meta,
     }),
   },
   'epic-scope-changes': {
     component: EpicScopeChangesView,
-    requiredFilters: ['quarters'],
-    mapProps: ({ result, loading, error }) => ({
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, meta }) => ({
       data: Array.isArray(result) ? result : [],
       loading,
       error,
+      meta,
     }),
   },
   'bugs-by-priority': {

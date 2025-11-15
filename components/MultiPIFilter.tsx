@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ApiService } from '@/lib/api';
 
 interface MultiPIFilterProps {
@@ -9,6 +9,7 @@ interface MultiPIFilterProps {
   className?: string;
   maxSelections?: number;
   autoSelectFirst?: boolean;
+  pis?: string[]; // Optional: Provide PIs directly instead of fetching
 }
 
 interface PI {
@@ -35,13 +36,34 @@ export default function MultiPIFilter({
   className = '',
   maxSelections = 4,
   autoSelectFirst = true,
+  pis: externalPIs,
 }: MultiPIFilterProps) {
-  const [pis, setPis] = useState<PI[]>([]);
+  const [internalPIs, setInternalPIs] = useState<PI[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const hasAutoSelectedRef = useRef(false);
+
+  // Use external PIs if provided, otherwise use internal state
+  const usingExternalPIs = Array.isArray(externalPIs) && externalPIs.length > 0;
+  const piObjects = usingExternalPIs
+    ? externalPIs.map(name => ({ pi_name: name, start_date: '', end_date: '', planning_grace_days: 0, prep_grace_days: 0, updated_at: '' }))
+    : internalPIs;
+  const piNames = piObjects.map(p => p.pi_name);
 
   useEffect(() => {
+    // Only fetch if external PIs not provided or empty
+    if (Array.isArray(externalPIs) && externalPIs.length > 0) {
+      setLoading(false);
+      return;  // Don't auto-select when using external PIs - let parent handle it
+    }
+    
+    // Don't fetch if externalPIs is explicitly an empty array
+    if (Array.isArray(externalPIs) && externalPIs.length === 0) {
+      setLoading(false);
+      return;
+    }
+
     const fetchPIs = async () => {
       try {
         setLoading(true);
@@ -49,9 +71,10 @@ export default function MultiPIFilter({
         const response = await apiService.getPIs();
         
         if (response.pis) {
-          setPis(response.pis);
-          // Set default PI if none selected and allowed
-          if (autoSelectFirst && selectedPIs.length === 0 && response.pis.length > 0) {
+          setInternalPIs(response.pis);
+          // Set default PI if none selected and allowed (only once)
+          if (autoSelectFirst && selectedPIs.length === 0 && response.pis.length > 0 && !hasAutoSelectedRef.current) {
+            hasAutoSelectedRef.current = true;
             onPIsChange([response.pis[0].pi_name]);
           }
         } else {
@@ -60,8 +83,7 @@ export default function MultiPIFilter({
       } catch (err) {
         console.error('Error fetching PIs:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch PIs');
-        // No fallback - let parent handle default
-        setPis([]);
+        setInternalPIs([]);
       } finally {
         setLoading(false);
       }
@@ -69,7 +91,7 @@ export default function MultiPIFilter({
 
     fetchPIs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onPIsChange, autoSelectFirst]);
+  }, [externalPIs, onPIsChange, autoSelectFirst]);
 
   const handlePIChange = (piName: string, checked: boolean) => {
     if (checked) {
@@ -82,7 +104,7 @@ export default function MultiPIFilter({
   };
 
   const handleSelectAll = () => {
-    const availablePIs = pis.slice(0, maxSelections).map(pi => pi.pi_name);
+    const availablePIs = piNames.slice(0, maxSelections);
     onPIsChange(availablePIs);
   };
 
@@ -153,31 +175,37 @@ export default function MultiPIFilter({
           </div>
           
           <div className="max-h-48 overflow-y-auto">
-            {pis.map((pi) => {
-              const isChecked = selectedPIs.includes(pi.pi_name);
-              const isDisabled = !isChecked && selectedPIs.length >= maxSelections;
-              
-              return (
-                <label
-                  key={pi.pi_name}
-                  className={`flex items-center px-3 py-2 text-xs hover:bg-gray-50 cursor-pointer ${
-                    isDisabled ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={(e) => handlePIChange(pi.pi_name, e.target.checked)}
-                    disabled={isDisabled}
-                    className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="flex-1">{pi.pi_name}</span>
-                  {isChecked && (
-                    <span className="text-blue-600 text-xs">✓</span>
-                  )}
-                </label>
-              );
-            })}
+            {piObjects.length === 0 ? (
+              <div className="px-3 py-4 text-xs text-gray-500 text-center">
+                No PIs available
+              </div>
+            ) : (
+              piObjects.map((pi) => {
+                const isChecked = selectedPIs.includes(pi.pi_name);
+                const isDisabled = !isChecked && selectedPIs.length >= maxSelections;
+                
+                return (
+                  <label
+                    key={pi.pi_name}
+                    className={`flex items-center px-3 py-2 text-xs hover:bg-gray-50 cursor-pointer ${
+                      isDisabled ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={(e) => handlePIChange(pi.pi_name, e.target.checked)}
+                      disabled={isDisabled}
+                      className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="flex-1">{pi.pi_name}</span>
+                    {isChecked && (
+                      <span className="text-blue-600 text-xs">✓</span>
+                    )}
+                  </label>
+                );
+              })
+            )}
           </div>
           
           {selectedPIs.length > 0 && (

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import MultiPIFilter from '../MultiPIFilter';
 import StackedGroupedBarChart, {
   StackedGroupedBarChartData,
@@ -26,6 +26,7 @@ export interface EpicScopeChangesViewProps {
   filters: Record<string, any>;
   setFilters: (updater: ReportFiltersUpdater) => void;
   refresh: () => void;
+  meta?: Record<string, any> | null;
   componentProps?: Record<string, any>;
 }
 
@@ -64,6 +65,7 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
   filters,
   setFilters,
   refresh,
+  meta,
   componentProps,
 }) => {
   const quarters = Array.isArray(filters.quarters) ? filters.quarters : [];
@@ -72,6 +74,15 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
     componentProps && typeof componentProps.autoSelectFirst === 'boolean'
       ? componentProps.autoSelectFirst
       : true;
+
+  const availablePIs = useMemo(() => {
+    if (meta && Array.isArray(meta.available_pis)) {
+      return meta.available_pis as string[];
+    }
+    return [];
+  }, [meta]);
+
+  const hasAutoSelectedRef = useRef(false);
 
   React.useEffect(() => {
     if (!arraysEqual(quarters, selectedPIs)) {
@@ -143,14 +154,29 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
     [selectedPIs, setFilters]
   );
 
+  // Auto-select all PIs if none selected
+  useEffect(() => {
+    // Skip if still loading or no available PIs
+    if (loading || availablePIs.length === 0) {
+      return;
+    }
+
+    // Auto-select all PIs if no PI is selected and we haven't auto-selected yet
+    if (quarters.length === 0 && !hasAutoSelectedRef.current) {
+      hasAutoSelectedRef.current = true;
+      handlePIsChange(availablePIs); // Select ALL PIs
+    }
+  }, [availablePIs, quarters.length, loading, handlePIsChange]);
+
   const filtersContent = (
     <ReportFiltersRow>
       <ReportFilterField label="PI Selection">
         <MultiPIFilter
           selectedPIs={selectedPIs}
           onPIsChange={handlePIsChange}
-          maxSelections={4}
-          autoSelectFirst={autoSelectFirst}
+          maxSelections={100}
+          autoSelectFirst={false}
+          pis={availablePIs}
         />
       </ReportFilterField>
     </ReportFiltersRow>

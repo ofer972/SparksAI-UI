@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { PIPredictabilityData } from '@/lib/config';
 import DataTable, { Column, SortConfig } from '../DataTable';
 import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
@@ -16,6 +16,7 @@ export interface PIPredictabilityViewProps {
   filters: Record<string, any>;
   setFilters: (updater: ReportFiltersUpdater) => void;
   refresh: () => void;
+  meta?: Record<string, any> | null;
   componentProps?: { isDashboard?: boolean; reportId?: string; onClose?: () => void };
 }
 
@@ -26,6 +27,7 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
   filters,
   setFilters,
   refresh,
+  meta,
   componentProps,
 }) => {
   const [sortConfig, setSortConfig] = useState<SortConfig>({
@@ -220,6 +222,36 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
   const teamName = (filters.team_name as string) ?? '';
   const isDashboard = componentProps?.isDashboard;
 
+  const availableTeams = useMemo(() => {
+    if (meta && Array.isArray(meta.available_teams)) {
+      return meta.available_teams as string[];
+    }
+    return [];
+  }, [meta]);
+
+  const availablePIs = useMemo(() => {
+    if (meta && Array.isArray(meta.available_pis)) {
+      return meta.available_pis as string[];
+    }
+    return [];
+  }, [meta]);
+
+  const hasAutoSelectedRef = useRef(false);
+
+  // Auto-select all PIs if none selected
+  useEffect(() => {
+    // Skip if still loading or no available PIs
+    if (loading || availablePIs.length === 0) {
+      return;
+    }
+
+    // Auto-select all PIs if no PI is selected and we haven't auto-selected yet
+    if (piNames.length === 0 && !hasAutoSelectedRef.current) {
+      hasAutoSelectedRef.current = true;
+      handlePIsChange(availablePIs); // Select ALL PIs
+    }
+  }, [availablePIs, piNames.length, handlePIsChange, loading]);
+
   const filtersContent = (
     <ReportFiltersRow>
       <ReportFilterField label="PIs">
@@ -229,20 +261,26 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
           <MultiPIFilter
             selectedPIs={piNames}
             onPIsChange={handlePIsChange}
-            maxSelections={4}
-            autoSelectFirst={true}
+            maxSelections={100}
+            autoSelectFirst={false}
+            pis={availablePIs}
           />
         )}
       </ReportFilterField>
       {!isDashboard && (
-        <ReportFilterField label="Team Name">
-          <input
-            type="text"
+        <ReportFilterField label="Team">
+          <select
             value={teamName}
             onChange={(event) => handleTeamNameChange(event.target.value)}
-            placeholder="All teams"
-            className="w-40 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
+            className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[140px]"
+          >
+            <option value="">All Teams</option>
+            {availableTeams.map((team) => (
+              <option key={team} value={team}>
+                {team}
+              </option>
+            ))}
+          </select>
         </ReportFilterField>
       )}
       <ReportFilterField label="Search">
