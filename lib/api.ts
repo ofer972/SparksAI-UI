@@ -373,13 +373,16 @@ export class ApiService {
     return result.data;
   }
 
-  async getTeamAICardsWithRecommendations(teamName: string, category?: string): Promise<AICardsResponse> {
+  async getTeamAICardsWithRecommendations(teamName: string, categories?: string[]): Promise<AICardsResponse> {
     const params = new URLSearchParams({
       team_name: teamName,
     });
 
-    if (category) {
-      params.append('category', category);
+    // Add multiple category parameters if provided
+    if (categories && categories.length > 0) {
+      categories.forEach(cat => {
+        params.append('category', cat);
+      });
     }
 
     const response = await fetch(`${buildBackendUrl('/team-ai-cards/getTopCardsWithRecommendations')}?${params}`);

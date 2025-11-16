@@ -6,11 +6,11 @@ import { teamAICardsConfig } from '@/lib/teamAICardsConfig';
 
 interface AICardProps {
   teamName: string;
-  category?: string;
+  categories?: string[];
 }
 
-export default function AICards({ teamName, category }: AICardProps) {
-  const { cards, loading, error, refetch } = useAICards(teamName, category);
+export default function AICards({ teamName, categories }: AICardProps) {
+  const { cards, loading, error, refetch } = useAICards(teamName, categories);
 
   return (
     <AICardsInsight

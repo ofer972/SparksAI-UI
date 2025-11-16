@@ -17,7 +17,6 @@ import SparksAILogo from '@/components/SparksAILogo';
 import ReportPanel from '@/components/ReportPanel';
 import PIDashboardView from '@/components/PIDashboardView';
 import GeneralDataView from '@/components/GeneralDataView';
-import PromptsTab from '@/components/PromptsTab';
 import UploadTranscripts from '@/components/UploadTranscripts';
 import AIChatModal from '@/components/AIChatModal';
 import { getIssueTypes, getDefaultIssueType } from '@/lib/issueTypes';
@@ -90,7 +89,6 @@ export default function Home() {
     { id: 'team-dashboard', label: 'Team Dashboard', icon: '📊' },
     { id: 'pi-quarter', label: 'PI AI Insights', icon: '🕐' },
     { id: 'pi-dashboard', label: 'PI Dashboard', icon: '📈' },
-    { id: 'prompts', label: 'Prompts', icon: '🧠' },
     { id: 'settings', label: 'System Settings', icon: '⚙️' },
     { id: 'general-data', label: 'View General Data', icon: '📋' },
     { id: 'create-agent-job', label: 'Create Agent Job', icon: '➕' },
@@ -117,7 +115,6 @@ export default function Home() {
     {
       title: 'Management',
       items: [
-        { id: 'prompts', label: 'Prompts', icon: '🧠' },
         { id: 'general-data', label: 'View General Data', icon: '📋' },
         { id: 'upload-transcripts', label: 'Upload Transcripts', icon: '📤' },
       ],
@@ -154,7 +151,6 @@ export default function Home() {
     'team-dashboard': 'SparksAI-Team Dashboard',
     'pi-quarter': 'SparksAI-PI AI Insights',
     'pi-dashboard': 'SparksAI-PI Dashboard',
-    'prompts': 'SparksAI-Prompts',
     'settings': 'SparksAI-System Settings',
     'general-data': 'SparksAI-General Data',
     'create-agent-job': 'SparksAI-Create Agent Job',
@@ -301,7 +297,7 @@ export default function Home() {
               <div className="h-full md:pb-4">
                 <AICards 
                   teamName={selectedTeam} 
-                  category={selectedCategories.length > 0 ? selectedCategories[0] : undefined}
+                  categories={selectedCategories.length > 0 ? selectedCategories : undefined}
                 />
               </div>
             </div>
@@ -340,15 +336,6 @@ export default function Home() {
       case 'pi-dashboard':
         return (
           <PIDashboardView selectedPI={selectedPI} selectedTeam={selectedTeam} />
-        );
-      case 'prompts':
-        return (
-          <div className="h-full flex flex-col">
-            {/* Content */}
-            <div className="flex-1 overflow-auto">
-              <PromptsTab />
-            </div>
-          </div>
         );
       case 'settings':
         return (

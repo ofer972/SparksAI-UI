@@ -56,6 +56,14 @@ export default function InsightCategoryFilter({
         // Filter to only Team categories
         const teamCategories = categoryObjects.filter((cat: InsightCategory) => cat.class === 'Team');
         setCategories(teamCategories);
+        
+        // Auto-select only "daily" on initial load if none are selected
+        if (selectedCategories.length === 0 && teamCategories.length > 0) {
+          const dailyCategory = teamCategories.find(cat => cat.name.toLowerCase() === 'daily');
+          if (dailyCategory) {
+            onCategoriesChange([dailyCategory.name]);
+          }
+        }
       } catch (err) {
         console.error('Error fetching insight categories:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch categories');
@@ -65,7 +73,7 @@ export default function InsightCategoryFilter({
     };
 
     fetchCategories();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -131,8 +139,10 @@ export default function InsightCategoryFilter({
             className="border border-gray-300 rounded px-2 py-1 text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center space-x-1 min-w-[300px] justify-between"
           >
             <span className="truncate">
-              {selectedCategories.length === 0 
-                ? 'All' 
+              {selectedCategories.length === 0
+                ? 'None' 
+                : selectedCategories.length === categories.length
+                ? 'All'
                 : selectedCategories.join(', ')}
             </span>
             <svg 

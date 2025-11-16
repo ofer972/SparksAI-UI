@@ -14,6 +14,7 @@ import { InsightType, DashboardViewConfig, ReportDefinition } from '../lib/confi
 import EditInsightTypeModal from './EditInsightTypeModal';
 import Toast from './Toast';
 import DashboardLayoutArranger, { DashboardLayout } from './DashboardLayoutArranger';
+import PromptsTab from './PromptsTab';
 
 const DASHBOARD_VIEWS = ['team-dashboard', 'pi-dashboard'];
 const DEFAULT_ALLOWED_VIEW = 'every-dashboard';
@@ -713,6 +714,7 @@ export default function SettingsScreen() {
     const tabs = [
       { id: 'ai-config', label: 'AI Configuration', icon: '🤖' },
       { id: 'insight-types', label: 'Insight Types', icon: '💡' },
+      { id: 'prompts', label: 'Prompts', icon: '🧠' },
       { id: 'notifications', label: 'Notifications', icon: '🔔' },
       { id: 'integrations', label: 'Integrations', icon: '🔗' },
     ];
@@ -1074,6 +1076,8 @@ export default function SettingsScreen() {
             )}
           </div>
         );
+      case 'prompts':
+        return <PromptsTab />;
       case 'insight-types':
         return (
           <div className="bg-white rounded-lg shadow-sm p-4">

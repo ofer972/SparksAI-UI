@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { ApiService } from '@/lib/api';
 import { AICard } from '@/lib/config';
 
@@ -13,13 +13,16 @@ interface UseAICardsReturn {
  * Custom hook for fetching AI cards data for a specific team with recommendations.
  * 
  * @param teamName - The name of the team to fetch AI cards for
- * @param category - Optional category filter (if multiple selected, uses first one)
+ * @param categories - Optional category filters array
  * @returns Object containing cards data, loading state, error state, and refetch function
  */
-export function useAICards(teamName?: string, category?: string): UseAICardsReturn {
+export function useAICards(teamName?: string, categories?: string[]): UseAICardsReturn {
   const [cards, setCards] = useState<AICard[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Create a stable reference for categories array to avoid unnecessary re-fetches
+  const categoriesKey = useMemo(() => JSON.stringify(categories || []), [categories]);
 
   const fetchCards = useCallback(async () => {
     if (!teamName) {
@@ -32,9 +35,8 @@ export function useAICards(teamName?: string, category?: string): UseAICardsRetu
       setLoading(true);
       setError(null);
       const apiService = new ApiService();
-      // Use the new endpoint with recommendations, pass category if provided
-      const selectedCategory = category || undefined;
-      const response = await apiService.getTeamAICardsWithRecommendations(teamName, selectedCategory);
+      // Use the new endpoint with recommendations, pass categories if provided
+      const response = await apiService.getTeamAICardsWithRecommendations(teamName, categories);
       setCards(response.ai_cards || []);
     } catch (err) {
       console.error('Error fetching AI cards:', err);
@@ -43,7 +45,7 @@ export function useAICards(teamName?: string, category?: string): UseAICardsRetu
     } finally {
       setLoading(false);
     }
-  }, [teamName, category]);
+  }, [teamName, categoriesKey, categories]);
 
   useEffect(() => {
     fetchCards();

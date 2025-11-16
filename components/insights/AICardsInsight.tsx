@@ -366,6 +366,26 @@ export default function AICardsInsight({
                     >
                       ID: {card.id}
                     </button>
+                    {card.date && (
+                      <div className="text-[10px] text-gray-500">
+                        {(() => {
+                          const date = new Date(card.date);
+                          const dateOptions: Intl.DateTimeFormatOptions = { 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric' 
+                          };
+                          const timeOptions: Intl.DateTimeFormatOptions = {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false
+                          };
+                          const formattedDate = date.toLocaleDateString('en-US', dateOptions);
+                          const formattedTime = date.toLocaleTimeString('en-US', timeOptions);
+                          return `${formattedDate} ${formattedTime}`;
+                        })()}
+                      </div>
+                    )}
                   </div>
                 </div>
                 
