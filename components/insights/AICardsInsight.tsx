@@ -356,7 +356,7 @@ export default function AICardsInsight({
               // Calculate content amount (number of lines/items)
               let contentLines = 0;
               if (hasStructuredData) contentLines += informationItems.length;
-              if (hasRecommendations) contentLines += card.recommendations.length;
+              if (hasRecommendations && card.recommendations) contentLines += card.recommendations.length;
               
               // For description text, estimate lines (assuming ~80 chars per line)
               const estimatedDescriptionLines = Math.ceil(descriptionLength / 80);
@@ -365,7 +365,7 @@ export default function AICardsInsight({
               // Debug: Log content analysis
               console.log(`Card ${card.id} (${card.card_name}):`, {
                 structuredItems: hasStructuredData ? informationItems.length : 0,
-                recommendations: hasRecommendations ? card.recommendations.length : 0,
+                recommendations: hasRecommendations && card.recommendations ? card.recommendations.length : 0,
                 descriptionLength,
                 estimatedLines: contentLines,
                 calculatedTextSize: contentLines >= 10 ? 'text-xs' : contentLines >= 7 ? 'text-sm' : contentLines >= 5 ? 'text-lg' : 'text-xl'
