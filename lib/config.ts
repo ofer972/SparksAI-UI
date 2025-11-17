@@ -87,6 +87,14 @@ export const API_CONFIG = {
       getCategories: '/insight-types/categories',
     },
 
+    // Groups endpoints
+    groups: {
+      getAll: '/groups',
+      create: '/groups',
+      update: '/groups',
+      delete: '/groups',
+      getTeams: '/groups',
+    },
     
   },
 } as const;
@@ -442,6 +450,11 @@ export interface InsightType {
   insight_categories?: string[]; // Array of category names this insight type uses
   categories?: string[]; // Alias for insight_categories for backward compatibility
   active: boolean;
+  cron_config?: {
+    day_of_week?: string;
+    hour?: number;
+    minute?: number;
+  } | null;
   created_at: string;
   updated_at: string;
 }
@@ -454,4 +467,19 @@ export interface InsightTypesResponse {
 export interface InsightCategoriesResponse {
   categories: string[];
   count: number;
+}
+
+export interface Group {
+  group_key: number;
+  group_name: string;
+  parent_group_key: number | null;
+}
+
+export interface Team {
+  team_key: number;
+  team_name: string;
+  number_of_team_members: number;
+  group_key: number | null;
+  group_name?: string | null;
+  ai_insight?: boolean;
 }

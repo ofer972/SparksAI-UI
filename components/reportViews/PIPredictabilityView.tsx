@@ -255,18 +255,18 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
   const filtersContent = (
     <ReportFiltersRow>
       <ReportFilterField label="PIs">
-        <MultiPIFilter
-          selectedPIs={piNames}
-          onPIsChange={handlePIsChange}
+          <MultiPIFilter
+            selectedPIs={piNames}
+            onPIsChange={handlePIsChange}
           maxSelections={100}
           autoSelectFirst={false}
           pis={availablePIs}
-        />
+          />
       </ReportFilterField>
       <ReportFilterField label="Team">
         <select
-          value={teamName}
-          onChange={(event) => handleTeamNameChange(event.target.value)}
+            value={teamName}
+            onChange={(event) => handleTeamNameChange(event.target.value)}
           className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[140px]"
         >
           <option value="">All Teams</option>
@@ -276,7 +276,7 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
             </option>
           ))}
         </select>
-      </ReportFilterField>
+        </ReportFilterField>
       <ReportFilterField label="Search">
         <input
           type="text"
@@ -313,18 +313,18 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
       )}
 
       {!loading && !error && (
-        <DataTable<PIPredictabilityData>
-          data={filteredData}
-          columns={columns}
-          sortConfig={sortConfig}
-          onSort={handleSort}
+      <DataTable<PIPredictabilityData>
+        data={filteredData}
+        columns={columns}
+        sortConfig={sortConfig}
+        onSort={handleSort}
           loading={false}
           error={undefined}
           emptyMessage="No data found matching the filter criteria."
-          rowKey={(row, index) => `${row.pi_name || 'pi'}-${row.team_name || 'team'}-${index}`}
-          striped
-          hoverable
-        />
+        rowKey={(row, index) => `${row.pi_name || 'pi'}-${row.team_name || 'team'}-${index}`}
+        striped
+        hoverable
+      />
       )}
     </ReportCard>
   );

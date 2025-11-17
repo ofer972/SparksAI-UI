@@ -300,10 +300,12 @@ export default function AICardsInsight({
   if (cards.length === 0) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-          <div className="text-gray-400 text-4xl mb-3">📋</div>
-          <h2 className="text-sm font-semibold mb-2">No AI Cards Available</h2>
-          <p className="text-xs text-gray-600">{emptyMessage}</p>
+        <div className="bg-white rounded-xl shadow-lg border-2 border-gray-200 p-8 text-center max-w-md">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center border-2 border-blue-200">
+            <div className="text-gray-400 text-3xl">📋</div>
+          </div>
+          <h2 className="text-base font-bold text-gray-800 mb-2">No AI Cards Available</h2>
+          <p className="text-sm text-gray-600">{emptyMessage}</p>
         </div>
       </div>
     );
@@ -340,34 +342,89 @@ export default function AICardsInsight({
             const isPIInsight = chatType === "PI_insights";
             const cardMinHeight = isPIInsight ? 'min-h-[174px]' : 'min-h-[221px]';
             
+            // Calculate dynamic text size and spacing based on content density
+            const getContentStyles = () => {
+              // Check if we have information_json content
+              const informationItems = card.card_type === 'Sprint Goal' 
+                ? parseSprintGoalJson(card.information_json) 
+                : parseInformationJson(card.information_json);
+              
+              const hasStructuredData = informationItems && informationItems.length > 0;
+              const hasRecommendations = card.recommendations && card.recommendations.length > 0;
+              const descriptionLength = card.description?.length || 0;
+              
+              // Calculate content amount (number of lines/items)
+              let contentLines = 0;
+              if (hasStructuredData) contentLines += informationItems.length;
+              if (hasRecommendations) contentLines += card.recommendations.length;
+              
+              // For description text, estimate lines (assuming ~80 chars per line)
+              const estimatedDescriptionLines = Math.ceil(descriptionLength / 80);
+              contentLines += estimatedDescriptionLines;
+              
+              // Debug: Log content analysis
+              console.log(`Card ${card.id} (${card.card_name}):`, {
+                structuredItems: hasStructuredData ? informationItems.length : 0,
+                recommendations: hasRecommendations ? card.recommendations.length : 0,
+                descriptionLength,
+                estimatedLines: contentLines,
+                calculatedTextSize: contentLines >= 10 ? 'text-xs' : contentLines >= 7 ? 'text-sm' : contentLines >= 5 ? 'text-lg' : 'text-xl'
+              });
+              
+              // Return styles based on content amount
+              // More content = smaller text + tighter spacing
+              // Less content = LARGER text + more spacing to fill the space
+              if (contentLines >= 10) {
+                return { textSize: 'text-xs', spacing: 'space-y-1', lineHeight: 'leading-tight' };
+              } else if (contentLines >= 7) {
+                return { textSize: 'text-sm', spacing: 'space-y-2', lineHeight: 'leading-snug' };
+              } else if (contentLines >= 5) {
+                return { textSize: 'text-lg', spacing: 'space-y-3', lineHeight: 'leading-relaxed' };
+              } else {
+                // 4 or fewer lines = extra large text
+                return { textSize: 'text-xl', spacing: 'space-y-4', lineHeight: 'leading-loose' };
+              }
+            };
+            
+            const contentStyles = getContentStyles();
+            const dynamicTextSize = contentStyles.textSize;
+            const dynamicSpacing = contentStyles.spacing;
+            const dynamicLineHeight = contentStyles.lineHeight;
+            
             return (
-              <div key={card.id} className={`bg-white rounded-lg shadow-lg pt-1 pb-4 px-4 border-l-4 border ${colors.border} ${colors.frame} ${cardMinHeight} relative overflow-hidden flex flex-col`}>
-                <div className="flex items-start justify-between mb-1">
+              <div key={card.id} className={`bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 pt-1 pb-4 px-4 border-2 ${colors.border} ${colors.frame} ${cardMinHeight} relative overflow-hidden flex flex-col`}>
+                {/* Decorative colored strip at top */}
+                <div className={`absolute top-0 left-0 right-0 h-1 ${colors.border.replace('border-', 'bg-')}`}></div>
+                
+                {/* Header Section */}
+                <div className="flex items-start justify-between mb-2 mt-1">
                   <div className="flex items-center space-x-2">
                     <div className="relative group">
-                      <span className="text-lg cursor-pointer">
-                        {priorityIcon}
-                      </span>
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center border-2 border-blue-200 shadow-sm">
+                        <span className="text-lg cursor-pointer">
+                          {priorityIcon}
+                        </span>
+                      </div>
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10 shadow-lg">
                         {card.priority}
                         <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
                       </div>
                     </div>
-                    <h3 className="text-sm font-semibold text-gray-800">{card.card_name}</h3>
+                    <h3 className="text-sm font-bold text-gray-800">{card.card_name}</h3>
                   </div>
-                  <div className="flex flex-col items-end gap-0.5">
-                    <div className="text-xs text-gray-500 font-medium">
+                  <div className="flex flex-col items-end gap-1">
+                    <div className="px-2 py-0.5 bg-gradient-to-r from-blue-100 to-indigo-100 border border-blue-300 rounded-full text-[10px] text-blue-700 font-semibold">
                       {card.card_type}
                     </div>
                     <button 
                       onClick={() => handleViewCard(card)}
-                      className="text-[10px] text-blue-600 underline hover:text-blue-800 cursor-pointer bg-transparent border-none p-0 font-medium"
+                      className="text-[10px] text-blue-600 hover:text-blue-800 cursor-pointer bg-transparent border-none p-0 font-semibold hover:underline transition-colors"
                       title="Click to view details"
                     >
                       ID: {card.id}
                     </button>
                     {card.date && (
-                      <div className="text-[10px] text-gray-500">
+                      <div className="text-[10px] text-gray-500 font-medium">
                         {(() => {
                           const date = new Date(card.date);
                           const dateOptions: Intl.DateTimeFormatOptions = { 
@@ -389,8 +446,8 @@ export default function AICardsInsight({
                   </div>
                 </div>
                 
-                <div className="mb-1 flex-1">
-                  <div className="text-xs text-gray-600 max-w-none w-full h-full break-words whitespace-normal hyphens-auto overflow-hidden">
+                <div className="flex-1">
+                  <div className={`${dynamicTextSize} ${dynamicLineHeight} text-gray-600 max-w-none w-full h-full break-words whitespace-normal hyphens-auto overflow-hidden transition-all duration-200`}>
                     {(() => {
                       // Handle Sprint Goal cards with JSON table format
                       if (card.card_type === 'Sprint Goal') {
@@ -477,19 +534,19 @@ export default function AICardsInsight({
                           <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={{
-                              p: ({ children }) => <p className="text-xs text-gray-600 mb-1">{children}</p>,
+                              p: ({ children }) => <p className={`${dynamicTextSize} ${dynamicLineHeight} text-gray-600 mb-1`}>{children}</p>,
                               strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
                               em: ({ children }) => <em className="italic">{children}</em>,
-                              ul: ({ children }) => <ul className="list-disc list-inside text-xs text-gray-600">{children}</ul>,
-                              ol: ({ children }) => <ol className="list-decimal list-inside text-xs text-gray-600">{children}</ol>,
-                              li: ({ children }) => <li className="text-xs text-gray-600">{children}</li>,
-                              code: ({ children }) => <code className="bg-gray-100 px-1 rounded text-xs">{children}</code>,
-                              pre: ({ children }) => <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto">{children}</pre>,
-                              h1: ({ children }) => <h1 className="text-sm font-bold text-gray-800 mb-1">{children}</h1>,
-                              h2: ({ children }) => <h2 className="text-xs font-bold text-gray-800 mb-1">{children}</h2>,
-                              h3: ({ children }) => <h3 className="text-xs font-semibold text-gray-800 mb-1">{children}</h3>,
-                              blockquote: ({ children }) => <blockquote className="border-l-2 border-gray-300 pl-2 italic text-gray-600">{children}</blockquote>,
-                              table: ({ children }) => <table className="w-full text-xs border-collapse border border-gray-300 table-fixed h-full">{children}</table>,
+                              ul: ({ children }) => <ul className={`list-disc list-inside ${dynamicTextSize} text-gray-600`}>{children}</ul>,
+                              ol: ({ children }) => <ol className={`list-decimal list-inside ${dynamicTextSize} text-gray-600`}>{children}</ol>,
+                              li: ({ children }) => <li className={`${dynamicTextSize} text-gray-600`}>{children}</li>,
+                              code: ({ children }) => <code className={`bg-gray-100 px-1 rounded ${dynamicTextSize}`}>{children}</code>,
+                              pre: ({ children }) => <pre className={`bg-gray-100 p-2 rounded ${dynamicTextSize} overflow-x-auto`}>{children}</pre>,
+                              h1: ({ children }) => <h1 className={`${dynamicTextSize === 'text-base' ? 'text-lg' : dynamicTextSize} font-bold text-gray-800 mb-1`}>{children}</h1>,
+                              h2: ({ children }) => <h2 className={`${dynamicTextSize} font-bold text-gray-800 mb-1`}>{children}</h2>,
+                              h3: ({ children }) => <h3 className={`${dynamicTextSize} font-semibold text-gray-800 mb-1`}>{children}</h3>,
+                              blockquote: ({ children }) => <blockquote className={`border-l-2 border-gray-300 pl-2 italic text-gray-600 ${dynamicTextSize}`}>{children}</blockquote>,
+                              table: ({ children }) => <table className={`w-full ${dynamicTextSize} border-collapse border border-gray-300 table-fixed h-full`}>{children}</table>,
                               thead: ({ children }) => <thead>{children}</thead>,
                               tbody: ({ children }) => <tbody className="h-full">{children}</tbody>,
                               tr: ({ children }) => <tr>{children}</tr>,
@@ -530,9 +587,9 @@ export default function AICardsInsight({
                       
                       if (informationItems && informationItems.length > 0) {
                         return (
-                          <div className="space-y-2">
+                          <div className={dynamicSpacing}>
                             {informationItems.map((item, index) => (
-                              <div key={index} className="text-xs">
+                              <div key={index} className={`${dynamicTextSize} ${dynamicLineHeight}`}>
                                 <span className="font-bold" style={{ color: '#2563eb', fontWeight: '700' }}>
                                   {item.header}{!item.header.endsWith(':') ? ':' : ''}
                                 </span>
@@ -550,19 +607,19 @@ export default function AICardsInsight({
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
                           components={{
-                            p: ({ children }) => <p className="text-xs text-gray-600 mb-1">{children}</p>,
+                            p: ({ children }) => <p className={`${dynamicTextSize} ${dynamicLineHeight} text-gray-600 mb-1`}>{children}</p>,
                             strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
                             em: ({ children }) => <em className="italic">{children}</em>,
-                            ul: ({ children }) => <ul className="list-disc list-inside text-xs text-gray-600">{children}</ul>,
-                            ol: ({ children }) => <ol className="list-decimal list-inside text-xs text-gray-600">{children}</ol>,
-                            li: ({ children }) => <li className="text-xs text-gray-600">{children}</li>,
-                            code: ({ children }) => <code className="bg-gray-100 px-1 rounded text-xs">{children}</code>,
-                            pre: ({ children }) => <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto">{children}</pre>,
-                            h1: ({ children }) => <h1 className="text-sm font-bold text-gray-800 mb-1">{children}</h1>,
-                            h2: ({ children }) => <h2 className="text-xs font-bold text-gray-800 mb-1">{children}</h2>,
-                            h3: ({ children }) => <h3 className="text-xs font-semibold text-gray-800 mb-1">{children}</h3>,
-                            blockquote: ({ children }) => <blockquote className="border-l-2 border-gray-300 pl-2 italic text-gray-600">{children}</blockquote>,
-                            table: ({ children }) => <table className="w-full text-xs border-collapse border border-gray-300 table-fixed h-full">{children}</table>,
+                            ul: ({ children }) => <ul className={`list-disc list-inside ${dynamicTextSize} text-gray-600`}>{children}</ul>,
+                            ol: ({ children }) => <ol className={`list-decimal list-inside ${dynamicTextSize} text-gray-600`}>{children}</ol>,
+                            li: ({ children }) => <li className={`${dynamicTextSize} text-gray-600`}>{children}</li>,
+                            code: ({ children }) => <code className={`bg-gray-100 px-1 rounded ${dynamicTextSize}`}>{children}</code>,
+                            pre: ({ children }) => <pre className={`bg-gray-100 p-2 rounded ${dynamicTextSize} overflow-x-auto`}>{children}</pre>,
+                            h1: ({ children }) => <h1 className={`${dynamicTextSize === 'text-base' ? 'text-lg' : dynamicTextSize} font-bold text-gray-800 mb-1`}>{children}</h1>,
+                            h2: ({ children }) => <h2 className={`${dynamicTextSize} font-bold text-gray-800 mb-1`}>{children}</h2>,
+                            h3: ({ children }) => <h3 className={`${dynamicTextSize} font-semibold text-gray-800 mb-1`}>{children}</h3>,
+                            blockquote: ({ children }) => <blockquote className={`border-l-2 border-gray-300 pl-2 italic text-gray-600 ${dynamicTextSize}`}>{children}</blockquote>,
+                            table: ({ children }) => <table className={`w-full ${dynamicTextSize} border-collapse border border-gray-300 table-fixed h-full`}>{children}</table>,
                             thead: ({ children }) => <thead>{children}</thead>,
                             tbody: ({ children }) => <tbody className="h-full">{children}</tbody>,
                             tr: ({ children }) => <tr>{children}</tr>,
@@ -605,20 +662,23 @@ export default function AICardsInsight({
                   const isExpanded = isRecommendationExpanded(card.id);
                   const recommendationsToShow = isExpanded ? card.recommendations : card.recommendations.slice(0, 1);
                   
+                  // Adjust recommendation margin based on content density (less content = smaller gap)
+                  const recMargin = contentStyles.spacing === 'space-y-4' ? 'mt-4' : contentStyles.spacing === 'space-y-3' ? 'mt-3' : 'mt-2';
+                  
                   return (
-                    <div className="mt-1 pt-0.5 flex-shrink-0 relative" id={`rec-${card.id}`}>
-                      <div className="flex items-center mb-1">
+                    <div className={`${recMargin} pt-1 flex-shrink-0 relative`} id={`rec-${card.id}`}>
+                      <div className="flex items-center mb-1.5">
                         <button
                           onClick={() => toggleRecommendation(card.id)}
-                          className="flex items-center hover:opacity-70 transition-opacity"
+                          className="flex items-center hover:bg-blue-50 rounded-lg px-1.5 py-0.5 transition-all"
                         >
-                          <span className={`text-sm transition-transform duration-200 inline-block mr-1.5 ${isExpanded ? 'rotate-180' : ''}`}>
+                          <span className={`text-sm transition-transform duration-200 inline-block mr-1.5 text-blue-600 ${isExpanded ? 'rotate-180' : ''}`}>
                             ⯆
                           </span>
+                          <h4 className="text-xs font-bold text-gray-700">Recommendations</h4>
                         </button>
-                        <h4 className="text-xs font-semibold text-gray-700">Recommendations</h4>
                       </div>
-                      <div className="border border-gray-300 rounded overflow-hidden" style={{ width: '90%', maxWidth: '90%', height: '44px' }}>
+                      <div className="border-2 border-gray-300 rounded-lg overflow-hidden shadow-sm" style={{ width: '90%', maxWidth: '90%', height: '44px' }}>
                         <style dangerouslySetInnerHTML={{__html: `
                           .recommendations-table-scroll {
                             overflow-y: auto;
@@ -655,10 +715,10 @@ export default function AICardsInsight({
                               return (
                                 <div key={rec.id} className={`flex items-start border-b border-gray-200 ${isExpanded ? 'px-2 pt-2' : 'px-2 pt-2'} last:border-b-0`}>
                                   <div className="flex-shrink-0 w-6 flex items-center justify-center mr-2" style={{ paddingTop: '3px' }}>
-                                    <span className="text-xs">{recPriorityIcon}</span>
+                                    <span className={dynamicTextSize}>{recPriorityIcon}</span>
                                   </div>
                                   <div className="flex-1 min-w-0 break-words" style={{ margin: 0, padding: 0 }}>
-                                    <span className="text-xs text-gray-600 whitespace-normal" style={{ lineHeight: '1.3', display: 'block', margin: 0, padding: 0 }}>
+                                    <span className={`${dynamicTextSize} text-gray-600 whitespace-normal`} style={{ lineHeight: '1.3', display: 'block', margin: 0, padding: 0 }}>
                                       {rec.rational && (
                                         <span className="font-bold text-purple-600">
                                           {rec.rational}
@@ -681,12 +741,15 @@ export default function AICardsInsight({
                 {/* AI Chat Button - positioned at bottom right, vertically aligned with recommendation box center */}
                 <button 
                   onClick={() => handleAIChat(card)}
-                  className="absolute right-2 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-full text-xs font-medium transition-colors shadow-sm hover:shadow-md z-10"
+                  className="absolute right-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md hover:shadow-lg border border-blue-500 z-10 flex items-center gap-1"
                   style={{ 
                     bottom: card.recommendations && card.recommendations.length > 0 ? '12px' : '16px',
                     transform: card.recommendations && card.recommendations.length > 0 ? 'translateY(-50%)' : 'none'
                   }}
                 >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
                   AI Chat
                 </button>
               </div>
@@ -694,7 +757,7 @@ export default function AICardsInsight({
         })}
         {/* Empty placeholder slots to maintain fixed grid size */}
         {Array.from({ length: emptySlots }).map((_, index) => (
-          <div key={`empty-${index}`} className="bg-white rounded-lg shadow-lg border-l-4 border-gray-200 min-h-[221px] opacity-0 pointer-events-none" aria-hidden="true">
+          <div key={`empty-${index}`} className="bg-white rounded-xl shadow-md border-2 border-gray-200 min-h-[221px] opacity-0 pointer-events-none" aria-hidden="true">
           </div>
         ))}
       </div>

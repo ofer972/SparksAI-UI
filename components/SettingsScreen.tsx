@@ -15,6 +15,7 @@ import EditInsightTypeModal from './EditInsightTypeModal';
 import Toast from './Toast';
 import DashboardLayoutArranger, { DashboardLayout } from './DashboardLayoutArranger';
 import PromptsTab from './PromptsTab';
+import TeamManagementTab from './TeamManagementTab';
 
 const DASHBOARD_VIEWS = ['team-dashboard', 'pi-dashboard'];
 const DEFAULT_ALLOWED_VIEW = 'every-dashboard';
@@ -715,6 +716,7 @@ export default function SettingsScreen() {
       { id: 'ai-config', label: 'AI Configuration', icon: '🤖' },
       { id: 'insight-types', label: 'Insight Types', icon: '💡' },
       { id: 'prompts', label: 'Prompts', icon: '🧠' },
+      { id: 'team-management', label: 'Team Management', icon: '👥' },
       { id: 'notifications', label: 'Notifications', icon: '🔔' },
       { id: 'integrations', label: 'Integrations', icon: '🔗' },
     ];
@@ -1078,55 +1080,13 @@ export default function SettingsScreen() {
         );
       case 'prompts':
         return <PromptsTab />;
+      case 'team-management':
+        return <TeamManagementTab />;
       case 'insight-types':
         return (
           <div className="bg-white rounded-lg shadow-sm p-4">
-            <div className="flex items-center justify-between mb-4">
+            <div className="mb-4">
               <h3 className="text-sm font-semibold">Insight Types</h3>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    // TODO: Implement create functionality
-                    alert('Create functionality will be implemented soon');
-                  }}
-                  disabled={loadingInsightTypes}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  title="Create"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Create
-                </button>
-                <button
-                  onClick={async () => {
-                    setLoadingInsightTypes(true);
-                    setInsightTypesError(null);
-                    try {
-                      const api = new ApiService();
-                      const [typesResult, categoriesResult] = await Promise.all([
-                        api.getInsightTypes(),
-                        api.getInsightCategories(),
-                      ]);
-                      setInsightTypes(typesResult.insight_types || []);
-                      setInsightCategories(categoriesResult.categories || []);
-                    } catch (e) {
-                      console.error('Failed to refresh insight types', e);
-                      setInsightTypesError(e instanceof Error ? e.message : 'Failed to refresh insight types');
-                    } finally {
-                      setLoadingInsightTypes(false);
-                    }
-                  }}
-                  disabled={loadingInsightTypes}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  title="Refresh"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Refresh
-                </button>
-              </div>
             </div>
             
             {loadingInsightTypes ? (

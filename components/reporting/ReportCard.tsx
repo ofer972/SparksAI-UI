@@ -54,51 +54,55 @@ const ReportCard: React.FC<ReportCardProps> = ({
 
   return (
     <div
-      className={`bg-white rounded-lg flex flex-col h-full relative ${className} ${!collapsed ? 'shadow-sm' : ''}`}
+      className={`bg-white rounded-xl flex flex-col h-full relative border-2 border-gray-200 shadow-lg hover:shadow-xl transition-all duration-200 ${className} ${collapsed ? 'shadow-md' : ''}`}
     >
-      {/* Close Button - Corner Square */}
+      {/* Close Button - Modern Corner Button */}
       {onClose && (
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-0 right-0 z-50 w-6 h-6 flex items-center justify-center border-l border-b border-gray-300 bg-transparent text-gray-400 hover:text-gray-700 focus:outline-none transition-colors"
-          style={{ borderRadius: '0 0.5rem 0 0.25rem' }}
+          className="absolute top-2 right-2 z-50 w-7 h-7 flex items-center justify-center rounded-lg bg-white border border-gray-300 text-gray-400 hover:text-red-600 hover:bg-red-50 hover:border-red-300 focus:outline-none transition-all duration-200 shadow-sm"
           aria-label="Remove"
           title="Remove this report"
         >
-          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       )}
       
-      <div className={`flex items-center justify-between px-4 py-3 border border-gray-200 ${!collapsed ? 'rounded-t-lg' : 'rounded-lg'}`}>
+      {/* Header with Gradient Background */}
+      <div className={`flex items-center justify-between px-5 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-gray-200 ${!collapsed ? 'rounded-t-xl' : 'rounded-xl'}`}>
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={handleToggleCollapse}
-            className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-white border-2 border-blue-300 text-blue-600 hover:bg-blue-50 hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 shadow-sm"
             aria-label={collapsed ? `Expand ${title}` : `Collapse ${title}`}
           >
             {collapsed ? (
-              <svg className={iconStyles} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9" />
               </svg>
             ) : (
-              <svg className={iconStyles} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
               </svg>
             )}
           </button>
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+          <h2 className="text-lg font-bold text-gray-800">{title}</h2>
         </div>
-        <div className="flex items-center gap-2 mr-6">
+        <div className="flex items-center gap-2 mr-8">
           {actions}
           {filters && (
             <button
               type="button"
               onClick={handleToggleFilters}
-              className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`inline-flex items-center justify-center h-9 w-9 rounded-lg bg-white border-2 transition-all duration-200 shadow-sm ${
+                !filtersCollapsed 
+                  ? 'border-blue-400 text-blue-600 bg-blue-50' 
+                  : 'border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400'
+              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
               aria-label={filtersCollapsed ? 'Show filters' : 'Hide filters'}
               title={filtersCollapsed ? 'Show filters' : 'Hide filters'}
             >
@@ -111,7 +115,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
             <button
               type="button"
               onClick={onRefresh}
-              className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-white border-2 border-gray-300 text-gray-600 hover:bg-green-50 hover:text-green-600 hover:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 shadow-sm"
               aria-label="Refresh"
               title="Refresh"
             >
@@ -124,21 +128,21 @@ const ReportCard: React.FC<ReportCardProps> = ({
       </div>
 
       {!collapsed && (
-        <div className="flex-1 flex flex-col min-h-0 border-b border-l border-r border-gray-200 rounded-b-lg">
+        <div className="flex-1 flex flex-col min-h-0 rounded-b-xl overflow-hidden">
           {filters && !filtersCollapsed && (
-            <div className="flex-shrink-0 px-4 py-3 border-b border-gray-100 bg-gray-50">
+            <div className="flex-shrink-0 px-5 py-4 border-b-2 border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50">
               {filters}
             </div>
           )}
 
-          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-            <div className="h-full w-full overflow-auto">
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col bg-white">
+            <div className="h-full w-full overflow-auto p-4">
               {children}
             </div>
           </div>
 
           {footer && (
-            <div className="flex-shrink-0 px-4 py-3 border-t border-gray-100 bg-gray-50">
+            <div className="flex-shrink-0 px-5 py-4 border-t-2 border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50 rounded-b-xl">
               {footer}
             </div>
           )}

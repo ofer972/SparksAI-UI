@@ -71,7 +71,7 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
 
   const filtersContent = (
     <ReportFiltersRow>
-      <ReportFilterField label="PI">
+        <ReportFilterField label="PI">
         <select
           value={piName}
           onChange={(event) => handleFilterChange('pi', event.target.value || null)}
@@ -84,7 +84,7 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
             </option>
           ))}
         </select>
-      </ReportFilterField>
+        </ReportFilterField>
 
       <ReportFilterField label="Issue Type">
         <select

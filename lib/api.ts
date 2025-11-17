@@ -23,7 +23,9 @@ import {
   InsightCategoriesResponse,
   ReportDefinition,
   ReportInstancePayload,
-  DashboardViewConfig
+  DashboardViewConfig,
+  Group,
+  Team
 } from './config';
 import { getAuthHeaders, refreshAccessToken, clearTokens, getCurrentUser } from './auth';
 
@@ -1288,6 +1290,146 @@ export class ApiService {
     }
     const data = await response.json();
     return this.normalizeDashboardConfigs(data);
+  }
+
+  // Groups API
+  async getAllGroups(): Promise<{ groups: Group[]; count: number }> {
+    const url = buildBackendUrl(API_CONFIG.endpoints.groups.getAll);
+    console.log('[getAllGroups] Fetching from URL:', url);
+    const response = await authFetch(url);
+    console.log('[getAllGroups] Response status:', response.status);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[getAllGroups] Error response:', errorText);
+      throw new Error(`Failed to fetch groups: ${response.status} ${response.statusText}`);
+    }
+    const result = await response.json();
+    console.log('[getAllGroups] Raw result:', result);
+    
+    // Handle both old field names (id, name, parent_id) and new ones (group_key, group_name, parent_group_key)
+    const normalizedGroups = (result.data?.groups || []).map((g: any) => ({
+      group_key: g.group_key ?? g.id,
+      group_name: g.group_name ?? g.name,
+      parent_group_key: g.parent_group_key ?? g.parent_id,
+    }));
+    
+    console.log('[getAllGroups] Normalized groups:', normalizedGroups);
+    return {
+      groups: normalizedGroups,
+      count: result.data?.count || normalizedGroups.length,
+    };
+  }
+
+  async createGroup(groupName: string, parentGroupKey?: number | null): Promise<Group> {
+    const url = buildBackendUrl(API_CONFIG.endpoints.groups.create);
+    const response = await authFetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ group_name: groupName, parent_group_key: parentGroupKey }),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to create group: ${response.status} ${response.statusText}`);
+    }
+    const result = await response.json();
+    return result.data.group;
+  }
+
+  async updateGroup(groupId: number, groupName?: string, parentGroupKey?: number | null): Promise<Group> {
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.groups.update)}/${groupId}`;
+    const response = await authFetch(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ group_name: groupName, parent_group_key: parentGroupKey }),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to update group: ${response.status} ${response.statusText}`);
+    }
+    const result = await response.json();
+    return result.data.group;
+  }
+
+  async deleteGroup(groupId: number): Promise<void> {
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.groups.delete)}/${groupId}`;
+    const response = await authFetch(url, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to delete group: ${response.status} ${response.statusText}`);
+    }
+  }
+
+  async getTeamsInGroup(groupId: number): Promise<{ teams: Team[]; count: number; group_key: number }> {
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.groups.getTeams)}/${groupId}/teams`;
+    const response = await authFetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch teams in group: ${response.status} ${response.statusText}`);
+    }
+    const result = await response.json();
+    return result.data;
+  }
+
+  // Teams API
+  async getAllTeams(groupKey?: number | null, search?: string): Promise<{ teams: Team[]; count: number }> {
+    const params = new URLSearchParams();
+    if (groupKey !== undefined && groupKey !== null) {
+      params.append('group_key', groupKey.toString());
+    }
+    if (search) {
+      params.append('search', search);
+    }
+    const queryString = params.toString();
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.teams.getNames.replace('/getNames', ''))}${queryString ? `?${queryString}` : ''}`;
+    console.log('[getAllTeams] Fetching from URL:', url);
+    const response = await authFetch(url);
+    console.log('[getAllTeams] Response status:', response.status);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[getAllTeams] Error response:', errorText);
+      throw new Error(`Failed to fetch teams: ${response.status} ${response.statusText}`);
+    }
+    const result = await response.json();
+    console.log('[getAllTeams] Result:', result);
+    return result.data;
+  }
+
+  async updateTeam(teamId: number, groupKey: number | null): Promise<Team> {
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.teams.getNames.replace('/getNames', ''))}/${teamId}`;
+    const response = await authFetch(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ group_key: groupKey }),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to update team: ${response.status} ${response.statusText}`);
+    }
+    const result = await response.json();
+    return result.data.team;
+  }
+
+  async batchAssignTeamsToGroup(groupId: number, teamIds: number[]): Promise<{ updated_teams: number }> {
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.teams.getNames.replace('/getNames', ''))}/batch-assign`;
+    const response = await authFetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ group_id: groupId, team_ids: teamIds }),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to batch assign teams: ${response.status} ${response.statusText}`);
+    }
+    const result = await response.json();
+    return result.data;
+  }
+
+  async removeTeamFromGroup(teamId: number): Promise<Team> {
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.teams.getNames.replace('/getNames', ''))}/${teamId}/group`;
+    const response = await authFetch(url, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to remove team from group: ${response.status} ${response.statusText}`);
+    }
+    const result = await response.json();
+    return result.data.team;
   }
 }
 

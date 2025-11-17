@@ -254,18 +254,18 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
       )}
 
       {!loading && !error && (
-        <DataTable<ClosedSprint>
-          data={data}
-          columns={columns}
-          sortConfig={sortConfig}
-          onSort={handleSort}
+      <DataTable<ClosedSprint>
+        data={data}
+        columns={columns}
+        sortConfig={sortConfig}
+        onSort={handleSort}
           loading={false}
           error={undefined}
-          emptyMessage="No sprints found matching the filter criteria."
-          rowKey={(row) => row.sprint_id}
-          striped
-          hoverable
-        />
+        emptyMessage="No sprints found matching the filter criteria."
+        rowKey={(row) => row.sprint_id}
+        striped
+        hoverable
+      />
       )}
     </ReportCard>
   );

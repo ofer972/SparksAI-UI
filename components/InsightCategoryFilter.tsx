@@ -139,10 +139,10 @@ export default function InsightCategoryFilter({
             className="border border-gray-300 rounded px-2 py-1 text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center space-x-1 min-w-[300px] justify-between"
           >
             <span className="truncate">
-              {selectedCategories.length === 0
+              {selectedCategories.length === 0 
                 ? 'None' 
                 : selectedCategories.length === categories.length
-                ? 'All'
+                ? 'All' 
                 : selectedCategories.join(', ')}
             </span>
             <svg 

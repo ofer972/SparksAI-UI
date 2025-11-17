@@ -138,7 +138,7 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
   const availableIssueTypes = useMemo(() => {
     if (meta && Array.isArray(meta.available_issue_types)) {
       return meta.available_issue_types as string[];
-    }
+      }
     return [];
   }, [meta]);
 
@@ -156,16 +156,16 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
     <ReportFiltersRow>
       <ReportFilterField label="PI">
         <select
-          value={piName}
+            value={piName}
           onChange={(event) => handleFilterChange('pi', event.target.value || null)}
           className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[140px]"
         >
           <option value="">Select PI</option>
-          {availablePIs.map((pi) => (
+            {availablePIs.map((pi) => (
             <option key={pi} value={pi}>
               {pi}
             </option>
-          ))}
+            ))}
         </select>
       </ReportFilterField>
 

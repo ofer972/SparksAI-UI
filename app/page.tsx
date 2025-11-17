@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAccessToken, refreshAccessToken, clearTokens, getCurrentUser, logout } from '@/lib/auth';
 import SettingsScreen from '@/components/SettingsScreen';
+import TreeSelect from '@/components/TreeSelect';
 import TeamFilter from '@/components/TeamFilter';
 import PIFilter from '@/components/PIFilter';
 import InsightCategoryFilter from '@/components/InsightCategoryFilter';
@@ -45,7 +46,10 @@ export default function Home() {
   const [activeNavItem, setActiveNavItem] = useState('team-ai-insights');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState('AutoDesign-Dev');
+  const [selectedTeam, setSelectedTeam] = useState('AutoDesign-Dev'); // Kept for backward compatibility
+  const [selectedTreeValue, setSelectedTreeValue] = useState<string | null>(null); // "group:ID" or "team:ID"
+  const [selectedTreeLabel, setSelectedTreeLabel] = useState<string>(''); // Display name
+  const [selectedTreeType, setSelectedTreeType] = useState<'group' | 'team'>('team');
   const [selectedPI, setSelectedPI] = useState('Q32025'); // Default to Q32025 which has data
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState({
@@ -292,8 +296,8 @@ export default function Home() {
       case 'team-ai-insights':
         return (
           <div className="h-full flex flex-col">
-            {/* AI Cards Section - responsive height (no wrapper background) - increased to 30% more */}
-            <div className="pt-2 pb-2 pr-2 pl-[7px] md:flex-shrink-0 md:h-[58.5vh]">
+            {/* AI Cards Section - responsive height (no wrapper background) */}
+            <div className="pt-2 pb-2 pr-2 pl-[7px] flex-1 overflow-auto">
               <div className="h-full md:pb-4">
                 <AICards 
                   teamName={selectedTeam} 
@@ -302,8 +306,8 @@ export default function Home() {
               </div>
             </div>
             
-            {/* Team Metrics Section - responsive height, no negative margin */}
-            <div className="mt-2 md:flex-shrink-0 md:h-28">
+            {/* Team Metrics Section - at the bottom with proper spacing */}
+            <div className="flex-shrink-0 pb-2">
               <TeamMetrics teamName={selectedTeam} />
             </div>
           </div>
@@ -979,12 +983,29 @@ export default function Home() {
                 {navigationItems.find(item => item.id === activeNavItem)?.label || 'SparksAI'}
               </h1>
               
-              {/* Team Filter - for views that need it */}
-              <div className="hidden md:block">
+              {/* PI Filter - shown first for PI Dashboard and PI Quarter views */}
+              {(activeNavItem === 'pi-quarter' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (
+                <div className="hidden md:block" style={{ minWidth: '200px', maxWidth: '300px' }}>
+                  <PIFilter 
+                    selectedPI={selectedPI}
+                    onPIChange={setSelectedPI}
+                  />
+                </div>
+              )}
+              
+              {/* Team/Group Filter - for views that need it */}
+              <div className="hidden md:block" style={{ minWidth: '200px', maxWidth: '300px' }}>
                 {(activeNavItem === 'team-ai-insights' || activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (
-                  <TeamFilter 
-                    selectedTeam={selectedTeam}
-                    onTeamChange={setSelectedTeam}
+                  <TreeSelect 
+                    selectedValue={selectedTreeValue}
+                    onSelect={(value, label, type) => {
+                      setSelectedTreeValue(value);
+                      setSelectedTreeLabel(label);
+                      setSelectedTreeType(type);
+                      // For backward compatibility with components expecting team name
+                      setSelectedTeam(label);
+                    }}
+                    placeholder="Select team or group"
                   />
                 )}
               </div>
@@ -999,33 +1020,8 @@ export default function Home() {
                 </div>
               )}
               
-              {/* PI Filter - for views that need it */}
-              {(activeNavItem === 'pi-quarter' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (
-                <div className="hidden md:flex items-center">
-                  <PIFilter 
-                    selectedPI={selectedPI}
-                    onPIChange={setSelectedPI}
-                  />
-                  {/* Manage Reports Button - right after PI filter for dashboards */}
-                  {activeNavItem === 'pi-dashboard' && (
-                    <button
-                      onClick={() => {
-                        window.dispatchEvent(new CustomEvent('open-add-reports-modal'));
-                      }}
-                      className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-gray-300 text-gray-500 hover:text-green-600 hover:border-green-400 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all ml-3"
-                      title="Manage dashboard reports"
-                      aria-label="Manage reports"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              )}
-              
-              {/* Manage Reports Button - right after team filter for team dashboard */}
-              {activeNavItem === 'team-dashboard' && (
+              {/* Manage Reports Button - after filters for dashboards */}
+              {(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') && (
                 <div className="hidden md:block">
                   <button
                     onClick={() => {
@@ -1083,22 +1079,31 @@ export default function Home() {
         <div className="md:hidden border-t border-gray-200 px-3 py-2 space-y-2 relative z-10">
           {/* Filters */}
           <div className="flex flex-col gap-2">
-            {(activeNavItem === 'team-ai-insights' || activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (
-              <TeamFilter 
-                selectedTeam={selectedTeam}
-                onTeamChange={setSelectedTeam}
-              />
-            )}
-            {activeNavItem === 'team-ai-insights' && (
-              <InsightCategoryFilter
-                selectedCategories={selectedCategories}
-                onCategoriesChange={setSelectedCategories}
-              />
-            )}
+            {/* PI Filter - shown first for PI views */}
             {(activeNavItem === 'pi-quarter' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (
               <PIFilter 
                 selectedPI={selectedPI}
                 onPIChange={setSelectedPI}
+              />
+            )}
+            {/* Team/Group Filter */}
+            {(activeNavItem === 'team-ai-insights' || activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (
+              <TreeSelect 
+                selectedValue={selectedTreeValue}
+                onSelect={(value, label, type) => {
+                  setSelectedTreeValue(value);
+                  setSelectedTreeLabel(label);
+                  setSelectedTreeType(type);
+                  setSelectedTeam(label);
+                }}
+                placeholder="Select team or group"
+              />
+            )}
+            {/* Insight Category Filter */}
+            {activeNavItem === 'team-ai-insights' && (
+              <InsightCategoryFilter
+                selectedCategories={selectedCategories}
+                onCategoriesChange={setSelectedCategories}
               />
             )}
           </div>

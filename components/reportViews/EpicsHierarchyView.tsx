@@ -153,7 +153,7 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
           maxSelections={100}
           autoSelectFirst={false}
           pis={availablePIs}
-        />
+          />
       </ReportFilterField>
 
       <ReportFilterField label="Team">

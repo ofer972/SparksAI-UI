@@ -259,45 +259,45 @@ const IssuesByPriorityView: React.FC<IssuesByPriorityViewProps> = ({
 
       {!error && (
         <div className="border border-gray-200 rounded-lg p-6">
-          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Issues by Priority</h3>
-            <span className="text-sm text-gray-500">Total: {totalCount}</span>
-          </div>
+              <span className="text-sm text-gray-500">Total: {totalCount}</span>
+            </div>
           <div className="h-96">
-            {loading ? (
-              <div className="flex items-center justify-center h-full text-sm text-gray-600">
-                Loading priority chart...
-              </div>
-            ) : pieData.length > 0 ? (
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    dataKey="value"
-                    cx="50%"
-                    cy="50%"
+              {loading ? (
+                <div className="flex items-center justify-center h-full text-sm text-gray-600">
+                  Loading priority chart...
+                </div>
+              ) : pieData.length > 0 ? (
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      dataKey="value"
+                      cx="50%"
+                      cy="50%"
                     outerRadius={120}
-                    label={renderPieLabel}
-                  >
-                    {pieData.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip content={pieTooltip} />
-                  <RechartsLegend
-                    verticalAlign="middle"
-                    align="right"
-                    layout="vertical"
-                    iconType="circle"
-                    wrapperStyle={{ fontSize: '12px' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-gray-500">
-                No data available
-              </div>
-            )}
+                      label={renderPieLabel}
+                    >
+                      {pieData.map((entry) => (
+                        <Cell key={entry.name} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip content={pieTooltip} />
+                    <RechartsLegend
+                      verticalAlign="middle"
+                      align="right"
+                      layout="vertical"
+                      iconType="circle"
+                      wrapperStyle={{ fontSize: '12px' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-500">
+                  No data available
+                </div>
+              )}
           </div>
         </div>
       )}
