@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect as useEffectReact } from 'react';
+import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ViewRecordModal } from '@/components/ViewRecordModal';
@@ -232,6 +233,38 @@ export default function AICardsInsight({
 
   // State for expanded recommendations per card (cardId -> boolean)
   const [expandedRecommendations, setExpandedRecommendations] = useState<Record<number, boolean>>({});
+  
+  // State for expanded "read more" tooltips per recommendation (recId -> boolean)
+  const [expandedRecTooltips, setExpandedRecTooltips] = useState<Record<number, boolean>>({});
+  
+  // State for button positions per recommendation (recId -> {top, left})
+  const [buttonPositions, setButtonPositions] = useState<Record<number, {top: number, left: number}>>({});
+
+  // Handle click outside to close tooltips
+  useEffectReact(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Check if any tooltip is open
+      const hasOpenTooltips = Object.values(expandedRecTooltips).some(isOpen => isOpen);
+      
+      if (hasOpenTooltips) {
+        // Check if the click target is not inside any tooltip or "see more" button
+        const target = event.target as HTMLElement;
+        const isInsideTooltip = target.closest('[data-tooltip-content]');
+        const isInsideButton = target.closest('[data-tooltip-button]');
+        
+        if (!isInsideTooltip && !isInsideButton) {
+          // Close all tooltips
+          setExpandedRecTooltips({});
+          setButtonPositions({});
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [expandedRecTooltips]);
 
   const toggleRecommendation = (cardId: number) => {
     setExpandedRecommendations(prev => ({
@@ -242,6 +275,29 @@ export default function AICardsInsight({
 
   const isRecommendationExpanded = (cardId: number) => {
     return expandedRecommendations[cardId] || false;
+  };
+  
+  const toggleRecTooltip = (recId: number, buttonElement?: HTMLButtonElement) => {
+    // Store button position when opening
+    if (buttonElement && !expandedRecTooltips[recId]) {
+      const rect = buttonElement.getBoundingClientRect();
+      setButtonPositions(prev => ({
+        ...prev,
+        [recId]: {
+          top: rect.bottom + window.scrollY,
+          left: rect.left + window.scrollX
+        }
+      }));
+    }
+    
+    setExpandedRecTooltips(prev => ({
+      ...prev,
+      [recId]: !prev[recId]
+    }));
+  };
+  
+  const isRecTooltipExpanded = (recId: number) => {
+    return expandedRecTooltips[recId] || false;
   };
 
   const handleAIChat = (card: AICard) => {
@@ -332,74 +388,26 @@ export default function AICardsInsight({
   const emptySlots = Math.max(0, maxCardsToShow - cardsToDisplay.length);
 
   return (
-    <div className="h-full">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full h-full">
+    <div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full auto-rows-fr">
         {cardsToDisplay.map((card) => {
             const colors = getPriorityColor(card.priority);
             const priorityIcon = getPriorityIcon(card.priority);
             
-            // Calculate card height: PI insights are 25% smaller than Team insights, then 5% taller
-            const isPIInsight = chatType === "PI_insights";
-            const cardMinHeight = isPIInsight ? 'min-h-[174px]' : 'min-h-[221px]';
-            
-            // Calculate dynamic text size and spacing based on content density
-            const getContentStyles = () => {
-              // Check if we have information_json content
-              const informationItems = card.card_type === 'Sprint Goal' 
-                ? parseSprintGoalJson(card.information_json) 
-                : parseInformationJson(card.information_json);
-              
-              const hasStructuredData = informationItems && informationItems.length > 0;
-              const hasRecommendations = card.recommendations && card.recommendations.length > 0;
-              const descriptionLength = card.description?.length || 0;
-              
-              // Calculate content amount (number of lines/items)
-              let contentLines = 0;
-              if (hasStructuredData) contentLines += informationItems.length;
-              if (hasRecommendations && card.recommendations) contentLines += card.recommendations.length;
-              
-              // For description text, estimate lines (assuming ~80 chars per line)
-              const estimatedDescriptionLines = Math.ceil(descriptionLength / 80);
-              contentLines += estimatedDescriptionLines;
-              
-              // Debug: Log content analysis
-              console.log(`Card ${card.id} (${card.card_name}):`, {
-                structuredItems: hasStructuredData ? informationItems.length : 0,
-                recommendations: hasRecommendations && card.recommendations ? card.recommendations.length : 0,
-                descriptionLength,
-                estimatedLines: contentLines,
-                calculatedTextSize: contentLines >= 10 ? 'text-xs' : contentLines >= 7 ? 'text-sm' : contentLines >= 5 ? 'text-lg' : 'text-xl'
-              });
-              
-              // Return styles based on content amount
-              // More content = smaller text + tighter spacing
-              // Less content = LARGER text + more spacing to fill the space
-              if (contentLines >= 10) {
-                return { textSize: 'text-xs', spacing: 'space-y-1', lineHeight: 'leading-tight' };
-              } else if (contentLines >= 7) {
-                return { textSize: 'text-sm', spacing: 'space-y-2', lineHeight: 'leading-snug' };
-              } else if (contentLines >= 5) {
-                return { textSize: 'text-lg', spacing: 'space-y-3', lineHeight: 'leading-relaxed' };
-              } else {
-                // 4 or fewer lines = extra large text
-                return { textSize: 'text-xl', spacing: 'space-y-4', lineHeight: 'leading-loose' };
-              }
-            };
-            
-            const contentStyles = getContentStyles();
-            const dynamicTextSize = contentStyles.textSize;
-            const dynamicSpacing = contentStyles.spacing;
-            const dynamicLineHeight = contentStyles.lineHeight;
+            // Use consistent text size for all cards
+            const dynamicTextSize = 'text-sm';
+            const dynamicSpacing = 'space-y-2';
+            const dynamicLineHeight = 'leading-normal';
             
             return (
-              <div key={card.id} className={`bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 pt-1 pb-4 px-4 border-2 ${colors.border} ${colors.frame} ${cardMinHeight} relative overflow-hidden flex flex-col`}>
+              <div key={card.id} className={`bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 pt-1 pb-4 px-4 border-2 ${colors.border} ${colors.frame} relative overflow-hidden flex flex-col`}>
                 {/* Decorative colored strip at top */}
                 <div className={`absolute top-0 left-0 right-0 h-1 ${colors.border.replace('border-', 'bg-')}`}></div>
                 
                 {/* Header Section */}
-                <div className="flex items-start justify-between mb-2 mt-1">
-                  <div className="flex items-center space-x-2">
-                    <div className="relative group">
+                <div className="flex items-center justify-between mb-2 mt-1">
+                  <div className="flex items-center space-x-2 flex-1 min-w-0">
+                    <div className="relative group flex-shrink-0">
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center border-2 border-blue-200 shadow-sm">
                         <span className="text-lg cursor-pointer">
                           {priorityIcon}
@@ -410,25 +418,24 @@ export default function AICardsInsight({
                         <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
                       </div>
                     </div>
-                    <h3 className="text-sm font-bold text-gray-800">{card.card_name}</h3>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <div className="px-2 py-0.5 bg-gradient-to-r from-blue-100 to-indigo-100 border border-blue-300 rounded-full text-[10px] text-blue-700 font-semibold">
-                      {card.card_type}
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <h3 className="text-sm font-bold text-gray-800 truncate">{card.card_name}</h3>
+                      <button 
+                        onClick={() => handleViewCard(card)}
+                        className="text-[10px] text-blue-600 hover:text-blue-800 cursor-pointer bg-transparent border-none p-0 font-semibold hover:underline transition-colors flex-shrink-0"
+                        title="Click to view details"
+                      >
+                        ID: {card.id}
+                      </button>
                     </div>
-                    <button 
-                      onClick={() => handleViewCard(card)}
-                      className="text-[10px] text-blue-600 hover:text-blue-800 cursor-pointer bg-transparent border-none p-0 font-semibold hover:underline transition-colors"
-                      title="Click to view details"
-                    >
-                      ID: {card.id}
-                    </button>
+                  </div>
+                  <div className="flex items-center flex-shrink-0 ml-2">
+                    {/* Date Badge at top right with nice background */}
                     {card.date && (
-                      <div className="text-[10px] text-gray-500 font-medium">
+                      <div className="px-3 py-1 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border border-blue-200 rounded-lg text-[10px] text-indigo-700 font-semibold shadow-sm">
                         {(() => {
                           const date = new Date(card.date);
                           const dateOptions: Intl.DateTimeFormatOptions = { 
-                            year: 'numeric', 
                             month: 'short', 
                             day: 'numeric' 
                           };
@@ -471,22 +478,22 @@ export default function AICardsInsight({
                           }
                           
                           return (
-                            <div className="w-full overflow-auto max-h-32 -mt-1" style={{ width: '100%', display: 'block' }}>
+                            <div className="w-full overflow-auto rounded-lg border border-gray-300 mb-4" style={{ maxHeight: '150px' }}>
                               <table 
-                                className="text-xs border-collapse border border-gray-300" 
-                                style={{ width: '90%', marginLeft: 0, marginRight: 'auto', textAlign: 'center' }}
+                                className="text-sm border-collapse w-full" 
+                                style={{ tableLayout: 'auto' }}
                               >
-                                <thead>
+                                <thead className="sticky top-0 bg-gray-50 z-10">
                                   <tr>
                                     {columns.map((column) => {
                                       const isGoalColumn = column.toLowerCase().includes('goal');
                                       return (
                                         <th 
                                           key={column} 
-                                          className={`border border-gray-300 px-1 py-0 bg-gray-100 font-semibold ${
-                                            isGoalColumn ? 'text-left w-3/5' : 'w-auto'
+                                          className={`border-b-2 border-gray-300 px-2 py-1.5 bg-gray-100 font-semibold text-gray-700 text-sm ${
+                                            isGoalColumn ? 'text-left' : 'text-center'
                                           }`}
-                                          style={isGoalColumn ? { textAlign: 'left', width: '60%' } : { textAlign: 'center' }}
+                                          style={isGoalColumn ? { minWidth: '200px' } : { minWidth: '80px' }}
                                         >
                                           {column.charAt(0).toUpperCase() + column.slice(1)}
                                         </th>
@@ -496,23 +503,23 @@ export default function AICardsInsight({
                                 </thead>
                                 <tbody>
                                   {sprintGoalItems.map((item, index) => (
-                                    <tr key={index}>
+                                    <tr key={index} className="hover:bg-gray-50">
                                       {columns.map((column) => {
                                         const isGoalColumn = column.toLowerCase().includes('goal');
+                                        const isAlertColumn = column.toLowerCase() === 'alert';
                                         const value = item[column];
                                         return (
                                           <td 
                                             key={column} 
-                                            className={`border border-gray-300 px-1 py-0 ${
+                                            className={`border-b border-gray-200 px-2 py-1.5 text-sm text-gray-600 ${
                                               isGoalColumn 
-                                                ? 'whitespace-normal break-words' 
-                                                : ''
+                                                ? 'whitespace-normal break-words text-left' 
+                                                : 'text-center'
                                             } ${
-                                              column.toLowerCase() === 'alert' 
-                                                ? 'text-lg' 
+                                              isAlertColumn 
+                                                ? 'text-base' 
                                                 : ''
                                             }`}
-                                            style={isGoalColumn ? { textAlign: 'left', width: '60%' } : { textAlign: 'center' }}
                                           >
                                             {column.toLowerCase() === 'progress' && typeof value === 'number'
                                               ? `${value}%`
@@ -531,6 +538,7 @@ export default function AICardsInsight({
                         
                         // Fallback to description (markdown) for Sprint Goal cards when information_json is empty
                         return (
+                          <div className="mb-4">
                           <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={{
@@ -542,7 +550,7 @@ export default function AICardsInsight({
                               li: ({ children }) => <li className={`${dynamicTextSize} text-gray-600`}>{children}</li>,
                               code: ({ children }) => <code className={`bg-gray-100 px-1 rounded ${dynamicTextSize}`}>{children}</code>,
                               pre: ({ children }) => <pre className={`bg-gray-100 p-2 rounded ${dynamicTextSize} overflow-x-auto`}>{children}</pre>,
-                              h1: ({ children }) => <h1 className={`${dynamicTextSize === 'text-base' ? 'text-lg' : dynamicTextSize} font-bold text-gray-800 mb-1`}>{children}</h1>,
+                              h1: ({ children }) => <h1 className={`${dynamicTextSize} font-bold text-gray-800 mb-1`}>{children}</h1>,
                               h2: ({ children }) => <h2 className={`${dynamicTextSize} font-bold text-gray-800 mb-1`}>{children}</h2>,
                               h3: ({ children }) => <h3 className={`${dynamicTextSize} font-semibold text-gray-800 mb-1`}>{children}</h3>,
                               blockquote: ({ children }) => <blockquote className={`border-l-2 border-gray-300 pl-2 italic text-gray-600 ${dynamicTextSize}`}>{children}</blockquote>,
@@ -576,9 +584,10 @@ export default function AICardsInsight({
                               if (card.description.length > CARD_DESCRIPTION_MAX_LENGTH) {
                                 return `${card.description.substring(0, CARD_DESCRIPTION_MAX_LENGTH)}...`;
                               }
-                              return card.description;
-                            })()}
+                            return card.description;
+                          })()}
                           </ReactMarkdown>
+                          </div>
                         );
                       }
                       
@@ -587,7 +596,7 @@ export default function AICardsInsight({
                       
                       if (informationItems && informationItems.length > 0) {
                         return (
-                          <div className={dynamicSpacing}>
+                          <div className={`${dynamicSpacing} mb-4`}>
                             {informationItems.map((item, index) => (
                               <div key={index} className={`${dynamicTextSize} ${dynamicLineHeight}`}>
                                 <span className="font-bold" style={{ color: '#2563eb', fontWeight: '700' }}>
@@ -604,6 +613,7 @@ export default function AICardsInsight({
                       
                       // Fallback to description (markdown) for other card types when information_json is empty
                       return (
+                        <div className="mb-4">
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
                           components={{
@@ -615,7 +625,7 @@ export default function AICardsInsight({
                             li: ({ children }) => <li className={`${dynamicTextSize} text-gray-600`}>{children}</li>,
                             code: ({ children }) => <code className={`bg-gray-100 px-1 rounded ${dynamicTextSize}`}>{children}</code>,
                             pre: ({ children }) => <pre className={`bg-gray-100 p-2 rounded ${dynamicTextSize} overflow-x-auto`}>{children}</pre>,
-                            h1: ({ children }) => <h1 className={`${dynamicTextSize === 'text-base' ? 'text-lg' : dynamicTextSize} font-bold text-gray-800 mb-1`}>{children}</h1>,
+                            h1: ({ children }) => <h1 className={`${dynamicTextSize} font-bold text-gray-800 mb-1`}>{children}</h1>,
                             h2: ({ children }) => <h2 className={`${dynamicTextSize} font-bold text-gray-800 mb-1`}>{children}</h2>,
                             h3: ({ children }) => <h3 className={`${dynamicTextSize} font-semibold text-gray-800 mb-1`}>{children}</h3>,
                             blockquote: ({ children }) => <blockquote className={`border-l-2 border-gray-300 pl-2 italic text-gray-600 ${dynamicTextSize}`}>{children}</blockquote>,
@@ -652,33 +662,24 @@ export default function AICardsInsight({
                             return card.description;
                           })()}
                         </ReactMarkdown>
+                        </div>
                       );
                     })()}
                   </div>
                 </div>
                 
-                {/* Recommendations Section - inside each card */}
+                {/* Recommendations Section and AI Chat Button */}
                 {card.recommendations && card.recommendations.length > 0 && (() => {
-                  const isExpanded = isRecommendationExpanded(card.id);
-                  const recommendationsToShow = isExpanded ? card.recommendations : card.recommendations.slice(0, 1);
-                  
-                  // Adjust recommendation margin based on content density (less content = smaller gap)
-                  const recMargin = contentStyles.spacing === 'space-y-4' ? 'mt-4' : contentStyles.spacing === 'space-y-3' ? 'mt-3' : 'mt-2';
+                  const recommendationsToShow = card.recommendations;
                   
                   return (
-                    <div className={`${recMargin} pt-1 flex-shrink-0 relative`} id={`rec-${card.id}`}>
-                      <div className="flex items-center mb-1.5">
-                        <button
-                          onClick={() => toggleRecommendation(card.id)}
-                          className="flex items-center hover:bg-blue-50 rounded-lg px-1.5 py-0.5 transition-all"
-                        >
-                          <span className={`text-sm transition-transform duration-200 inline-block mr-1.5 text-blue-600 ${isExpanded ? 'rotate-180' : ''}`}>
-                            ⯆
-                          </span>
-                          <h4 className="text-xs font-bold text-gray-700">Recommendations</h4>
-                        </button>
+                    <div className="mt-6 pt-0.5 flex-shrink-0">
+                      <div className="flex items-center mb-1">
+                        <h4 className="text-xs font-bold text-gray-700">Recommendations</h4>
                       </div>
-                      <div className="border-2 border-gray-300 rounded-lg overflow-hidden shadow-sm" style={{ width: '90%', maxWidth: '90%', height: '44px' }}>
+                      {/* Recommendations panel */}
+                      <div className="relative">
+                        <div className="border-2 border-gray-300 rounded-lg shadow-sm w-full p-2 overflow-hidden">
                         <style dangerouslySetInnerHTML={{__html: `
                           .recommendations-table-scroll {
                             overflow-y: auto;
@@ -708,17 +709,22 @@ export default function AICardsInsight({
                             background: #64748b;
                           }
                         `}} />
-                        <div className="recommendations-table-scroll h-full" style={{ overflowY: isExpanded ? 'auto' : 'hidden', maxHeight: '44px' }}>
-                          <div className="space-y-0">
+                        <div className="recommendations-table-scroll max-h-[200px] overflow-y-auto">
+                          <div className="space-y-1">
                             {recommendationsToShow.map((rec: Recommendation) => {
                               const recPriorityIcon = getPriorityIcon(rec.priority);
+                              const fullText = `${rec.rational || ''}${rec.rational && rec.action_text ? ' - ' : ''}${rec.action_text || ''}`;
+                              const isTooLong = fullText.length > 50;
+                              const isTooltipOpen = isRecTooltipExpanded(rec.id);
+                              const buttonPosition = buttonPositions[rec.id];
+                              
                               return (
-                                <div key={rec.id} className={`flex items-start border-b border-gray-200 ${isExpanded ? 'px-2 pt-2' : 'px-2 pt-2'} last:border-b-0`}>
-                                  <div className="flex-shrink-0 w-6 flex items-center justify-center mr-2" style={{ paddingTop: '3px' }}>
-                                    <span className={dynamicTextSize}>{recPriorityIcon}</span>
+                                <div key={rec.id} className={`flex items-center gap-2 border-b border-gray-200 py-1 last:border-b-0`}>
+                                  <div className="flex-shrink-0 w-4 flex items-center justify-center">
+                                    <span className="text-xs">{recPriorityIcon}</span>
                                   </div>
-                                  <div className="flex-1 min-w-0 break-words" style={{ margin: 0, padding: 0 }}>
-                                    <span className={`${dynamicTextSize} text-gray-600 whitespace-normal`} style={{ lineHeight: '1.3', display: 'block', margin: 0, padding: 0 }}>
+                                  <div className="flex-1 min-w-0 overflow-hidden">
+                                    <div className={`${dynamicTextSize} text-gray-600 whitespace-nowrap overflow-hidden text-ellipsis`}>
                                       {rec.rational && (
                                         <span className="font-bold text-purple-600">
                                           {rec.rational}
@@ -726,38 +732,112 @@ export default function AICardsInsight({
                                       )}
                                       {rec.rational && rec.action_text && <span className="mx-1 text-gray-400">-</span>}
                                       {rec.action_text}
-                                    </span>
+                                    </div>
                                   </div>
+                                  {/* "see more" button inline at the end of each recommendation */}
+                                  <button
+                                    data-tooltip-button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const panel = e.currentTarget.closest('.border-2.border-gray-300');
+                                      if (panel) {
+                                        const rect = panel.getBoundingClientRect();
+                                        toggleRecTooltip(rec.id, e.currentTarget);
+                                        // Update position to left of panel
+                                        setButtonPositions(prev => ({
+                                          ...prev,
+                                          [rec.id]: {
+                                            top: rect.bottom + window.scrollY,
+                                            left: rect.left + window.scrollX
+                                          }
+                                        }));
+                                      }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 text-xs flex-shrink-0"
+                                    title="See more"
+                                  >
+                                    👁️
+                                  </button>
+                                  {/* Tooltip/Balloon with full text - rendered with portal */}
+                                  {isTooltipOpen && typeof window !== 'undefined' && buttonPosition && createPortal(
+                                    <div 
+                                      data-tooltip-content
+                                      className="fixed"
+                                      style={{ 
+                                        top: `${buttonPosition.top + 4}px`,
+                                        left: `${buttonPosition.left}px`,
+                                        zIndex: 10001
+                                      }}
+                                    >
+                                      <div 
+                                        className="bg-white border-2 border-blue-300 rounded-lg shadow-2xl p-4 min-w-[300px] max-w-[450px]"
+                                      >
+                                        <div className="text-sm text-gray-700 leading-relaxed whitespace-normal break-words">
+                                          {rec.rational && (
+                                            <span className="font-bold text-purple-600">
+                                              {rec.rational}
+                                            </span>
+                                          )}
+                                          {rec.rational && rec.action_text && <span className="mx-1 text-gray-400">-</span>}
+                                          {rec.action_text}
+                                        </div>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleRecTooltip(rec.id);
+                                          }}
+                                          className="mt-3 text-blue-600 hover:text-blue-800 text-xs font-semibold underline"
+                                        >
+                                          Close
+                                        </button>
+                                      </div>
+                                    </div>,
+                                    document.body
+                                  )}
                                 </div>
                               );
                             })}
                           </div>
                         </div>
+                        </div>
+                      </div>
+                      
+                      {/* AI Chat Button - below recommendations, aligned right */}
+                      <div className="flex justify-end mt-2">
+                        <button 
+                          onClick={() => handleAIChat(card)}
+                          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-2 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md hover:shadow-lg border border-blue-500 flex items-center gap-1 flex-shrink-0 whitespace-nowrap"
+                        >
+                          <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                          </svg>
+                          AI Chat
+                        </button>
                       </div>
                     </div>
                   );
                 })()}
                 
-                {/* AI Chat Button - positioned at bottom right, vertically aligned with recommendation box center */}
-                <button 
-                  onClick={() => handleAIChat(card)}
-                  className="absolute right-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md hover:shadow-lg border border-blue-500 z-10 flex items-center gap-1"
-                  style={{ 
-                    bottom: card.recommendations && card.recommendations.length > 0 ? '12px' : '16px',
-                    transform: card.recommendations && card.recommendations.length > 0 ? 'translateY(-50%)' : 'none'
-                  }}
-                >
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                  </svg>
-                  AI Chat
-                </button>
+                {/* AI Chat Button for cards without recommendations */}
+                {(!card.recommendations || card.recommendations.length === 0) && (
+                  <div className="mt-6 flex justify-end overflow-hidden">
+                    <button 
+                      onClick={() => handleAIChat(card)}
+                      className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-2 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md hover:shadow-lg border border-blue-500 flex items-center gap-1 flex-shrink-0 whitespace-nowrap"
+                    >
+                      <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                      </svg>
+                      AI Chat
+                    </button>
+                  </div>
+                )}
               </div>
             );
         })}
-        {/* Empty placeholder slots to maintain fixed grid size */}
+        {/* Empty placeholder slots to maintain grid layout */}
         {Array.from({ length: emptySlots }).map((_, index) => (
-          <div key={`empty-${index}`} className="bg-white rounded-xl shadow-md border-2 border-gray-200 min-h-[221px] opacity-0 pointer-events-none" aria-hidden="true">
+          <div key={`empty-${index}`} className="bg-white rounded-xl shadow-md border-2 border-gray-200 opacity-0 pointer-events-none" aria-hidden="true">
           </div>
         ))}
       </div>
