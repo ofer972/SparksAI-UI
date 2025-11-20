@@ -309,7 +309,11 @@ export default function Home() {
           <div className="h-full flex flex-col">
             {/* Dashboard Content */}
             <div className="flex-1 overflow-auto">
-              <TeamDashboard selectedTeam={selectedTeam} />
+              <TeamDashboard 
+                selectedTeam={selectedTeam} 
+                selectedTreeType={selectedTreeType}
+                selectedTreeValue={selectedTreeValue}
+              />
             </div>
           </div>
         );

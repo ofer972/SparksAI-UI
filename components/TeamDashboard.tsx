@@ -9,6 +9,8 @@ import { ApiService } from '@/lib/api';
 
 interface TeamDashboardProps {
   selectedTeam: string;
+  selectedTreeType?: 'group' | 'team';
+  selectedTreeValue?: string | null;
 }
 
 const TEAM_DASHBOARD_DEFAULTS = ['team-current-sprint-progress', 'team-closed-sprints', 'team-sprint-burndown', 'team-issues-trend', 'sprint-predictability'];
@@ -26,7 +28,7 @@ const SPRINT_OPTIONS = [
     { value: 'IDPS-DEV-2025-06-29', label: 'IDPS-DEV-2025-06-29' },
   ];
 
-export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
+export default function TeamDashboard({ selectedTeam, selectedTreeType, selectedTreeValue }: TeamDashboardProps) {
   const [dashboardReports, setDashboardReports] = useState<string[]>([]);
   const [layoutConfig, setLayoutConfig] = useState<LayoutConfig | null>(null);
   const [loadingConfig, setLoadingConfig] = useState(true);
@@ -153,12 +155,15 @@ export default function TeamDashboard({ selectedTeam }: TeamDashboardProps) {
   const renderReportSection = (reportId: string) => {
     switch (reportId) {
       case 'team-closed-sprints':
+        // Use controlledFilters for dynamic values (team_name, isGroup) so they update when filter changes
+        // initialFilters only applies on mount, controlledFilters react to prop changes
         return (
           <ReportPanel
             reportId="team-closed-sprints"
-            initialFilters={{ 
-              months: 3,
-              team_name: selectedTeam || null
+            initialFilters={{ months: 3 }}
+            controlledFilters={{
+              team_name: selectedTeam || null,
+              ...(selectedTreeType === 'group' ? { isGroup: true } : {})
             }}
             enabled
             {...commonPanelProps}
