@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { ApiService } from '@/lib/api';
 import { Group, Team } from '@/lib/config';
+import { getAccessToken } from '@/lib/auth';
 
 interface TreeNode {
   type: 'group' | 'team';
@@ -47,6 +48,17 @@ export function TeamsGroupsProvider({ children }: TeamsGroupsProviderProps) {
   const apiService = useMemo(() => new ApiService(), []);
 
   const loadData = useCallback(async () => {
+    // Check if user is authenticated before making API calls
+    const token = getAccessToken();
+    if (!token) {
+      // User is not authenticated, skip loading data
+      setLoading(false);
+      setGroups([]);
+      setTeams([]);
+      setError(null);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -61,6 +73,9 @@ export function TeamsGroupsProvider({ children }: TeamsGroupsProviderProps) {
     } catch (err) {
       console.error('Failed to load teams/groups:', err);
       setError(err instanceof Error ? err.message : 'Failed to load data');
+      // Clear data on error
+      setGroups([]);
+      setTeams([]);
     } finally {
       setLoading(false);
     }
