@@ -2,7 +2,6 @@ import { useState } from 'react';
 import AgentJobsTab from './AgentJobsTab';
 import TeamAICardsTab from './TeamAICardsTab';
 import PIAICardsTab from './PIAICardsTab';
-import PromptsTab from './PromptsTab';
 import TranscriptsTab from './TranscriptsTab';
 
 interface TabItem {
@@ -17,7 +16,6 @@ const tabs: TabItem[] = [
   { id: 'pi-ai-cards', label: 'PI AI Cards', icon: '📈' },
   { id: 'view-transcripts', label: 'View Transcripts', icon: '📝' },
   { id: 'security-logs', label: 'Security Logs', icon: '🔒' },
-  { id: 'prompts', label: 'Prompts', icon: '💬' },
 ];
 
 export default function GeneralDataView() {
@@ -43,8 +41,6 @@ export default function GeneralDataView() {
             </p>
           </div>
         );
-      case 'prompts':
-        return <PromptsTab />;
       default:
         return (
           <div className="bg-white rounded-lg shadow-sm p-6 text-center">
