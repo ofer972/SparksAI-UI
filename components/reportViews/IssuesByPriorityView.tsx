@@ -98,7 +98,7 @@ const IssuesByPriorityView: React.FC<IssuesByPriorityViewProps> = ({
       return group ? `group:${group.group_key}` : null;
     } else {
       const team = teams.find(t => t.team_name === teamName);
-      return team ? `team:${team.team_id}` : null;
+      return team ? `team:${team.team_key}` : null;
     }
   }, [teamName, isGroup, groups, teams]);
 

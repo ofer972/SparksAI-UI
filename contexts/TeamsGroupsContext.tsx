@@ -1,7 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { ApiService, Group, Team } from '@/lib/api';
+import { ApiService } from '@/lib/api';
+import { Group, Team } from '@/lib/config';
 
 interface TreeNode {
   type: 'group' | 'team';
@@ -149,7 +150,7 @@ export function TeamsGroupsProvider({ children }: TeamsGroupsProviderProps) {
   }, [groups]);
 
   const getTeamById = useCallback((teamId: number): Team | undefined => {
-    return teams.find(team => team.team_id === teamId);
+    return teams.find(team => team.team_key === teamId);
   }, [teams]);
 
   const value: TeamsGroupsContextValue = {

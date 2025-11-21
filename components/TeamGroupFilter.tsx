@@ -70,7 +70,7 @@ export default function TeamGroupFilter({
       const group = groups.find(g => g.group_key === id);
       return group ? `📁 ${group.group_name}` : placeholder;
     } else if (type === 'team') {
-      const team = teams.find(t => t.team_id === id);
+      const team = teams.find(t => t.team_key === id);
       return team ? `👥 ${team.team_name}` : placeholder;
     }
 
