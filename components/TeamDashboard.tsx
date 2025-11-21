@@ -242,7 +242,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
       return (
         <div className="space-y-4 p-2">
           {allReportIds.map((reportId) => (
-            <div key={reportId} style={{ height: '500px' }}>
+            <div key={reportId}>
               {renderReportSection(reportId)}
             </div>
           ))}
@@ -374,7 +374,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
           <div className="space-y-4">
             {dashboardReports.map((reportId) => {
               return (
-                <div key={reportId} style={{ height: '500px' }}>
+                <div key={reportId} style={isMobile ? {} : { height: '500px' }}>
                   {renderReportSection(reportId)}
                 </div>
               );

@@ -389,7 +389,7 @@ export default function AICardsInsight({
 
   return (
     <div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full auto-rows-fr">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
         {cardsToDisplay.map((card) => {
             const colors = getPriorityColor(card.priority);
             const priorityIcon = getPriorityIcon(card.priority);

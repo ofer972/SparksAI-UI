@@ -302,7 +302,7 @@ export default function BurndownChart({
   }
 
   return (
-    <div className="relative h-full">
+    <div className="relative h-full min-h-[350px]">
       <Line options={options} data={chartData} />
     </div>
   );

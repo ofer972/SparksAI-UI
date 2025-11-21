@@ -445,7 +445,7 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
             <h3 className="text-md font-semibold text-gray-900 mb-3">
               Average Duration by Status
             </h3>
-            <div className="relative flex-1 h-full">
+            <div className="relative flex-1 h-full min-h-[350px]">
               <Bar data={chartData} options={chartOptions} />
             </div>
           </div>

@@ -232,7 +232,7 @@ export default function HierarchyTable({
         />
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-auto max-h-[600px]">
         <table className="w-full border-collapse">
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (

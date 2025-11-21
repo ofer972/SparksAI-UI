@@ -449,7 +449,7 @@ export default function StackedGroupedBarChart({
   }
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full min-h-[350px]">
       <Chart 
         ref={chartRef}
         type="bar" 

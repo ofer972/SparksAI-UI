@@ -215,7 +215,7 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
         )}
 
         {showChart && (
-          <div className="w-full h-full flex-1 relative">
+          <div className="w-full h-full flex-1 relative min-h-[350px]">
             <StackedGroupedBarChart
               data={aggregatedData}
               title="Epic Scope Changes"

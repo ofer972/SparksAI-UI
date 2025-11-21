@@ -266,7 +266,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           {allReportIds.map((reportId) => {
             const panelKey = buildPanelKey(reportId);
             return (
-              <div key={panelKey} style={{ height: '500px' }}>
+              <div key={panelKey}>
                 {renderReportSection(reportId, panelKey)}
               </div>
             );
@@ -389,7 +389,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             {reportOrder.map((reportId, index) => {
               const panelKey = buildPanelKey(reportId);
               return (
-                <div key={panelKey} style={{ height: '500px' }}>
+                <div key={panelKey} style={isMobile ? {} : { height: '500px' }}>
                   {renderReportSection(reportId, panelKey)}
                 </div>
               );

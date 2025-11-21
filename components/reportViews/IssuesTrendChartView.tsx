@@ -387,8 +387,8 @@ const IssuesTrendChartView: React.FC<IssuesTrendChartViewProps> = ({
       )}
 
       {!loading && !error && chartData && chartData.labels && chartData.datasets && chartData.labels.length > 0 && (
-        <div className="overflow-x-auto h-full" style={{ minHeight: '425px' }}>
-          <div className="relative w-full h-full">
+        <div className="overflow-x-auto h-full min-h-[350px]">
+          <div className="relative w-full h-full min-h-[350px]">
             <Chart type="bar" data={chartData} options={options} plugins={[ChartDataLabels]} />
           </div>
         </div>

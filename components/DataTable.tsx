@@ -293,7 +293,7 @@ function DataTable<T extends Record<string, any>>({
       )}
 
       {/* Table Container with Sticky Header */}
-      <div className="flex-1 overflow-auto min-h-0">
+      <div className="flex-1 overflow-auto min-h-0" style={{ maxHeight }}>
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
             <tr>

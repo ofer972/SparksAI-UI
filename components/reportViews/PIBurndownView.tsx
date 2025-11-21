@@ -121,7 +121,7 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
       onClose={componentProps?.onClose}
     >
       <div className="w-full h-full flex flex-col">
-        <div className="relative flex-1">
+        <div className="relative flex-1 min-h-[350px]">
           <BurndownChart
             data={Array.isArray(data) ? data : []}
             loading={loading}

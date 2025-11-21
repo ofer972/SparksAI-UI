@@ -324,7 +324,7 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
       </div>
       )}
 
-      <div className="flex-1 overflow-auto border border-gray-200 rounded-lg">
+      <div className="flex-1 overflow-auto border border-gray-200 rounded-lg max-h-[600px]">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50 sticky top-0 z-10">
             {table.getHeaderGroups().map((headerGroup) => (
