@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { ApiService } from '@/lib/api';
+import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 import { Group, Team } from '@/lib/config';
 
 interface TreeNode {
@@ -20,60 +20,41 @@ interface TreeSelectProps {
 }
 
 export default function TreeSelect({ selectedValue, onSelect, placeholder = 'Select team or group' }: TreeSelectProps) {
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
+  const { groups, teams, loading } = useTeamsGroups();
   const [isOpen, setIsOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
-  const [loading, setLoading] = useState(true);
   const [buttonRect, setButtonRect] = useState<DOMRect | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  const apiService = useMemo(() => new ApiService(), []);
-
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
+  // Prevent body scroll and handle escape key when dropdown is open
   useEffect(() => {
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      // Prevent body scroll
+      document.body.style.overflow = 'hidden';
+      
+      // Handle escape key
+      const handleEscape = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          setIsOpen(false);
+        }
+      };
+      
+      document.addEventListener('keydown', handleEscape);
+      
+      return () => {
+        document.body.style.overflow = '';
+        document.removeEventListener('keydown', handleEscape);
+      };
     }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
   }, [isOpen]);
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [groupsData, teamsData] = await Promise.all([
-        apiService.getAllGroups(),
-        apiService.getAllTeams(),
-      ]);
-      
-      setGroups(Array.isArray(groupsData) ? groupsData : groupsData.groups || []);
-      setTeams(Array.isArray(teamsData) ? teamsData : teamsData.teams || []);
-    } catch (err) {
-      console.error('Failed to load groups and teams:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const buildTree = (): TreeNode[] => {
+  const tree = useMemo(() => {
     const groupMap = new Map<number, TreeNode>();
     const rootNodes: TreeNode[] = [];
 
@@ -106,28 +87,43 @@ export default function TreeSelect({ selectedValue, onSelect, placeholder = 'Sel
       }
     });
 
-    // Add teams to their groups
+    // Add teams to their groups or as unassigned
+    // With many-to-many, a team can appear in multiple groups
     teams.forEach(team => {
-      const teamNode: TreeNode = {
-        id: `team:${team.team_key}`,
-        type: 'team',
-        name: team.team_name,
-        data: team,
-        children: [],
-      };
+      if (team.group_keys && team.group_keys.length > 0) {
+        // Add this team to each of its groups
+        team.group_keys.forEach((groupKey: number) => {
+          const teamNode: TreeNode = {
+            id: `team:${team.team_key}`,
+            type: 'team',
+            name: team.team_name,
+            data: team,
+            children: [],
+          };
 
-      if (team.group_key) {
-        const group = groupMap.get(team.group_key);
-        if (group) {
-          group.children.push(teamNode);
-        }
+          const group = groupMap.get(groupKey);
+          if (group) {
+            group.children.push(teamNode);
+          } else {
+            // Group doesn't exist in map, add to roots
+            rootNodes.push(teamNode);
+          }
+        });
+      } else {
+        // Team has no groups, add to unassigned section at root
+        const teamNode: TreeNode = {
+          id: `team:${team.team_key}`,
+          type: 'team',
+          name: team.team_name,
+          data: team,
+          children: [],
+        };
+        rootNodes.push(teamNode);
       }
     });
 
     return rootNodes;
-  };
-
-  const tree = useMemo(() => buildTree(), [groups, teams]);
+  }, [groups, teams]);
 
   const toggleGroupExpansion = (groupId: number) => {
     setExpandedGroups(prev => {
@@ -175,7 +171,7 @@ export default function TreeSelect({ selectedValue, onSelect, placeholder = 'Sel
       return (
         <div key={node.id}>
           <div
-            className={`flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer ${
+            className={`flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer whitespace-nowrap ${
               isSelected ? 'bg-blue-50' : ''
             }`}
             style={{ paddingLeft: `${depth * 16 + 12}px` }}
@@ -187,7 +183,7 @@ export default function TreeSelect({ selectedValue, onSelect, placeholder = 'Sel
                   toggleGroupExpansion(group.group_key);
                 }
               }}
-              className={`w-4 h-4 flex items-center justify-center ${
+              className={`w-4 h-4 flex items-center justify-center flex-shrink-0 ${
                 hasChildren ? '' : 'invisible'
               }`}
             >
@@ -207,10 +203,10 @@ export default function TreeSelect({ selectedValue, onSelect, placeholder = 'Sel
               onClick={() => handleSelect(node)}
               className="flex items-center gap-2 flex-1"
             >
-              <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
-              <span className={`text-sm ${isSelected ? 'font-semibold text-blue-700' : 'text-gray-700'}`}>
+              <span className={`text-sm flex-shrink-0 ${isSelected ? 'font-semibold text-blue-700' : 'text-gray-700'}`}>
                 {group.group_name}
               </span>
             </div>
@@ -230,16 +226,16 @@ export default function TreeSelect({ selectedValue, onSelect, placeholder = 'Sel
       return (
         <div
           key={node.id}
-          className={`flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer ${
+          className={`flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer whitespace-nowrap ${
             isSelected ? 'bg-blue-50' : ''
           }`}
           style={{ paddingLeft: `${depth * 16 + 28}px` }}
           onClick={() => handleSelect(node)}
         >
-          <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
           </svg>
-          <span className={`text-sm ${isSelected ? 'font-semibold text-blue-700' : 'text-gray-700'}`}>
+          <span className={`text-sm flex-shrink-0 ${isSelected ? 'font-semibold text-blue-700' : 'text-gray-700'}`}>
             {team.team_name}
           </span>
         </div>
@@ -254,25 +250,55 @@ export default function TreeSelect({ selectedValue, onSelect, placeholder = 'Sel
     setIsOpen(!isOpen);
   };
 
+  // Calculate if dropdown should open above or below
+  const getDropdownPosition = () => {
+    if (!buttonRect) return { top: '0px', bottom: 'auto' };
+    
+    const dropdownMaxHeight = 384; // max-h-96 = 384px
+    const spacing = 8;
+    const viewportHeight = window.innerHeight;
+    const spaceBelow = viewportHeight - buttonRect.bottom;
+    const spaceAbove = buttonRect.top;
+    
+    // If not enough space below but enough space above, open upward
+    if (spaceBelow < dropdownMaxHeight && spaceAbove > spaceBelow) {
+      return {
+        bottom: `${viewportHeight - buttonRect.top + spacing}px`,
+        top: 'auto',
+      };
+    }
+    
+    // Otherwise open downward (default)
+    return {
+      top: `${buttonRect.bottom + spacing}px`,
+      bottom: 'auto',
+    };
+  };
+
   const renderDropdownContent = () => {
     if (!isOpen || !buttonRect || !isMounted) return null;
+
+    const position = getDropdownPosition();
 
     const dropdownContent = (
       <>
         {/* Backdrop to capture clicks and prevent interaction with elements below */}
         <div 
           className="fixed inset-0 z-[10000]" 
-          style={{ pointerEvents: 'auto' }}
+          style={{ pointerEvents: 'auto', cursor: 'default' }}
           onClick={() => setIsOpen(false)}
         />
         <div 
           ref={dropdownRef}
-          className="fixed z-[10001] bg-white border border-gray-300 rounded-lg shadow-2xl max-h-96 overflow-y-auto" 
+          className="fixed z-[10001] bg-white border border-gray-300 rounded-lg shadow-2xl max-h-96" 
           style={{ 
-            top: `${buttonRect.bottom + 8}px`,
+            ...position,
             left: `${buttonRect.left}px`,
-            width: `${buttonRect.width}px`,
-            pointerEvents: 'auto'
+            minWidth: `${buttonRect.width}px`,
+            maxWidth: '400px',
+            pointerEvents: 'auto',
+            overflowX: 'auto',
+            overflowY: 'auto',
           }}
         >
           {loading ? (

@@ -5,6 +5,8 @@ import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
 import ReportCard from '../reporting/ReportCard';
 import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
+import TeamGroupFilter from '../TeamGroupFilter';
+import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 import { ApiService } from '@/lib/api';
 import { PIMetricsSummaryData } from '@/lib/config';
 
@@ -117,9 +119,24 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
   const piName = (filters.pi as string) ?? '';
   const project = (filters.project as string) ?? '';
   const issueType = (filters.issue_type as string) ?? 'Epic';
+  const { groups, teams } = useTeamsGroups();
   const teamName = (filters.team_name as string) ?? '';
+  const isGroup = (filters.isGroup as boolean) ?? false;
   const gracePeriod = Number(filters.plan_grace_period ?? 5);
   const isDashboard = componentProps?.isDashboard;
+  
+  // Look up ID from name to construct proper teamValue
+  const teamValue = useMemo(() => {
+    if (!teamName) return null;
+    
+    if (isGroup) {
+      const group = groups.find(g => g.group_name === teamName);
+      return group ? `group:${group.group_key}` : null;
+    } else {
+      const team = teams.find(t => t.team_name === teamName);
+      return team ? `team:${team.team_id}` : null;
+    }
+  }, [teamName, isGroup, groups, teams]);
 
   const availablePIs = useMemo(() => {
     if (meta && Array.isArray(meta.available_pis)) {
@@ -183,19 +200,27 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
         </select>
       </ReportFilterField>
 
-      <ReportFilterField label="Team">
-        <select
-          value={teamName}
-          onChange={(event) => handleFilterChange('team_name', event.target.value || null)}
-          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[140px]"
-        >
-          <option value="">All Teams</option>
-          {availableTeams.map((team) => (
-            <option key={team} value={team}>
-              {team}
-            </option>
-          ))}
-        </select>
+      <ReportFilterField label="Team/Group">
+        <TeamGroupFilter
+          value={teamValue}
+          onChange={(value, type, name) => {
+            if (value === null) {
+              setFilters((prev) => ({
+                ...prev,
+                team_name: null,
+                isGroup: false,
+              }));
+            } else {
+              setFilters((prev) => ({
+                ...prev,
+                team_name: name,
+                isGroup: type === 'group',
+              }));
+            }
+          }}
+          placeholder="Select team or group"
+          allowClear={true}
+        />
       </ReportFilterField>
 
       <ReportFilterField label="Grace Period (days)">

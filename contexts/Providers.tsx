@@ -1,11 +1,14 @@
 'use client';
 
 import { UserProvider } from './UserContext';
+import { TeamsGroupsProvider } from './TeamsGroupsContext';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <UserProvider>
-      {children}
+      <TeamsGroupsProvider>
+        {children}
+      </TeamsGroupsProvider>
     </UserProvider>
   );
 }

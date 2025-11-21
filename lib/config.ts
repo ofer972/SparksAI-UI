@@ -479,7 +479,7 @@ export interface Team {
   team_key: number;
   team_name: string;
   number_of_team_members: number;
-  group_key: number | null;
-  group_name?: string | null;
+  group_keys: number[];  // Changed from group_key to group_keys (array)
+  group_names?: string[];  // Changed from group_name to group_names (array)
   ai_insight?: boolean;
 }

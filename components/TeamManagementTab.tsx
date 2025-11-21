@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ApiService } from '@/lib/api';
 import { Group, Team } from '@/lib/config';
+import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 
 interface TreeNode {
   id: string;
@@ -13,6 +14,7 @@ interface TreeNode {
 }
 
 export default function TeamManagementTab() {
+  const { refresh: refreshContext } = useTeamsGroups(); // Get refresh function from context
   const [groups, setGroups] = useState<Group[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [unassignedTeams, setUnassignedTeams] = useState<Team[]>([]);
@@ -24,9 +26,11 @@ export default function TeamManagementTab() {
   const [showAssignTeamsModal, setShowAssignTeamsModal] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [showRemoveTeamModal, setShowRemoveTeamModal] = useState(false);
-  const [teamToRemove, setTeamToRemove] = useState<{ teamId: number; teamName: string; groupName: string } | null>(null);
+  const [teamToRemove, setTeamToRemove] = useState<{ teamId: number; teamName: string; groupName: string; groupKey: number } | null>(null);
   const [showDeleteGroupModal, setShowDeleteGroupModal] = useState(false);
   const [groupToDelete, setGroupToDelete] = useState<{ groupId: number; groupName: string; teamCount: number } | null>(null);
+  const [showDuplicateGroupError, setShowDuplicateGroupError] = useState(false);
+  const [duplicateGroupName, setDuplicateGroupName] = useState<string>('');
   
   // Form states
   const [newGroupName, setNewGroupName] = useState('');
@@ -34,6 +38,7 @@ export default function TeamManagementTab() {
   const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
   const [teamSearchQuery, setTeamSearchQuery] = useState('');
+  const [activeTeamTab, setActiveTeamTab] = useState<'unassigned' | 'all'>('unassigned'); // New state for tab selection
 
   const apiService = useMemo(() => new ApiService(), []);
 
@@ -57,7 +62,8 @@ export default function TeamManagementTab() {
       
       setGroups(groupsData.groups || []);
       setTeams(teamsData.teams || []);
-      setUnassignedTeams((teamsData.teams || []).filter(t => !t.group_key));
+      // With many-to-many, unassigned teams are those with no groups at all
+      setUnassignedTeams((teamsData.teams || []).filter(t => !t.group_keys || t.group_keys.length === 0));
       
       console.log('Groups set:', groupsData.groups?.length || 0);
       console.log('Teams set:', teamsData.teams?.length || 0);
@@ -89,7 +95,8 @@ export default function TeamManagementTab() {
       visitedGroups.add(group.group_key);
       
       const childGroups = groups.filter(g => g.parent_group_key === group.group_key);
-      const groupTeams = teams.filter(t => t.group_key === group.group_key);
+      // With many-to-many, filter teams that include this group in their group_keys array
+      const groupTeams = teams.filter(t => t.group_keys && t.group_keys.includes(group.group_key));
       
       console.log(`[buildTree] Building node for group "${group.group_name}": ${childGroups.length} child groups, ${groupTeams.length} teams`);
       
@@ -123,6 +130,17 @@ export default function TeamManagementTab() {
   const handleCreateGroup = async () => {
     if (!newGroupName.trim()) return;
     
+    // Check if a group with the same name already exists (case-insensitive)
+    const duplicateGroup = groups.find(
+      g => g.group_name.toLowerCase() === newGroupName.trim().toLowerCase()
+    );
+    
+    if (duplicateGroup) {
+      setDuplicateGroupName(duplicateGroup.group_name);
+      setShowDuplicateGroupError(true);
+      return;
+    }
+    
     try {
       await apiService.createGroup(newGroupName, parentGroupId);
       setNewGroupName('');
@@ -132,6 +150,9 @@ export default function TeamManagementTab() {
       // Reload only groups, not teams (more efficient than full refresh)
       const groupsData = await apiService.getAllGroups();
       setGroups(Array.isArray(groupsData) ? groupsData : groupsData.groups || []);
+      
+      // Refresh the global context so top bar and other components update
+      await refreshContext();
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to create group');
     }
@@ -157,6 +178,9 @@ export default function TeamManagementTab() {
       setGroups(Array.isArray(groupsData) ? groupsData : groupsData.groups || []);
       setTeams(Array.isArray(teamsData) ? teamsData : teamsData.teams || []);
       
+      // Refresh the global context so top bar and other components update
+      await refreshContext();
+      
       setShowDeleteGroupModal(false);
       setGroupToDelete(null);
     } catch (err) {
@@ -171,33 +195,53 @@ export default function TeamManagementTab() {
       const teamIds = selectedTeamIds.map(id => parseInt(id));
       await apiService.batchAssignTeamsToGroup(selectedGroup.group_key, teamIds);
       
-      // Update teams state directly instead of full refresh
+      // Update teams state with new schema (group_keys)
       setTeams(prevTeams => 
-        prevTeams.map(team => 
-          teamIds.includes(team.team_key)
-            ? { ...team, group_key: selectedGroup.group_key, group_name: selectedGroup.group_name }
-            : team
-        )
+        prevTeams.map(team => {
+          if (teamIds.includes(team.team_key)) {
+            // Add the new group to the team's group_keys array
+            const currentGroupKeys = team.group_keys || [];
+            const currentGroupNames = team.group_names || [];
+            
+            // Only add if not already present
+            if (!currentGroupKeys.includes(selectedGroup.group_key)) {
+              return {
+                ...team,
+                group_keys: [...currentGroupKeys, selectedGroup.group_key],
+                group_names: [...currentGroupNames, selectedGroup.group_name]
+              };
+            }
+          }
+          return team;
+        })
       );
+      
+      // Refresh unassigned teams list
+      setUnassignedTeams(prev => prev.filter(t => !teamIds.includes(t.team_key)));
+      
+      // Refresh the global context so top bar and other components update
+      await refreshContext();
       
       setSelectedTeamIds([]);
       setShowAssignTeamsModal(false);
       setSelectedGroup(null);
       setTeamSearchQuery('');
+      setActiveTeamTab('unassigned');
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to assign teams');
     }
   };
 
-  const handleRemoveTeamFromGroup = (teamId: number) => {
+  const handleRemoveTeamFromGroup = (teamId: number, groupKey: number) => {
     const team = teams.find(t => t.team_key === teamId);
-    if (!team) return;
+    const group = groups.find(g => g.group_key === groupKey);
+    if (!team || !group) return;
     
-    const groupName = team.group_name || 'Unknown Group';
     setTeamToRemove({
       teamId,
       teamName: team.team_name,
-      groupName
+      groupName: group.group_name,
+      groupKey: groupKey
     });
     setShowRemoveTeamModal(true);
   };
@@ -206,16 +250,38 @@ export default function TeamManagementTab() {
     if (!teamToRemove) return;
     
     try {
-      await apiService.removeTeamFromGroup(teamToRemove.teamId);
+      const team = teams.find(t => t.team_key === teamToRemove.teamId);
+      if (!team) return;
       
-      // Update teams state directly instead of full refresh
+      // Remove the specific group from the team's group_keys array
+      const newGroupKeys = (team.group_keys || []).filter(gk => gk !== teamToRemove.groupKey);
+      
+      // Update team with new group_keys array
+      await apiService.updateTeam(teamToRemove.teamId, newGroupKeys.length > 0 ? newGroupKeys : null);
+      
+      // Update teams state directly
       setTeams(prevTeams => 
-        prevTeams.map(team => 
-          team.team_key === teamToRemove.teamId
-            ? { ...team, group_key: null, group_name: undefined }
-            : team
+        prevTeams.map(t => 
+          t.team_key === teamToRemove.teamId
+            ? { 
+                ...t, 
+                group_keys: newGroupKeys,
+                group_names: (t.group_names || []).filter((_, idx) => 
+                  t.group_keys && t.group_keys[idx] !== teamToRemove.groupKey
+                )
+              }
+            : t
         )
       );
+      
+      // Refresh unassigned teams
+      const updatedTeam = teams.find(t => t.team_key === teamToRemove.teamId);
+      if (updatedTeam && newGroupKeys.length === 0) {
+        setUnassignedTeams(prev => [...prev, { ...updatedTeam, group_keys: [], group_names: [] }]);
+      }
+      
+      // Refresh the global context so top bar and other components update
+      await refreshContext();
       
       setShowRemoveTeamModal(false);
       setTeamToRemove(null);
@@ -249,7 +315,7 @@ export default function TeamManagementTab() {
     return count;
   };
 
-  const renderNode = (node: TreeNode, depth: number = 0): JSX.Element => {
+  const renderNode = (node: TreeNode, depth: number = 0, parentGroupKey?: number): JSX.Element => {
     if (node.type === 'group') {
       const group = node.data as Group;
       const isExpanded = expandedGroups.has(group.group_key);
@@ -345,7 +411,7 @@ export default function TeamManagementTab() {
           {/* Children */}
           {isExpanded && hasChildren && (
             <div className="mt-0.5">
-              {node.children.map(child => renderNode(child, depth + 1))}
+              {node.children.map(child => renderNode(child, depth + 1, group.group_key))}
             </div>
           )}
         </div>
@@ -377,16 +443,18 @@ export default function TeamManagementTab() {
             </span>
           )}
 
-          {/* Remove button */}
-          <button
-            onClick={() => handleRemoveTeamFromGroup(team.team_key)}
-            className="p-0.5 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-all"
-            title="Remove from group"
-          >
-            <svg className="w-3.5 h-3.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          {/* Remove button - only show if parentGroupKey is provided */}
+          {parentGroupKey && (
+            <button
+              onClick={() => handleRemoveTeamFromGroup(team.team_key, parentGroupKey)}
+              className="p-0.5 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-all"
+              title="Remove from group"
+            >
+              <svg className="w-3.5 h-3.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
       );
     }
@@ -604,7 +672,12 @@ export default function TeamManagementTab() {
 
       {/* Assign Teams Modal */}
       {showAssignTeamsModal && selectedGroup && (() => {
-        const filteredTeams = unassignedTeams.filter(team =>
+        // Get teams based on active tab
+        const teamsToShow = activeTeamTab === 'unassigned' 
+          ? unassignedTeams 
+          : teams.filter(t => !t.group_keys || !t.group_keys.includes(selectedGroup.group_key)); // All teams not in this specific group
+        
+        const filteredTeams = teamsToShow.filter(team =>
           team.team_name.toLowerCase().includes(teamSearchQuery.toLowerCase())
         );
 
@@ -626,18 +699,63 @@ export default function TeamManagementTab() {
 
         return (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full flex flex-col" style={{ height: '500px' }}>
+            <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full flex flex-col" style={{ height: '550px' }}>
               <div className="px-4 py-2.5 border-b border-gray-200">
                 <h3 className="text-lg font-bold text-gray-900">Assign Teams to Group</h3>
                 <p className="text-xs text-gray-600 mt-0.5">
                   Group: <span className="font-semibold">{selectedGroup.group_name}</span>
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Showing {unassignedTeams.length} unassigned team{unassignedTeams.length !== 1 ? 's' : ''}
-                </p>
+              </div>
+
+              {/* Tabs */}
+              <div className="flex border-b border-gray-200 px-4 flex-shrink-0">
+                <button
+                  onClick={() => {
+                    setActiveTeamTab('unassigned');
+                    setSelectedTeamIds([]);
+                  }}
+                  className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                    activeTeamTab === 'unassigned'
+                      ? 'text-blue-600 border-b-2 border-blue-600'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Unassigned Teams
+                  {activeTeamTab === 'unassigned' && (
+                    <span className="ml-2 text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
+                      {unassignedTeams.length}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTeamTab('all');
+                    setSelectedTeamIds([]);
+                  }}
+                  className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                    activeTeamTab === 'all'
+                      ? 'text-blue-600 border-b-2 border-blue-600'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  All Teams
+                  {activeTeamTab === 'all' && (
+                    <span className="ml-2 text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
+                      {teams.filter(t => !t.group_keys || !t.group_keys.includes(selectedGroup.group_key)).length}
+                    </span>
+                  )}
+                </button>
               </div>
 
               <div className="p-3 flex-1 overflow-hidden flex flex-col min-h-0">
+                {/* Tab description */}
+                <p className="text-xs text-gray-500 mb-2 flex-shrink-0">
+                  {activeTeamTab === 'unassigned' 
+                    ? `Showing ${teamsToShow.length} team${teamsToShow.length !== 1 ? 's' : ''} not assigned to any group`
+                    : `Showing ${teamsToShow.length} team${teamsToShow.length !== 1 ? 's' : ''} not in this group (can be in other groups)`
+                  }
+                </p>
+
                 {/* Search box */}
                 <div className="mb-2 flex-shrink-0">
                   <input
@@ -671,8 +789,10 @@ export default function TeamManagementTab() {
                   {filteredTeams.length === 0 ? (
                     <div className="p-3 text-center text-gray-500 text-xs">
                       {teamSearchQuery 
-                        ? 'No unassigned teams found matching your search' 
-                        : 'No unassigned teams available'
+                        ? 'No teams found matching your search' 
+                        : activeTeamTab === 'unassigned' 
+                          ? 'No unassigned teams available' 
+                          : 'All teams are already in this group'
                       }
                     </div>
                   ) : (
@@ -688,8 +808,13 @@ export default function TeamManagementTab() {
                             onChange={() => toggleTeam(`${team.team_key}`)}
                             className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-400"
                           />
-                          <div className="flex-1">
+                          <div className="flex-1 flex items-center justify-between">
                             <span className="text-xs text-gray-700">{team.team_name}</span>
+                            {activeTeamTab === 'all' && team.group_keys && team.group_keys.length > 0 && (
+                              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                                In {team.group_keys.length} group{team.group_keys.length !== 1 ? 's' : ''}
+                              </span>
+                            )}
                           </div>
                         </label>
                       ))}
@@ -712,6 +837,7 @@ export default function TeamManagementTab() {
                     setSelectedGroup(null);
                     setSelectedTeamIds([]);
                     setTeamSearchQuery('');
+                    setActiveTeamTab('unassigned');
                   }}
                   className="flex-1 bg-white text-gray-700 text-sm border border-gray-300 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
                 >
@@ -849,6 +975,63 @@ export default function TeamManagementTab() {
                 className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm py-2 rounded-lg hover:from-red-600 hover:to-red-700 transition-all shadow-md hover:shadow-lg font-medium"
               >
                 Delete Group
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Duplicate Group Error Modal */}
+      {showDuplicateGroupError && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            {/* Header */}
+            <div className="px-4 py-3 border-b border-gray-200 bg-orange-50">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-gray-900">Duplicate Group Name</h3>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-4">
+              <p className="text-sm text-gray-700 mb-3">
+                A group with this name already exists:
+              </p>
+              
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                  <span className="text-sm font-bold text-gray-900">{duplicateGroupName}</span>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2.5 flex items-start gap-2">
+                <svg className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-xs text-blue-800">
+                  Please choose a different name for your new group.
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-4 py-3 bg-gray-50 rounded-b-xl flex justify-end">
+              <button
+                onClick={() => {
+                  setShowDuplicateGroupError(false);
+                  setDuplicateGroupName('');
+                }}
+                className="px-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm py-2 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg font-medium"
+              >
+                OK
               </button>
             </div>
           </div>

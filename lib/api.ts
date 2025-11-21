@@ -1392,12 +1392,12 @@ export class ApiService {
     return result.data;
   }
 
-  async updateTeam(teamId: number, groupKey: number | null): Promise<Team> {
+  async updateTeam(teamId: number, groupKeys: number[] | null): Promise<Team> {
     const url = `${buildBackendUrl(API_CONFIG.endpoints.teams.getNames.replace('/getNames', ''))}/${teamId}`;
     const response = await authFetch(url, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ group_key: groupKey }),
+      body: JSON.stringify({ group_keys: groupKeys }),
     });
     if (!response.ok) {
       throw new Error(`Failed to update team: ${response.status} ${response.statusText}`);

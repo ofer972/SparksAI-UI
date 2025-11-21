@@ -23,6 +23,7 @@ import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
 import ReportCard from '../reporting/ReportCard';
 import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
+import TeamGroupFilter from '../TeamGroupFilter';
 
 ChartJS.register(
   CategoryScale,

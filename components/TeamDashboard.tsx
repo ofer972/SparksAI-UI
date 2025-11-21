@@ -178,6 +178,9 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
               issue_type: 'all',
               sprint_name: selectedSprint || null,
             }}
+            controlledFilters={{
+              ...(selectedTreeType === 'group' ? { isGroup: true } : {})
+            }}
             enabled
             componentProps={{
               sprintOptions: SPRINT_OPTIONS,
@@ -193,7 +196,10 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
           <ReportPanel
             reportId="team-issues-trend"
             initialFilters={{ issue_type: 'Bug', months: 6 }}
-            controlledFilters={{ team_name: selectedTeam }}
+            controlledFilters={{
+              team_name: selectedTeam,
+              ...(selectedTreeType === 'group' ? { isGroup: true } : {})
+            }}
             enabled
             {...commonPanelProps}
           />
@@ -203,7 +209,10 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
           <ReportPanel
             reportId="sprint-predictability"
             initialFilters={{ months: 3 }}
-            controlledFilters={{ team_name: selectedTeam }}
+            controlledFilters={{
+              team_name: selectedTeam,
+              ...(selectedTreeType === 'group' ? { isGroup: true } : {})
+            }}
             enabled={Boolean(selectedTeam)}
             {...commonPanelProps}
           />
@@ -218,6 +227,9 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
               status_category: null,
               include_done: false
             }}
+            controlledFilters={{
+              ...(selectedTreeType === 'group' ? { isGroup: true } : {})
+            }}
             enabled={Boolean(selectedTeam)}
             {...commonPanelProps}
           />
@@ -226,7 +238,10 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
         return (
           <ReportPanel
             reportId={reportId}
-            controlledFilters={{ team_name: selectedTeam }}
+            controlledFilters={{
+              team_name: selectedTeam,
+              ...(selectedTreeType === 'group' ? { isGroup: true } : {})
+            }}
             enabled={Boolean(selectedTeam)}
             {...commonPanelProps}
           />

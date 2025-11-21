@@ -7,6 +7,8 @@ import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
 import ReportCard from '../reporting/ReportCard';
 import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
+import TeamGroupFilter from '../TeamGroupFilter';
+import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 
 export interface ClosedSprintsViewProps {
   data: ClosedSprint[];
@@ -29,6 +31,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
   meta,
   componentProps,
 }) => {
+  const { groups, teams } = useTeamsGroups();
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: null,
     direction: 'asc',
@@ -36,13 +39,20 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
 
   const months = Number(filters.months ?? 3);
   const teamName = (filters.team_name as string) ?? '';
-
-  const availableTeams = useMemo(() => {
-    if (meta && Array.isArray(meta.available_teams)) {
-      return meta.available_teams as string[];
+  const isGroup = (filters.isGroup as boolean) ?? false;
+  
+  // Look up ID from name to construct proper teamValue
+  const teamValue = useMemo(() => {
+    if (!teamName) return null;
+    
+    if (isGroup) {
+      const group = groups.find(g => g.group_name === teamName);
+      return group ? `group:${group.group_key}` : null;
+    } else {
+      const team = teams.find(t => t.team_name === teamName);
+      return team ? `team:${team.team_id}` : null;
     }
-    return [];
-  }, [meta]);
+  }, [teamName, isGroup, groups, teams]);
 
   const hasAutoSelectedRef = useRef(false);
 
@@ -68,27 +78,24 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
     [setFilters]
   );
 
-  const handleTeamNameChange = useCallback(
-    (value: string) => {
-      setFilters((prev) => ({
-        ...prev,
-        team_name: value || null,
-      }));
+  const handleTeamGroupChange = useCallback(
+    (value: string | null, type: 'group' | 'team', name: string) => {
+      if (value === null) {
+        setFilters((prev) => ({
+          ...prev,
+          team_name: null,
+          isGroup: false,
+        }));
+      } else {
+        setFilters((prev) => ({
+          ...prev,
+          team_name: name,
+          isGroup: type === 'group',
+        }));
+      }
     },
     [setFilters]
   );
-
-  // Auto-select first team if none selected
-  useEffect(() => {
-    if (loading || availableTeams.length === 0) {
-      return;
-    }
-
-    if (!teamName && !hasAutoSelectedRef.current) {
-      hasAutoSelectedRef.current = true;
-      handleTeamNameChange(availableTeams[0]);
-    }
-  }, [availableTeams, teamName, loading, handleTeamNameChange]);
 
   const formatDate = useCallback((dateString: string) => {
     const date = new Date(dateString);
@@ -199,19 +206,13 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
 
   const filtersContent = (
     <ReportFiltersRow>
-      <ReportFilterField label="Team">
-        <select
-          value={teamName}
-          onChange={(e) => handleTeamNameChange(e.target.value)}
-          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[140px]"
-        >
-          <option value="">Select Team</option>
-          {availableTeams.map((team) => (
-            <option key={team} value={team}>
-              {team}
-            </option>
-          ))}
-        </select>
+      <ReportFilterField label="Team/Group">
+        <TeamGroupFilter
+          value={teamValue}
+          onChange={handleTeamGroupChange}
+          placeholder="Select team or group"
+          allowClear={true}
+        />
       </ReportFilterField>
 
       <ReportFilterField label="Time Period">
