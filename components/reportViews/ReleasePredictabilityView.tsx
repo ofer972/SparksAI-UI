@@ -18,6 +18,8 @@ interface ReleasePredictabilityViewProps {
   refresh: () => void;
   meta?: Record<string, any> | null;
   componentProps?: Record<string, any>;
+  togglePin?: (filterKey: string) => void;
+  pinnedFilters?: string[];
 }
 
 const buildColumns = (jiraUrl: string): Column<ReleasePredictabilityItem>[] => {
@@ -141,6 +143,8 @@ const ReleasePredictabilityView: React.FC<ReleasePredictabilityViewProps> = ({
   setFilters,
   refresh,
   componentProps,
+  togglePin,
+  pinnedFilters = [],
 }) => {
   const months = Number(filters.months ?? 3);
   const jiraUrl = getCleanJiraUrl();
@@ -175,11 +179,29 @@ const ReleasePredictabilityView: React.FC<ReleasePredictabilityViewProps> = ({
     </ReportFiltersRow>
   );
 
+  // Generate filter badges for active filters
+  const filterBadges = useMemo(() => {
+    const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
+    
+    if (months) {
+      badges.push({
+        label: 'Time Period',
+        value: `${months} month${months !== 1 ? 's' : ''}`,
+        filterKey: 'months',
+        isPinned: pinnedFilters.includes('months'),
+      });
+    }
+    
+    return badges;
+  }, [months, pinnedFilters]);
+
   return (
     <ReportCard 
       title="Release Predictability" 
       reportId={componentProps?.reportId}
-      filters={filtersContent} 
+      filters={filtersContent}
+      filterBadges={filterBadges}
+      onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
     >

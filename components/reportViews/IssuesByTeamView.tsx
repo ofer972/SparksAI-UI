@@ -32,6 +32,8 @@ interface IssuesByTeamViewProps {
   refresh: () => void;
   meta?: Record<string, any> | null;
   componentProps?: Record<string, any>;
+  togglePin?: (filterKey: string) => void;
+  pinnedFilters?: string[];
 }
 
 const COLOR_PALETTE = [
@@ -93,6 +95,8 @@ const IssuesByTeamView: React.FC<IssuesByTeamViewProps> = ({
   meta,
   refresh,
   componentProps,
+  togglePin,
+  pinnedFilters = [],
 }) => {
   const issueType = (filters.issue_type as string) ?? 'Bug';
   const statusCategory = (filters.status_category as string) ?? '';
@@ -188,6 +192,40 @@ const IssuesByTeamView: React.FC<IssuesByTeamViewProps> = ({
     </ReportFiltersRow>
   );
 
+  // Generate filter badges for active filters
+  const filterBadges = useMemo(() => {
+    const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
+    
+    if (issueType) {
+      badges.push({
+        label: 'Issue Type',
+        value: issueType,
+        filterKey: 'issue_type',
+        isPinned: pinnedFilters.includes('issue_type'),
+      });
+    }
+    
+    if (statusCategory) {
+      badges.push({
+        label: 'Status',
+        value: statusCategory,
+        filterKey: 'status_category',
+        isPinned: pinnedFilters.includes('status_category'),
+      });
+    }
+    
+    if (includeDone) {
+      badges.push({
+        label: 'Include Done',
+        value: 'Yes',
+        filterKey: 'include_done',
+        isPinned: pinnedFilters.includes('include_done'),
+      });
+    }
+    
+    return badges;
+  }, [issueType, statusCategory, includeDone, pinnedFilters]);
+
   const barTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -214,6 +252,8 @@ const IssuesByTeamView: React.FC<IssuesByTeamViewProps> = ({
       title="Issues by Team"
       reportId={componentProps?.reportId}
       filters={filtersContent}
+      filterBadges={filterBadges}
+      onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
     >

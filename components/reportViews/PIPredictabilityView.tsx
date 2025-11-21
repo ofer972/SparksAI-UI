@@ -20,6 +20,8 @@ export interface PIPredictabilityViewProps {
   refresh: () => void;
   meta?: Record<string, any> | null;
   componentProps?: { isDashboard?: boolean; reportId?: string; onClose?: () => void };
+  togglePin?: (filterKey: string) => void;
+  pinnedFilters?: string[];
 }
 
 const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
@@ -31,6 +33,8 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
   refresh,
   meta,
   componentProps,
+  togglePin,
+  pinnedFilters = [],
 }) => {
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: null,
@@ -314,11 +318,38 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
     </ReportFiltersRow>
   );
 
+  // Generate filter badges for active filters
+  const filterBadges = useMemo(() => {
+    const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
+    
+    if (piNames.length > 0) {
+      badges.push({
+        label: 'PIs',
+        value: `${piNames.length} selected`,
+        filterKey: 'pi_names',
+        isPinned: pinnedFilters.includes('pi_names'),
+      });
+    }
+    
+    if (teamName) {
+      badges.push({
+        label: isGroup ? 'Group' : 'Team',
+        value: teamName,
+        filterKey: 'team_name',
+        isPinned: pinnedFilters.includes('team_name'),
+      });
+    }
+    
+    return badges;
+  }, [piNames, teamName, isGroup, pinnedFilters]);
+
   return (
     <ReportCard 
-      title="PI Predictability" 
+      title="PI Predictability"
       reportId={componentProps?.reportId}
-      filters={filtersContent} 
+      filters={filtersContent}
+      filterBadges={filterBadges}
+      onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
     >

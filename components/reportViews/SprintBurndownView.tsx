@@ -21,6 +21,8 @@ interface SprintBurndownViewProps {
   refresh: () => void;
   meta?: Record<string, any>;
   componentProps?: Record<string, any>;
+  togglePin?: (filterKey: string) => void;
+  pinnedFilters?: string[];
 }
 
 const ISSUE_TYPE_OPTIONS = [
@@ -39,6 +41,8 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
   refresh,
   meta,
   componentProps,
+  togglePin,
+  pinnedFilters = [],
 }) => {
   const issueType = (filters.issue_type as string) ?? 'all';
   const sprintName = (filters.sprint_name as string) ?? '';
@@ -179,11 +183,54 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
 
   const currentSprintName = componentProps?.currentSprintName as string | undefined;
 
+  // Generate filter badges for active filters
+  const filterBadges = useMemo(() => {
+    const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
+    
+    if (teamName) {
+      badges.push({
+        label: isGroup ? 'Group' : 'Team',
+        value: teamName,
+        filterKey: 'team_name',
+        isPinned: pinnedFilters.includes('team_name'),
+      });
+    }
+    
+    if (issueType && issueType !== 'all') {
+      badges.push({
+        label: 'Issue Type',
+        value: issueType,
+        filterKey: 'issue_type',
+        isPinned: pinnedFilters.includes('issue_type'),
+      });
+    }
+    
+    if (sprintName) {
+      badges.push({
+        label: 'Sprint',
+        value: sprintName,
+        filterKey: 'sprint_name',
+        isPinned: pinnedFilters.includes('sprint_name'),
+      });
+    } else {
+      badges.push({
+        label: 'Sprint',
+        value: 'Current Sprint',
+        filterKey: 'sprint_name',
+        isPinned: pinnedFilters.includes('sprint_name'),
+      });
+    }
+    
+    return badges;
+  }, [teamName, isGroup, issueType, sprintName, pinnedFilters]);
+
   return (
     <ReportCard 
       title="Sprint Burndown" 
       reportId={componentProps?.reportId} 
-      filters={filtersContent} 
+      filters={filtersContent}
+      filterBadges={filterBadges}
+      onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
     >

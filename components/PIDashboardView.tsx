@@ -10,6 +10,8 @@ import type { ReportDefinition, LayoutConfig } from '@/lib/config';
 interface PIDashboardViewProps {
   selectedPI?: string;
   selectedTeam?: string;
+  selectedTreeType?: 'group' | 'team';
+  selectedTreeValue?: string | null;
 }
 
 const PI_DASHBOARD_DEFAULTS = ['pi-burndown', 'pi-predictability', 'epic-scope-changes', 'sprint-predictability'];
@@ -17,6 +19,8 @@ const PI_DASHBOARD_DEFAULTS = ['pi-burndown', 'pi-predictability', 'epic-scope-c
 const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   selectedPI,
   selectedTeam,
+  selectedTreeType,
+  selectedTreeValue,
 }) => {
   const [reportOrder, setReportOrder] = useState<string[] | null>(null);
   const [layoutConfig, setLayoutConfig] = useState<LayoutConfig | null>(null);
@@ -149,7 +153,8 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     []
   );
 
-  const buildPanelKey = (reportId: string) => `${reportId}-${selectedPI ?? 'none'}`;
+  // Use only reportId as key to preserve component state (including pinned filters) when top bar changes
+  const buildPanelKey = (reportId: string) => reportId;
 
   const renderReportSection = (reportId: string, panelKey: string) => {
     switch (reportId) {
@@ -159,8 +164,10 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             key={panelKey}
             reportId="pi-burndown"
             initialFilters={{
-              pi: selectedPI || null,
               issue_type: 'Epic',
+            }}
+            controlledFilters={{
+              pi: selectedPI || null,
             }}
             enabled={true}
             componentProps={{ isDashboard: true }}
@@ -172,9 +179,10 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           <ReportPanel
             key={panelKey}
             reportId="pi-predictability"
-            initialFilters={{
+            controlledFilters={{
               pi_names: selectedPI ? [selectedPI] : [],
               team_name: selectedTeam || null,
+              isGroup: selectedTreeType === 'group',
             }}
             enabled={true}
             componentProps={{ isDashboard: true }}
@@ -187,7 +195,10 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             key={panelKey}
             reportId="sprint-predictability"
             initialFilters={{ months: 3 }}
-            controlledFilters={selectedTeam ? { team_name: selectedTeam } : undefined}
+            controlledFilters={{
+              ...(selectedTeam ? { team_name: selectedTeam } : {}),
+              isGroup: selectedTreeType === 'group',
+            }}
             enabled={Boolean(selectedPI)}
             componentProps={{ isDashboard: true }}
             {...commonPanelProps}
@@ -198,7 +209,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           <ReportPanel
             key={panelKey}
             reportId="epic-scope-changes"
-            initialFilters={{
+            controlledFilters={{
               quarters: selectedPI ? [selectedPI] : [],
             }}
             enabled={true}
@@ -211,9 +222,10 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           <ReportPanel
             key={panelKey}
             reportId="pi-metrics-summary"
-            initialFilters={{
+            controlledFilters={{
               pi: selectedPI || null,
               team_name: selectedTeam || null,
+              isGroup: selectedTreeType === 'group',
             }}
             enabled={true}
             componentProps={{ isDashboard: true }}
@@ -228,6 +240,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             controlledFilters={{
               ...(selectedPI ? { pi: selectedPI } : {}),
               ...(selectedTeam ? { team_name: selectedTeam, team: selectedTeam } : {}),
+              isGroup: selectedTreeType === 'group',
             }}
             enabled={Boolean(selectedPI)}
             componentProps={{ isDashboard: true }}

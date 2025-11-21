@@ -163,7 +163,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             initialFilters={{ months: 3 }}
             controlledFilters={{
               team_name: selectedTeam || null,
-              ...(selectedTreeType === 'group' ? { isGroup: true } : {})
+              isGroup: selectedTreeType === 'group',
             }}
             enabled
             {...commonPanelProps}
@@ -174,12 +174,12 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
           <ReportPanel
             reportId="team-sprint-burndown"
             initialFilters={{
-              team_name: selectedTeam || null,
               issue_type: 'all',
               sprint_name: selectedSprint || null,
             }}
             controlledFilters={{
-              ...(selectedTreeType === 'group' ? { isGroup: true } : {})
+              team_name: selectedTeam || null,
+              isGroup: selectedTreeType === 'group',
             }}
             enabled
             componentProps={{
@@ -198,7 +198,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             initialFilters={{ issue_type: 'Bug', months: 6 }}
             controlledFilters={{
               team_name: selectedTeam,
-              ...(selectedTreeType === 'group' ? { isGroup: true } : {})
+              isGroup: selectedTreeType === 'group',
             }}
             enabled
             {...commonPanelProps}
@@ -211,7 +211,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             initialFilters={{ months: 3 }}
             controlledFilters={{
               team_name: selectedTeam,
-              ...(selectedTreeType === 'group' ? { isGroup: true } : {})
+              isGroup: selectedTreeType === 'group',
             }}
             enabled={Boolean(selectedTeam)}
             {...commonPanelProps}
@@ -223,12 +223,12 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             reportId="issues-bugs-by-priority"
             initialFilters={{ 
               issue_type: 'Bug',
-              team_name: selectedTeam,
               status_category: null,
               include_done: false
             }}
             controlledFilters={{
-              ...(selectedTreeType === 'group' ? { isGroup: true } : {})
+              team_name: selectedTeam,
+              isGroup: selectedTreeType === 'group',
             }}
             enabled={Boolean(selectedTeam)}
             {...commonPanelProps}
@@ -240,7 +240,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             reportId={reportId}
             controlledFilters={{
               team_name: selectedTeam,
-              ...(selectedTreeType === 'group' ? { isGroup: true } : {})
+              isGroup: selectedTreeType === 'group',
             }}
             enabled={Boolean(selectedTeam)}
             {...commonPanelProps}

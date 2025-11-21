@@ -18,6 +18,8 @@ interface SprintPredictabilityViewProps {
   refresh: () => void;
   meta?: Record<string, any> | null;
   componentProps?: Record<string, any>;
+  togglePin?: (filterKey: string) => void;
+  pinnedFilters?: string[];
 }
 
 const getJiraSearchLink = (keys: string[], jiraUrl: string) => {
@@ -158,6 +160,8 @@ const SprintPredictabilityView: React.FC<SprintPredictabilityViewProps> = ({
   setFilters,
   refresh,
   componentProps,
+  togglePin,
+  pinnedFilters = [],
 }) => {
   const months = Number(filters.months ?? 3);
   const jiraUrl = getCleanJiraUrl();
@@ -192,11 +196,29 @@ const SprintPredictabilityView: React.FC<SprintPredictabilityViewProps> = ({
     </ReportFiltersRow>
   );
 
+  // Generate filter badges for active filters
+  const filterBadges = useMemo(() => {
+    const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
+    
+    if (months) {
+      badges.push({
+        label: 'Time Period',
+        value: `${months} month${months !== 1 ? 's' : ''}`,
+        filterKey: 'months',
+        isPinned: pinnedFilters.includes('months'),
+      });
+    }
+    
+    return badges;
+  }, [months, pinnedFilters]);
+
   return (
     <ReportCard 
       title="Sprint Predictability" 
       reportId={componentProps?.reportId}
-      filters={filtersContent} 
+      filters={filtersContent}
+      filterBadges={filterBadges}
+      onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
     >

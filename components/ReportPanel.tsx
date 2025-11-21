@@ -52,6 +52,20 @@ const mergeFilters = (
   return next;
 };
 
+// Helper to compare filter values (handles arrays and primitives)
+const areFiltersEqual = (val1: any, val2: any): boolean => {
+  if (val1 === val2) return true;
+  if (val1 == null || val2 == null) return val1 === val2;
+  
+  // Array comparison
+  if (Array.isArray(val1) && Array.isArray(val2)) {
+    if (val1.length !== val2.length) return false;
+    return val1.every((item, index) => item === val2[index]);
+  }
+  
+  return false;
+};
+
 const ReportPanel: React.FC<ReportPanelProps> = ({
   reportId,
   registry = DEFAULT_REPORT_COMPONENT_REGISTRY,
@@ -68,6 +82,9 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
     initialFilters ? { ...initialFilters } : {}
   );
   const [refreshKey, setRefreshKey] = React.useState(0);
+  
+  // Track which filter keys are pinned (custom/locked)
+  const [pinnedFilters, setPinnedFilters] = React.useState<Set<string>>(new Set());
 
   const controlledKey = React.useMemo(
     () => JSON.stringify(controlledFilters || {}),
@@ -84,11 +101,19 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
   React.useEffect(() => {
     if (controlledFilters) {
       setLocalFilters((prev) => {
-        const next = mergeFilters(prev, controlledFilters);
+        // Only apply controlled filters for keys that are not pinned
+        const filteredControlled: FiltersState = {};
+        for (const [key, value] of Object.entries(controlledFilters)) {
+          if (!pinnedFilters.has(key)) {
+            filteredControlled[key] = value;
+          }
+        }
+        
+        const next = mergeFilters(prev, filteredControlled);
         if (Object.keys(controlledFilters).length === 0) {
           const cleared: FiltersState = { ...next };
           for (const key of Object.keys(prev)) {
-            if (!(key in (initialFilters ?? {}))) {
+            if (!(key in (initialFilters ?? {})) && !pinnedFilters.has(key)) {
               delete cleared[key];
             }
           }
@@ -97,7 +122,7 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
         return next;
       });
     }
-  }, [controlledKey, controlledFilters, initialFilters]);
+  }, [controlledKey, controlledFilters, initialFilters, pinnedFilters]);
 
   const setFilters = React.useCallback(
     (updater: FiltersUpdater) => {
@@ -106,12 +131,50 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
           typeof updater === 'function'
             ? updater(prev)
             : mergeFilters(prev, updater);
+        
+        // Auto-pin filters that are changed manually (detect if controlled filters exist)
+        if (controlledFilters) {
+          const changedKeys = new Set<string>();
+          for (const key of Object.keys(updated)) {
+            if (key in controlledFilters && !areFiltersEqual(updated[key], controlledFilters[key])) {
+              changedKeys.add(key);
+            }
+          }
+          if (changedKeys.size > 0) {
+            setPinnedFilters((prevPinned) => {
+              const newPinned = new Set(prevPinned);
+              changedKeys.forEach((key) => newPinned.add(key));
+              return newPinned;
+            });
+          }
+        }
+        
         onFiltersChange?.(updated);
         return updated;
       });
     },
-    [onFiltersChange]
+    [onFiltersChange, controlledFilters]
   );
+
+  const togglePin = React.useCallback((filterKey: string) => {
+    setPinnedFilters((prev) => {
+      const newPinned = new Set(prev);
+      if (newPinned.has(filterKey)) {
+        newPinned.delete(filterKey);
+        
+        // When unpinning, apply the controlled filter value if available
+        if (controlledFilters && filterKey in controlledFilters) {
+          setLocalFilters((prevFilters) => ({
+            ...prevFilters,
+            [filterKey]: controlledFilters[filterKey],
+          }));
+        }
+      } else {
+        newPinned.add(filterKey);
+      }
+      return newPinned;
+    });
+  }, [controlledFilters]);
 
   const refresh = React.useCallback(() => {
     setRefreshKey((key) => key + 1);
@@ -147,6 +210,8 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
             filters: currentFilters,
             setFilters,
             refresh,
+            togglePin,
+            pinnedFilters: Array.from(pinnedFilters),
             componentProps: { ...componentProps, reportId },
             missingFilters: context.missingFilters,
             requiredFilters: context.requiredFilters,
@@ -154,7 +219,7 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
         },
       },
     };
-  }, [componentProps, currentFilters, entry, refresh, reportId, setFilters]);
+  }, [componentProps, currentFilters, entry, refresh, reportId, setFilters, togglePin, pinnedFilters]);
 
   if (!entry) {
     const fallback = rendererProps.fallback ?? null;

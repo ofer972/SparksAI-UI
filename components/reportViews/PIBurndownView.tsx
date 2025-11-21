@@ -20,6 +20,8 @@ interface PIBurndownViewProps {
   refresh: () => void;
   meta?: Record<string, any>;
   componentProps?: { isDashboard?: boolean; reportId?: string; onClose?: () => void };
+  togglePin?: (filterKey: string) => void;
+  pinnedFilters?: string[];
 }
 
 const PIBurndownView: React.FC<PIBurndownViewProps> = ({
@@ -31,6 +33,8 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
   refresh,
   meta,
   componentProps,
+  togglePin,
+  pinnedFilters = [],
 }) => {
   const issueType = (filters.issue_type as string) ?? 'Epic';
   const project = (filters.project as string) ?? '';
@@ -112,11 +116,47 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
     </ReportFiltersRow>
   );
 
+  // Generate filter badges for active filters
+  const filterBadges = useMemo(() => {
+    const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
+    
+    if (piName) {
+      badges.push({
+        label: 'PI',
+        value: piName,
+        filterKey: 'pi',
+        isPinned: pinnedFilters.includes('pi'),
+      });
+    }
+    
+    if (issueType) {
+      badges.push({
+        label: 'Issue Type',
+        value: issueType,
+        filterKey: 'issue_type',
+        isPinned: pinnedFilters.includes('issue_type'),
+      });
+    }
+    
+    if (project) {
+      badges.push({
+        label: 'Project',
+        value: project,
+        filterKey: 'project',
+        isPinned: pinnedFilters.includes('project'),
+      });
+    }
+    
+    return badges;
+  }, [piName, issueType, project, pinnedFilters]);
+
   return (
     <ReportCard 
       title="PI Burndown" 
       reportId={componentProps?.reportId} 
-      filters={filtersContent} 
+      filters={filtersContent}
+      filterBadges={filterBadges}
+      onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
     >

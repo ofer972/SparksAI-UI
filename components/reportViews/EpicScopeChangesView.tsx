@@ -28,6 +28,8 @@ export interface EpicScopeChangesViewProps {
   refresh: () => void;
   meta?: Record<string, any> | null;
   componentProps?: Record<string, any>;
+  togglePin?: (filterKey: string) => void;
+  pinnedFilters?: string[];
 }
 
 type ScopeMetricKey = `${string}|${string}`;
@@ -67,6 +69,8 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
   refresh,
   meta,
   componentProps,
+  togglePin,
+  pinnedFilters = [],
 }) => {
   const quarters = Array.isArray(filters.quarters) ? filters.quarters : [];
   const [selectedPIs, setSelectedPIs] = useState<string[]>(quarters);
@@ -182,6 +186,22 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
     </ReportFiltersRow>
   );
 
+  // Generate filter badges for active filters
+  const filterBadges = useMemo(() => {
+    const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
+    
+    if (selectedPIs.length > 0) {
+      badges.push({
+        label: 'PIs',
+        value: `${selectedPIs.length} selected`,
+        filterKey: 'quarters',
+        isPinned: pinnedFilters.includes('quarters'),
+      });
+    }
+    
+    return badges;
+  }, [selectedPIs.length, pinnedFilters]);
+
   const showChart = !loading && !error && selectedPIs.length > 0 && aggregatedData.length > 0;
 
   return (
@@ -189,6 +209,8 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
       title="Epic Scope Changes"
       reportId={componentProps?.reportId}
       filters={filtersContent}
+      filterBadges={filterBadges}
+      onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
     >

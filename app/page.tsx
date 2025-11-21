@@ -341,7 +341,12 @@ export default function Home() {
         );
       case 'pi-dashboard':
         return (
-          <PIDashboardView selectedPI={selectedPI} selectedTeam={selectedTeam} />
+          <PIDashboardView 
+            selectedPI={selectedPI} 
+            selectedTeam={selectedTeam}
+            selectedTreeType={selectedTreeType}
+            selectedTreeValue={selectedTreeValue}
+          />
         );
       case 'settings':
         return (

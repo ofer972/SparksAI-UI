@@ -31,6 +31,8 @@ interface IssuesByPriorityViewProps {
   refresh: () => void;
   meta?: Record<string, any> | null;
   componentProps?: Record<string, any>;
+  togglePin?: (filterKey: string) => void;
+  pinnedFilters?: string[];
 }
 
 const COLOR_PALETTE = [
@@ -81,6 +83,8 @@ const IssuesByPriorityView: React.FC<IssuesByPriorityViewProps> = ({
   meta,
   refresh,
   componentProps,
+  togglePin,
+  pinnedFilters = [],
 }) => {
   const issueType = (filters.issue_type as string) ?? 'Bug';
   const { groups, teams } = useTeamsGroups();
@@ -275,11 +279,56 @@ const IssuesByPriorityView: React.FC<IssuesByPriorityViewProps> = ({
     return null;
   };
 
+  // Generate filter badges for active filters
+  const filterBadges = useMemo(() => {
+    const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
+    
+    if (teamName) {
+      badges.push({
+        label: isGroup ? 'Group' : 'Team',
+        value: teamName,
+        filterKey: 'team_name',
+        isPinned: pinnedFilters.includes('team_name'),
+      });
+    }
+    
+    if (issueType) {
+      badges.push({
+        label: 'Issue Type',
+        value: issueType,
+        filterKey: 'issue_type',
+        isPinned: pinnedFilters.includes('issue_type'),
+      });
+    }
+    
+    if (statusCategory) {
+      badges.push({
+        label: 'Status',
+        value: statusCategory,
+        filterKey: 'status_category',
+        isPinned: pinnedFilters.includes('status_category'),
+      });
+    }
+    
+    if (includeDone) {
+      badges.push({
+        label: 'Include Done',
+        value: 'Yes',
+        filterKey: 'include_done',
+        isPinned: pinnedFilters.includes('include_done'),
+      });
+    }
+    
+    return badges;
+  }, [teamName, isGroup, issueType, statusCategory, includeDone, pinnedFilters]);
+
   return (
     <ReportCard
       title="Issues by Priority"
       reportId={componentProps?.reportId}
       filters={filtersContent}
+      filterBadges={filterBadges}
+      onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
     >

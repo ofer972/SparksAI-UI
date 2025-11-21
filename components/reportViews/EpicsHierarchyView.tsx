@@ -27,6 +27,8 @@ interface EpicsHierarchyViewProps {
   refresh: () => void;
   meta?: Record<string, any> | null;
   componentProps?: Record<string, any>;
+  togglePin?: (filterKey: string) => void;
+  pinnedFilters?: string[];
 }
 
 const DEFAULT_LIMIT = 500;
@@ -40,6 +42,8 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
   refresh,
   meta,
   componentProps,
+  togglePin,
+  pinnedFilters = [],
 }) => {
   const [filterText, setFilterText] = useState('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -279,11 +283,47 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
     return orderedColumns;
   }, [normalizedIssues]);
 
+  // Generate filter badges for active filters
+  const filterBadges = useMemo(() => {
+    const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
+    
+    if (piNames.length > 0) {
+      badges.push({
+        label: 'PIs',
+        value: `${piNames.length} selected`,
+        filterKey: 'pi',
+        isPinned: pinnedFilters.includes('pi'),
+      });
+    }
+    
+    if (teamName) {
+      badges.push({
+        label: isGroup ? 'Group' : 'Team',
+        value: teamName,
+        filterKey: 'team_name',
+        isPinned: pinnedFilters.includes('team_name'),
+      });
+    }
+    
+    if (limitInput && limitInput !== DEFAULT_LIMIT) {
+      badges.push({
+        label: 'Limit',
+        value: `${limitInput} rows`,
+        filterKey: 'limit',
+        isPinned: pinnedFilters.includes('limit'),
+      });
+    }
+    
+    return badges;
+  }, [piNames, teamName, isGroup, limitInput, pinnedFilters]);
+
   return (
     <ReportCard
       title="Epics Hierarchy"
       reportId={componentProps?.reportId}
       filters={filterRow}
+      filterBadges={filterBadges}
+      onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
     >

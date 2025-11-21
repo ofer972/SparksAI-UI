@@ -26,6 +26,8 @@ interface EpicDependenciesViewProps {
   refresh: () => void;
   meta?: Record<string, any> | null;
   componentProps?: Record<string, any>;
+  togglePin?: (filterKey: string) => void;
+  pinnedFilters?: string[];
 }
 
 const buildColumns = (rows: EpicDependencyItem[] = []): Column<EpicDependencyItem>[] => {
@@ -65,6 +67,8 @@ const EpicDependenciesView: React.FC<EpicDependenciesViewProps> = ({
   refresh,
   meta,
   componentProps,
+  togglePin,
+  pinnedFilters = [],
 }) => {
   const availablePIs = useMemo(() => {
     if (meta && Array.isArray(meta.available_pis)) {
@@ -111,11 +115,29 @@ const EpicDependenciesView: React.FC<EpicDependenciesViewProps> = ({
     </ReportFiltersRow>
   );
 
+  // Generate filter badges for active filters
+  const filterBadges = useMemo(() => {
+    const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
+    
+    if (piNames.length > 0) {
+      badges.push({
+        label: 'PIs',
+        value: `${piNames.length} selected`,
+        filterKey: 'pi',
+        isPinned: pinnedFilters.includes('pi'),
+      });
+    }
+    
+    return badges;
+  }, [piNames.length, pinnedFilters]);
+
   return (
     <ReportCard 
       title="Epic Dependencies" 
       reportId={componentProps?.reportId}
-      filters={filtersContent} 
+      filters={filtersContent}
+      filterBadges={filterBadges}
+      onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
     >

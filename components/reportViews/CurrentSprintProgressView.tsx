@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import ReportCard from '../reporting/ReportCard';
 
 interface CompletionRate {
@@ -24,6 +24,8 @@ interface CurrentSprintProgressViewProps {
   filters: Record<string, any>;
   refresh: () => void;
   componentProps?: Record<string, any>;
+  togglePin?: (filterKey: string) => void;
+  pinnedFilters?: string[];
 }
 
 const ProgressBar: React.FC<{ value: number; colorClass: string }> = ({ value, colorClass }) => (
@@ -62,12 +64,34 @@ const CurrentSprintProgressView: React.FC<CurrentSprintProgressViewProps> = ({
   filters,
   refresh,
   componentProps,
+  togglePin,
+  pinnedFilters = [],
 }) => {
+  const teamName = filters.team_name as string | undefined;
+
+  // Generate filter badges for active filters
+  const filterBadges = useMemo(() => {
+    const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
+    
+    if (teamName) {
+      badges.push({
+        label: 'Team',
+        value: teamName,
+        filterKey: 'team_name',
+        isPinned: pinnedFilters.includes('team_name'),
+      });
+    }
+    
+    return badges;
+  }, [teamName, pinnedFilters]);
+
   if (loading) {
     return (
       <ReportCard 
         title="Current Sprint Progress" 
         reportId={componentProps?.reportId}
+        filterBadges={filterBadges}
+        onTogglePin={togglePin}
         onRefresh={refresh}
         onClose={componentProps?.onClose}
       >
@@ -83,6 +107,8 @@ const CurrentSprintProgressView: React.FC<CurrentSprintProgressViewProps> = ({
       <ReportCard 
         title="Current Sprint Progress" 
         reportId={componentProps?.reportId}
+        filterBadges={filterBadges}
+        onTogglePin={togglePin}
         onRefresh={refresh}
         onClose={componentProps?.onClose}
       >
@@ -96,6 +122,8 @@ const CurrentSprintProgressView: React.FC<CurrentSprintProgressViewProps> = ({
       <ReportCard 
         title="Current Sprint Progress" 
         reportId={componentProps?.reportId}
+        filterBadges={filterBadges}
+        onTogglePin={togglePin}
         onRefresh={refresh}
         onClose={componentProps?.onClose}
       >
@@ -128,6 +156,8 @@ const CurrentSprintProgressView: React.FC<CurrentSprintProgressViewProps> = ({
     <ReportCard 
       title="Current Sprint Progress" 
       reportId={componentProps?.reportId}
+      filterBadges={filterBadges}
+      onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
     >

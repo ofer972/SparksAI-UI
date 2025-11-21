@@ -19,6 +19,8 @@ export interface ClosedSprintsViewProps {
   refresh: () => void;
   meta?: Record<string, any> | null;
   componentProps?: Record<string, any>;
+  togglePin?: (filterKey: string) => void;
+  pinnedFilters?: string[];
 }
 
 const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
@@ -30,6 +32,8 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
   refresh,
   meta,
   componentProps,
+  togglePin,
+  pinnedFilters = [],
 }) => {
   const { groups, teams } = useTeamsGroups();
   const [sortConfig, setSortConfig] = useState<SortConfig>({
@@ -231,11 +235,38 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
     </ReportFiltersRow>
   );
 
+  // Generate filter badges for active filters
+  const filterBadges = useMemo(() => {
+    const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
+    
+    if (teamName) {
+      badges.push({
+        label: isGroup ? 'Group' : 'Team',
+        value: teamName,
+        filterKey: 'team_name',
+        isPinned: pinnedFilters.includes('team_name'),
+      });
+    }
+    
+    if (months) {
+      badges.push({
+        label: 'Time Period',
+        value: `${months} month${months !== 1 ? 's' : ''}`,
+        filterKey: 'months',
+        isPinned: pinnedFilters.includes('months'),
+      });
+    }
+    
+    return badges;
+  }, [teamName, isGroup, months, pinnedFilters]);
+
   return (
-    <ReportCard
+    <ReportCard 
       title="Closed Sprints"
       reportId={componentProps?.reportId}
       filters={filtersContent}
+      filterBadges={filterBadges}
+      onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
     >

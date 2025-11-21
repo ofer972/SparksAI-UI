@@ -65,6 +65,8 @@ interface FlowStatusDurationViewProps {
   refresh: () => void;
   meta?: Record<string, any> | null;
   componentProps?: Record<string, any>;
+  togglePin?: (filterKey: string) => void;
+  pinnedFilters?: string[];
 }
 
 const MONTHLY_COLORS = [
@@ -94,6 +96,8 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
   refresh,
   meta,
   componentProps,
+  togglePin,
+  pinnedFilters = [],
 }) => {
   const { groups, teams } = useTeamsGroups();
   const issueType = (filters.issue_type as string) ?? '';
@@ -429,11 +433,56 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
     [jiraUrl]
   );
 
+  // Generate filter badges for active filters
+  const filterBadges = useMemo(() => {
+    const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
+    
+    if (teamName) {
+      badges.push({
+        label: isGroup ? 'Group' : 'Team',
+        value: teamName,
+        filterKey: 'team_name',
+        isPinned: pinnedFilters.includes('team_name'),
+      });
+    }
+    
+    if (issueType) {
+      badges.push({
+        label: 'Issue Type',
+        value: issueType,
+        filterKey: 'issue_type',
+        isPinned: pinnedFilters.includes('issue_type'),
+      });
+    }
+    
+    if (months) {
+      badges.push({
+        label: 'Time Period',
+        value: `${months} month${months !== 1 ? 's' : ''}`,
+        filterKey: 'months',
+        isPinned: pinnedFilters.includes('months'),
+      });
+    }
+    
+    if (viewMode) {
+      badges.push({
+        label: 'View',
+        value: viewMode === 'total' ? 'Total' : 'Monthly',
+        filterKey: 'view_mode',
+        isPinned: pinnedFilters.includes('view_mode'),
+      });
+    }
+    
+    return badges;
+  }, [teamName, isGroup, issueType, months, viewMode, pinnedFilters]);
+
   return (
-    <ReportCard 
-      title="Flow Status Duration" 
+    <ReportCard
+      title="Flow Status Duration"
       reportId={componentProps?.reportId}
-      filters={filtersContent} 
+      filters={filtersContent}
+      filterBadges={filterBadges}
+      onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
     >

@@ -41,6 +41,8 @@ interface PIMetricsSummaryViewProps {
   refresh: () => void;
   meta?: Record<string, any> | null;
   componentProps?: { isDashboard?: boolean; reportId?: string; onClose?: () => void };
+  togglePin?: (filterKey: string) => void;
+  pinnedFilters?: string[];
 }
 
 interface MetricCardProps {
@@ -103,6 +105,8 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
   refresh,
   meta,
   componentProps,
+  togglePin,
+  pinnedFilters = [],
 }) => {
   const statusRecord = useMemo(
     () => (Array.isArray(data?.status_today) && data!.status_today.length > 0 ? data!.status_today[0] : null),
@@ -245,11 +249,65 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
     </ReportFiltersRow>
   );
 
+  // Generate filter badges for active filters
+  const filterBadges = useMemo(() => {
+    const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
+    
+    if (piName) {
+      badges.push({
+        label: 'PI',
+        value: piName,
+        filterKey: 'pi',
+        isPinned: pinnedFilters.includes('pi'),
+      });
+    }
+    
+    if (issueType) {
+      badges.push({
+        label: 'Issue Type',
+        value: issueType,
+        filterKey: 'issue_type',
+        isPinned: pinnedFilters.includes('issue_type'),
+      });
+    }
+    
+    if (teamName) {
+      badges.push({
+        label: isGroup ? 'Group' : 'Team',
+        value: teamName,
+        filterKey: 'team_name',
+        isPinned: pinnedFilters.includes('team_name'),
+      });
+    }
+    
+    if (gracePeriod !== 5) {
+      badges.push({
+        label: 'Grace Period',
+        value: `${gracePeriod} days`,
+        filterKey: 'plan_grace_period',
+        isPinned: pinnedFilters.includes('plan_grace_period'),
+      });
+    }
+    
+    if (project) {
+      badges.push({
+        label: 'Project',
+        value: project,
+        filterKey: 'project',
+        isPinned: pinnedFilters.includes('project'),
+      });
+    }
+    
+    return badges;
+  }, [piName, issueType, teamName, isGroup, gracePeriod, project, pinnedFilters]);
+
   return (
     <ReportCard 
       title="PI Metrics Summary" 
       reportId={componentProps?.reportId}
-      filters={filterRow} 
+      filters={filterRow}
+      filterBadges={filterBadges}
+      onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
     >

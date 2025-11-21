@@ -46,6 +46,8 @@ export interface IssuesTrendChartViewProps {
   setFilters: (updater: ReportFiltersUpdater) => void;
   refresh: () => void;
   componentProps?: Record<string, any>;
+  togglePin?: (filterKey: string) => void;
+  pinnedFilters?: string[];
 }
 
 const IssuesTrendChartView: React.FC<IssuesTrendChartViewProps> = ({
@@ -56,6 +58,8 @@ const IssuesTrendChartView: React.FC<IssuesTrendChartViewProps> = ({
   setFilters,
   refresh,
   componentProps,
+  togglePin,
+  pinnedFilters = [],
 }) => {
   const issueType = (filters.issue_type as string) ?? 'Bug';
   const months = Number(filters.months ?? 6);
@@ -358,11 +362,50 @@ const IssuesTrendChartView: React.FC<IssuesTrendChartViewProps> = ({
     </ReportFiltersRow>
   );
 
+  // Generate filter badges for active filters
+  const filterBadges = useMemo(() => {
+    const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
+    
+    const teamName = filters.team_name as string | undefined;
+    const isGroup = filters.isGroup as boolean | undefined;
+    
+    if (teamName) {
+      badges.push({
+        label: isGroup ? 'Group' : 'Team',
+        value: teamName,
+        filterKey: 'team_name',
+        isPinned: pinnedFilters.includes('team_name'),
+      });
+    }
+    
+    if (issueType) {
+      badges.push({
+        label: 'Issue Type',
+        value: issueType,
+        filterKey: 'issue_type',
+        isPinned: pinnedFilters.includes('issue_type'),
+      });
+    }
+    
+    if (months) {
+      badges.push({
+        label: 'Time Period',
+        value: `${months} month${months !== 1 ? 's' : ''}`,
+        filterKey: 'months',
+        isPinned: pinnedFilters.includes('months'),
+      });
+    }
+    
+    return badges;
+  }, [filters.team_name, filters.isGroup, issueType, months, pinnedFilters]);
+
   return (
     <ReportCard 
       title="Bugs Created and Resolved Over Time" 
       reportId={componentProps?.reportId}
-      filters={filtersContent} 
+      filters={filtersContent}
+      filterBadges={filterBadges}
+      onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
     >
