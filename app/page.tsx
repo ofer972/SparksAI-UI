@@ -296,7 +296,7 @@ export default function Home() {
       case 'team-ai-insights':
         return (
           <>
-            <div className="pt-2 pb-2 pr-2 pl-[7px]" style={{ zoom: 0.85 }}>
+            <div className="pt-2 pb-2 pr-2 pl-[7px]" style={{ zoom: 0.90 }}>
               <AICards 
                 teamName={selectedTeam} 
                 categories={selectedCategories.length > 0 ? selectedCategories : undefined}
@@ -320,7 +320,7 @@ export default function Home() {
       case 'pi-quarter':
         return (
           <div className="h-full overflow-auto">
-            <div className="p-2" style={{ zoom: 0.85 }}>
+            <div className="p-2" style={{ zoom: 0.90 }}>
               {/* PI AI Cards Section */}
               <div className="mb-4">
                 <PIAICards piName={selectedPI} />
@@ -1127,7 +1127,7 @@ export default function Home() {
 
         {/* Team Metrics Bottom Bar - only for team-ai-insights */}
         {activeNavItem === 'team-ai-insights' && (
-          <div className="flex-shrink-0 border-t border-gray-200 bg-white relative z-30" style={{ zoom: 0.85 }}>
+          <div className="flex-shrink-0 border-t border-gray-200 bg-white relative z-30" style={{ zoom: 0.90 }}>
             <div className="px-3 md:px-4 py-2 md:py-2.5">
               <TeamMetrics teamName={selectedTeam} />
             </div>

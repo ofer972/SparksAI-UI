@@ -73,27 +73,27 @@ const DaysLeftCard = ({ id, daysLeft, daysInSprint, tooltip, className = "", act
 
   return (
     <div 
-      className={`bg-gradient-to-br from-white to-gray-50 rounded-md border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 p-1.5 flex flex-col items-center text-center w-[70%] mx-auto relative ${className}`}
+      className={`bg-gradient-to-br from-white to-gray-50 rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 p-4 flex flex-col items-center text-center h-full relative ${className}`}
       onMouseEnter={() => setActiveTooltip(id)}
       onMouseLeave={() => setActiveTooltip(null)}
     >
       {/* Icon */}
-      <div className="w-5 h-5 mb-1 flex items-center justify-center text-lg bg-gradient-to-br from-blue-50 to-indigo-100 rounded">
+      <div className="w-8 h-8 mb-2 flex items-center justify-center text-2xl rounded">
         📅
       </div>
       
       {/* Progress Bar - takes same space as value in other cards */}
-      <div className="w-full mb-1 flex items-center justify-center" style={{ minHeight: '16px' }}>
-        <div className="w-full bg-gradient-to-r from-gray-100 to-gray-200 rounded-full h-1 shadow-inner">
+      <div className="w-full mb-2 flex items-center justify-center" style={{ minHeight: '24px' }}>
+        <div className="w-full bg-gradient-to-r from-gray-100 to-gray-200 rounded-full h-2 shadow-inner">
           <div
-            className="bg-gradient-to-r from-blue-500 to-indigo-600 h-1 rounded-full transition-all duration-300 shadow-sm"
+            className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-300 shadow-sm"
             style={{ width: `${progress}%` }}
           />
         </div>
       </div>
       
       {/* Days Left Text (formatted) - at bottom like other labels */}
-      <div className="text-[9px] text-gray-600 mt-auto font-medium">
+      <div className="text-xs text-gray-700 mt-auto font-semibold">
         {formatDaysLeft(daysLeft)}
       </div>
       
@@ -135,17 +135,17 @@ const MetricCard = ({ id, icon, value, label, tooltip, className = "", isLeftmos
 
   return (
     <div 
-      className={`bg-gradient-to-br from-white to-gray-50 rounded-md border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 p-1.5 flex flex-col items-center text-center w-[70%] mx-auto relative ${className}`}
+      className={`bg-gradient-to-br from-white to-gray-50 rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 p-4 flex flex-col items-center text-center h-full relative ${className}`}
       onMouseEnter={() => setActiveTooltip(id)}
       onMouseLeave={() => setActiveTooltip(null)}
     >
-      <div className="w-5 h-5 mb-1 flex items-center justify-center text-lg bg-gradient-to-br from-blue-50 to-indigo-100 rounded">
+      <div className="w-8 h-8 mb-2 flex items-center justify-center text-2xl rounded">
         {icon}
       </div>
-      <div className={`text-sm font-bold mb-0.5 ${getStatusColor(status)}`}>
+      <div className={`text-lg font-bold mb-1.5 ${getStatusColor(status)}`}>
         {value}
       </div>
-      <div className="text-[9px] text-gray-600 break-words text-center font-medium">
+      <div className="text-xs text-gray-700 break-words text-center font-semibold">
         {label}
       </div>
       {/* Tooltip */}
@@ -164,12 +164,12 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
   if (loading) {
     return (
       <div className="overflow-x-hidden">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1.5 sm:gap-2 lg:gap-1 w-full">
+        <div className="grid gap-3 w-full" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-gradient-to-br from-white to-gray-50 rounded-md border border-gray-200 shadow-sm p-1.5 animate-pulse w-[70%] mx-auto">
-              <div className="w-5 h-5 bg-gray-200 rounded mb-1"></div>
-              <div className="h-3.5 bg-gray-200 rounded mb-0.5"></div>
-              <div className="h-2 bg-gray-200 rounded"></div>
+            <div key={i} className="bg-gradient-to-br from-white to-gray-50 rounded-lg border border-gray-200 shadow-sm p-4 animate-pulse h-full">
+              <div className="w-8 h-8 bg-transparent rounded mb-2 mx-auto"></div>
+              <div className="h-5 bg-gray-200 rounded mb-1.5"></div>
+              <div className="h-3 bg-gray-200 rounded"></div>
             </div>
           ))}
         </div>
@@ -180,9 +180,9 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
   if (error) {
     return (
       <div className="overflow-x-hidden">
-        <div className="text-center py-1.5">
-          <div className="text-red-500 text-base mb-0.5">⚠️</div>
-          <p className="text-[9px] text-gray-600">Error loading metrics</p>
+        <div className="text-center py-4">
+          <div className="text-red-500 text-2xl mb-2">⚠️</div>
+          <p className="text-xs text-gray-700 font-semibold">Error loading metrics</p>
         </div>
       </div>
     );
@@ -190,7 +190,7 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
 
   return (
     <div className="overflow-x-hidden">
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1.5 sm:gap-2 lg:gap-1 w-full">
+      <div className="grid gap-3 w-full" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
         {/* Avg Velocity */}
         <MetricCard
           id="velocity"

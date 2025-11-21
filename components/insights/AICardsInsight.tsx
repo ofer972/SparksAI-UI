@@ -420,6 +420,26 @@ export default function AICardsInsight({
                     </div>
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <h3 className="text-sm font-bold text-gray-800 truncate">{card.card_name}</h3>
+                      {/* Date Badge after title */}
+                      {card.date && (
+                        <div className="px-2 py-0.5 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border border-blue-200 rounded-lg text-[10px] text-indigo-700 font-semibold shadow-sm flex-shrink-0">
+                          {(() => {
+                            const date = new Date(card.date);
+                            const dateOptions: Intl.DateTimeFormatOptions = { 
+                              month: 'short', 
+                              day: 'numeric' 
+                            };
+                            const timeOptions: Intl.DateTimeFormatOptions = {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: false
+                            };
+                            const formattedDate = date.toLocaleDateString('en-US', dateOptions);
+                            const formattedTime = date.toLocaleTimeString('en-US', timeOptions);
+                            return `${formattedDate} ${formattedTime}`;
+                          })()}
+                        </div>
+                      )}
                       <button 
                         onClick={() => handleViewCard(card)}
                         className="text-[10px] text-blue-600 hover:text-blue-800 cursor-pointer bg-transparent border-none p-0 font-semibold hover:underline transition-colors flex-shrink-0"
@@ -430,26 +450,16 @@ export default function AICardsInsight({
                     </div>
                   </div>
                   <div className="flex items-center flex-shrink-0 ml-2">
-                    {/* Date Badge at top right with nice background */}
-                    {card.date && (
-                      <div className="px-3 py-1 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border border-blue-200 rounded-lg text-[10px] text-indigo-700 font-semibold shadow-sm">
-                        {(() => {
-                          const date = new Date(card.date);
-                          const dateOptions: Intl.DateTimeFormatOptions = { 
-                            month: 'short', 
-                            day: 'numeric' 
-                          };
-                          const timeOptions: Intl.DateTimeFormatOptions = {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: false
-                          };
-                          const formattedDate = date.toLocaleDateString('en-US', dateOptions);
-                          const formattedTime = date.toLocaleTimeString('en-US', timeOptions);
-                          return `${formattedDate} ${formattedTime}`;
-                        })()}
-                      </div>
-                    )}
+                    {/* AI Chat Button at top right */}
+                    <button 
+                      onClick={() => handleAIChat(card)}
+                      className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-2 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md hover:shadow-lg border border-blue-500 flex items-center gap-1 flex-shrink-0 whitespace-nowrap"
+                    >
+                      <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                      </svg>
+                      AI Chat
+                    </button>
                   </div>
                 </div>
                 
@@ -487,11 +497,12 @@ export default function AICardsInsight({
                                   <tr>
                                     {columns.map((column) => {
                                       const isGoalColumn = column.toLowerCase().includes('goal');
+                                      const isAlertColumn = column.toLowerCase() === 'alert';
                                       return (
                                         <th 
                                           key={column} 
                                           className={`border-b-2 border-gray-300 px-2 py-1.5 bg-gray-100 font-semibold text-gray-700 text-sm ${
-                                            isGoalColumn ? 'text-left' : 'text-center'
+                                            isGoalColumn || isAlertColumn ? 'text-left' : 'text-center'
                                           }`}
                                           style={isGoalColumn ? { minWidth: '200px' } : { minWidth: '80px' }}
                                         >
@@ -512,7 +523,7 @@ export default function AICardsInsight({
                                           <td 
                                             key={column} 
                                             className={`border-b border-gray-200 px-2 py-1.5 text-sm text-gray-600 ${
-                                              isGoalColumn 
+                                              isGoalColumn || isAlertColumn
                                                 ? 'whitespace-normal break-words text-left' 
                                                 : 'text-center'
                                             } ${
@@ -801,37 +812,9 @@ export default function AICardsInsight({
                         </div>
                         </div>
                       </div>
-                      
-                      {/* AI Chat Button - below recommendations, aligned right */}
-                      <div className="flex justify-end mt-2">
-                        <button 
-                          onClick={() => handleAIChat(card)}
-                          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-2 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md hover:shadow-lg border border-blue-500 flex items-center gap-1 flex-shrink-0 whitespace-nowrap"
-                        >
-                          <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                          </svg>
-                          AI Chat
-                        </button>
-                      </div>
                     </div>
                   );
                 })()}
-                
-                {/* AI Chat Button for cards without recommendations */}
-                {(!card.recommendations || card.recommendations.length === 0) && (
-                  <div className="mt-6 flex justify-end overflow-hidden">
-                    <button 
-                      onClick={() => handleAIChat(card)}
-                      className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-2 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md hover:shadow-lg border border-blue-500 flex items-center gap-1 flex-shrink-0 whitespace-nowrap"
-                    >
-                      <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                      </svg>
-                      AI Chat
-                    </button>
-                  </div>
-                )}
               </div>
             );
         })}
