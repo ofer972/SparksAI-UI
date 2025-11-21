@@ -345,7 +345,7 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
 
   return (
     <ReportCard 
-      title="PI Predictability"
+      title="PI Predictability" 
       reportId={componentProps?.reportId}
       filters={filtersContent}
       filterBadges={filterBadges}

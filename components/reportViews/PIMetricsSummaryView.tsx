@@ -305,7 +305,7 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
     <ReportCard 
       title="PI Metrics Summary" 
       reportId={componentProps?.reportId}
-      filters={filterRow}
+      filters={filterRow} 
       filterBadges={filterBadges}
       onTogglePin={togglePin}
       onRefresh={refresh}

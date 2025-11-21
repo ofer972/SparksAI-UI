@@ -135,7 +135,7 @@ const EpicDependenciesView: React.FC<EpicDependenciesViewProps> = ({
     <ReportCard 
       title="Epic Dependencies" 
       reportId={componentProps?.reportId}
-      filters={filtersContent}
+      filters={filtersContent} 
       filterBadges={filterBadges}
       onTogglePin={togglePin}
       onRefresh={refresh}

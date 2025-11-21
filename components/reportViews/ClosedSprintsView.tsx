@@ -261,7 +261,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
   }, [teamName, isGroup, months, pinnedFilters]);
 
   return (
-    <ReportCard 
+    <ReportCard
       title="Closed Sprints"
       reportId={componentProps?.reportId}
       filters={filtersContent}

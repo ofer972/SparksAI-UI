@@ -216,7 +216,7 @@ const SprintPredictabilityView: React.FC<SprintPredictabilityViewProps> = ({
     <ReportCard 
       title="Sprint Predictability" 
       reportId={componentProps?.reportId}
-      filters={filtersContent}
+      filters={filtersContent} 
       filterBadges={filterBadges}
       onTogglePin={togglePin}
       onRefresh={refresh}

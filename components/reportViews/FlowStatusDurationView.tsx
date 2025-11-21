@@ -477,8 +477,8 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
   }, [teamName, isGroup, issueType, months, viewMode, pinnedFilters]);
 
   return (
-    <ReportCard
-      title="Flow Status Duration"
+    <ReportCard 
+      title="Flow Status Duration" 
       reportId={componentProps?.reportId}
       filters={filtersContent}
       filterBadges={filterBadges}

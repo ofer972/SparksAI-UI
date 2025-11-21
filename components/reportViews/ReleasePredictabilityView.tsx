@@ -199,7 +199,7 @@ const ReleasePredictabilityView: React.FC<ReleasePredictabilityViewProps> = ({
     <ReportCard 
       title="Release Predictability" 
       reportId={componentProps?.reportId}
-      filters={filtersContent}
+      filters={filtersContent} 
       filterBadges={filterBadges}
       onTogglePin={togglePin}
       onRefresh={refresh}

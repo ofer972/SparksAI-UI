@@ -154,7 +154,7 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
     <ReportCard 
       title="PI Burndown" 
       reportId={componentProps?.reportId} 
-      filters={filtersContent}
+      filters={filtersContent} 
       filterBadges={filterBadges}
       onTogglePin={togglePin}
       onRefresh={refresh}
