@@ -39,6 +39,13 @@ export default function TeamManagementTab() {
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
   const [teamSearchQuery, setTeamSearchQuery] = useState('');
   const [activeTeamTab, setActiveTeamTab] = useState<'unassigned' | 'all'>('unassigned'); // New state for tab selection
+  
+  // Drag and drop states
+  const [draggedTeam, setDraggedTeam] = useState<Team | null>(null);
+  const [dropTargetGroup, setDropTargetGroup] = useState<number | null>(null);
+  
+  // Tab state for unassigned/all teams view
+  const [teamViewTab, setTeamViewTab] = useState<'unassigned' | 'all'>('unassigned');
 
   const apiService = useMemo(() => new ApiService(), []);
 
@@ -302,6 +309,68 @@ export default function TeamManagementTab() {
     });
   };
 
+  // Drag and drop handlers
+  const handleDragStart = (team: Team) => {
+    setDraggedTeam(team);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedTeam(null);
+    setDropTargetGroup(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, groupId: number) => {
+    e.preventDefault();
+    setDropTargetGroup(groupId);
+  };
+
+  const handleDragLeave = () => {
+    setDropTargetGroup(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, groupId: number) => {
+    e.preventDefault();
+    setDropTargetGroup(null);
+    
+    if (!draggedTeam) return;
+    
+    try {
+      // Assign the dragged team to the group
+      await apiService.batchAssignTeamsToGroup(groupId, [draggedTeam.team_key]);
+      
+      // Update teams state
+      setTeams(prevTeams => 
+        prevTeams.map(team => {
+          if (team.team_key === draggedTeam.team_key) {
+            const currentGroupKeys = team.group_keys || [];
+            const currentGroupNames = team.group_names || [];
+            const group = groups.find(g => g.group_key === groupId);
+            
+            if (!currentGroupKeys.includes(groupId) && group) {
+              return {
+                ...team,
+                group_keys: [...currentGroupKeys, groupId],
+                group_names: [...currentGroupNames, group.group_name]
+              };
+            }
+          }
+          return team;
+        })
+      );
+      
+      // Remove from unassigned teams
+      setUnassignedTeams(prev => prev.filter(t => t.team_key !== draggedTeam.team_key));
+      
+      // Refresh the global context
+      await refreshContext();
+      
+      setDraggedTeam(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to assign team');
+      setDraggedTeam(null);
+    }
+  };
+
   // Recursively count all teams in a node and its children
   const countAllTeams = (node: TreeNode): number => {
     let count = 0;
@@ -322,13 +391,16 @@ export default function TeamManagementTab() {
       const hasChildren = node.children.length > 0;
       
       return (
-        <div key={node.id} className="mb-0.5">
+        <div key={node.id}>
           <div
-            className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all hover:bg-gray-50 group cursor-pointer ${
-              depth === 0 ? 'bg-white border border-gray-200 shadow-sm' : 'bg-white border border-gray-200'
+            className={`flex items-center gap-1.5 px-2 py-1 rounded hover:bg-gray-50 transition-all group cursor-pointer ${
+              dropTargetGroup === group.group_key ? 'bg-blue-100 ring-2 ring-blue-400' : ''
             }`}
-            style={{ marginLeft: `${depth * 20}px` }}
+            style={{ paddingLeft: `${depth * 20 + 8}px` }}
             onClick={() => hasChildren && toggleGroupExpansion(group.group_key)}
+            onDragOver={(e) => handleDragOver(e, group.group_key)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, group.group_key)}
           >
             {/* Expand/Collapse button */}
             <div
@@ -349,11 +421,7 @@ export default function TeamManagementTab() {
             </div>
 
             {/* Group icon */}
-            <div className="w-6 h-6 rounded-lg flex items-center justify-center">
-              <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-            </div>
+            <span className="text-base">📁</span>
 
             {/* Group name */}
             <span className={`flex-1 font-semibold text-sm ${depth === 0 ? 'text-gray-900' : 'text-gray-800'}`}>
@@ -410,7 +478,7 @@ export default function TeamManagementTab() {
 
           {/* Children */}
           {isExpanded && hasChildren && (
-            <div className="mt-0.5">
+            <div>
               {node.children.map(child => renderNode(child, depth + 1, group.group_key))}
             </div>
           )}
@@ -423,15 +491,11 @@ export default function TeamManagementTab() {
       return (
         <div
           key={node.id}
-          className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-all group mb-0.5"
-          style={{ marginLeft: `${depth * 20 + 26}px` }}
+          className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-gray-50 transition-all group"
+          style={{ paddingLeft: `${depth * 20 + 34}px` }}
         >
           {/* Team icon */}
-          <div className="w-5 h-5 rounded-lg flex items-center justify-center flex-shrink-0">
-            <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-          </div>
+          <span className="text-sm">👥</span>
 
           {/* Team name */}
           <span className="flex-1 text-xs text-gray-700">{team.team_name}</span>
@@ -514,9 +578,7 @@ export default function TeamManagementTab() {
         <div className="bg-white rounded-lg border border-gray-200 p-2.5 shadow-sm">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
+              <span className="text-2xl">📁</span>
             </div>
             <div>
               <p className="text-xl font-bold text-gray-900">{groups.length}</p>
@@ -528,9 +590,7 @@ export default function TeamManagementTab() {
         <div className="bg-white rounded-lg border border-gray-200 p-2.5 shadow-sm">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
+              <span className="text-2xl">👥</span>
             </div>
             <div>
               <p className="text-xl font-bold text-gray-900">{teams.length}</p>
@@ -554,63 +614,158 @@ export default function TeamManagementTab() {
         </div>
       </div>
 
-      {/* Tree Structure */}
-      <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-base font-semibold text-gray-900">Team Hierarchy</h3>
-          <button
-            onClick={() => {
-              const allGroupIds = groups.map(g => g.group_key);
-              setExpandedGroups(new Set(allGroupIds));
-            }}
-            className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-          >
-            Expand All
-          </button>
-        </div>
-
-        {tree.length === 0 ? (
-          <div className="text-center py-12">
-            <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-            </svg>
-            <p className="text-gray-600 mb-2">No groups yet</p>
-            <p className="text-sm text-gray-500 mb-4">Create your first group to start organizing teams</p>
+      {/* Tree Structure and Unassigned Teams - Side by Side */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Team Hierarchy */}
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col" style={{ height: '600px' }}>
+          <div className="flex items-center justify-between p-3 border-b border-gray-200 flex-shrink-0">
+            <h3 className="text-base font-semibold text-gray-900">Team Hierarchy</h3>
             <button
-              onClick={() => setShowCreateGroupModal(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              onClick={() => {
+                const allGroupIds = groups.map(g => g.group_key);
+                const allExpanded = allGroupIds.every(id => expandedGroups.has(id));
+                
+                if (allExpanded) {
+                  // Collapse all
+                  setExpandedGroups(new Set());
+                } else {
+                  // Expand all
+                  setExpandedGroups(new Set(allGroupIds));
+                }
+              }}
+              className="text-xs text-blue-600 hover:text-blue-700 font-medium"
             >
-              Create First Group
+              {groups.length > 0 && groups.every(g => expandedGroups.has(g.group_key)) ? 'Collapse All' : 'Expand All'}
             </button>
           </div>
-        ) : (
-          <div className="space-y-1">
-            {tree.map(node => renderNode(node, 0))}
-          </div>
-        )}
-      </div>
 
-      {/* Unassigned Teams */}
-      {unassignedTeams.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
-          <h3 className="text-base font-semibold text-gray-900 mb-2">Unassigned Teams</h3>
-          <div className="grid grid-cols-2 gap-2">
-            {unassignedTeams.map(team => (
-              <div
-                key={team.team_key}
-                className="bg-white rounded-lg border border-gray-200 px-2 py-1.5 flex items-center gap-2 hover:bg-gray-50 transition-colors"
-              >
-                <div className="w-5 h-5 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                </div>
-                <span className="flex-1 text-xs font-medium text-gray-700">{team.team_name}</span>
+          <div className="flex-1 overflow-auto p-3">
+            {tree.length === 0 ? (
+              <div className="text-center py-12">
+                <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+                <p className="text-gray-600 mb-2">No groups yet</p>
+                <p className="text-sm text-gray-500 mb-4">Create your first group to start organizing teams</p>
+                <button
+                  onClick={() => setShowCreateGroupModal(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Create First Group
+                </button>
               </div>
-            ))}
+            ) : (
+              <div className="space-y-0.5">
+                {tree.map(node => renderNode(node, 0))}
+              </div>
+            )}
           </div>
         </div>
-      )}
+
+        {/* Teams Panel with Tabs */}
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col" style={{ height: '600px' }}>
+          <div className="flex-shrink-0">
+            <div className="flex border-b border-gray-200">
+              <button
+                onClick={() => setTeamViewTab('unassigned')}
+                className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
+                  teamViewTab === 'unassigned'
+                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Unassigned Teams
+                <span className="ml-2 text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">
+                  {unassignedTeams.length}
+                </span>
+              </button>
+              <button
+                onClick={() => setTeamViewTab('all')}
+                className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
+                  teamViewTab === 'all'
+                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                All Teams
+                <span className="ml-2 text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
+                  {teams.length}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-auto p-3">
+            {teamViewTab === 'unassigned' ? (
+              unassignedTeams.length === 0 ? (
+                <div className="text-center py-12">
+                  <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-gray-600 mb-2">All teams assigned</p>
+                  <p className="text-sm text-gray-500">All teams are currently in groups</p>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {unassignedTeams.map(team => (
+                    <div
+                      key={team.team_key}
+                      draggable
+                      onDragStart={() => handleDragStart(team)}
+                      onDragEnd={handleDragEnd}
+                      className={`px-2 py-1.5 flex items-center gap-2 hover:bg-gray-50 transition-colors rounded cursor-move ${
+                        draggedTeam?.team_key === team.team_key ? 'opacity-50' : ''
+                      }`}
+                      title="Drag to assign to a group"
+                    >
+                      <span className="text-sm">👥</span>
+                      <span className="flex-1 text-xs font-medium text-gray-700">{team.team_name}</span>
+                      {team.number_of_team_members > 0 && (
+                        <span className="text-xs text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">
+                          {team.number_of_team_members} members
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : (
+              <div className="space-y-1">
+                {teams.map(team => {
+                  const isUnassigned = !team.group_keys || team.group_keys.length === 0;
+                  return (
+                    <div
+                      key={team.team_key}
+                      draggable={isUnassigned}
+                      onDragStart={() => isUnassigned && handleDragStart(team)}
+                      onDragEnd={handleDragEnd}
+                      className={`px-2 py-1.5 flex items-center gap-2 hover:bg-gray-50 transition-colors rounded ${
+                        isUnassigned ? 'cursor-move' : ''
+                      } ${draggedTeam?.team_key === team.team_key ? 'opacity-50' : ''}`}
+                      title={isUnassigned ? "Drag to assign to a group" : ""}
+                    >
+                      <span className="text-sm">👥</span>
+                      <span className="flex-1 text-xs font-medium text-gray-700">{team.team_name}</span>
+                      <div className="flex items-center gap-1">
+                        {team.number_of_team_members > 0 && (
+                          <span className="text-xs text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">
+                            {team.number_of_team_members} members
+                          </span>
+                        )}
+                        {team.group_keys && team.group_keys.length > 0 && (
+                          <span className="text-xs text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">
+                            {team.group_keys.length} group{team.group_keys.length !== 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Create Group Modal */}
       {showCreateGroupModal && (
@@ -1005,9 +1160,7 @@ export default function TeamManagementTab() {
               
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3">
                 <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
+                  <span className="text-base">📁</span>
                   <span className="text-sm font-bold text-gray-900">{duplicateGroupName}</span>
                 </div>
               </div>
