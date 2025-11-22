@@ -829,8 +829,8 @@ export default function Home() {
       {mobileSidebarOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div className="absolute inset-0 bg-black/30" onClick={() => setMobileSidebarOpen(false)}></div>
-          <div className="absolute inset-y-0 left-0 w-56 bg-white shadow-xl border-r border-gray-200 p-3 flex flex-col">
-            <div className="flex items-center justify-between mb-2">
+          <div className="absolute inset-y-0 left-0 w-56 bg-white shadow-xl border-r border-gray-200 px-3 flex flex-col">
+            <div className="flex items-center justify-between pt-3">
               <div className="w-32">
                 <SparksAILogo collapsed={false} size="small" />
               </div>
@@ -841,7 +841,7 @@ export default function Home() {
               >✕</button>
             </div>
             {/* Mobile Nav (uses same groups) */}
-            <nav className="flex-1 overflow-y-auto">
+            <nav className="flex-1 overflow-y-auto mt-3">
               <div className="space-y-3">
                 {navigationGroups.map((group) => (
                   <div key={group.title}>
@@ -884,14 +884,12 @@ export default function Home() {
       <div className={`hidden md:block bg-white shadow-sm border-r border-gray-200 flex-shrink-0 transition-all duration-300 ${
         sidebarCollapsed ? 'w-16' : 'w-56'
       }`}>
-        <div className="p-3 h-full flex flex-col">
-          <div className="flex flex-col items-center mb-1">
-            <div className="w-full">
-              <SparksAILogo collapsed={sidebarCollapsed} size="medium" />
-            </div>
+        <div className="px-3 h-full flex flex-col">
+          <div className="pt-3 pb-0">
+            <SparksAILogo collapsed={sidebarCollapsed} size="medium" />
           </div>
           
-          <nav className="flex-1 overflow-y-auto">
+          <nav className="flex-1 overflow-y-auto mt-3">
             {sidebarCollapsed ? (
               <div className="space-y-1">
                 {navigationGroups.flatMap((g) => g.items).map((item) => (

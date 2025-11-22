@@ -11,7 +11,7 @@ interface SparksAILogoProps {
 export default function SparksAILogo({ collapsed = false, size = 'medium' }: SparksAILogoProps) {
   const sizeClasses = {
     small: 'w-16 h-16',    // 64px
-    medium: 'w-28 h-28',   // 112px - bigger and clearer
+    medium: 'w-[119px] h-[48px]',   // 119px x 48px - compact
     large: 'w-32 h-32'     // 128px
   };
 
@@ -21,13 +21,13 @@ export default function SparksAILogo({ collapsed = false, size = 'medium' }: Spa
   }
 
   return (
-    <div className="flex items-center justify-center w-full">
+    <div className="flex items-center justify-start w-full py-0">
       <div className={`${sizeClasses[size]} relative`}>
         <Image
           src="/SparksAI.png"
           alt="SparksAI Logo"
-          width={size === 'small' ? 64 : size === 'medium' ? 112 : 128}
-          height={size === 'small' ? 64 : size === 'medium' ? 112 : 128}
+          width={size === 'small' ? 64 : size === 'medium' ? 119 : 128}
+          height={size === 'small' ? 64 : size === 'medium' ? 48 : 128}
           className="w-full h-full object-contain"
           quality={100}
           priority
