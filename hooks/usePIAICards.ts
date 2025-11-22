@@ -10,7 +10,7 @@ interface UsePIAICardsReturn {
 }
 
 /**
- * Custom hook for fetching PI AI cards data for a specific PI.
+ * Custom hook for fetching PI AI cards data for a specific PI with recommendations.
  * 
  * @param piName - The name of the PI to fetch AI cards for
  * @returns Object containing cards data, loading state, error state, and refetch function
@@ -31,7 +31,8 @@ export function usePIAICards(piName?: string): UsePIAICardsReturn {
       setLoading(true);
       setError(null);
       const apiService = new ApiService();
-      const response = await apiService.getPIAICards(piName);
+      // Use the new endpoint with recommendations
+      const response = await apiService.getPIAICardsWithRecommendations(piName);
       setCards(response.ai_cards || []);
     } catch (err) {
       console.error('Error fetching PI AI cards:', err);

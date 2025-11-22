@@ -327,9 +327,9 @@ export default function AICardsInsight({
   if (loading) {
     return (
       <div className="h-full">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full h-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full h-full auto-rows-fr">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg shadow-lg p-4 border-l-4 border-gray-200 animate-pulse min-h-[221px]">
+            <div key={i} className="bg-white rounded-lg shadow-lg p-4 border-l-4 border-gray-200 animate-pulse min-h-[300px]">
               <div className="h-4 bg-gray-200 rounded mb-2"></div>
               <div className="h-3 bg-gray-200 rounded mb-1"></div>
               <div className="h-3 bg-gray-200 rounded mb-2"></div>
@@ -389,7 +389,7 @@ export default function AICardsInsight({
 
   return (
     <div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full auto-rows-fr">
         {cardsToDisplay.map((card) => {
             const colors = getPriorityColor(card.priority);
             const priorityIcon = getPriorityIcon(card.priority);
@@ -400,7 +400,7 @@ export default function AICardsInsight({
             const dynamicLineHeight = 'leading-normal';
             
             return (
-              <div key={card.id} className={`bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 pt-1 pb-4 px-4 border-2 ${colors.border} ${colors.frame} relative overflow-hidden flex flex-col`}>
+              <div key={card.id} className={`bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 pt-1 pb-4 px-4 border-2 ${colors.border} ${colors.frame} relative overflow-hidden flex flex-col h-full`}>
                 {/* Decorative colored strip at top */}
                 <div className={`absolute top-0 left-0 right-0 h-1 ${colors.border.replace('border-', 'bg-')}`}></div>
                 
@@ -463,8 +463,8 @@ export default function AICardsInsight({
                   </div>
                 </div>
                 
-                <div className="flex-1">
-                  <div className={`${dynamicTextSize} ${dynamicLineHeight} text-gray-600 max-w-none w-full h-full break-words whitespace-normal hyphens-auto overflow-hidden transition-all duration-200`}>
+                <div className="flex-1 overflow-auto">
+                  <div className={`${dynamicTextSize} ${dynamicLineHeight} text-gray-600 max-w-none w-full break-words whitespace-normal hyphens-auto transition-all duration-200`}>
                     {(() => {
                       // Handle Sprint Goal cards with JSON table format
                       if (card.card_type === 'Sprint Goal') {
@@ -820,7 +820,7 @@ export default function AICardsInsight({
         })}
         {/* Empty placeholder slots to maintain grid layout */}
         {Array.from({ length: emptySlots }).map((_, index) => (
-          <div key={`empty-${index}`} className="bg-white rounded-xl shadow-md border-2 border-gray-200 opacity-0 pointer-events-none" aria-hidden="true">
+          <div key={`empty-${index}`} className="bg-white rounded-xl shadow-md border-2 border-gray-200 opacity-0 pointer-events-none h-full" aria-hidden="true">
           </div>
         ))}
       </div>

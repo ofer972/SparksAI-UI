@@ -429,6 +429,21 @@ export class ApiService {
     return result.data;
   }
 
+  async getPIAICardsWithRecommendations(piName: string): Promise<AICardsResponse> {
+    const params = new URLSearchParams({
+      pi: piName,
+    });
+
+    const response = await fetch(`${buildBackendUrl('/pi-ai-cards/getTopCardsWithRecommendations')}?${params}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch PI AI cards with recommendations: ${response.statusText}`);
+    }
+
+    const result: ApiResponse<AICardsResponse> = await response.json();
+    return result.data;
+  }
+
   // PI Recommendations API
   async getPIRecommendations(piName: string): Promise<RecommendationsResponse> {
     const params = new URLSearchParams({

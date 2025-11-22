@@ -12,7 +12,6 @@ import AICards from '@/components/AICards';
 import Recommendations from '@/components/Recommendations';
 import TeamMetrics from '@/components/TeamMetrics';
 import PIAICards from '@/components/PIAICards';
-import PIRecommendations from '@/components/PIRecommendations';
 import TeamDashboard from '@/components/TeamDashboard';
 import SparksAILogo from '@/components/SparksAILogo';
 import ReportPanel from '@/components/ReportPanel';
@@ -330,11 +329,6 @@ export default function Home() {
               {/* PI AI Cards Section */}
               <div className="mb-4">
                 <PIAICards piName={selectedPI} />
-              </div>
-              
-              {/* PI Recommendations Section - flows naturally after cards */}
-              <div className="mb-4">
-                <PIRecommendations piName={selectedPI} />
               </div>
             </div>
           </div>
