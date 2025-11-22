@@ -6,6 +6,7 @@ import DraggableResizableGrid from './DraggableResizableGrid';
 import AddReportsModal from './AddReportsModal';
 import { ApiService } from '@/lib/api';
 import type { ReportDefinition, LayoutConfig } from '@/lib/config';
+import { useDashboardSettings } from '@/hooks/useDashboardSettings';
 
 interface PIDashboardViewProps {
   selectedPI?: string;
@@ -28,6 +29,9 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   const [isMobile, setIsMobile] = useState(false);
   const [isAddReportsModalOpen, setIsAddReportsModalOpen] = useState(false);
   const [availableReports, setAvailableReports] = useState<ReportDefinition[]>([]);
+  
+  // Dashboard settings hook
+  const dashboardSettings = useDashboardSettings('pi-dashboard');
 
   // Detect mobile screen size
   useEffect(() => {
@@ -76,6 +80,11 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
         });
         setAvailableReports(piReports);
 
+        // Wait for user settings to load first
+        while (dashboardSettings.isLoading) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+
         const viewConfig = configs.find((cfg) => cfg.view === 'pi-dashboard');
 
         const normalizeAllowedViews = (report?: ReportDefinition): string[] => {
@@ -108,20 +117,45 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           return unique;
         };
 
-        const configuredReports = Array.isArray(viewConfig?.reportIds)
-          ? filterReportsForView(viewConfig!.reportIds, 'pi-dashboard')
-          : [];
-        const fallbackReports = filterReportsForView(PI_DASHBOARD_DEFAULTS, 'pi-dashboard');
-
-        if (configuredReports.length > 0) {
-          setReportOrder(configuredReports);
-          setLayoutConfig(viewConfig?.layout_config || null);
-        } else if (fallbackReports.length > 0) {
-          setReportOrder(fallbackReports);
-          setLayoutConfig(null);
+        // Priority: User Settings > System Config > Defaults
+        
+        // First, restore top bar filters if saved (independent of layout)
+        if (dashboardSettings.savedState && dashboardSettings.savedState.topBarFilters && 
+            Object.keys(dashboardSettings.savedState.topBarFilters).length > 0) {
+          console.log('[PIDashboard] Restoring top bar filters:', dashboardSettings.savedState.topBarFilters);
+          window.dispatchEvent(new CustomEvent('restore-dashboard-filters', {
+            detail: {
+              dashboard: 'pi-dashboard',
+              filters: dashboardSettings.savedState.topBarFilters
+            }
+          }));
+        }
+        
+        if (dashboardSettings.savedState && dashboardSettings.savedState.layoutConfig) {
+          // Use user settings for layout
+          setLayoutConfig(dashboardSettings.savedState.layoutConfig);
+          
+          // Extract report IDs from layout
+          const reportIds = dashboardSettings.savedState.layoutConfig.rows.flatMap(row => row.reportIds);
+          const filteredReports = filterReportsForView(reportIds, 'pi-dashboard');
+          setReportOrder(filteredReports.length > 0 ? filteredReports : PI_DASHBOARD_DEFAULTS);
         } else {
-          setReportOrder(PI_DASHBOARD_DEFAULTS);
-          setLayoutConfig(null);
+          // Fall back to system config
+          const configuredReports = Array.isArray(viewConfig?.reportIds)
+            ? filterReportsForView(viewConfig!.reportIds, 'pi-dashboard')
+            : [];
+          const fallbackReports = filterReportsForView(PI_DASHBOARD_DEFAULTS, 'pi-dashboard');
+
+          if (configuredReports.length > 0) {
+            setReportOrder(configuredReports);
+            setLayoutConfig(viewConfig?.layout_config || null);
+          } else if (fallbackReports.length > 0) {
+            setReportOrder(fallbackReports);
+            setLayoutConfig(null);
+          } else {
+            setReportOrder(PI_DASHBOARD_DEFAULTS);
+            setLayoutConfig(null);
+          }
         }
       } catch (error) {
         if (!cancelled) {
@@ -139,7 +173,111 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [dashboardSettings.isLoading, dashboardSettings.savedState]);
+  
+  // Track layout config changes
+  useEffect(() => {
+    if (!dashboardSettings.isLoading && layoutConfig !== null) {
+      dashboardSettings.updateCurrentState({ layoutConfig });
+    }
+  }, [layoutConfig, dashboardSettings.isLoading]);
+  
+  // Track top bar filters changes
+  useEffect(() => {
+    if (!dashboardSettings.isLoading) {
+      dashboardSettings.updateCurrentState({
+        topBarFilters: {
+          selectedPI,
+          selectedTeam, // Save the team/group name, not the tree value
+          selectedTreeType,
+        },
+      });
+    }
+  }, [selectedPI, selectedTeam, selectedTreeType, dashboardSettings.isLoading, dashboardSettings.updateCurrentState]);
+  
+  // Expose save settings function and state to parent via custom event
+  useEffect(() => {
+    const handleSaveRequest = async () => {
+      try {
+        // Before saving, apply current top bar filters to all reports
+        // This ensures unpinned filters get the current top bar values
+        const topBarFilters: Record<string, any> = {
+          selectedPI,
+          selectedTeam,
+          selectedTreeType,
+        };
+        
+        // Update top bar filters in dashboard state
+        dashboardSettings.updateCurrentState({ topBarFilters });
+        
+        // Apply top bar filters to all reports that aren't pinned
+        if (reportOrder) {
+          reportOrder.forEach((reportId: string) => {
+            const currentReportFilters = dashboardSettings.currentState.reportFilters[reportId] || {};
+            const pinnedKeys = dashboardSettings.currentState.pinnedFilters[reportId] || [];
+            
+            // Apply top bar values to unpinned filters
+            const updatedFilters = { ...currentReportFilters };
+            Object.keys(topBarFilters).forEach(filterKey => {
+              if (!pinnedKeys.includes(filterKey)) {
+                updatedFilters[filterKey] = topBarFilters[filterKey];
+              }
+            });
+            
+            dashboardSettings.updateReportFilters(reportId, updatedFilters);
+          });
+        }
+        
+        // Small delay to ensure state updates are processed
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        await dashboardSettings.saveSettings();
+        window.dispatchEvent(new CustomEvent('dashboard-settings-saved'));
+      } catch (err) {
+        window.dispatchEvent(new CustomEvent('dashboard-settings-save-failed', { 
+          detail: { error: err } 
+        }));
+      }
+    };
+    
+    const handleResetRequest = async () => {
+      try {
+        await dashboardSettings.resetToDefaults();
+      } catch (err) {
+        console.error('Failed to reset settings:', err);
+      }
+    };
+    
+    window.addEventListener('save-dashboard-settings', handleSaveRequest as EventListener);
+    window.addEventListener('reset-dashboard-settings', handleResetRequest as EventListener);
+    
+    // Dispatch current state to parent
+    window.dispatchEvent(new CustomEvent('dashboard-settings-state', {
+      detail: {
+        hasChanges: dashboardSettings.hasChanges,
+        isSaving: dashboardSettings.isSaving,
+        error: dashboardSettings.error,
+      },
+    }));
+    
+    return () => {
+      window.removeEventListener('save-dashboard-settings', handleSaveRequest as EventListener);
+      window.removeEventListener('reset-dashboard-settings', handleResetRequest as EventListener);
+    };
+  }, [
+    dashboardSettings.hasChanges, 
+    dashboardSettings.isSaving, 
+    dashboardSettings.error, 
+    dashboardSettings.saveSettings, 
+    dashboardSettings.resetToDefaults,
+    dashboardSettings.currentState,
+    dashboardSettings.updateCurrentState,
+    dashboardSettings.updateReportFilters,
+    reportOrder,
+    selectedPI,
+    selectedTeam,
+    selectedTreeType
+  ]);
 
   const commonPanelProps = useMemo(
     () => ({
@@ -157,6 +295,10 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   const buildPanelKey = (reportId: string) => reportId;
 
   const renderReportSection = (reportId: string, panelKey: string) => {
+    // Get saved filters and pinned state for this report from user settings
+    const savedReportFilters = dashboardSettings.savedState?.reportFilters?.[reportId] || {};
+    const savedPinnedFilters = dashboardSettings.savedState?.pinnedFilters?.[reportId] || [];
+    
     switch (reportId) {
       case 'pi-burndown':
         return (
@@ -165,12 +307,16 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             reportId="pi-burndown"
             initialFilters={{
               issue_type: 'Epic',
+              ...savedReportFilters
             }}
+            initialPinnedFilters={savedPinnedFilters}
             controlledFilters={{
               pi: selectedPI || null,
             }}
             enabled={true}
             componentProps={{ isDashboard: true }}
+            onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
+            onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
             {...commonPanelProps}
           />
         );
@@ -179,6 +325,8 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           <ReportPanel
             key={panelKey}
             reportId="pi-predictability"
+            initialFilters={savedReportFilters}
+            initialPinnedFilters={savedPinnedFilters}
             controlledFilters={{
               pi_names: selectedPI ? [selectedPI] : [],
               team_name: selectedTeam || null,
@@ -186,6 +334,8 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             }}
             enabled={true}
             componentProps={{ isDashboard: true }}
+            onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
+            onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
             {...commonPanelProps}
           />
         );
@@ -194,13 +344,16 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           <ReportPanel
             key={panelKey}
             reportId="sprint-predictability"
-            initialFilters={{ months: 3 }}
+            initialFilters={{ months: 3, ...savedReportFilters }}
+            initialPinnedFilters={savedPinnedFilters}
             controlledFilters={{
               ...(selectedTeam ? { team_name: selectedTeam } : {}),
               isGroup: selectedTreeType === 'group',
             }}
             enabled={Boolean(selectedPI)}
             componentProps={{ isDashboard: true }}
+            onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
+            onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
             {...commonPanelProps}
           />
         );
@@ -209,11 +362,15 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           <ReportPanel
             key={panelKey}
             reportId="epic-scope-changes"
+            initialFilters={savedReportFilters}
+            initialPinnedFilters={savedPinnedFilters}
             controlledFilters={{
               quarters: selectedPI ? [selectedPI] : [],
             }}
             enabled={true}
             componentProps={{ autoSelectFirst: false, selectedPI, isDashboard: true }}
+            onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
+            onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
             {...commonPanelProps}
           />
         );
@@ -222,6 +379,8 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           <ReportPanel
             key={panelKey}
             reportId="pi-metrics-summary"
+            initialFilters={savedReportFilters}
+            initialPinnedFilters={savedPinnedFilters}
             controlledFilters={{
               pi: selectedPI || null,
               team_name: selectedTeam || null,
@@ -229,6 +388,8 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             }}
             enabled={true}
             componentProps={{ isDashboard: true }}
+            onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
+            onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
             {...commonPanelProps}
           />
         );
@@ -237,6 +398,8 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           <ReportPanel
             key={panelKey}
             reportId={reportId}
+            initialFilters={savedReportFilters}
+            initialPinnedFilters={savedPinnedFilters}
             controlledFilters={{
               ...(selectedPI ? { pi: selectedPI } : {}),
               ...(selectedTeam ? { team_name: selectedTeam, team: selectedTeam } : {}),
@@ -244,6 +407,8 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             }}
             enabled={Boolean(selectedPI)}
             componentProps={{ isDashboard: true }}
+            onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
+            onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
             {...commonPanelProps}
           />
         );

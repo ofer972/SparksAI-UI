@@ -1594,6 +1594,70 @@ export async function unassignPendingRole(email: string, roleId: string): Promis
   if (!res.ok) throw new Error(await res.text() || 'Failed to unassign pending role');
 }
 
+// User Settings API
+export interface DashboardConfig {
+  layoutConfig: any;
+  topBarFilters: Record<string, any>;
+  reportFilters: Record<string, Record<string, any>>;
+  pinnedFilters: Record<string, string[]>;
+}
+
+export interface UserDashboardSettings {
+  user_id: string;
+  dashboard_settings?: {
+    'team-dashboard'?: DashboardConfig;
+    'pi-dashboard'?: DashboardConfig;
+  };
+  created_at?: string;
+  updated_at?: string;
+}
+
+export async function getUserDashboardSettings(userId: string): Promise<UserDashboardSettings> {
+  const res = await fetch(buildUserServiceUrl(`/users/${userId}/settings`));
+  if (!res.ok) throw new Error('Failed to fetch user settings');
+  const data = await res.json();
+  return data.data || data;
+}
+
+export async function updateUserDashboardSettings(userId: string, settings: Partial<UserDashboardSettings>): Promise<UserDashboardSettings> {
+  const res = await fetch(buildUserServiceUrl(`/users/${userId}/settings`), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(settings),
+  });
+  if (!res.ok) throw new Error(await res.text() || 'Failed to update user settings');
+  const data = await res.json();
+  return data.data || data;
+}
+
+export async function getDashboardSettings(userId: string, dashboardType: 'team-dashboard' | 'pi-dashboard'): Promise<DashboardConfig | null> {
+  const res = await fetch(buildUserServiceUrl(`/users/${userId}/settings/dashboard/${dashboardType}`));
+  if (!res.ok) {
+    if (res.status === 404) return null;
+    throw new Error('Failed to fetch dashboard settings');
+  }
+  const data = await res.json();
+  return data.data || data;
+}
+
+export async function updateDashboardSettings(userId: string, dashboardType: 'team-dashboard' | 'pi-dashboard', settings: DashboardConfig): Promise<UserDashboardSettings> {
+  const res = await fetch(buildUserServiceUrl(`/users/${userId}/settings/dashboard/${dashboardType}`), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(settings),
+  });
+  if (!res.ok) throw new Error(await res.text() || 'Failed to update dashboard settings');
+  const data = await res.json();
+  return data.data || data;
+}
+
+export async function resetUserSettings(userId: string): Promise<void> {
+  const res = await fetch(buildUserServiceUrl(`/users/${userId}/settings/reset`), {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error(await res.text() || 'Failed to reset user settings');
+}
+
 // Legacy class for backward compatibility
 export class BurndownApiService {
   private apiService: ApiService;

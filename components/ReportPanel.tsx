@@ -31,7 +31,9 @@ interface ReportPanelProps
   componentProps?: Record<string, any>;
   initialFilters?: FiltersState;
   controlledFilters?: FiltersState;
+  initialPinnedFilters?: string[]; // Saved pinned filter keys to restore on load
   onFiltersChange?: (filters: FiltersState) => void;
+  onPinnedFiltersChange?: (pinnedFilterKeys: string[]) => void;
 }
 
 const mergeFilters = (
@@ -72,7 +74,9 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
   componentProps,
   initialFilters,
   controlledFilters,
+  initialPinnedFilters,
   onFiltersChange,
+  onPinnedFiltersChange,
   enabled = true,
   ...rendererProps
 }) => {
@@ -84,7 +88,10 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
   const [refreshKey, setRefreshKey] = React.useState(0);
   
   // Track which filter keys are pinned (custom/locked)
-  const [pinnedFilters, setPinnedFilters] = React.useState<Set<string>>(new Set());
+  // Initialize with saved pinned filters if provided
+  const [pinnedFilters, setPinnedFilters] = React.useState<Set<string>>(() => 
+    new Set(initialPinnedFilters || [])
+  );
 
   const controlledKey = React.useMemo(
     () => JSON.stringify(controlledFilters || {}),
@@ -144,6 +151,10 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
             setPinnedFilters((prevPinned) => {
               const newPinned = new Set(prevPinned);
               changedKeys.forEach((key) => newPinned.add(key));
+              
+              // Notify parent of pinned filters change
+              onPinnedFiltersChange?.(Array.from(newPinned));
+              
               return newPinned;
             });
           }
@@ -172,9 +183,13 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
       } else {
         newPinned.add(filterKey);
       }
+      
+      // Notify parent of pinned filters change
+      onPinnedFiltersChange?.(Array.from(newPinned));
+      
       return newPinned;
     });
-  }, [controlledFilters]);
+  }, [controlledFilters, onPinnedFiltersChange]);
 
   const refresh = React.useCallback(() => {
     setRefreshKey((key) => key + 1);

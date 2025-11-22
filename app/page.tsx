@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAccessToken, refreshAccessToken, clearTokens, getCurrentUser, logout } from '@/lib/auth';
 import SettingsScreen from '@/components/SettingsScreen';
@@ -22,10 +22,14 @@ import AIChatModal from '@/components/AIChatModal';
 import { getIssueTypes, getDefaultIssueType } from '@/lib/issueTypes';
 import { ApiService, verifyAdmin, listUsers, getUserRoles, getAllowlist, addAllowlist, deleteAllowlist, deleteUser, listRoles, assignRoleToUser, unassignRoleFromUser, getPendingRoles, assignPendingRole, unassignPendingRole, RoleDto, UserDto } from '@/lib/api';
 import DashboardAIMenu from '@/components/DashboardAIMenu';
+import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 
 export default function Home() {
   const router = useRouter();
+  const { groups, teams, loading: teamsLoading } = useTeamsGroups();
   const [authChecked, setAuthChecked] = useState(false);
+  const [pendingRestore, setPendingRestore] = useState<{dashboard: string, filters: any} | null>(null);
+  const initializedTreeValues = useRef(false);
   useEffect(() => {
     (async () => {
       const token = getAccessToken();
@@ -42,14 +46,105 @@ export default function Home() {
     })();
   }, [router]);
 
+  // Apply pending filter restore when teams/groups finish loading
+  useEffect(() => {
+    if (!teamsLoading && pendingRestore && (groups.length > 0 || teams.length > 0)) {
+      console.log('[Dashboard Settings] Teams/groups loaded, applying pending restore');
+      applyFilterRestore(pendingRestore.dashboard, pendingRestore.filters);
+      setPendingRestore(null);
+    }
+  }, [teamsLoading, groups, teams, pendingRestore]);
+
+  const applyFilterRestore = (dashboard: string, filters: any) => {
+    console.log(`[Dashboard Settings] Applying filter restore for ${dashboard}:`, filters);
+    
+    const findTreeValueByName = (name: string, type: 'group' | 'team'): string | null => {
+      if (type === 'group') {
+        const group = groups.find(g => g.group_name === name);
+        return group ? `group:${group.group_key}` : null;
+      } else {
+        const team = teams.find(t => t.team_name === name);
+        return team ? `team:${team.team_key}` : null;
+      }
+    };
+    
+    // Restore filters based on dashboard type
+    if (dashboard === 'team-dashboard' && filters) {
+      const newFilters = { ...teamDashboardFilters };
+      
+      if (filters.selectedTeam !== undefined && filters.selectedTreeType !== undefined) {
+        newFilters.selectedTeam = filters.selectedTeam;
+        newFilters.selectedTreeType = filters.selectedTreeType;
+        newFilters.selectedTreeLabel = filters.selectedTeam;
+        
+        // Find and set the tree value from the team/group name
+        const treeValue = findTreeValueByName(filters.selectedTeam, filters.selectedTreeType);
+        console.log(`[Dashboard Settings] Found tree value for ${filters.selectedTeam}:`, treeValue);
+        if (treeValue) {
+          newFilters.selectedTreeValue = treeValue;
+        } else {
+          console.warn(`[Dashboard Settings] Could not find tree value for ${filters.selectedTeam} (${filters.selectedTreeType})`);
+        }
+      }
+      
+      console.log('[Dashboard Settings] Setting team dashboard filters to:', newFilters);
+      setTeamDashboardFilters(newFilters);
+      
+      // Note: Legacy state will be updated by the useEffect that watches teamDashboardFilters
+    } else if (dashboard === 'pi-dashboard' && filters) {
+      const newFilters = { ...piDashboardFilters };
+      
+      if (filters.selectedPI !== undefined) {
+        newFilters.selectedPI = filters.selectedPI;
+      }
+      
+      if (filters.selectedTeam !== undefined && filters.selectedTreeType !== undefined) {
+        newFilters.selectedTeam = filters.selectedTeam;
+        newFilters.selectedTreeType = filters.selectedTreeType;
+        newFilters.selectedTreeLabel = filters.selectedTeam;
+        
+        // Find and set the tree value from the team/group name
+        const treeValue = findTreeValueByName(filters.selectedTeam, filters.selectedTreeType);
+        console.log(`[Dashboard Settings] Found tree value for ${filters.selectedTeam}:`, treeValue);
+        if (treeValue) {
+          newFilters.selectedTreeValue = treeValue;
+        } else {
+          console.warn(`[Dashboard Settings] Could not find tree value for ${filters.selectedTeam} (${filters.selectedTreeType})`);
+        }
+      }
+      
+      setPiDashboardFilters(newFilters);
+      
+      // Note: Legacy state will be updated by the useEffect that watches piDashboardFilters
+    }
+  };
+
   const [activeNavItem, setActiveNavItem] = useState('team-ai-insights');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState('AutoDesign-Dev'); // Kept for backward compatibility
-  const [selectedTreeValue, setSelectedTreeValue] = useState<string | null>(null); // "group:ID" or "team:ID"
-  const [selectedTreeLabel, setSelectedTreeLabel] = useState<string>(''); // Display name
+  
+  // Separate filter state for each dashboard
+  const [teamDashboardFilters, setTeamDashboardFilters] = useState({
+    selectedTeam: 'AutoDesign-Dev',
+    selectedTreeValue: null as string | null,
+    selectedTreeLabel: '',
+    selectedTreeType: 'team' as 'group' | 'team',
+  });
+  
+  const [piDashboardFilters, setPiDashboardFilters] = useState({
+    selectedPI: 'Q32025',
+    selectedTeam: 'AutoDesign-Dev',
+    selectedTreeValue: null as string | null,
+    selectedTreeLabel: '',
+    selectedTreeType: 'team' as 'group' | 'team',
+  });
+  
+  // Legacy state for backward compatibility (team AI insights, etc.)
+  const [selectedTeam, setSelectedTeam] = useState('AutoDesign-Dev');
+  const [selectedTreeValue, setSelectedTreeValue] = useState<string | null>(null);
+  const [selectedTreeLabel, setSelectedTreeLabel] = useState<string>('');
   const [selectedTreeType, setSelectedTreeType] = useState<'group' | 'team'>('team');
-  const [selectedPI, setSelectedPI] = useState('Q32025'); // Default to Q32025 which has data
+  const [selectedPI, setSelectedPI] = useState('Q32025');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState({
     sprintGoal: false,
@@ -72,6 +167,68 @@ export default function Home() {
   const [deleteAllowlistConfirm, setDeleteAllowlistConfirm] = useState<{show: boolean; allowlistId?: string; pattern?: string}>({show: false});
   const [editingRolesFor, setEditingRolesFor] = useState<string | null>(null);
   const [pendingRoleAssignments, setPendingRoleAssignments] = useState<Record<string, RoleDto[]>>({});
+  
+  // Dashboard settings state
+  const [dashboardSettingsState, setDashboardSettingsState] = useState<{
+    hasChanges: boolean;
+    isSaving: boolean;
+    error: string | null;
+  }>({ hasChanges: false, isSaving: false, error: null });
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  // Initialize tree values for default teams when teams/groups data loads (only once)
+  useEffect(() => {
+    if (!teamsLoading && teams.length > 0 && !initializedTreeValues.current) {
+      console.log('[App] Initializing tree values for default teams');
+      initializedTreeValues.current = true;
+      
+      // Initialize team dashboard filters if they don't have a tree value yet
+      if (!teamDashboardFilters.selectedTreeValue && teamDashboardFilters.selectedTeam) {
+        const team = teams.find(t => t.team_name === teamDashboardFilters.selectedTeam);
+        if (team) {
+          const treeValue = `team:${team.team_key}`;
+          console.log(`[App] Initializing team dashboard tree value for ${teamDashboardFilters.selectedTeam}:`, treeValue);
+          setTeamDashboardFilters(prev => ({
+            ...prev,
+            selectedTreeValue: treeValue,
+            selectedTreeLabel: teamDashboardFilters.selectedTeam,
+          }));
+        }
+      }
+      
+      // Initialize PI dashboard filters if they don't have a tree value yet
+      if (!piDashboardFilters.selectedTreeValue && piDashboardFilters.selectedTeam) {
+        const team = teams.find(t => t.team_name === piDashboardFilters.selectedTeam);
+        if (team) {
+          const treeValue = `team:${team.team_key}`;
+          console.log(`[App] Initializing PI dashboard tree value for ${piDashboardFilters.selectedTeam}:`, treeValue);
+          setPiDashboardFilters(prev => ({
+            ...prev,
+            selectedTreeValue: treeValue,
+            selectedTreeLabel: piDashboardFilters.selectedTeam,
+          }));
+        }
+      }
+    }
+  }, [teamsLoading, teams, teamDashboardFilters.selectedTreeValue, teamDashboardFilters.selectedTeam, piDashboardFilters.selectedTreeValue, piDashboardFilters.selectedTeam]);
+
+  // Switch to the appropriate dashboard filters when navigating or when filters change
+  useEffect(() => {
+    if (activeNavItem === 'team-dashboard') {
+      console.log('[App] Switching to team dashboard filters:', teamDashboardFilters);
+      setSelectedTeam(teamDashboardFilters.selectedTeam);
+      setSelectedTreeValue(teamDashboardFilters.selectedTreeValue);
+      setSelectedTreeLabel(teamDashboardFilters.selectedTreeLabel);
+      setSelectedTreeType(teamDashboardFilters.selectedTreeType);
+    } else if (activeNavItem === 'pi-dashboard') {
+      console.log('[App] Switching to PI dashboard filters:', piDashboardFilters);
+      setSelectedPI(piDashboardFilters.selectedPI);
+      setSelectedTeam(piDashboardFilters.selectedTeam);
+      setSelectedTreeValue(piDashboardFilters.selectedTreeValue);
+      setSelectedTreeLabel(piDashboardFilters.selectedTreeLabel);
+      setSelectedTreeType(piDashboardFilters.selectedTreeType);
+    }
+  }, [activeNavItem, teamDashboardFilters, piDashboardFilters]);
 
   useEffect(() => {
     (async () => {
@@ -84,6 +241,64 @@ export default function Home() {
       }
     })();
   }, []);
+  
+  // Listen for dashboard settings state changes
+  useEffect(() => {
+    const handleSettingsState = (event: CustomEvent) => {
+      setDashboardSettingsState(event.detail);
+    };
+    
+    const handleSettingsSaved = () => {
+      setMessage({ type: 'success', text: 'Dashboard settings saved successfully' });
+      setTimeout(() => setMessage(null), 3000);
+    };
+    
+    const handleSettingsSaveFailed = (event: CustomEvent) => {
+      setMessage({ type: 'error', text: 'Failed to save dashboard settings' });
+      console.error('Save failed:', event.detail.error);
+      setTimeout(() => setMessage(null), 5000);
+    };
+    
+    const handleRestoreFilters = (event: CustomEvent) => {
+      const { dashboard, filters } = event.detail;
+      console.log(`[Dashboard Settings] Restoring filters for ${dashboard}:`, filters);
+      
+      // If teams/groups are still loading, store for later
+      if (teamsLoading || (groups.length === 0 && teams.length === 0)) {
+        console.log('[Dashboard Settings] Teams/groups not loaded yet, storing restore for later');
+        setPendingRestore({ dashboard, filters });
+        return;
+      }
+      
+      // Apply restore immediately
+      applyFilterRestore(dashboard, filters);
+    };
+    
+    window.addEventListener('dashboard-settings-state', handleSettingsState as EventListener);
+    window.addEventListener('dashboard-settings-saved', handleSettingsSaved as EventListener);
+    window.addEventListener('dashboard-settings-save-failed', handleSettingsSaveFailed as EventListener);
+    window.addEventListener('restore-dashboard-filters', handleRestoreFilters as EventListener);
+    
+    return () => {
+      window.removeEventListener('dashboard-settings-state', handleSettingsState as EventListener);
+      window.removeEventListener('dashboard-settings-saved', handleSettingsSaved as EventListener);
+      window.removeEventListener('dashboard-settings-save-failed', handleSettingsSaveFailed as EventListener);
+      window.removeEventListener('restore-dashboard-filters', handleRestoreFilters as EventListener);
+    };
+  }, []);
+  
+  const handleSaveDashboardSettings = () => {
+    window.dispatchEvent(new CustomEvent('save-dashboard-settings'));
+  };
+  
+  const handleResetDashboardSettings = () => {
+    window.dispatchEvent(new CustomEvent('reset-dashboard-settings'));
+    setShowResetConfirm(false);
+    setMessage({ type: 'success', text: 'Dashboard settings reset to defaults' });
+    setTimeout(() => setMessage(null), 3000);
+    // Reload the page to apply defaults
+    setTimeout(() => window.location.reload(), 500);
+  };
 
   const apiService = new ApiService();
 
@@ -970,114 +1185,238 @@ export default function Home() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <div className="bg-white border-b border-gray-200 px-3 md:px-4 flex-shrink-0 relative z-30 h-[63px]">
-          <div className="flex items-center justify-between gap-2 h-full">
-            {/* Left side: View title and filters */}
-            <div className="flex items-center gap-2 md:space-x-4 flex-1 min-w-0">
-              {/* Mobile hamburger */}
-              <button
-                onClick={() => setMobileSidebarOpen(true)}
-                className="md:hidden p-2 rounded hover:bg-gray-100 text-gray-600"
-                aria-label="Open sidebar"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-              <h1 className="text-xl font-semibold text-gray-900 whitespace-nowrap">
-                {navigationItems.find(item => item.id === activeNavItem)?.label || 'SparksAI'}
-              </h1>
-              
-              {/* PI Filter - shown first for PI Dashboard and PI Quarter views */}
-              {(activeNavItem === 'pi-quarter' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (
-                <div className="hidden md:block" style={{ minWidth: '200px', maxWidth: '300px' }}>
-                  <PIFilter 
-                    selectedPI={selectedPI}
-                    onPIChange={setSelectedPI}
-                  />
-                </div>
-              )}
-              
-              {/* Team/Group Filter - for views that need it */}
-              <div className="hidden md:block" style={{ minWidth: '200px', maxWidth: '300px' }}>
-                {(activeNavItem === 'team-ai-insights' || activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (
+        <div className="bg-white border-b border-gray-200 flex-shrink-0 relative z-30 h-[63px] rounded-tl-2xl overflow-hidden">
+          <div className="flex items-center justify-between h-full">
+            {/* Mobile hamburger */}
+            <button
+              onClick={() => setMobileSidebarOpen(true)}
+              className="md:hidden p-2 rounded hover:bg-gray-100 text-gray-600 ml-3"
+              aria-label="Open sidebar"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+
+            {/* Dashboard views: Unified top bar with gradient background */}
+            {(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') ? (
+              <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0 h-full px-3 md:px-4 bg-gradient-to-b from-white to-gray-50 rounded-tl-2xl">
+                {/* View title */}
+                <h1 className="text-xl font-semibold text-gray-900 whitespace-nowrap">
+                  {navigationItems.find(item => item.id === activeNavItem)?.label || 'SparksAI'}
+                </h1>
+
+                {/* PI Filter - for PI Dashboard */}
+                {activeNavItem === 'pi-dashboard' && (
+                  <div className="hidden md:block" style={{ minWidth: '180px', maxWidth: '250px' }}>
+                    <PIFilter 
+                      selectedPI={selectedPI}
+                      onPIChange={(pi) => {
+                        setSelectedPI(pi);
+                        setPiDashboardFilters(prev => ({ ...prev, selectedPI: pi }));
+                      }}
+                    />
+                  </div>
+                )}
+                
+                {/* Team/Group Filter */}
+                <div className="hidden md:block" style={{ minWidth: '180px', maxWidth: '250px' }}>
                   <TreeSelect 
                     selectedValue={selectedTreeValue}
                     onSelect={(value, label, type) => {
+                      // Update legacy state
                       setSelectedTreeValue(value);
                       setSelectedTreeLabel(label);
                       setSelectedTreeType(type);
-                      // For backward compatibility with components expecting team name
                       setSelectedTeam(label);
+                      
+                      // Update dashboard-specific state
+                      if (activeNavItem === 'team-dashboard') {
+                        setTeamDashboardFilters(prev => ({
+                          ...prev,
+                          selectedTeam: label,
+                          selectedTreeValue: value,
+                          selectedTreeLabel: label,
+                          selectedTreeType: type,
+                        }));
+                      } else if (activeNavItem === 'pi-dashboard') {
+                        setPiDashboardFilters(prev => ({
+                          ...prev,
+                          selectedTeam: label,
+                          selectedTreeValue: value,
+                          selectedTreeLabel: label,
+                          selectedTreeType: type,
+                        }));
+                      }
                     }}
                     placeholder="Select team or group"
                   />
-                )}
-              </div>
-              
-              {/* Insight Category Filter - for team-ai-insights view only */}
-              {activeNavItem === 'team-ai-insights' && (
-                <div className="hidden md:block">
-                  <InsightCategoryFilter
-                    selectedCategories={selectedCategories}
-                    onCategoriesChange={setSelectedCategories}
-                  />
                 </div>
-              )}
-              
-              {/* Manage Reports Button - after filters for dashboards */}
-              {(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') && (
-                <div className="hidden md:block">
+
+                {/* Spacer to push actions to the right */}
+                <div className="flex-1"></div>
+
+                {/* Actions: Dashboard buttons, AI Chat, User, Logout */}
+                <div className="hidden md:flex items-center gap-2">
+                  {/* Manage Reports Button */}
                   <button
                     onClick={() => {
                       window.dispatchEvent(new CustomEvent('open-add-reports-modal'));
                     }}
-                    className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-gray-300 text-gray-500 hover:text-green-600 hover:border-green-400 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
+                    className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-300 text-gray-500 hover:text-green-600 hover:border-green-400 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
                     title="Manage dashboard reports"
                     aria-label="Manage reports"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </button>
+                  
+                  {/* Save Settings Button */}
+                  <button
+                    onClick={handleSaveDashboardSettings}
+                    disabled={!dashboardSettingsState.hasChanges || dashboardSettingsState.isSaving}
+                    className={`inline-flex items-center justify-center h-8 w-8 rounded-lg border transition-all ${
+                      dashboardSettingsState.hasChanges && !dashboardSettingsState.isSaving
+                        ? 'border-blue-500 text-blue-600 hover:text-blue-700 hover:border-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer' 
+                        : 'border-gray-300 text-gray-400 cursor-not-allowed'
+                    }`}
+                    title={dashboardSettingsState.isSaving ? 'Saving...' : dashboardSettingsState.hasChanges ? 'Save dashboard layout and filters' : 'No changes to save'}
+                    aria-label="Save dashboard settings"
+                  >
+                    {dashboardSettingsState.isSaving ? (
+                      <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                      </svg>
+                    )}
+                  </button>
+                  
+                  {/* Reset to Defaults Button */}
+                  <button
+                    onClick={() => setShowResetConfirm(true)}
+                    disabled={dashboardSettingsState.isSaving}
+                    className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-300 text-gray-500 hover:text-red-600 hover:border-red-400 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Reset dashboard to defaults"
+                    aria-label="Reset to defaults"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                    </svg>
+                  </button>
+                  
+                  {/* Divider */}
+                  <div className="h-6 w-px bg-gray-300 mx-1"></div>
+                  
+                  {/* AI Chat Button */}
+                  <DashboardAIMenu
+                    onOpenAIChat={() => setIsDashboardChatModalOpen(true)}
+                    prompts={prompts}
+                    selectedPrompt={selectedPrompt}
+                    onPromptChange={setSelectedPrompt}
+                    loadingPrompts={loadingPrompts}
+                  />
+                  <div className="flex items-center space-x-3 text-sm text-gray-700">
+                    {(() => {
+                      const u = getCurrentUser();
+                      if (!u) return <span>Signed in</span>;
+                      const fullName = (u.name || '').trim();
+                      const firstName = fullName ? fullName.split(/\s+/)[0] : (u.email ? String(u.email).split('@')[0] : 'Signed in');
+                      const desktopLabel = u.name && u.email ? `${u.name} (${u.email})` : (u.name || u.email || 'Signed in');
+                      return (
+                        <>
+                          {/* Mobile: first name only, no email */}
+                          <span className="md:hidden truncate max-w-[120px]" title={fullName || ''}>{firstName}</span>
+                          {/* Desktop: name (email) */}
+                          <span className="hidden md:inline" title={u.email || ''}>{desktopLabel}</span>
+                        </>
+                      );
+                    })()}
+                    <button
+                      onClick={() => { logout(); try { location.assign('/login'); } catch {} }}
+                      className="px-2 py-1 border rounded hover:bg-gray-50"
+                      title="Logout"
+                    >Logout</button>
+                  </div>
                 </div>
-              )}
-            </div>
-            
-            {/* Right side: AI Menu and user info */}
-            <div className="flex items-center space-x-2 md:space-x-4 flex-1 justify-end">
-              {(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') && (
-                <DashboardAIMenu
-                  onOpenAIChat={() => setIsDashboardChatModalOpen(true)}
-                  prompts={prompts}
-                  selectedPrompt={selectedPrompt}
-                  onPromptChange={setSelectedPrompt}
-                  loadingPrompts={loadingPrompts}
-                />
-              )}
-              <div className="flex items-center space-x-3 text-sm text-gray-700">
-                {(() => {
-                  const u = getCurrentUser();
-                  if (!u) return <span>Signed in</span>;
-                  const fullName = (u.name || '').trim();
-                  const firstName = fullName ? fullName.split(/\s+/)[0] : (u.email ? String(u.email).split('@')[0] : 'Signed in');
-                  const desktopLabel = u.name && u.email ? `${u.name} (${u.email})` : (u.name || u.email || 'Signed in');
-                  return (
-                    <>
-                      {/* Mobile: first name only, no email */}
-                      <span className="md:hidden truncate max-w-[120px]" title={fullName || ''}>{firstName}</span>
-                      {/* Desktop: name (email) */}
-                      <span className="hidden md:inline" title={u.email || ''}>{desktopLabel}</span>
-                    </>
-                  );
-                })()}
-                <button
-                  onClick={() => { logout(); try { location.assign('/login'); } catch {} }}
-                  className="px-2 py-1 border rounded hover:bg-gray-50"
-                  title="Logout"
-                >Logout</button>
               </div>
-            </div>
+            ) : (
+              <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0 h-full px-3 md:px-4 bg-gradient-to-b from-white to-gray-50 rounded-tl-2xl">
+                {/* View title */}
+                <h1 className="text-xl font-semibold text-gray-900 whitespace-nowrap">
+                  {navigationItems.find(item => item.id === activeNavItem)?.label || 'SparksAI'}
+                </h1>
+
+                {/* PI Filter - shown first for PI Quarter and Upload Transcripts views */}
+                {(activeNavItem === 'pi-quarter' || activeNavItem === 'upload-transcripts') && (
+                  <div className="hidden md:block" style={{ minWidth: '200px', maxWidth: '300px' }}>
+                    <PIFilter 
+                      selectedPI={selectedPI}
+                      onPIChange={setSelectedPI}
+                    />
+                  </div>
+                )}
+                
+                {/* Team/Group Filter - for views that need it */}
+                {(activeNavItem === 'team-ai-insights' || activeNavItem === 'upload-transcripts') && (
+                  <div className="hidden md:block" style={{ minWidth: '200px', maxWidth: '300px' }}>
+                    <TreeSelect 
+                      selectedValue={selectedTreeValue}
+                      onSelect={(value, label, type) => {
+                        setSelectedTreeValue(value);
+                        setSelectedTreeLabel(label);
+                        setSelectedTreeType(type);
+                        setSelectedTeam(label);
+                      }}
+                      placeholder="Select team or group"
+                    />
+                  </div>
+                )}
+                
+                {/* Insight Category Filter - for team-ai-insights view only */}
+                {activeNavItem === 'team-ai-insights' && (
+                  <div className="hidden md:block">
+                    <InsightCategoryFilter
+                      selectedCategories={selectedCategories}
+                      onCategoriesChange={setSelectedCategories}
+                    />
+                  </div>
+                )}
+
+                {/* Spacer to push actions to the right */}
+                <div className="flex-1"></div>
+
+                {/* Right side: user info */}
+                <div className="hidden md:flex items-center space-x-3">
+                  <div className="flex items-center space-x-3 text-sm text-gray-700">
+                    {(() => {
+                      const u = getCurrentUser();
+                      if (!u) return <span>Signed in</span>;
+                      const fullName = (u.name || '').trim();
+                      const firstName = fullName ? fullName.split(/\s+/)[0] : (u.email ? String(u.email).split('@')[0] : 'Signed in');
+                      const desktopLabel = u.name && u.email ? `${u.name} (${u.email})` : (u.name || u.email || 'Signed in');
+                      return (
+                        <>
+                          {/* Mobile: first name only, no email */}
+                          <span className="md:hidden truncate max-w-[120px]" title={fullName || ''}>{firstName}</span>
+                          {/* Desktop: name (email) */}
+                          <span className="hidden md:inline" title={u.email || ''}>{desktopLabel}</span>
+                        </>
+                      );
+                    })()}
+                    <button
+                      onClick={() => { logout(); try { location.assign('/login'); } catch {} }}
+                      className="px-2 py-1 border rounded hover:bg-gray-50"
+                      title="Logout"
+                    >Logout</button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         {/* Mobile controls panel (everything except title) */}
@@ -1149,6 +1488,32 @@ export default function Home() {
           piName={activeNavItem === 'pi-dashboard' ? selectedPI : undefined}
           promptName={selectedPrompt && selectedPrompt.trim() !== '' && selectedPrompt !== '[use default]' ? selectedPrompt : undefined}
         />
+      )}
+      
+      {/* Reset Dashboard Settings Confirmation Modal */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Reset Dashboard to Defaults?</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              This will remove all your saved layout, filter preferences, and pinned filters for this dashboard. This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowResetConfirm(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResetDashboardSettings}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+              >
+                Reset to Defaults
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   ) : (
