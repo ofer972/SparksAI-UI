@@ -447,12 +447,11 @@ export class ApiService {
 
   // Team Metrics APIs
   async getSprintMetrics(teamName: string, isGroup?: boolean): Promise<SprintMetrics> {
-    const url = new URL(buildBackendUrl(API_CONFIG.endpoints.teamMetrics.avgSprintMetrics));
-    url.searchParams.set('team_name', teamName);
+    const params = new URLSearchParams({ team_name: teamName });
     if (isGroup === true) {
-      url.searchParams.set('isGroup', 'true');
+      params.set('isGroup', 'true');
     }
-    const response = await fetch(url.toString());
+    const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.teamMetrics.avgSprintMetrics)}?${params.toString()}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch sprint metrics: ${response.statusText}`);
@@ -463,12 +462,11 @@ export class ApiService {
   }
 
   async getCompletionRate(teamName: string, isGroup?: boolean): Promise<CompletionRate> {
-    const url = new URL(buildBackendUrl(API_CONFIG.endpoints.teamMetrics.currentSprintProgress));
-    url.searchParams.set('team_name', teamName);
+    const params = new URLSearchParams({ team_name: teamName });
     if (isGroup === true) {
-      url.searchParams.set('isGroup', 'true');
+      params.set('isGroup', 'true');
     }
-    const response = await fetch(url.toString());
+    const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.teamMetrics.currentSprintProgress)}?${params.toString()}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch completion rate: ${response.statusText}`);
