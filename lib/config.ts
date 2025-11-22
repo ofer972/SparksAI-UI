@@ -368,6 +368,7 @@ export interface MonthlyStatusDurationDataset {
 }
 
 export interface SprintPredictabilityItem {
+  team_name?: string;
   sprint_name: string;
   sprint_official_end_date?: string;
   sprint_predictability?: number;

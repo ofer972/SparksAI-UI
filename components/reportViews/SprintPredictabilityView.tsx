@@ -33,6 +33,11 @@ const getJiraSearchLink = (keys: string[], jiraUrl: string) => {
 
 const buildColumns = (jiraUrl: string): Column<SprintPredictabilityItem>[] => [
   {
+    key: 'team_name',
+    label: 'Team Name',
+    align: 'left',
+  },
+  {
     key: 'sprint_name',
     label: 'Sprint Name',
     align: 'left',
