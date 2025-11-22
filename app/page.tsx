@@ -88,15 +88,15 @@ export default function Home() {
   const apiService = new ApiService();
 
   const navigationItems = [
-    { id: 'team-ai-insights', label: 'Team AI Insights', icon: '🏠' },
+    { id: 'team-ai-insights', label: 'Team AI Insights', icon: '💡' },
     { id: 'team-dashboard', label: 'Team Dashboard', icon: '📊' },
-    { id: 'pi-quarter', label: 'PI AI Insights', icon: '🕐' },
+    { id: 'pi-quarter', label: 'PI AI Insights', icon: '🎯' },
     { id: 'pi-dashboard', label: 'PI Dashboard', icon: '📈' },
     { id: 'settings', label: 'System Settings', icon: '⚙️' },
-    { id: 'general-data', label: 'View General Data', icon: '📋' },
+    { id: 'general-data', label: 'View General Data', icon: '📁' },
     { id: 'create-agent-job', label: 'Create Agent Job', icon: '➕' },
-    { id: 'upload-transcripts', label: 'Upload Transcripts', icon: '📤' },
-    ...(isAdmin ? [{ id: 'users-admin', label: 'Users', icon: '👤' }] : []),
+    { id: 'upload-transcripts', label: 'Upload Transcripts', icon: '⬆️' },
+    ...(isAdmin ? [{ id: 'users-admin', label: 'Users', icon: '👥' }] : []),
   ];
 
   // Accordion navigation groups for the sidebar UI (beautified)
@@ -104,8 +104,8 @@ export default function Home() {
     {
       title: 'Insights',
       items: [
-        { id: 'team-ai-insights', label: 'Team AI Insights', icon: '🏠' },
-        { id: 'pi-quarter', label: 'PI AI Insights', icon: '🕐' },
+        { id: 'team-ai-insights', label: 'Team AI Insights', icon: '💡' },
+        { id: 'pi-quarter', label: 'PI AI Insights', icon: '🎯' },
       ],
     },
     {
@@ -118,8 +118,8 @@ export default function Home() {
     {
       title: 'Management',
       items: [
-        { id: 'general-data', label: 'View General Data', icon: '📋' },
-        { id: 'upload-transcripts', label: 'Upload Transcripts', icon: '📤' },
+        { id: 'general-data', label: 'View General Data', icon: '📁' },
+        { id: 'upload-transcripts', label: 'Upload Transcripts', icon: '⬆️' },
       ],
     },
     ...(isAdmin
@@ -129,7 +129,7 @@ export default function Home() {
             items: [
               { id: 'settings', label: 'System Settings', icon: '⚙️' },
               { id: 'create-agent-job', label: 'Create Agent Job', icon: '➕' },
-              { id: 'users-admin', label: 'Users', icon: '👤' },
+              { id: 'users-admin', label: 'Users', icon: '👥' },
             ],
           },
         ]
@@ -829,8 +829,8 @@ export default function Home() {
       {mobileSidebarOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div className="absolute inset-0 bg-black/30" onClick={() => setMobileSidebarOpen(false)}></div>
-          <div className="absolute inset-y-0 left-0 w-56 bg-white shadow-xl border-r border-gray-200 px-3 flex flex-col">
-            <div className="flex items-center justify-between pt-3">
+          <div className="absolute inset-y-0 left-0 w-56 bg-white shadow-xl border-r border-gray-200 flex flex-col">
+            <div className="flex items-center justify-between px-3 pt-3 pb-[10px] bg-white">
               <div className="w-32">
                 <SparksAILogo collapsed={false} size="small" />
               </div>
@@ -841,7 +841,7 @@ export default function Home() {
               >✕</button>
             </div>
             {/* Mobile Nav (uses same groups) */}
-            <nav className="flex-1 overflow-y-auto mt-3">
+            <nav className="flex-1 overflow-y-auto bg-gradient-to-b from-white to-gray-50 rounded-tl-2xl px-3 pt-3 pb-3 border-t border-gray-200">
               <div className="space-y-3">
                 {navigationGroups.map((group) => (
                   <div key={group.title}>
@@ -865,7 +865,7 @@ export default function Home() {
                             }`}
                             title={item.label}
                           >
-                            <span className="text-sm">{item.icon}</span>
+                            <span className="text-sm flex-shrink-0">{item.icon}</span>
                             <span className="text-xs font-medium">{item.label}</span>
                           </button>
                         ))}
@@ -884,12 +884,16 @@ export default function Home() {
       <div className={`hidden md:block bg-white shadow-sm border-r border-gray-200 flex-shrink-0 transition-all duration-300 ${
         sidebarCollapsed ? 'w-16' : 'w-56'
       }`}>
-        <div className="px-3 h-full flex flex-col">
-          <div className="pt-3 pb-0">
-            <SparksAILogo collapsed={sidebarCollapsed} size="medium" />
-          </div>
+        <div className="h-full flex flex-col">
+          {!sidebarCollapsed && (
+            <div className="px-3 pt-3 pb-[10px] bg-white">
+              <SparksAILogo collapsed={sidebarCollapsed} size="medium" />
+            </div>
+          )}
           
-          <nav className="flex-1 overflow-y-auto mt-3">
+          <nav className={`flex-1 overflow-y-auto bg-gradient-to-b from-white to-gray-50 px-3 ${
+            sidebarCollapsed ? 'rounded-none border-t-0 pt-3 pb-0' : 'rounded-tl-2xl border-t border-gray-200 pt-3 pb-3'
+          }`}>
             {sidebarCollapsed ? (
               <div className="space-y-1">
                 {navigationGroups.flatMap((g) => g.items).map((item) => (
@@ -918,25 +922,25 @@ export default function Home() {
                       <span>{group.title}</span>
                       <span className={`transition-transform ${expandedGroups[group.title] ? 'rotate-180' : ''}`}>⌄</span>
                     </button>
-                    {expandedGroups[group.title] && (
-                      <div className="mt-1 space-y-1">
-                        {group.items.map((item) => (
-                          <button
-                            key={item.id}
-                            onClick={() => setActiveNavItem(item.id)}
-                            className={`w-full flex items-center space-x-2 px-2 py-1.5 rounded-lg text-left transition-colors ${
-                              activeNavItem === item.id
-                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                : 'text-gray-700 hover:bg-gray-50'
-                            }`}
-                            title={item.label}
-                          >
-                            <span className="text-sm">{item.icon}</span>
-                            <span className="text-xs font-medium">{item.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                      {expandedGroups[group.title] && (
+                        <div className="mt-1 space-y-1">
+                          {group.items.map((item) => (
+                            <button
+                              key={item.id}
+                              onClick={() => setActiveNavItem(item.id)}
+                              className={`w-full flex items-center space-x-2 px-2 py-1.5 rounded-lg text-left transition-colors ${
+                                activeNavItem === item.id
+                                  ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                  : 'text-gray-700 hover:bg-gray-50'
+                              }`}
+                              title={item.label}
+                            >
+                              <span className="text-sm flex-shrink-0">{item.icon}</span>
+                              <span className="text-xs font-medium">{item.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     <div className="mx-2 my-2 border-t border-gray-100"></div>
                   </div>
                 ))}
@@ -944,10 +948,12 @@ export default function Home() {
             )}
           </nav>
 
-          <div className="mt-auto pt-2 border-t border-gray-200">
+          <div className={`mt-auto ${
+            sidebarCollapsed ? 'bg-gradient-to-b from-white to-gray-50 border-t-0' : 'bg-gradient-to-b from-white to-gray-50 border-t border-gray-200'
+          }`}>
             <button 
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="w-full text-gray-500 hover:text-gray-700 p-2 rounded hover:bg-gray-100 flex items-center justify-center"
+              className="w-full text-gray-600 hover:text-gray-800 py-3 px-3 hover:bg-gray-100 flex items-center justify-center transition-colors"
               title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -964,8 +970,8 @@ export default function Home() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <div className="bg-white border-b border-gray-200 px-3 md:px-4 py-2.5 md:py-3 flex-shrink-0 relative z-30">
-          <div className="flex items-center justify-between gap-2">
+        <div className="bg-white border-b border-gray-200 px-3 md:px-4 flex-shrink-0 relative z-30 h-[63px]">
+          <div className="flex items-center justify-between gap-2 h-full">
             {/* Left side: View title and filters */}
             <div className="flex items-center gap-2 md:space-x-4 flex-1 min-w-0">
               {/* Mobile hamburger */}
