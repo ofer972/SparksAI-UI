@@ -2,9 +2,12 @@
 
 import { useState } from 'react';
 import { useTeamMetrics } from '@/hooks';
+import { LineChart, Line, Tooltip, ResponsiveContainer } from 'recharts';
+import { TrendDataPoint } from '@/lib/config';
 
 interface TeamMetricsProps {
   teamName: string;
+  isGroup?: boolean;
 }
 
 interface SprintMetricsData {
@@ -44,6 +47,70 @@ interface CompletionResponse {
   message: string;
 }
 
+
+// Format date for tooltip
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+// Format value based on metric type
+const formatValue = (value: number, metricType: 'velocity' | 'cycle_time' | 'predictability'): string => {
+  if (metricType === 'cycle_time') {
+    return `${value.toFixed(1)}d`;
+  } else if (metricType === 'predictability') {
+    return `${Math.round(value)}%`;
+  }
+  return value.toString();
+};
+
+// Trend Line Component with Recharts
+const TrendLine = ({ 
+  data, 
+  metricType 
+}: { 
+  data: TrendDataPoint[]; 
+  metricType: 'velocity' | 'cycle_time' | 'predictability';
+}) => {
+  if (!data || data.length === 0) return null;
+
+  const dataKey = metricType;
+  const height = 32;
+
+  // Custom tooltip component
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const dataPoint = payload[0].payload as TrendDataPoint;
+      const value = payload[0].value;
+      return (
+        <div className="bg-gray-800 text-white text-xs rounded px-2 py-1 shadow-lg">
+          <p className="font-semibold">{formatDate(dataPoint.sprint_complete_date)}</p>
+          <p className="text-blue-300">{formatValue(value, metricType)}</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="w-full" style={{ height: `${height}px` }}>
+      <ResponsiveContainer width="100%" height={height}>
+        <LineChart data={data} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
+          <Line
+            type="linear"
+            dataKey={dataKey}
+            stroke="#3b82f6"
+            strokeWidth={2.5}
+            dot={{ fill: '#3b82f6', r: 3, strokeWidth: 0 }}
+            activeDot={{ r: 4 }}
+            isAnimationActive={false}
+          />
+          <Tooltip content={<CustomTooltip />} />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
 
 // Custom Days Left Card with Progress Bar
 const DaysLeftCard = ({ id, daysLeft, daysInSprint, tooltip, className = "", activeTooltip, setActiveTooltip }: {
@@ -106,7 +173,7 @@ const DaysLeftCard = ({ id, daysLeft, daysInSprint, tooltip, className = "", act
   );
 };
 
-const MetricCard = ({ id, icon, value, label, tooltip, className = "", isLeftmost = false, status, activeTooltip, setActiveTooltip }: { 
+const MetricCard = ({ id, icon, value, label, tooltip, className = "", isLeftmost = false, status, trendData, metricType, activeTooltip, setActiveTooltip }: { 
   id: string;
   icon: string; 
   value: string; 
@@ -115,6 +182,8 @@ const MetricCard = ({ id, icon, value, label, tooltip, className = "", isLeftmos
   className?: string;
   isLeftmost?: boolean;
   status?: 'red' | 'yellow' | 'green';
+  trendData?: TrendDataPoint[];
+  metricType?: 'velocity' | 'cycle_time' | 'predictability';
   activeTooltip: string | null;
   setActiveTooltip: (id: string | null) => void;
 }) => {
@@ -139,9 +208,16 @@ const MetricCard = ({ id, icon, value, label, tooltip, className = "", isLeftmos
       onMouseEnter={() => setActiveTooltip(id)}
       onMouseLeave={() => setActiveTooltip(null)}
     >
-      <div className="w-8 h-8 mb-2 flex items-center justify-center text-2xl rounded">
-        {icon}
-      </div>
+      {/* Show trend line if data exists, otherwise show icon */}
+      {trendData && trendData.length > 0 && metricType ? (
+        <div className="w-full mb-2 flex items-center justify-center" style={{ minHeight: '32px' }}>
+          <TrendLine data={trendData} metricType={metricType} />
+        </div>
+      ) : (
+        <div className="w-8 h-8 mb-2 flex items-center justify-center text-2xl rounded">
+          {icon}
+        </div>
+      )}
       <div className={`text-lg font-bold mb-1.5 ${getStatusColor(status)}`}>
         {value}
       </div>
@@ -157,8 +233,8 @@ const MetricCard = ({ id, icon, value, label, tooltip, className = "", isLeftmos
   );
 };
 
-export default function TeamMetrics({ teamName }: TeamMetricsProps) {
-  const { sprintMetrics, completionRate, loading, error } = useTeamMetrics(teamName);
+export default function TeamMetrics({ teamName, isGroup }: TeamMetricsProps) {
+  const { sprintMetrics, completionRate, loading, error } = useTeamMetrics(teamName, isGroup);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
   if (loading) {
@@ -200,6 +276,8 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
           tooltip="Average velocity in the last five closed sprints"
           isLeftmost={true}
           status={sprintMetrics?.velocity_status}
+          trendData={sprintMetrics?.trend_data}
+          metricType="velocity"
           activeTooltip={activeTooltip}
           setActiveTooltip={setActiveTooltip}
         />
@@ -212,6 +290,8 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
           label="Avg Cycle Time"
           tooltip="Average story cycle time in the last five sprints"
           status={sprintMetrics?.cycle_time_status}
+          trendData={sprintMetrics?.trend_data}
+          metricType="cycle_time"
           activeTooltip={activeTooltip}
           setActiveTooltip={setActiveTooltip}
         />
@@ -224,6 +304,8 @@ export default function TeamMetrics({ teamName }: TeamMetricsProps) {
           label="Avg Sprint Predictability"
           tooltip="Average sprint predictability over last five sprints"
           status={sprintMetrics?.predictability_status}
+          trendData={sprintMetrics?.trend_data}
+          metricType="predictability"
           activeTooltip={activeTooltip}
           setActiveTooltip={setActiveTooltip}
         />

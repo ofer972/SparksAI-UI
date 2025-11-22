@@ -238,6 +238,14 @@ export interface RecommendationsResponse {
   limit: number;
 }
 
+export interface TrendDataPoint {
+  sprint_id: number;
+  sprint_complete_date: string;
+  velocity: number;
+  cycle_time: number;
+  predictability: number;
+}
+
 export interface SprintMetrics {
   velocity: number;
   cycle_time: number;
@@ -247,6 +255,9 @@ export interface SprintMetrics {
   predictability_status?: 'red' | 'yellow' | 'green';
   team_name: string;
   sprint_count: number;
+  group_name?: string;
+  teams_in_group?: string[];
+  trend_data?: TrendDataPoint[];
 }
 
 export interface CompletionRate {

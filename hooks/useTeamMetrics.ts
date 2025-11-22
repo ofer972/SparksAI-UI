@@ -14,9 +14,10 @@ interface UseTeamMetricsReturn {
  * Custom hook for fetching team metrics data including sprint metrics and current sprint progress.
  * 
  * @param teamName - The name of the team to fetch metrics for
+ * @param isGroup - Whether the teamName refers to a group (true) or team (false/undefined)
  * @returns Object containing sprint metrics, completion rate (with sprint progress data), loading state, error state, and refetch function
  */
-export function useTeamMetrics(teamName?: string): UseTeamMetricsReturn {
+export function useTeamMetrics(teamName?: string, isGroup?: boolean): UseTeamMetricsReturn {
   const [sprintMetrics, setSprintMetrics] = useState<SprintMetrics | null>(null);
   const [completionRate, setCompletionRate] = useState<CompletionRate | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -34,7 +35,7 @@ export function useTeamMetrics(teamName?: string): UseTeamMetricsReturn {
       setLoading(true);
       setError(null);
       const apiService = new ApiService();
-      const { sprintMetrics, completionRate } = await apiService.getTeamMetrics(teamName);
+      const { sprintMetrics, completionRate } = await apiService.getTeamMetrics(teamName, isGroup);
       setSprintMetrics(sprintMetrics);
       setCompletionRate(completionRate);
     } catch (err) {
@@ -45,7 +46,7 @@ export function useTeamMetrics(teamName?: string): UseTeamMetricsReturn {
     } finally {
       setLoading(false);
     }
-  }, [teamName]);
+  }, [teamName, isGroup]);
 
   useEffect(() => {
     fetchMetrics();

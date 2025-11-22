@@ -305,7 +305,7 @@ export default function Home() {
             {/* Team Metrics on mobile - inline after content */}
             <div className="md:hidden mt-4 border-t border-gray-200 bg-white" style={{ zoom: 0.90 }}>
               <div className="px-3 py-2">
-                <TeamMetrics teamName={selectedTeam} />
+                <TeamMetrics teamName={selectedTeam} isGroup={selectedTreeType === 'group'} />
               </div>
             </div>
           </>
@@ -1129,7 +1129,7 @@ export default function Home() {
         {activeNavItem === 'team-ai-insights' && (
           <div className="hidden md:flex flex-shrink-0 border-t border-gray-200 bg-white relative z-30" style={{ zoom: 0.90 }}>
             <div className="px-3 md:px-4 py-2 md:py-2.5 w-full">
-              <TeamMetrics teamName={selectedTeam} />
+              <TeamMetrics teamName={selectedTeam} isGroup={selectedTreeType === 'group'} />
             </div>
           </div>
         )}
