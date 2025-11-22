@@ -36,8 +36,6 @@ ChartJS.register(
   ChartDataLabels
 );
 
-ChartJS.defaults.set('plugins.datalabels', { display: false });
-
 type ViewMode = 'total' | 'monthly';
 
 type FlowStatusDurationResult = {
@@ -272,16 +270,30 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
           },
         },
         datalabels: {
+          display: true,
           anchor: 'end' as const,
-          align: 'top' as const,
+          align: 'end' as const,
+          offset: 4,
           color: '#111827',
-          formatter: (value: number) => (value > 0 ? value.toFixed(1) : ''),
+          backgroundColor: 'rgba(255, 255, 255, 0.8)',
+          borderColor: '#111827',
+          borderWidth: 1,
+          borderRadius: 4,
+          formatter: (value: number) => {
+            if (value > 0) {
+              return value.toFixed(1);
+            }
+            return '';
+          },
           font: {
             size: 11,
             weight: 'bold' as const,
           },
           padding: {
             top: 2,
+            bottom: 2,
+            left: 4,
+            right: 4,
           },
         },
         tooltip: {
@@ -508,7 +520,7 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
               Average Duration by Status
             </h3>
             <div className="relative flex-1 h-full min-h-[350px]">
-              <Bar data={chartData} options={chartOptions} />
+              <Bar data={chartData} options={chartOptions} plugins={[ChartDataLabels]} />
             </div>
           </div>
 
