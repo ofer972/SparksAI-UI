@@ -263,8 +263,8 @@ export default function TeamManagementTab() {
       // Remove the specific group from the team's group_keys array
       const newGroupKeys = (team.group_keys || []).filter(gk => gk !== teamToRemove.groupKey);
       
-      // Update team with new group_keys array
-      await apiService.updateTeam(teamToRemove.teamId, newGroupKeys.length > 0 ? newGroupKeys : null);
+      // Update team with new group_keys array (send empty array instead of null to clear all groups)
+      await apiService.updateTeam(teamToRemove.teamId, newGroupKeys);
       
       // Update teams state directly
       setTeams(prevTeams => 

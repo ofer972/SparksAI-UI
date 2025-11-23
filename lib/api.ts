@@ -1415,7 +1415,7 @@ export class ApiService {
     return result.data;
   }
 
-  async updateTeam(teamId: number, groupKeys: number[] | null): Promise<Team> {
+  async updateTeam(teamId: number, groupKeys: number[]): Promise<Team> {
     const url = `${buildBackendUrl(API_CONFIG.endpoints.teams.getNames.replace('/getNames', ''))}/${teamId}`;
     const response = await authFetch(url, {
       method: 'PATCH',
