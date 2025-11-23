@@ -21,11 +21,28 @@ export default function AddReportsModal({
   // Initialize with currently displayed reports
   const [selectedReports, setSelectedReports] = useState<Set<string>>(() => new Set(currentReportIds));
 
+  // Prevent immediate close on mobile
+  const [justOpened, setJustOpened] = useState(false);
+
   // Reset selection when modal opens or currentReportIds change
   useEffect(() => {
     if (isOpen) {
+      console.log('AddReportsModal: Modal is now open');
       setSelectedReports(new Set(currentReportIds));
+      // Lock body scroll on mobile when modal is open
+      document.body.style.overflow = 'hidden';
+      // Set flag to prevent immediate close
+      setJustOpened(true);
+      setTimeout(() => setJustOpened(false), 300);
+    } else {
+      // Restore body scroll when modal closes
+      document.body.style.overflow = '';
+      setJustOpened(false);
     }
+    
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [isOpen, currentReportIds]);
 
   const handleToggle = (reportId: string) => {
@@ -45,13 +62,50 @@ export default function AddReportsModal({
     onClose();
   };
 
-  if (!isOpen) return null;
+  console.log('AddReportsModal: Render called, isOpen:', isOpen);
+  
+  if (!isOpen) {
+    console.log('AddReportsModal: Modal is closed, not rendering', { isOpen });
+    return null;
+  }
+
+  console.log('AddReportsModal: Modal IS OPEN - Rendering modal - SHOULD BE VISIBLE NOW');
+  console.log('Available reports:', availableReports.length);
+  console.log('Current report IDs:', currentReportIds);
+  console.log('Stack trace:', new Error().stack);
+
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    // Prevent immediate close on mobile (touch events can trigger click immediately)
+    if (justOpened) {
+      console.log('AddReportsModal: Prevented immediate close (just opened)');
+      return;
+    }
+    console.log('AddReportsModal: Backdrop clicked, closing modal');
+    onClose();
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={onClose}>
+    <div 
+      className="fixed inset-0 flex items-center justify-center p-4" 
+      onClick={handleBackdropClick}
+      style={{ 
+        position: 'fixed', 
+        top: 0, 
+        left: 0, 
+        right: 0, 
+        bottom: 0,
+        zIndex: 999999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        touchAction: 'none'
+      }}
+    >
       <div
-        className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col"
+        className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] md:max-h-[80vh] flex flex-col relative"
         onClick={(e) => e.stopPropagation()}
+        style={{ zIndex: 1000000 }}
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">

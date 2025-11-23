@@ -48,12 +48,19 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   // Listen for open modal event from top bar
   useEffect(() => {
     const handleOpenModal = () => {
-      setIsAddReportsModalOpen(true);
+      console.log('PIDashboardView: Received open-add-reports-modal event');
+      // Use functional update to avoid stale closure
+      setIsAddReportsModalOpen(prev => {
+        console.log('PIDashboardView: Current modal state:', prev);
+        console.log('PIDashboardView: Setting modal state to true');
+        return true;
+      });
     };
     
     window.addEventListener('open-add-reports-modal', handleOpenModal);
+    console.log('PIDashboardView: Event listener attached');
     return () => window.removeEventListener('open-add-reports-modal', handleOpenModal);
-  }, []);
+  }, []); // Empty dependency array - only run once
 
   useEffect(() => {
     let cancelled = false;
@@ -438,18 +445,47 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   if (layoutConfig && layoutConfig.rows && layoutConfig.rows.length > 0) {
     // On mobile, render as single column regardless of layout
     if (isMobile) {
+      console.log('PIDashboardView: Rendering MOBILE view with modal');
       const allReportIds = layoutConfig.rows.flatMap((row) => row.reportIds);
+      
+      // Filter to only show reports that are in the configured list
+      const configuredReportIds = new Set(reportOrder);
+      const filteredAvailableReports = availableReports.filter((report) => 
+        configuredReportIds.has(report.report_id)
+      );
+      
       return (
-        <div className="space-y-4 p-2">
-          {allReportIds.map((reportId) => {
-            const panelKey = buildPanelKey(reportId);
-            return (
-              <div key={panelKey}>
-                {renderReportSection(reportId, panelKey)}
-              </div>
-            );
-          })}
-        </div>
+        <>
+          <div className="space-y-4 p-2">
+            {allReportIds.map((reportId) => {
+              const panelKey = buildPanelKey(reportId);
+              return (
+                <div key={panelKey}>
+                  {renderReportSection(reportId, panelKey)}
+                </div>
+              );
+            })}
+          </div>
+          
+          <AddReportsModal
+            isOpen={isAddReportsModalOpen}
+            onClose={() => {
+              console.log('PIDashboardView (mobile): Modal onClose called');
+              setIsAddReportsModalOpen(false);
+            }}
+            availableReports={filteredAvailableReports}
+            currentReportIds={allReportIds}
+            onUpdateReports={(reportIds: string[]) => {
+              console.log('PIDashboard Mobile: handleUpdateReports called with:', reportIds);
+              // For mobile, update the layout to show selected reports
+              const newLayout: LayoutConfig = {
+                rows: [{ id: 'row-1', reportIds: reportIds }]
+              };
+              setLayoutConfig(newLayout);
+              localStorage.setItem(`dashboard-layout-pi-${selectedPI}-${selectedTeam}`, JSON.stringify(newLayout));
+            }}
+          />
+        </>
       );
     }
 
@@ -554,7 +590,13 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     );
   }
 
-  // Fallback to default layout
+  // Fallback to default layout - simple handler for fallback case
+  const handleUpdateReportsFallback = (reportIds: string[]) => {
+    console.log('Fallback: handleUpdateReports called with:', reportIds);
+    // For the fallback case, just update the display order
+    setReportOrder(reportIds);
+  };
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-auto p-4">
@@ -575,6 +617,16 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           </div>
         )}
       </div>
+      
+      <AddReportsModal
+        isOpen={isAddReportsModalOpen}
+        onClose={() => setIsAddReportsModalOpen(false)}
+        availableReports={availableReports.filter((report) => 
+          new Set(reportOrder).has(report.report_id)
+        )}
+        currentReportIds={reportOrder}
+        onUpdateReports={handleUpdateReportsFallback}
+      />
     </div>
   );
 };

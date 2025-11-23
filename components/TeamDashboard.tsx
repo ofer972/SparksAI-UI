@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import ReportPanel from './ReportPanel';
 import DraggableResizableGrid from './DraggableResizableGrid';
 import AddReportsModal from './AddReportsModal';
@@ -30,6 +30,8 @@ const SPRINT_OPTIONS = [
   ];
 
 export default function TeamDashboard({ selectedTeam, selectedTreeType, selectedTreeValue }: TeamDashboardProps) {
+  console.log('TeamDashboard: Component rendering, selectedTeam:', selectedTeam);
+  
   const [dashboardReports, setDashboardReports] = useState<string[]>([]);
   const [layoutConfig, setLayoutConfig] = useState<LayoutConfig | null>(null);
   const [loadingConfig, setLoadingConfig] = useState(true);
@@ -38,8 +40,23 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
   const [isAddReportsModalOpen, setIsAddReportsModalOpen] = useState(false);
   const [availableReports, setAvailableReports] = useState<ReportDefinition[]>([]);
   
+  // Use a ref to track if modal should be open (persists across renders)
+  const modalShouldBeOpen = useRef(false);
+  const forceUpdate = useState(0)[1];
+  
+  console.log('TeamDashboard: Current isAddReportsModalOpen in render:', isAddReportsModalOpen);
+  console.log('TeamDashboard: modalShouldBeOpen.current:', modalShouldBeOpen.current);
+  
   // Dashboard settings hook
   const dashboardSettings = useDashboardSettings('team-dashboard');
+  
+  // Track component lifecycle
+  useEffect(() => {
+    console.log('TeamDashboard: Component MOUNTED for team:', selectedTeam);
+    return () => {
+      console.log('TeamDashboard: Component UNMOUNTING for team:', selectedTeam);
+    };
+  }, [selectedTeam]);
 
   // Detect mobile screen size
   useEffect(() => {
@@ -56,12 +73,37 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
   // Listen for open modal event from top bar
   useEffect(() => {
     const handleOpenModal = () => {
+      console.log('TeamDashboard: Received open-add-reports-modal event');
+      console.log('TeamDashboard: Setting ref and state');
+      
+      // Set ref (persists across renders)
+      modalShouldBeOpen.current = true;
+      console.log('TeamDashboard: modalShouldBeOpen.current set to true');
+      
+      // Set state
       setIsAddReportsModalOpen(true);
+      console.log('TeamDashboard: setIsAddReportsModalOpen(true) called');
+      
+      // Force re-render
+      forceUpdate(n => n + 1);
+      console.log('TeamDashboard: Forced re-render');
     };
     
     window.addEventListener('open-add-reports-modal', handleOpenModal);
-    return () => window.removeEventListener('open-add-reports-modal', handleOpenModal);
-  }, []);
+    console.log('TeamDashboard: Event listener attached for team:', selectedTeam);
+    return () => {
+      console.log('TeamDashboard: Removing event listener for team:', selectedTeam);
+      window.removeEventListener('open-add-reports-modal', handleOpenModal);
+    };
+  }, []); // Empty dependency array - only run once
+  
+  // Sync state with ref
+  useEffect(() => {
+    if (modalShouldBeOpen.current && !isAddReportsModalOpen) {
+      console.log('TeamDashboard: Ref says modal should be open, but state is false. Fixing...');
+      setIsAddReportsModalOpen(true);
+    }
+  });
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -425,15 +467,45 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
   if (layoutConfig && layoutConfig.rows && layoutConfig.rows.length > 0) {
     // On mobile, render as single column regardless of layout
     if (isMobile) {
+      console.log('TeamDashboard: Rendering MOBILE view with modal');
       const allReportIds = layoutConfig.rows.flatMap((row) => row.reportIds);
+      
+      // Filter to only show reports that are in the configured list
+      const configuredReportIds = new Set(dashboardReports);
+      const filteredAvailableReports = availableReports.filter((report) => 
+        configuredReportIds.has(report.report_id)
+      );
+      
       return (
-        <div className="space-y-4 p-2">
-          {allReportIds.map((reportId) => (
-            <div key={reportId}>
-              {renderReportSection(reportId)}
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="space-y-4 p-2">
+            {allReportIds.map((reportId) => (
+              <div key={reportId}>
+                {renderReportSection(reportId)}
+              </div>
+            ))}
+          </div>
+          
+          <AddReportsModal
+            isOpen={isAddReportsModalOpen}
+            onClose={() => {
+              console.log('TeamDashboard (mobile): Modal onClose called');
+              modalShouldBeOpen.current = false;
+              setIsAddReportsModalOpen(false);
+            }}
+            availableReports={filteredAvailableReports}
+            currentReportIds={allReportIds}
+            onUpdateReports={(reportIds: string[]) => {
+              console.log('Mobile: handleUpdateReports called with:', reportIds);
+              // For mobile, update the layout to show selected reports
+              const newLayout: LayoutConfig = {
+                rows: [{ id: 'row-1', reportIds: reportIds }]
+              };
+              setLayoutConfig(newLayout);
+              localStorage.setItem(`dashboard-layout-team-${selectedTeam}`, JSON.stringify(newLayout));
+            }}
+          />
+        </>
       );
     }
 
@@ -540,7 +612,11 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
 
         <AddReportsModal
           isOpen={isAddReportsModalOpen}
-          onClose={() => setIsAddReportsModalOpen(false)}
+          onClose={() => {
+            console.log('TeamDashboard: Modal onClose called');
+            modalShouldBeOpen.current = false;
+            setIsAddReportsModalOpen(false);
+          }}
           availableReports={filteredAvailableReports}
           currentReportIds={currentReportIds}
           onUpdateReports={handleUpdateReports}
@@ -549,7 +625,13 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
     );
   }
 
-  // Fallback to default layout
+  // Fallback to default layout - simple handler for fallback case
+  const handleUpdateReportsFallback = (reportIds: string[]) => {
+    console.log('Fallback: handleUpdateReports called with:', reportIds);
+    // For the fallback case, just update the display order
+    setDashboardReports(reportIds);
+  };
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-auto p-4">
@@ -569,6 +651,20 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
           </div>
         )}
       </div>
+      
+      <AddReportsModal
+        isOpen={isAddReportsModalOpen}
+        onClose={() => {
+          console.log('TeamDashboard (fallback): Modal onClose called');
+          modalShouldBeOpen.current = false;
+          setIsAddReportsModalOpen(false);
+        }}
+        availableReports={availableReports.filter((report) => 
+          new Set(dashboardReports).has(report.report_id)
+        )}
+        currentReportIds={dashboardReports}
+        onUpdateReports={handleUpdateReportsFallback}
+      />
     </div>
   );
 }

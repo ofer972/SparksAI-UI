@@ -1185,8 +1185,8 @@ export default function Home() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <div className="bg-white border-b border-gray-200 flex-shrink-0 relative z-30 h-[63px] rounded-tl-2xl overflow-hidden">
-          <div className="flex items-center justify-between h-full">
+        <div className="bg-gradient-to-b from-white to-gray-50 border-b border-gray-200 flex-shrink-0 relative z-30 rounded-tl-2xl">
+          <div className="flex flex-wrap md:flex-nowrap items-center gap-2 h-[62px] md:h-auto md:min-h-[62px]">
             {/* Mobile hamburger */}
             <button
               onClick={() => setMobileSidebarOpen(true)}
@@ -1198,85 +1198,129 @@ export default function Home() {
               </svg>
             </button>
 
-            {/* Dashboard views: Unified top bar with gradient background */}
+            {/* Dashboard views: Unified top bar */}
             {(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') ? (
-              <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0 h-full px-3 md:px-4 bg-gradient-to-b from-white to-gray-50 rounded-tl-2xl">
-                {/* View title */}
-                <h1 className="text-xl font-semibold text-gray-900 whitespace-nowrap">
-                  {navigationItems.find(item => item.id === activeNavItem)?.label || 'SparksAI'}
-                </h1>
-
-                {/* PI Filter - for PI Dashboard */}
-                {activeNavItem === 'pi-dashboard' && (
-                  <div className="hidden md:block" style={{ minWidth: '180px', maxWidth: '250px' }}>
-                    <PIFilter 
-                      selectedPI={selectedPI}
-                      onPIChange={(pi) => {
-                        setSelectedPI(pi);
-                        setPiDashboardFilters(prev => ({ ...prev, selectedPI: pi }));
+              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 flex-1 min-w-0 px-3 md:px-4 py-2 w-full">
+                {/* Mobile: Title and Actions Row */}
+                <div className="flex md:hidden items-center justify-between w-full gap-2">
+                  {/* View title */}
+                  <h1 className="text-lg font-semibold text-gray-900 whitespace-nowrap truncate">
+                    {navigationItems.find(item => item.id === activeNavItem)?.label || 'SparksAI'}
+                  </h1>
+                  
+                  {/* Mobile Actions */}
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {/* Manage Reports Button */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Manage Reports button clicked (mobile)');
+                        window.dispatchEvent(new CustomEvent('open-add-reports-modal'));
                       }}
+                      className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-300 text-gray-500 active:text-green-600 active:border-green-400 active:bg-green-50 transition-all touch-manipulation"
+                      title="Manage dashboard reports"
+                      aria-label="Manage reports"
+                      type="button"
+                    >
+                      <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </button>
+                    
+                    {/* AI Chat Button */}
+                    <DashboardAIMenu
+                      onOpenAIChat={() => setIsDashboardChatModalOpen(true)}
+                      prompts={prompts}
+                      selectedPrompt={selectedPrompt}
+                      onPromptChange={setSelectedPrompt}
+                      loadingPrompts={loadingPrompts}
                     />
                   </div>
-                )}
-                
-                {/* Team/Group Filter */}
-                <div className="hidden md:block" style={{ minWidth: '180px', maxWidth: '250px' }}>
-                  <TreeSelect 
-                    selectedValue={selectedTreeValue}
-                    onSelect={(value, label, type) => {
-                      // Update legacy state
-                      setSelectedTreeValue(value);
-                      setSelectedTreeLabel(label);
-                      setSelectedTreeType(type);
-                      setSelectedTeam(label);
-                      
-                      // Update dashboard-specific state
-                      if (activeNavItem === 'team-dashboard') {
-                        setTeamDashboardFilters(prev => ({
-                          ...prev,
-                          selectedTeam: label,
-                          selectedTreeValue: value,
-                          selectedTreeLabel: label,
-                          selectedTreeType: type,
-                        }));
-                      } else if (activeNavItem === 'pi-dashboard') {
-                        setPiDashboardFilters(prev => ({
-                          ...prev,
-                          selectedTeam: label,
-                          selectedTreeValue: value,
-                          selectedTreeLabel: label,
-                          selectedTreeType: type,
-                        }));
-                      }
-                    }}
-                    placeholder="Select team or group"
-                  />
                 </div>
 
-                {/* Spacer to push actions to the right */}
-                <div className="flex-1"></div>
+                {/* Desktop: Full Layout */}
+                <div className="hidden md:flex md:items-center md:gap-4 w-full">
+                  {/* View title */}
+                  <h1 className="text-xl font-semibold text-gray-900 whitespace-nowrap">
+                    {navigationItems.find(item => item.id === activeNavItem)?.label || 'SparksAI'}
+                  </h1>
 
-                {/* Actions: Dashboard buttons, AI Chat, User, Logout */}
-                <div className="hidden md:flex items-center gap-2">
-                  {/* Manage Reports Button */}
-                  <button
-                    onClick={() => {
-                      window.dispatchEvent(new CustomEvent('open-add-reports-modal'));
-                    }}
-                    className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-300 text-gray-500 hover:text-green-600 hover:border-green-400 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
-                    title="Manage dashboard reports"
-                    aria-label="Manage reports"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </button>
+                  {/* PI Filter - for PI Dashboard */}
+                  {activeNavItem === 'pi-dashboard' && (
+                    <div style={{ minWidth: '180px', maxWidth: '250px' }}>
+                      <PIFilter 
+                        selectedPI={selectedPI}
+                        onPIChange={(pi) => {
+                          setSelectedPI(pi);
+                          setPiDashboardFilters(prev => ({ ...prev, selectedPI: pi }));
+                        }}
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Team/Group Filter */}
+                  <div style={{ minWidth: '180px', maxWidth: '250px' }}>
+                    <TreeSelect 
+                      selectedValue={selectedTreeValue}
+                      onSelect={(value, label, type) => {
+                        // Update legacy state
+                        setSelectedTreeValue(value);
+                        setSelectedTreeLabel(label);
+                        setSelectedTreeType(type);
+                        setSelectedTeam(label);
+                        
+                        // Update dashboard-specific state
+                        if (activeNavItem === 'team-dashboard') {
+                          setTeamDashboardFilters(prev => ({
+                            ...prev,
+                            selectedTeam: label,
+                            selectedTreeValue: value,
+                            selectedTreeLabel: label,
+                            selectedTreeType: type,
+                          }));
+                        } else if (activeNavItem === 'pi-dashboard') {
+                          setPiDashboardFilters(prev => ({
+                            ...prev,
+                            selectedTeam: label,
+                            selectedTreeValue: value,
+                            selectedTreeLabel: label,
+                            selectedTreeType: type,
+                          }));
+                        }
+                      }}
+                      placeholder="Select team or group"
+                    />
+                  </div>
+
+                  {/* Spacer to push actions to the right on desktop */}
+                  <div className="flex-1 min-w-0"></div>
+
+                  {/* Desktop Actions: Dashboard buttons, AI Chat, User, Logout */}
+                  <div className="flex items-center gap-2">
+                    {/* Manage Reports Button */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Manage Reports button clicked (desktop)');
+                        window.dispatchEvent(new CustomEvent('open-add-reports-modal'));
+                      }}
+                      className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-300 text-gray-500 hover:text-green-600 hover:border-green-400 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
+                      title="Manage dashboard reports"
+                      aria-label="Manage reports"
+                      type="button"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </button>
                   
                   {/* Save Settings Button */}
                   <button
                     onClick={handleSaveDashboardSettings}
                     disabled={!dashboardSettingsState.hasChanges || dashboardSettingsState.isSaving}
-                    className={`inline-flex items-center justify-center h-8 w-8 rounded-lg border transition-all ${
+                    className={`hidden md:inline-flex items-center justify-center h-8 w-8 rounded-lg border transition-all ${
                       dashboardSettingsState.hasChanges && !dashboardSettingsState.isSaving
                         ? 'border-blue-500 text-blue-600 hover:text-blue-700 hover:border-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer' 
                         : 'border-gray-300 text-gray-400 cursor-not-allowed'
@@ -1300,7 +1344,7 @@ export default function Home() {
                   <button
                     onClick={() => setShowResetConfirm(true)}
                     disabled={dashboardSettingsState.isSaving}
-                    className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-300 text-gray-500 hover:text-red-600 hover:border-red-400 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="hidden md:inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-300 text-gray-500 hover:text-red-600 hover:border-red-400 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Reset dashboard to defaults"
                     aria-label="Reset to defaults"
                   >
@@ -1342,10 +1386,11 @@ export default function Home() {
                       title="Logout"
                     >Logout</button>
                   </div>
+                  </div>
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0 h-full px-3 md:px-4 bg-gradient-to-b from-white to-gray-50 rounded-tl-2xl">
+              <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0 h-full px-3 md:px-4">
                 {/* View title */}
                 <h1 className="text-xl font-semibold text-gray-900 whitespace-nowrap">
                   {navigationItems.find(item => item.id === activeNavItem)?.label || 'SparksAI'}
