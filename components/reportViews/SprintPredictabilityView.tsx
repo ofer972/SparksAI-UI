@@ -61,8 +61,10 @@ const buildColumns = (jiraUrl: string): Column<SprintPredictabilityItem>[] => [
     key: 'sprint_predictability',
     label: 'Predictability %',
     render: (value) => {
-      const percent = typeof value === 'number' ? value * 100 : 0;
-      const formatted = percent.toFixed(1);
+      // Handle both number and string values
+      const numValue = typeof value === 'string' ? parseFloat(value) : (typeof value === 'number' ? value : 0);
+      const percent = numValue * 100;
+      const formatted = Math.round(percent);
       const isGreen = percent >= 75;
       return (
         <span className={`text-sm font-semibold ${isGreen ? 'text-green-600' : 'text-gray-900'}`}>
@@ -75,7 +77,8 @@ const buildColumns = (jiraUrl: string): Column<SprintPredictabilityItem>[] => [
     key: 'avg_story_cycle_time',
     label: 'Avg Cycle Time',
     render: (value) => {
-      const num = typeof value === 'number' ? value : 0;
+      // Handle both number and string values
+      const num = typeof value === 'string' ? parseFloat(value) : (typeof value === 'number' ? value : 0);
       let color = 'text-gray-900';
       if (num > 15) {
         color = 'text-red-600';
