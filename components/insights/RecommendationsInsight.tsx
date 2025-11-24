@@ -13,7 +13,7 @@ const RECOMMENDATION_TEXT_MAX_LENGTH = 200;
 interface Recommendation {
   id: number;
   team_name: string;
-  date: string;
+  updated_at: string;
   action_text: string;
   rational: string;
   full_information: string;
@@ -236,7 +236,7 @@ export default function RecommendationsInsight({
           if (recommendation) {
             const priorityIcon = getPriorityIcon(recommendation.priority);
             const colors = getPriorityColor(recommendation.priority);
-            const formattedDate = formatDate(recommendation.date);
+            const formattedDate = formatDate(recommendation.updated_at);
             
             return (
               <div key={recommendation.id} className="bg-white rounded-lg shadow-sm px-3 py-2 border border-gray-300 relative">

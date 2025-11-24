@@ -14,7 +14,7 @@ const CARD_DESCRIPTION_MAX_LENGTH = 750;
 
 interface AICard {
   id: number;
-  date: string;
+  updated_at: string;
   team_name: string;
   card_name: string;
   card_type: string;
@@ -421,10 +421,10 @@ export default function AICardsInsight({
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <h3 className="text-sm font-bold text-gray-800 truncate">{card.card_name}</h3>
                       {/* Date Badge after title */}
-                      {card.date && (
+                      {card.updated_at && (
                         <div className="px-2 py-0.5 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border border-blue-200 rounded-lg text-[10px] text-indigo-700 font-semibold shadow-sm flex-shrink-0">
                           {(() => {
-                            const date = new Date(card.date);
+                            const date = new Date(card.updated_at);
                             const dateOptions: Intl.DateTimeFormatOptions = { 
                               month: 'short', 
                               day: 'numeric' 

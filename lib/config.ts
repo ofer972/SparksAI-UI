@@ -198,7 +198,7 @@ export interface PIsResponse {
 
 export interface AICard {
   id: number;
-  date: string;
+  updated_at: string;
   team_name: string;
   card_name: string;
   card_type: string;
@@ -222,7 +222,7 @@ export interface AICardsResponse {
 export interface Recommendation {
   id: number;
   team_name: string;
-  date: string;
+  updated_at: string;
   action_text: string;
   rational: string;
   full_information: string;

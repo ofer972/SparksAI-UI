@@ -3,7 +3,7 @@ import { EntityConfig } from './entityConfig';
 // Team AI Cards Entity Configuration
 export interface TeamAICard {
   id: number;
-  date: string;
+  updated_at: string;
   team_name: string;
   card_name: string;
   card_type: string;
@@ -51,7 +51,7 @@ export const teamAICardsConfig: EntityConfig<TeamAICard> = {
       )
     },
     'priority': { width: '100px', align: 'center' },
-    'date': { width: '120px', align: 'center' },
+    'updated_at': { width: '120px', align: 'center' },
     'description': { width: '200px' },
   },
   
@@ -78,7 +78,7 @@ export const teamAICardsConfig: EntityConfig<TeamAICard> = {
     if (typeof value === 'object') return JSON.stringify(value);
     
     // Special formatting for dates
-    if (key === 'date') {
+    if (key === 'updated_at') {
       try {
         const date = new Date(value);
         const month = date.toLocaleDateString('en-US', { month: 'short' });
@@ -105,7 +105,7 @@ export const teamAICardsConfig: EntityConfig<TeamAICard> = {
   },
   
   // Field categorization for detail view
-  normalFields: ['id', 'card_name', 'card_type', 'priority', 'team_name', 'date', 'source', 'source_job_id'],
+  normalFields: ['id', 'card_name', 'card_type', 'priority', 'team_name', 'updated_at', 'source', 'source_job_id'],
   longTextFields: ['description', 'full_information', 'information_json'],
   
   // Link fields configuration

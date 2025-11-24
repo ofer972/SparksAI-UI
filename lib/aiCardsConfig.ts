@@ -3,7 +3,7 @@ import { EntityConfig } from './entityConfig';
 
 export interface AICard {
   id: number;
-  date: string;
+  updated_at: string;
   team_name: string;
   card_name: string;
   card_type: string;
@@ -73,7 +73,7 @@ export const aiCardsConfig: EntityConfig<AICard> = {
       width: '120px',
     },
     {
-      key: 'date',
+      key: 'updated_at',
       label: 'Date',
       sortable: true,
       searchable: false,
@@ -97,7 +97,7 @@ export const aiCardsConfig: EntityConfig<AICard> = {
   formatCellValue: (value: any, key: keyof AICard) => {
     if (value === null || value === undefined) return '-';
     
-    if (key === 'date') {
+    if (key === 'updated_at') {
       try {
         const date = new Date(value);
         return date.toLocaleDateString();
@@ -117,6 +117,6 @@ export const aiCardsConfig: EntityConfig<AICard> = {
   },
   
   // Field categorization for detail view
-  normalFields: ['id', 'card_name', 'card_type', 'priority', 'team_name', 'date', 'source'],
+  normalFields: ['id', 'card_name', 'card_type', 'priority', 'team_name', 'updated_at', 'source'],
   longTextFields: ['description', 'full_information', 'information_json'],
 };

@@ -5,7 +5,7 @@ import { EntityConfig } from './entityConfig';
 export interface Recommendation {
   id: number;
   team_name: string;
-  date: string;
+  updated_at: string;
   action_text: string;
   rational: string;
   full_information: string;
@@ -32,7 +32,7 @@ export const recommendationsConfig: EntityConfig<Recommendation> = {
   title: 'Recommendations',
   
   // Field categorization for detail view
-  normalFields: ['id', 'team_name', 'date', 'priority', 'status'],
+  normalFields: ['id', 'team_name', 'updated_at', 'priority', 'status'],
   longTextFields: ['action_text', 'rational', 'full_information', 'information_json'],
   markdownFields: ['action_text', 'rational', 'full_information'],
   
@@ -42,7 +42,7 @@ export const recommendationsConfig: EntityConfig<Recommendation> = {
     if (typeof value === 'object') return JSON.stringify(value);
     
     // Special formatting for dates
-    if (key === 'date') {
+    if (key === 'updated_at') {
       try {
         const date = new Date(value);
         const month = date.toLocaleDateString('en-US', { month: 'short' });

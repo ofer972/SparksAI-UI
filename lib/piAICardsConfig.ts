@@ -29,7 +29,7 @@ export const piAICardsConfig: EntityConfig<PIAICard> = {
   columnOverrides: {
     id: { width: '80px', align: 'center' },
     priority: { width: '100px', align: 'center' },
-    date: { width: '120px', align: 'center' },
+    updated_at: { width: '120px', align: 'center' },
     description: { width: '200px' },
   },
 
@@ -55,7 +55,7 @@ export const piAICardsConfig: EntityConfig<PIAICard> = {
     if (typeof value === 'boolean') return value ? 'Yes' : 'No';
     if (typeof value === 'object') return JSON.stringify(value);
 
-    if (key === 'date') {
+    if (key === 'updated_at') {
       try {
         const date = new Date(value as any);
         const month = date.toLocaleDateString('en-US', { month: 'short' });
@@ -75,6 +75,6 @@ export const piAICardsConfig: EntityConfig<PIAICard> = {
     return String(value);
   },
 
-  normalFields: ['id', 'card_name', 'card_type', 'priority', 'team_name', 'date', 'source', 'source_job_id'],
+  normalFields: ['id', 'card_name', 'card_type', 'priority', 'team_name', 'updated_at', 'source', 'source_job_id'],
   longTextFields: ['description', 'full_information', 'information_json'],
 };
