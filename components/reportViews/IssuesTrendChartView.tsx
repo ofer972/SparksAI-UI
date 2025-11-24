@@ -77,9 +77,10 @@ const IssuesTrendChartView: React.FC<IssuesTrendChartViewProps> = ({
       if (!monthlyData[month]) {
         monthlyData[month] = { created: 0, resolved: 0, open: 0 };
       }
-      monthlyData[month].created += point.issues_created;
-      monthlyData[month].resolved += point.issues_resolved;
-      monthlyData[month].open = point.cumulative_open_issues;
+      // Ensure values are numbers to avoid leading zeros
+      monthlyData[month].created += Number(point.issues_created) || 0;
+      monthlyData[month].resolved += Number(point.issues_resolved) || 0;
+      monthlyData[month].open = Number(point.cumulative_open_issues) || 0;
     });
 
     const sortedMonths = Object.keys(monthlyData).sort();
@@ -197,7 +198,7 @@ const IssuesTrendChartView: React.FC<IssuesTrendChartViewProps> = ({
             },
             label(context: any) {
               const label = context.dataset.label || '';
-              const value = context.parsed.y;
+              const value = Number(context.parsed.y);
               switch (label) {
                 case 'Issues Created':
                   return `🔴 Issues Created: ${value}`;
@@ -225,7 +226,9 @@ const IssuesTrendChartView: React.FC<IssuesTrendChartViewProps> = ({
             return { size: 12, weight: 'bold' as const };
           },
           formatter(value: number) {
-            return value != null && value > 0 ? value : '';
+            // Convert to number to remove leading zeros
+            const numValue = Number(value);
+            return numValue != null && numValue > 0 ? numValue : '';
           },
           anchor(context: any) {
             const datasetLabel = context.dataset.label || '';
