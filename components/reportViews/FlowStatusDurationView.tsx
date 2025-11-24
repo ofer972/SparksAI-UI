@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -127,10 +128,26 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailStatus, setDetailStatus] = useState<string>('');
   const [detailYearMonth, setDetailYearMonth] = useState<string | undefined>();
+  const [mounted, setMounted] = useState(false);
+  const [fetchingDetailOnly, setFetchingDetailOnly] = useState(false);
+  
+  // Track previous main filters to detect if only detail filters changed
+  const prevMainFiltersRef = React.useRef<string>('');
+  const currentMainFilters = useMemo(() => {
+    const { detail_status, detail_year_month, detail_months, ...mainFilters } = filters;
+    return JSON.stringify(mainFilters);
+  }, [filters]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const summaryData = Array.isArray(data?.summary)
     ? data!.summary.filter((item) => (item.avg_duration_days ?? 0) > 0)
     : [];
+
+  // Stringify to create stable dependency for memoization
+  const summaryDataKey = useMemo(() => JSON.stringify(summaryData), [summaryData]);
 
   const summaryChartData = useMemo(() => {
     return {
@@ -145,7 +162,7 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
         },
       ],
     };
-  }, [summaryData]);
+  }, [summaryDataKey]);
 
   const monthlyData = data?.monthly;
 
@@ -188,9 +205,33 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
       if (!statusName) {
         return;
       }
+      
+      // Check if we're clicking the same bar (data already loaded)
+      const isSameStatus = detailStatus === statusName;
+      const isSameMonth = detailYearMonth === yearMonth;
+      const hasDetailData = (data?.detail?.issues?.length ?? 0) > 0;
+      
+      // Check if filters are already set correctly (normalize undefined/null)
+      const currentFilterMonth = filters.detail_year_month ?? null;
+      const requestedMonth = yearMonth ?? null;
+      const filtersAlreadySet = 
+        filters.detail_status === statusName && 
+        currentFilterMonth === requestedMonth &&
+        filters.detail_months === months;
+      
+      if (isSameStatus && isSameMonth && hasDetailData && filtersAlreadySet) {
+        // Just reopen the modal with existing data - NO SERVER CALL!
+        setDetailOpen(true);
+        return;
+      }
+      
+      // Set detail state first
       setDetailStatus(statusName);
       setDetailYearMonth(yearMonth);
-      setDetailOpen(true);
+      setFetchingDetailOnly(true);
+      
+      // Only update filters to fetch detail data, don't open modal yet
+      // The modal will open when data arrives via the useEffect below
       setFilters((prev) => ({
         ...prev,
         detail_status: statusName,
@@ -198,29 +239,47 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
         detail_months: months,
       }));
     },
-    [months, setFilters]
+    [months, setFilters, detailStatus, detailYearMonth, data?.detail?.issues?.length, filters.detail_status, filters.detail_year_month, filters.detail_months]
   );
 
   const closeDetail = () => {
     setDetailOpen(false);
-    setDetailStatus('');
-    setDetailYearMonth(undefined);
-    setFilters((prev) => {
-      const clone = { ...prev };
-      delete clone.detail_status;
-      delete clone.detail_year_month;
-      delete clone.detail_months;
-      return clone;
-    });
+    setFetchingDetailOnly(false);
+    // Keep detailStatus and detailYearMonth so we can detect if user clicks the same bar again
+    // Don't remove detail filters from state to avoid triggering a re-fetch
+    // Just hide the modal - the detail data will be ignored when modal is closed
   };
 
   const detailIssues = data?.detail?.issues ?? [];
 
+  // Open modal when detail data arrives
   useEffect(() => {
     if (data?.detail?.issues && data.detail.issues.length > 0) {
       setDetailOpen(true);
+      setFetchingDetailOnly(false);
     }
   }, [data?.detail?.issues]);
+  
+  // Track if only detail filters changed (to prevent chart reload)
+  useEffect(() => {
+    if (prevMainFiltersRef.current && prevMainFiltersRef.current !== currentMainFilters) {
+      // Main filters changed, allow full reload
+      setFetchingDetailOnly(false);
+    }
+    prevMainFiltersRef.current = currentMainFilters;
+  }, [currentMainFilters]);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (detailOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [detailOpen]);
 
   const chartData = viewMode === 'monthly' ? monthlyChartData : summaryChartData;
 
@@ -489,74 +548,181 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
   }, [teamName, isGroup, issueType, months, viewMode, pinnedFilters]);
 
   return (
-    <ReportCard 
-      title="Flow Status Duration" 
-      reportId={componentProps?.reportId}
-      filters={filtersContent}
-      filterBadges={filterBadges}
-      onTogglePin={togglePin}
-      onRefresh={refresh}
-      onClose={componentProps?.onClose}
-    >
-      {loading && (
-        <div className="flex-1 flex items-center justify-center h-64">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-            <div className="text-sm text-gray-600">Loading flow status duration...</div>
-          </div>
-        </div>
-      )}
-
-      {!loading && error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      {!loading && !error && (
-        <div className="space-y-4 h-full flex flex-col">
-          <div className="border border-gray-200 rounded-lg p-4 h-full flex flex-col">
-            <h3 className="text-md font-semibold text-gray-900 mb-3">
-              Average Duration by Status
-            </h3>
-            <div className="relative flex-1 h-full min-h-[350px]">
-              <Bar data={chartData} options={chartOptions} plugins={[ChartDataLabels]} />
+    <>
+      <ReportCard 
+        title="Flow Status Duration" 
+        reportId={componentProps?.reportId}
+        filters={filtersContent}
+        filterBadges={filterBadges}
+        onTogglePin={togglePin}
+        onRefresh={refresh}
+        onClose={componentProps?.onClose}
+      >
+        {loading && !fetchingDetailOnly && (
+          <div className="flex-1 flex items-center justify-center h-64">
+            <div className="flex flex-col items-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+              <div className="text-sm text-gray-600">Loading flow status duration...</div>
             </div>
           </div>
+        )}
 
-          {detailOpen && detailIssues.length > 0 && (
-            <div className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h3 className="text-md font-semibold text-gray-900">
-                    {detailStatus} Issues
-                  </h3>
-                  {detailYearMonth && (
-                    <p className="text-xs text-gray-600">
-                      Month: {detailYearMonth}
-                    </p>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={closeDetail}
-                  className="text-xs text-blue-600 hover:text-blue-800"
-                >
-                  Close
-                </button>
+        {!loading && error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {((!loading && !error) || (loading && fetchingDetailOnly)) && (
+          <div className="space-y-4 h-full flex flex-col">
+            <div className="border border-gray-200 rounded-lg p-4 h-full flex flex-col">
+              <h3 className="text-md font-semibold text-gray-900 mb-3">
+                Average Duration by Status
+              </h3>
+              <div className="relative flex-1 h-full min-h-[350px]">
+                <Bar data={chartData} options={chartOptions} plugins={[ChartDataLabels]} />
               </div>
+            </div>
+          </div>
+        )}
+      </ReportCard>
+
+      {/* Modal for detail issues - rendered outside ReportCard using Portal */}
+      {mounted && detailOpen && detailIssues.length > 0 && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 999999,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onClick={closeDetail}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '0.5rem',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              width: '90vw',
+              maxWidth: '72rem',
+              maxHeight: '85vh',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '1.5rem',
+                borderBottom: '1px solid #e5e7eb',
+              }}
+            >
+              <div>
+                <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', margin: 0 }}>
+                  {detailStatus} Issues
+                </h3>
+                {detailYearMonth && (
+                  <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.25rem', marginBottom: 0 }}>
+                    Month: {detailYearMonth}
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={closeDetail}
+                style={{
+                  color: '#9ca3af',
+                  cursor: 'pointer',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                }}
+                aria-label="Close"
+              >
+                <svg
+                  style={{ width: '1.5rem', height: '1.5rem' }}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Content - Flex container for DataTable */}
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                padding: '1.5rem',
+                paddingTop: '1rem',
+                paddingBottom: '1rem',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
               <DataTable<IssueStatusDurationIssue>
                 data={detailIssues}
                 columns={detailColumns}
                 loading={false}
                 emptyMessage="No issues found for this status."
                 rowKey={(row, index) => `${row.issue_key || 'issue'}-${index}`}
+                maxHeight="calc(85vh - 260px)"
               />
             </div>
-          )}
-        </div>
+
+            {/* Modal Footer */}
+            <div
+              style={{
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                gap: '0.75rem',
+                padding: '1.5rem',
+                borderTop: '1px solid #e5e7eb',
+                backgroundColor: '#f9fafb',
+              }}
+            >
+              <button
+                type="button"
+                onClick={closeDetail}
+                style={{
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  color: '#374151',
+                  backgroundColor: 'white',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
-    </ReportCard>
+    </>
   );
 };
 
