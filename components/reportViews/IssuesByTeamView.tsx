@@ -288,7 +288,7 @@ const IssuesByTeamView: React.FC<IssuesByTeamViewProps> = ({
                 legendOffset: -40,
               }}
               enableLabel={true}
-              label={(d) => (d.value > 0 ? String(d.value) : '')}
+              label={(d) => (d.value != null && d.value > 0 ? String(d.value) : '')}
               labelSkipWidth={12}
               labelSkipHeight={12}
               labelTextColor="#111827"
