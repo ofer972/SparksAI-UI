@@ -1,14 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import {
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip as RechartsTooltip,
-  Legend as RechartsLegend,
-} from 'recharts';
+import { ResponsivePie } from '@nivo/pie';
 import type { IssueByPriority } from '@/lib/config';
 import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
 import { getIssueTypes } from '@/lib/issueTypes';
@@ -149,16 +142,14 @@ const IssuesByPriorityView: React.FC<IssuesByPriorityViewProps> = ({
     [prioritySummary]
   );
 
-  const pieData = useMemo(
-    () =>
-      prioritySummary.map((item, index) => ({
-        name: item.priority ?? 'Unspecified',
-        value: item.issue_count ?? 0,
-        percentage: totalCount > 0 ? ((item.issue_count ?? 0) / totalCount) * 100 : 0,
-        color: COLOR_PALETTE[index % COLOR_PALETTE.length],
-      })),
-    [prioritySummary, totalCount]
-  );
+  const pieData = useMemo(() => {
+    return prioritySummary.map((item, index) => ({
+      id: item.priority ?? 'Unspecified',
+      label: item.priority ?? 'Unspecified',
+      value: item.issue_count ?? 0,
+      color: COLOR_PALETTE[index % COLOR_PALETTE.length],
+    }));
+  }, [prioritySummary]);
 
   const filtersContent = (
     <ReportFiltersRow>
@@ -240,45 +231,6 @@ const IssuesByPriorityView: React.FC<IssuesByPriorityViewProps> = ({
     </ReportFiltersRow>
   );
 
-  const renderPieLabel = ({ cx, cy, midAngle, outerRadius, value, name }: any) => {
-    if (!value) {
-      return null;
-    }
-    const RADIAN = Math.PI / 180;
-    const labelRadius = outerRadius + 12;
-    const x = cx + labelRadius * Math.cos(-midAngle * RADIAN);
-    const y = cy + labelRadius * Math.sin(-midAngle * RADIAN);
-    const percentage = totalCount > 0 ? ((value / totalCount) * 100).toFixed(1) : '0.0';
-
-    return (
-      <text
-        x={x}
-        y={y}
-        fill="#111827"
-        textAnchor={x > cx ? 'start' : 'end'}
-        dominantBaseline="central"
-        fontSize={12}
-        fontWeight={600}
-      >
-        {`${value} (${percentage}%)`}
-      </text>
-    );
-  };
-
-  const pieTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length > 0) {
-      const { name, value } = payload[0].payload;
-      const percentage = totalCount > 0 ? ((value / totalCount) * 100).toFixed(1) : '0.0';
-      return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg text-sm">
-          <p className="font-semibold text-gray-900 mb-1">{name}</p>
-          <p className="text-gray-600">{value} issues ({percentage}%)</p>
-        </div>
-      );
-    }
-    return null;
-  };
-
   // Generate filter badges for active filters
   const filterBadges = useMemo(() => {
     const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
@@ -338,49 +290,72 @@ const IssuesByPriorityView: React.FC<IssuesByPriorityViewProps> = ({
         </div>
       )}
 
-      {!error && (
-        <div className="border border-gray-200 rounded-lg p-6">
+      {loading && (
+        <div className="flex items-center justify-center h-96">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+            <div className="text-sm text-gray-600">Loading priority chart...</div>
+          </div>
+        </div>
+      )}
+
+      {!loading && !error && prioritySummary.length === 0 && (
+        <div className="flex items-center justify-center h-96">
+          <div className="text-gray-500">No data available</div>
+        </div>
+      )}
+
+      {!loading && !error && prioritySummary.length > 0 && (
+        <>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">{issueTypePlural} by Priority</h3>
             <span className="text-sm text-gray-500">Total: {totalCount}</span>
           </div>
-          <div className="h-96">
-            {loading ? (
-              <div className="flex items-center justify-center h-full text-sm text-gray-600">
-                Loading priority chart...
-              </div>
-            ) : pieData.length > 0 ? (
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    dataKey="value"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={120}
-                    label={renderPieLabel}
-                  >
-                    {pieData.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip content={pieTooltip} />
-                  <RechartsLegend
-                    verticalAlign="middle"
-                    align="right"
-                    layout="vertical"
-                    iconType="circle"
-                    wrapperStyle={{ fontSize: '12px' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-gray-500">
-                No data available
-              </div>
-            )}
+          <div className="relative w-full h-[280px] overflow-visible">
+            <ResponsivePie
+              data={pieData}
+              margin={{ top: 30, right: 60, bottom: 30, left: 60 }}
+              innerRadius={0}
+              padAngle={0.7}
+              cornerRadius={3}
+              activeOuterRadiusOffset={8}
+              borderWidth={2}
+              borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
+              colors={{ datum: 'data.color' }}
+              enableArcLinkLabels={true}
+              arcLinkLabelsSkipAngle={10}
+              arcLinkLabelsTextColor="#111827"
+              arcLinkLabelsThickness={2}
+              arcLinkLabelsColor={{ from: 'color' }}
+              arcLinkLabel={(d) => {
+                const percentage = totalCount > 0 ? ((d.value / totalCount) * 100).toFixed(1) : '0.0';
+                return `${d.value} (${percentage}%)`;
+              }}
+              enableArcLabels={false}
+              tooltip={({ datum }) => {
+                const percentage = totalCount > 0 ? ((datum.value / totalCount) * 100).toFixed(1) : '0.0';
+                return (
+                  <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg text-sm">
+                    <p className="font-semibold text-gray-900 mb-1">{datum.label}</p>
+                    <p className="text-gray-600">{datum.value} issues ({percentage}%)</p>
+                  </div>
+                );
+              }}
+              legends={[]}
+            />
           </div>
-        </div>
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4 px-2">
+            {pieData.map((item) => (
+              <div key={item.id} className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: item.color }}
+                />
+                <span className="text-sm text-gray-700">{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </ReportCard>
   );

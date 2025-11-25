@@ -478,13 +478,13 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
       
       return (
         <>
-          <div className="space-y-4 p-2">
-            {allReportIds.map((reportId) => (
-              <div key={reportId}>
-                {renderReportSection(reportId)}
-              </div>
-            ))}
-          </div>
+        <div className="space-y-4 p-2">
+          {allReportIds.map((reportId) => (
+            <div key={reportId}>
+              {renderReportSection(reportId)}
+            </div>
+          ))}
+        </div>
           
           <AddReportsModal
             isOpen={isAddReportsModalOpen}

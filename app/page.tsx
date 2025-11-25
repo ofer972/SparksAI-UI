@@ -1241,80 +1241,80 @@ export default function Home() {
 
                 {/* Desktop: Full Layout */}
                 <div className="hidden md:flex md:items-center md:gap-4 w-full">
-                  {/* View title */}
-                  <h1 className="text-xl font-semibold text-gray-900 whitespace-nowrap">
-                    {navigationItems.find(item => item.id === activeNavItem)?.label || 'SparksAI'}
-                  </h1>
+                {/* View title */}
+                <h1 className="text-xl font-semibold text-gray-900 whitespace-nowrap">
+                  {navigationItems.find(item => item.id === activeNavItem)?.label || 'SparksAI'}
+                </h1>
 
-                  {/* PI Filter - for PI Dashboard */}
-                  {activeNavItem === 'pi-dashboard' && (
+                {/* PI Filter - for PI Dashboard */}
+                {activeNavItem === 'pi-dashboard' && (
                     <div style={{ minWidth: '180px', maxWidth: '250px' }}>
-                      <PIFilter 
-                        selectedPI={selectedPI}
-                        onPIChange={(pi) => {
-                          setSelectedPI(pi);
-                          setPiDashboardFilters(prev => ({ ...prev, selectedPI: pi }));
-                        }}
-                      />
-                    </div>
-                  )}
-                  
-                  {/* Team/Group Filter */}
-                  <div style={{ minWidth: '180px', maxWidth: '250px' }}>
-                    <TreeSelect 
-                      selectedValue={selectedTreeValue}
-                      onSelect={(value, label, type) => {
-                        // Update legacy state
-                        setSelectedTreeValue(value);
-                        setSelectedTreeLabel(label);
-                        setSelectedTreeType(type);
-                        setSelectedTeam(label);
-                        
-                        // Update dashboard-specific state
-                        if (activeNavItem === 'team-dashboard') {
-                          setTeamDashboardFilters(prev => ({
-                            ...prev,
-                            selectedTeam: label,
-                            selectedTreeValue: value,
-                            selectedTreeLabel: label,
-                            selectedTreeType: type,
-                          }));
-                        } else if (activeNavItem === 'pi-dashboard') {
-                          setPiDashboardFilters(prev => ({
-                            ...prev,
-                            selectedTeam: label,
-                            selectedTreeValue: value,
-                            selectedTreeLabel: label,
-                            selectedTreeType: type,
-                          }));
-                        }
+                    <PIFilter 
+                      selectedPI={selectedPI}
+                      onPIChange={(pi) => {
+                        setSelectedPI(pi);
+                        setPiDashboardFilters(prev => ({ ...prev, selectedPI: pi }));
                       }}
-                      placeholder="Select team or group"
                     />
                   </div>
+                )}
+                
+                {/* Team/Group Filter */}
+                  <div style={{ minWidth: '180px', maxWidth: '250px' }}>
+                  <TreeSelect 
+                    selectedValue={selectedTreeValue}
+                    onSelect={(value, label, type) => {
+                      // Update legacy state
+                      setSelectedTreeValue(value);
+                      setSelectedTreeLabel(label);
+                      setSelectedTreeType(type);
+                      setSelectedTeam(label);
+                      
+                      // Update dashboard-specific state
+                      if (activeNavItem === 'team-dashboard') {
+                        setTeamDashboardFilters(prev => ({
+                          ...prev,
+                          selectedTeam: label,
+                          selectedTreeValue: value,
+                          selectedTreeLabel: label,
+                          selectedTreeType: type,
+                        }));
+                      } else if (activeNavItem === 'pi-dashboard') {
+                        setPiDashboardFilters(prev => ({
+                          ...prev,
+                          selectedTeam: label,
+                          selectedTreeValue: value,
+                          selectedTreeLabel: label,
+                          selectedTreeType: type,
+                        }));
+                      }
+                    }}
+                    placeholder="Select team or group"
+                  />
+                </div>
 
                   {/* Spacer to push actions to the right on desktop */}
                   <div className="flex-1 min-w-0"></div>
 
                   {/* Desktop Actions: Dashboard buttons, AI Chat, User, Logout */}
                   <div className="flex items-center gap-2">
-                    {/* Manage Reports Button */}
-                    <button
+                  {/* Manage Reports Button */}
+                  <button
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         console.log('Manage Reports button clicked (desktop)');
-                        window.dispatchEvent(new CustomEvent('open-add-reports-modal'));
-                      }}
-                      className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-300 text-gray-500 hover:text-green-600 hover:border-green-400 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
-                      title="Manage dashboard reports"
-                      aria-label="Manage reports"
+                      window.dispatchEvent(new CustomEvent('open-add-reports-modal'));
+                    }}
+                    className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-300 text-gray-500 hover:text-green-600 hover:border-green-400 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
+                    title="Manage dashboard reports"
+                    aria-label="Manage reports"
                       type="button"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </button>
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </button>
                   
                   {/* Save Settings Button */}
                   <button

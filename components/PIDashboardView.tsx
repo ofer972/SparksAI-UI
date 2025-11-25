@@ -456,16 +456,16 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
       
       return (
         <>
-          <div className="space-y-4 p-2">
-            {allReportIds.map((reportId) => {
-              const panelKey = buildPanelKey(reportId);
-              return (
-                <div key={panelKey}>
-                  {renderReportSection(reportId, panelKey)}
-                </div>
-              );
-            })}
-          </div>
+        <div className="space-y-4 p-2">
+          {allReportIds.map((reportId) => {
+            const panelKey = buildPanelKey(reportId);
+            return (
+              <div key={panelKey}>
+                {renderReportSection(reportId, panelKey)}
+              </div>
+            );
+          })}
+        </div>
           
           <AddReportsModal
             isOpen={isAddReportsModalOpen}

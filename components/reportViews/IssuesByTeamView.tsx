@@ -1,17 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import {
-  ResponsiveContainer,
-  BarChart,
-  CartesianGrid,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip as RechartsTooltip,
-  Legend as RechartsLegend,
-  LabelList,
-} from 'recharts';
+import { ResponsiveBar } from '@nivo/bar';
 import type { IssuesByTeam } from '@/lib/config';
 import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
 import { getIssueTypes } from '@/lib/issueTypes';
@@ -226,26 +216,6 @@ const IssuesByTeamView: React.FC<IssuesByTeamViewProps> = ({
     return badges;
   }, [issueType, statusCategory, includeDone, pinnedFilters]);
 
-  const barTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg text-sm">
-          <p className="font-semibold text-gray-900 mb-2">{payload[0].payload.team_name}</p>
-          {payload.map((entry: any) => {
-            if (entry.value > 0) {
-              return (
-                <p key={entry.dataKey} className="text-gray-700" style={{ color: entry.fill }}>
-                  {entry.dataKey}: {entry.value}
-                </p>
-              );
-            }
-            return null;
-          })}
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <ReportCard
@@ -263,73 +233,90 @@ const IssuesByTeamView: React.FC<IssuesByTeamViewProps> = ({
         </div>
       )}
 
-      {!error && (
-        <div className="border border-gray-200 rounded-lg p-6">
+      {loading && (
+        <div className="flex items-center justify-center h-96">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+            <div className="text-sm text-gray-600">Loading team breakdown...</div>
+          </div>
+        </div>
+      )}
+
+      {!loading && !error && teamChart.teams.length === 0 && (
+        <div className="flex items-center justify-center h-96">
+          <div className="text-gray-500">No team data available</div>
+        </div>
+      )}
+
+      {!loading && !error && teamChart.teams.length > 0 && (
+        <>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">{issueTypePlural} Breakdown by Team</h3>
             <span className="text-sm text-gray-500">Total: {totalIssues}</span>
           </div>
-          <div className="h-96">
-            {loading ? (
-              <div className="flex items-center justify-center h-full text-sm text-gray-600">
-                Loading team breakdown...
-              </div>
-            ) : teamChart.teams.length > 0 ? (
-              <ResponsiveContainer>
-                <BarChart data={teamChart.teams} margin={{ top: 20, right: 20, left: 10, bottom: 60 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="team_name" 
-                    tick={{ fontSize: 11 }} 
-                    angle={-45} 
-                    textAnchor="end" 
-                    height={80}
-                  />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <RechartsTooltip content={barTooltip} />
-                  <RechartsLegend wrapperStyle={{ fontSize: '12px' }} />
-                  {teamChart.priorities.map((priorityName, index) => (
-                    <Bar
-                      key={priorityName}
-                      dataKey={priorityName}
-                      stackId="bugs"
-                      fill={COLOR_PALETTE[index % COLOR_PALETTE.length]}
-                      isAnimationActive={false}
-                    >
-                      <LabelList
-                        dataKey={priorityName}
-                        position="center"
-                        content={(props: any) => {
-                          const { value } = props;
-                          if (!value) {
-                            return null;
-                          }
-                          return (
-                            <text
-                              x={props.x + props.width / 2}
-                              y={props.y + props.height / 2}
-                              fill="#111827"
-                              textAnchor="middle"
-                              dominantBaseline="middle"
-                              fontSize={11}
-                              fontWeight={600}
-                            >
-                              {value}
-                            </text>
-                          );
-                        }}
-                      />
-                    </Bar>
-                  ))}
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-gray-500">
-                No team data available
-              </div>
-            )}
+          <div className="relative w-full h-[280px] overflow-visible">
+            <ResponsiveBar
+              data={teamChart.teams}
+              keys={teamChart.priorities}
+              indexBy="team_name"
+              margin={{ top: 20, right: 20, bottom: 70, left: 50 }}
+              padding={0.3}
+              valueScale={{ type: 'linear' }}
+              indexScale={{ type: 'band', round: true }}
+              colors={(bar) => {
+                const index = teamChart.priorities.indexOf(bar.id as string);
+                return COLOR_PALETTE[index % COLOR_PALETTE.length];
+              }}
+              borderWidth={2}
+              borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
+              axisTop={null}
+              axisRight={null}
+              axisBottom={{
+                tickSize: 5,
+                tickPadding: 5,
+                tickRotation: -45,
+                legend: '',
+                legendPosition: 'middle',
+                legendOffset: 60,
+              }}
+              axisLeft={{
+                tickSize: 5,
+                tickPadding: 5,
+                tickRotation: 0,
+                legend: '# of Issues',
+                legendPosition: 'middle',
+                legendOffset: -40,
+              }}
+              enableLabel={true}
+              label={(d) => (d.value > 0 ? String(d.value) : '')}
+              labelSkipWidth={12}
+              labelSkipHeight={12}
+              labelTextColor="#111827"
+              tooltip={({ id, value, indexValue, color }) => (
+                <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg text-sm">
+                  <p className="font-semibold text-gray-900 mb-1">{indexValue}</p>
+                  <p className="text-gray-700" style={{ color }}>
+                    {id}: {value}
+                  </p>
+                </div>
+              )}
+              legends={[]}
+              role="application"
+              ariaLabel="Issues by team bar chart"
+            />
           </div>
-        </div>
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4 px-2">
+            {teamChart.priorities.map((priority, index) => (
+              <div key={priority} className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3"
+                  style={{ backgroundColor: COLOR_PALETTE[index % COLOR_PALETTE.length] }}
+                />
+                <span className="text-sm text-gray-700">{priority}</span>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </ReportCard>
   );

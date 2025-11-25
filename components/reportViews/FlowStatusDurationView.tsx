@@ -549,40 +549,40 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
 
   return (
     <>
-      <ReportCard 
-        title="Flow Status Duration" 
-        reportId={componentProps?.reportId}
-        filters={filtersContent}
-        filterBadges={filterBadges}
-        onTogglePin={togglePin}
-        onRefresh={refresh}
-        onClose={componentProps?.onClose}
-      >
+    <ReportCard 
+      title="Flow Status Duration" 
+      reportId={componentProps?.reportId}
+      filters={filtersContent}
+      filterBadges={filterBadges}
+      onTogglePin={togglePin}
+      onRefresh={refresh}
+      onClose={componentProps?.onClose}
+    >
         {loading && !fetchingDetailOnly && (
-          <div className="flex-1 flex items-center justify-center h-64">
-            <div className="flex flex-col items-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-              <div className="text-sm text-gray-600">Loading flow status duration...</div>
-            </div>
+        <div className="flex-1 flex items-center justify-center h-64">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+            <div className="text-sm text-gray-600">Loading flow status duration...</div>
           </div>
-        )}
+        </div>
+      )}
 
-        {!loading && error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
-            {error}
-          </div>
-        )}
+      {!loading && error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
         {((!loading && !error) || (loading && fetchingDetailOnly)) && (
-          <div className="space-y-4 h-full flex flex-col">
-            <div className="border border-gray-200 rounded-lg p-4 h-full flex flex-col">
-              <h3 className="text-md font-semibold text-gray-900 mb-3">
-                Average Duration by Status
-              </h3>
-              <div className="relative flex-1 h-full min-h-[350px]">
-                <Bar data={chartData} options={chartOptions} plugins={[ChartDataLabels]} />
-              </div>
+        <div className="space-y-4 h-full flex flex-col">
+          <div className="border border-gray-200 rounded-lg p-4 h-full flex flex-col">
+            <h3 className="text-md font-semibold text-gray-900 mb-3">
+              Average Duration by Status
+            </h3>
+            <div className="relative flex-1 h-full min-h-[350px]">
+              <Bar data={chartData} options={chartOptions} plugins={[ChartDataLabels]} />
             </div>
+          </div>
           </div>
         )}
       </ReportCard>
@@ -628,19 +628,19 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
                 borderBottom: '1px solid #e5e7eb',
               }}
             >
-              <div>
+                <div>
                 <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', margin: 0 }}>
-                  {detailStatus} Issues
-                </h3>
-                {detailYearMonth && (
+                    {detailStatus} Issues
+                  </h3>
+                  {detailYearMonth && (
                   <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.25rem', marginBottom: 0 }}>
-                    Month: {detailYearMonth}
-                  </p>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={closeDetail}
+                      Month: {detailYearMonth}
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={closeDetail}
                 style={{
                   color: '#9ca3af',
                   cursor: 'pointer',
@@ -663,8 +663,8 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
                     d="M6 18L18 6M6 6l12 12"
                   />
                 </svg>
-              </button>
-            </div>
+                </button>
+              </div>
 
             {/* Modal Content - Flex container for DataTable */}
             <div
@@ -718,7 +718,7 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
                 Close
               </button>
             </div>
-          </div>
+        </div>
         </div>,
         document.body
       )}
