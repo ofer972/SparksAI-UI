@@ -1429,6 +1429,20 @@ export class ApiService {
     return result.data.team;
   }
 
+  async updateTeamDetails(teamId: number, updates: { number_of_team_members?: number; ai_insight?: boolean }): Promise<Team> {
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.teams.getNames.replace('/getNames', ''))}/${teamId}`;
+    const response = await authFetch(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to update team details: ${response.status} ${response.statusText}`);
+    }
+    const result = await response.json();
+    return result.data.team;
+  }
+
   async batchAssignTeamsToGroup(groupId: number, teamIds: number[]): Promise<{ updated_teams: number }> {
     const url = `${buildBackendUrl(API_CONFIG.endpoints.teams.getNames.replace('/getNames', ''))}/batch-assign`;
     const response = await authFetch(url, {

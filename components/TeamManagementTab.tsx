@@ -31,6 +31,10 @@ export default function TeamManagementTab() {
   const [groupToDelete, setGroupToDelete] = useState<{ groupId: number; groupName: string; teamCount: number } | null>(null);
   const [showDuplicateGroupError, setShowDuplicateGroupError] = useState(false);
   const [duplicateGroupName, setDuplicateGroupName] = useState<string>('');
+  const [showEditTeamModal, setShowEditTeamModal] = useState(false);
+  const [teamToEdit, setTeamToEdit] = useState<Team | null>(null);
+  const [editTeamMembers, setEditTeamMembers] = useState<number>(0);
+  const [editTeamAIInsight, setEditTeamAIInsight] = useState<boolean>(false);
   
   // Form states
   const [newGroupName, setNewGroupName] = useState('');
@@ -297,6 +301,58 @@ export default function TeamManagementTab() {
     }
   };
 
+  const handleEditTeam = (team: Team) => {
+    setTeamToEdit(team);
+    setEditTeamMembers(team.number_of_team_members || 0);
+    setEditTeamAIInsight(team.ai_insight || false);
+    setShowEditTeamModal(true);
+  };
+
+  const confirmEditTeam = async () => {
+    if (!teamToEdit) return;
+    
+    try {
+      await apiService.updateTeamDetails(teamToEdit.team_key, {
+        number_of_team_members: editTeamMembers,
+        ai_insight: editTeamAIInsight,
+      });
+      
+      // Update teams state directly
+      setTeams(prevTeams => 
+        prevTeams.map(t => 
+          t.team_key === teamToEdit.team_key
+            ? { 
+                ...t, 
+                number_of_team_members: editTeamMembers,
+                ai_insight: editTeamAIInsight
+              }
+            : t
+        )
+      );
+      
+      // Update unassigned teams if needed
+      setUnassignedTeams(prev => 
+        prev.map(t => 
+          t.team_key === teamToEdit.team_key
+            ? { 
+                ...t, 
+                number_of_team_members: editTeamMembers,
+                ai_insight: editTeamAIInsight
+              }
+            : t
+        )
+      );
+      
+      // Refresh the global context so top bar and other components update
+      await refreshContext();
+      
+      setShowEditTeamModal(false);
+      setTeamToEdit(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to update team');
+    }
+  };
+
   const toggleGroupExpansion = (groupId: number) => {
     setExpandedGroups(prev => {
       const newSet = new Set(prev);
@@ -491,8 +547,9 @@ export default function TeamManagementTab() {
       return (
         <div
           key={node.id}
-          className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-gray-50 transition-all group"
+          className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-gray-50 transition-all group cursor-pointer"
           style={{ paddingLeft: `${depth * 20 + 34}px` }}
+          onClick={() => handleEditTeam(team)}
         >
           {/* Team icon */}
           <span className="text-sm">👥</span>
@@ -507,10 +564,20 @@ export default function TeamManagementTab() {
             </span>
           )}
 
+          {/* AI Insight badge */}
+          {team.ai_insight && (
+            <span className="text-xs text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded" title="Included in team insights schedule">
+              ✨ AI
+            </span>
+          )}
+
           {/* Remove button - only show if parentGroupKey is provided */}
           {parentGroupKey && (
             <button
-              onClick={() => handleRemoveTeamFromGroup(team.team_key, parentGroupKey)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRemoveTeamFromGroup(team.team_key, parentGroupKey);
+              }}
               className="p-0.5 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-all"
               title="Remove from group"
             >
@@ -693,16 +760,22 @@ export default function TeamManagementTab() {
                       draggable
                       onDragStart={() => handleDragStart(team)}
                       onDragEnd={handleDragEnd}
-                      className={`px-2 py-1.5 flex items-center gap-2 hover:bg-gray-50 transition-colors rounded cursor-move ${
+                      onClick={() => handleEditTeam(team)}
+                      className={`px-2 py-1.5 flex items-center gap-2 hover:bg-gray-50 transition-colors rounded cursor-pointer ${
                         draggedTeam?.team_key === team.team_key ? 'opacity-50' : ''
                       }`}
-                      title="Drag to assign to a group"
+                      title="Click to edit team details or drag to assign to a group"
                     >
                       <span className="text-sm">👥</span>
                 <span className="flex-1 text-xs font-medium text-gray-700">{team.team_name}</span>
                       {team.number_of_team_members > 0 && (
                         <span className="text-xs text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">
                           {team.number_of_team_members} members
+                        </span>
+                      )}
+                      {team.ai_insight && (
+                        <span className="text-xs text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded" title="Included in team insights schedule">
+                          ✨ AI
                         </span>
                       )}
               </div>
@@ -718,10 +791,11 @@ export default function TeamManagementTab() {
                       draggable
                       onDragStart={() => handleDragStart(team)}
                       onDragEnd={handleDragEnd}
-                      className={`px-2 py-1.5 flex items-center gap-2 hover:bg-gray-50 transition-colors rounded cursor-move ${
+                      onClick={() => handleEditTeam(team)}
+                      className={`px-2 py-1.5 flex items-center gap-2 hover:bg-gray-50 transition-colors rounded cursor-pointer ${
                         draggedTeam?.team_key === team.team_key ? 'opacity-50' : ''
                       }`}
-                      title="Drag to assign to a group"
+                      title="Click to edit team details or drag to assign to a group"
                     >
                       <span className="text-sm">👥</span>
                       <span className="flex-1 text-xs font-medium text-gray-700">{team.team_name}</span>
@@ -729,6 +803,11 @@ export default function TeamManagementTab() {
                         {team.number_of_team_members > 0 && (
                           <span className="text-xs text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">
                             {team.number_of_team_members} members
+                          </span>
+                        )}
+                        {team.ai_insight && (
+                          <span className="text-xs text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded" title="Included in team insights schedule">
+                            ✨ AI
                           </span>
                         )}
                         {team.group_keys && team.group_keys.length > 0 && (
@@ -1214,6 +1293,71 @@ export default function TeamManagementTab() {
                 className="px-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm py-2 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg font-medium"
               >
                 OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Team Modal */}
+      {showEditTeamModal && teamToEdit && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="px-4 py-2.5 border-b border-gray-200">
+              <h3 className="text-lg font-bold text-gray-900">Edit Team</h3>
+              <p className="text-xs text-gray-600 mt-0.5">
+                Team: <span className="font-semibold">{teamToEdit.team_name}</span>
+              </p>
+            </div>
+
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-900 mb-1">
+                  Number of Team Members
+                </label>
+                <input
+                  type="number"
+                  value={editTeamMembers}
+                  onChange={(e) => setEditTeamMembers(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min="0"
+                  placeholder="Enter number of team members"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editTeamAIInsight}
+                    onChange={(e) => setEditTeamAIInsight(e.target.checked)}
+                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  />
+                  <span className="text-sm font-medium text-gray-900">
+                    Include in Team Insights Schedule
+                  </span>
+                </label>
+                <p className="text-xs text-gray-500 mt-1 ml-6">
+                  When enabled, this team will receive automated AI-powered insights and recommendations
+                </p>
+              </div>
+            </div>
+
+            <div className="px-4 py-2.5 bg-gray-50 rounded-b-xl flex gap-2">
+              <button
+                onClick={() => {
+                  setShowEditTeamModal(false);
+                  setTeamToEdit(null);
+                }}
+                className="flex-1 bg-white text-gray-700 text-sm border border-gray-300 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmEditTeam}
+                className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm py-1.5 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
+              >
+                Save Changes
               </button>
             </div>
           </div>
