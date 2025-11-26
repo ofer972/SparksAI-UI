@@ -13,12 +13,14 @@ interface InsightCategoryFilterProps {
   selectedCategories: string[];
   onCategoriesChange: (categories: string[]) => void;
   className?: string;
+  settingsLoading?: boolean; // Indicates if saved settings are still loading
 }
 
 export default function InsightCategoryFilter({ 
   selectedCategories, 
   onCategoriesChange, 
-  className = '' 
+  className = '',
+  settingsLoading = false
 }: InsightCategoryFilterProps) {
   const [categories, setCategories] = useState<InsightCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,13 +59,7 @@ export default function InsightCategoryFilter({
         const teamCategories = categoryObjects.filter((cat: InsightCategory) => cat.class === 'Team');
         setCategories(teamCategories);
         
-        // Auto-select only "daily" on initial load if none are selected
-        if (selectedCategories.length === 0 && teamCategories.length > 0) {
-          const dailyCategory = teamCategories.find(cat => cat.name.toLowerCase() === 'daily');
-          if (dailyCategory) {
-            onCategoriesChange([dailyCategory.name]);
-          }
-        }
+        // Note: Auto-select "daily" is handled in a separate useEffect that waits for settings to load
       } catch (err) {
         console.error('Error fetching insight categories:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch categories');
@@ -74,6 +70,16 @@ export default function InsightCategoryFilter({
 
     fetchCategories();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-select "daily" after settings have loaded if no categories are selected
+  useEffect(() => {
+    if (!settingsLoading && categories.length > 0 && selectedCategories.length === 0) {
+      const dailyCategory = categories.find(cat => cat.name.toLowerCase() === 'daily');
+      if (dailyCategory) {
+        onCategoriesChange([dailyCategory.name]);
+      }
+    }
+  }, [settingsLoading, categories, selectedCategories, onCategoriesChange]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

@@ -1609,13 +1609,28 @@ export async function unassignPendingRole(email: string, roleId: string): Promis
 }
 
 // User Settings API
-export interface DashboardConfig {
-  layoutConfig: any;
-  topBarFilters: Record<string, any>;
-  reportFilters: Record<string, Record<string, any>>;
-  pinnedFilters: Record<string, string[]>;
+export type PageType = 'team-dashboard' | 'pi-dashboard' | 'team-insight' | 'pi-insight';
+
+export interface PageSettings {
+  layoutConfig?: any;
+  topBarFilters?: Record<string, any>;
+  reportFilters?: Record<string, Record<string, any>>;
+  pinnedFilters?: Record<string, string[]>;
+  selectedCategories?: string[];
 }
 
+// Alias for backward compatibility
+export interface DashboardConfig extends PageSettings {}
+
+export interface UserPageSettings {
+  user_id: string;
+  page: PageType;
+  settings: PageSettings;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Legacy interface for backward compatibility
 export interface UserDashboardSettings {
   user_id: string;
   dashboard_settings?: {
@@ -1644,25 +1659,44 @@ export async function updateUserDashboardSettings(userId: string, settings: Part
   return data.data || data;
 }
 
-export async function getDashboardSettings(userId: string, dashboardType: 'team-dashboard' | 'pi-dashboard'): Promise<DashboardConfig | null> {
-  const res = await fetch(buildUserServiceUrl(`/users/${userId}/settings/dashboard/${dashboardType}`));
+// New page-based settings functions
+export async function getPageSettings(userId: string, page: PageType): Promise<PageSettings | null> {
+  const res = await fetch(buildUserServiceUrl(`/users/${userId}/settings/page/${page}`));
   if (!res.ok) {
     if (res.status === 404) return null;
-    throw new Error('Failed to fetch dashboard settings');
+    throw new Error('Failed to fetch page settings');
   }
   const data = await res.json();
   return data.data || data;
 }
 
-export async function updateDashboardSettings(userId: string, dashboardType: 'team-dashboard' | 'pi-dashboard', settings: DashboardConfig): Promise<UserDashboardSettings> {
-  const res = await fetch(buildUserServiceUrl(`/users/${userId}/settings/dashboard/${dashboardType}`), {
+export async function updatePageSettings(userId: string, page: PageType, settings: PageSettings): Promise<UserPageSettings> {
+  const res = await fetch(buildUserServiceUrl(`/users/${userId}/settings/page/${page}`), {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(settings),
   });
-  if (!res.ok) throw new Error(await res.text() || 'Failed to update dashboard settings');
+  if (!res.ok) throw new Error(await res.text() || 'Failed to update page settings');
   const data = await res.json();
   return data.data || data;
+}
+
+// Legacy functions - use new page-based functions internally
+export async function getDashboardSettings(userId: string, dashboardType: 'team-dashboard' | 'pi-dashboard'): Promise<DashboardConfig | null> {
+  return getPageSettings(userId, dashboardType);
+}
+
+export async function updateDashboardSettings(userId: string, dashboardType: 'team-dashboard' | 'pi-dashboard', settings: DashboardConfig): Promise<UserDashboardSettings> {
+  const result = await updatePageSettings(userId, dashboardType, settings);
+  // Convert to legacy format for backward compatibility
+  return {
+    user_id: result.user_id,
+    dashboard_settings: {
+      [dashboardType]: result.settings
+    },
+    created_at: result.created_at,
+    updated_at: result.updated_at,
+  };
 }
 
 export async function resetUserSettings(userId: string): Promise<void> {

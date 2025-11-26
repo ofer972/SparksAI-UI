@@ -146,8 +146,8 @@ const IssuesByPriorityView: React.FC<IssuesByPriorityViewProps> = ({
     return prioritySummary.map((item, index) => ({
       id: item.priority ?? 'Unspecified',
       label: item.priority ?? 'Unspecified',
-      value: item.issue_count ?? 0,
-      color: COLOR_PALETTE[index % COLOR_PALETTE.length],
+        value: item.issue_count ?? 0,
+        color: COLOR_PALETTE[index % COLOR_PALETTE.length],
     }));
   }, [prioritySummary]);
 
@@ -343,14 +343,14 @@ const IssuesByPriorityView: React.FC<IssuesByPriorityViewProps> = ({
               }}
               legends={[]}
             />
-          </div>
+              </div>
           <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4 px-2">
             {pieData.map((item) => (
               <div key={item.id} className="flex items-center gap-2">
                 <div
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: item.color }}
-                />
+                  />
                 <span className="text-sm text-gray-700">{item.label}</span>
               </div>
             ))}

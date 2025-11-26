@@ -91,16 +91,25 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
   const teamName = (filters.team_name as string) ?? '';
   const isGroup = (filters.isGroup as boolean) ?? false;
   
+  console.log('[EpicsHierarchy] Current filters:', { teamName, isGroup });
+  
   // Look up ID from name to construct proper teamValue
   const teamValue = useMemo(() => {
-    if (!teamName) return null;
+    if (!teamName) {
+      console.log('[EpicsHierarchy] No team name, returning null');
+      return null;
+    }
     
     if (isGroup) {
       const group = groups.find(g => g.group_name === teamName);
-      return group ? `group:${group.group_key}` : null;
+      const value = group ? `group:${group.group_key}` : null;
+      console.log(`[EpicsHierarchy] Looking for group "${teamName}":`, value);
+      return value;
     } else {
       const team = teams.find(t => t.team_name === teamName);
-      return team ? `team:${team.team_key}` : null;
+      const value = team ? `team:${team.team_key}` : null;
+      console.log(`[EpicsHierarchy] Looking for team "${teamName}":`, value);
+      return value;
     }
   }, [teamName, isGroup, groups, teams]);
   

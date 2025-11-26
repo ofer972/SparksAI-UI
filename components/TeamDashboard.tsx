@@ -55,6 +55,11 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
     console.log('TeamDashboard: Component MOUNTED for team:', selectedTeam);
     return () => {
       console.log('TeamDashboard: Component UNMOUNTING for team:', selectedTeam);
+      // Reset refs on unmount so settings can be reapplied when returning to dashboard
+      settingsAppliedRef.current = false;
+      configLoadedRef.current = false;
+      prevLayoutRef.current = null;
+      prevFiltersRef.current = { selectedTeam: '', selectedTreeType: 'team', selectedSprint: '' };
     };
   }, [selectedTeam]);
 
@@ -96,16 +101,33 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
       window.removeEventListener('open-add-reports-modal', handleOpenModal);
     };
   }, []); // Empty dependency array - only run once
-  
-  // Sync state with ref
-  useEffect(() => {
-    if (modalShouldBeOpen.current && !isAddReportsModalOpen) {
-      console.log('TeamDashboard: Ref says modal should be open, but state is false. Fixing...');
-      setIsAddReportsModalOpen(true);
-    }
-  });
 
+  const [selectedSprint, setSelectedSprint] = useState('');
+  const [currentSprintName, setCurrentSprintName] = useState('');
+
+  const configLoadedRef = useRef(false);
+  const systemConfigRef = useRef<{ reportIds: string[], layoutConfig: any } | null>(null);
+  
+  // Refs for latest values to avoid stale closures
+  const selectedTeamRef = useRef(selectedTeam);
+  const selectedTreeTypeRef = useRef(selectedTreeType);
+  const selectedSprintRef = useRef(selectedSprint);
+  const layoutConfigRef = useRef(layoutConfig);
+  const dashboardReportsRef = useRef(dashboardReports);
+  
+  // Keep refs in sync
   useEffect(() => {
+    selectedTeamRef.current = selectedTeam;
+    selectedTreeTypeRef.current = selectedTreeType;
+    selectedSprintRef.current = selectedSprint;
+    layoutConfigRef.current = layoutConfig;
+    dashboardReportsRef.current = dashboardReports;
+  }, [selectedTeam, selectedTreeType, selectedSprint, layoutConfig, dashboardReports]);
+
+  // Load system config and report definitions once
+  useEffect(() => {
+    if (configLoadedRef.current) return;
+    
     const fetchConfig = async () => {
       setLoadingConfig(true);
       setConfigError(null);
@@ -123,131 +145,129 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
         });
         setAvailableReports(teamReports);
         
-        // Wait for user settings to load first
-        while (dashboardSettings.isLoading) {
-          await new Promise(resolve => setTimeout(resolve, 50));
-        }
+        // Store system config for fallback
+        const teamDashboardConfig = config.find((c) => c.view === 'team-dashboard');
+        systemConfigRef.current = teamDashboardConfig ? {
+          reportIds: teamDashboardConfig.reportIds,
+          layoutConfig: teamDashboardConfig.layout_config || null
+        } : null;
         
-        // Priority: User Settings > System Config > Defaults
-        // First, restore top bar filters if saved (independent of layout)
-        if (dashboardSettings.savedState && dashboardSettings.savedState.topBarFilters && 
-            Object.keys(dashboardSettings.savedState.topBarFilters).length > 0) {
-          console.log('[TeamDashboard] Restoring top bar filters:', dashboardSettings.savedState.topBarFilters);
-          
-          // Restore local filters (like sprint selection)
-          if (dashboardSettings.savedState.topBarFilters.selectedSprint !== undefined) {
-            setSelectedSprint(dashboardSettings.savedState.topBarFilters.selectedSprint);
-          }
-          
-          // Notify parent to restore top bar filters (team/group selection)
-          window.dispatchEvent(new CustomEvent('restore-dashboard-filters', {
-            detail: {
-              dashboard: 'team-dashboard',
-              filters: dashboardSettings.savedState.topBarFilters
-            }
-          }));
-        }
-        
-        if (dashboardSettings.savedState && dashboardSettings.savedState.layoutConfig) {
-          // Use user settings for layout
-          setLayoutConfig(dashboardSettings.savedState.layoutConfig);
-          
-          // Extract report IDs from layout
-          const reportIds = dashboardSettings.savedState.layoutConfig.rows.flatMap(row => row.reportIds);
-          setDashboardReports(reportIds.length > 0 ? reportIds : TEAM_DASHBOARD_DEFAULTS);
-        } else {
-          // Fall back to system config
-          const teamDashboardConfig = config.find((c) => c.view === 'team-dashboard');
-          if (teamDashboardConfig) {
-            setDashboardReports(teamDashboardConfig.reportIds);
-            setLayoutConfig(teamDashboardConfig.layout_config || null);
-          } else {
-            setDashboardReports(TEAM_DASHBOARD_DEFAULTS);
-            setLayoutConfig(null);
-          }
-        }
+        configLoadedRef.current = true;
       } catch (err) {
         console.error('Failed to fetch dashboard config:', err);
         setConfigError('Failed to load dashboard configuration.');
-        setDashboardReports(TEAM_DASHBOARD_DEFAULTS);
-        setLayoutConfig(null);
       } finally {
         setLoadingConfig(false);
       }
     };
     fetchConfig();
-  }, [dashboardSettings.isLoading, dashboardSettings.savedState]);
+  }, []);
 
-  const [selectedSprint, setSelectedSprint] = useState('');
-  const [currentSprintName, setCurrentSprintName] = useState('');
+  const settingsAppliedRef = useRef(false);
+
+  // Apply saved settings when they become available (only once)
+  useEffect(() => {
+    if (!configLoadedRef.current || dashboardSettings.isLoading || settingsAppliedRef.current) return;
+    
+    // Apply saved top bar filters
+    if (dashboardSettings.savedState?.topBarFilters && 
+        Object.keys(dashboardSettings.savedState.topBarFilters).length > 0) {
+      console.log('[TeamDashboard] Applying saved top bar filters:', dashboardSettings.savedState.topBarFilters);
+      
+      if (dashboardSettings.savedState.topBarFilters.selectedSprint !== undefined) {
+        setSelectedSprint(dashboardSettings.savedState.topBarFilters.selectedSprint);
+      }
+      
+      // Only dispatch event if current props don't match saved settings
+      const savedTeam = dashboardSettings.savedState.topBarFilters.selectedTeam || dashboardSettings.savedState.topBarFilters.team_name;
+      const savedTreeType = dashboardSettings.savedState.topBarFilters.selectedTreeType || dashboardSettings.savedState.topBarFilters.isGroup ? 'group' : 'team';
+      
+      if (savedTeam && savedTeam !== selectedTeam) {
+        console.log('[TeamDashboard] Team mismatch, dispatching restore event');
+        window.dispatchEvent(new CustomEvent('restore-dashboard-filters', {
+          detail: {
+            dashboard: 'team-dashboard',
+            filters: dashboardSettings.savedState.topBarFilters
+          }
+        }));
+      }
+    }
+    
+    // Apply saved layout or fall back to system config
+    if (dashboardSettings.savedState?.layoutConfig) {
+      setLayoutConfig(dashboardSettings.savedState.layoutConfig);
+      const reportIds = dashboardSettings.savedState.layoutConfig.rows.flatMap((row: any) => row.reportIds);
+      setDashboardReports(reportIds.length > 0 ? reportIds : TEAM_DASHBOARD_DEFAULTS);
+    } else if (systemConfigRef.current) {
+      setDashboardReports(systemConfigRef.current.reportIds);
+      setLayoutConfig(systemConfigRef.current.layoutConfig);
+    } else {
+      setDashboardReports(TEAM_DASHBOARD_DEFAULTS);
+      setLayoutConfig(null);
+    }
+    
+    settingsAppliedRef.current = true; // Mark as applied to prevent re-runs
+    console.log('[TeamDashboard] Settings applied. Current saved state:', dashboardSettings.savedState);
+  }, [dashboardSettings.isLoading, dashboardSettings.savedState]);
 
   useEffect(() => {
     setSelectedSprint('');
     setCurrentSprintName('');
   }, [selectedTeam]);
   
-  // Track layout config changes
+  const prevLayoutRef = useRef<string | null>(null);
+
+  // Track layout config changes (only after settings have been applied and only if actually different from previous)
   useEffect(() => {
-    if (!dashboardSettings.isLoading && layoutConfig !== null) {
-      dashboardSettings.updateCurrentState({ layoutConfig });
+    if (!dashboardSettings.isLoading && layoutConfig !== null && settingsAppliedRef.current) {
+      const layoutStr = JSON.stringify(layoutConfig);
+      
+      if (prevLayoutRef.current !== layoutStr) {
+        console.log('[TeamDashboard] Layout changed, updating state');
+        dashboardSettings.updateCurrentState({ layoutConfig });
+        prevLayoutRef.current = layoutStr;
+      }
     }
   }, [layoutConfig, dashboardSettings.isLoading]);
   
-  // Track top bar filters changes
+  const prevFiltersRef = useRef({ selectedTeam, selectedTreeType, selectedSprint });
+
+  // Track top bar filters changes (only after settings have been applied and only if actually different from previous)
   useEffect(() => {
-    if (!dashboardSettings.isLoading) {
-      dashboardSettings.updateCurrentState({
-        topBarFilters: {
-          selectedTeam, // Save the team/group name, not the tree value
-          selectedTreeType,
-          selectedSprint,
-        },
-      });
+    if (!dashboardSettings.isLoading && settingsAppliedRef.current) {
+      const newFilters = {
+        selectedTeam,
+        selectedTreeType,
+        selectedSprint,
+      };
+      
+      const prev = prevFiltersRef.current;
+      const isDifferent = prev.selectedTeam !== newFilters.selectedTeam ||
+        prev.selectedTreeType !== newFilters.selectedTreeType ||
+        prev.selectedSprint !== newFilters.selectedSprint;
+      
+      if (isDifferent) {
+        console.log('[TeamDashboard] Top bar filters changed, updating state');
+        dashboardSettings.updateCurrentState({ topBarFilters: newFilters });
+        prevFiltersRef.current = newFilters;
+      }
     }
-  }, [selectedTeam, selectedTreeType, selectedSprint, dashboardSettings.isLoading, dashboardSettings.updateCurrentState]);
+  }, [selectedTeam, selectedTreeType, selectedSprint, dashboardSettings.isLoading]);
   
-  // Expose save settings function and state to parent via custom event
+  // Set up event listeners once
   useEffect(() => {
     const handleSaveRequest = async () => {
       try {
-        // Before saving, apply current top bar filters to all reports
-        // This ensures unpinned filters get the current top bar values
-        const topBarFilters: Record<string, any> = {
-          team_name: selectedTeam,
-          isGroup: selectedTreeType === 'group',
-          sprint_name: selectedSprint,
-        };
+        console.log('[TeamDashboard] Save requested');
         
-        // Update top bar filters in dashboard state
-        dashboardSettings.updateCurrentState({ topBarFilters });
-        
-        // Get all report IDs from the layout config or dashboard reports
-        const allReportIds = layoutConfig 
-          ? layoutConfig.rows.flatMap(row => row.reportIds)
-          : dashboardReports;
-        
-        // Apply top bar filters to all reports that aren't pinned
-        allReportIds.forEach((reportId: string) => {
-          const currentReportFilters = dashboardSettings.currentState.reportFilters[reportId] || {};
-          const pinnedKeys = dashboardSettings.currentState.pinnedFilters[reportId] || [];
-          
-          // Apply top bar values to unpinned filters
-          const updatedFilters = { ...currentReportFilters };
-          Object.keys(topBarFilters).forEach(filterKey => {
-            if (!pinnedKeys.includes(filterKey)) {
-              updatedFilters[filterKey] = topBarFilters[filterKey];
-            }
-          });
-          
-          dashboardSettings.updateReportFilters(reportId, updatedFilters);
-        });
-        
-        // Small delay to ensure state updates are processed
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
+        // The tracking useEffects should have already updated the state
+        // Just save what's in the current state
         await dashboardSettings.saveSettings();
+        
+        console.log('[TeamDashboard] Save completed');
         window.dispatchEvent(new CustomEvent('dashboard-settings-saved'));
       } catch (err) {
+        console.error('[TeamDashboard] Save failed:', err);
         window.dispatchEvent(new CustomEvent('dashboard-settings-save-failed', { 
           detail: { error: err } 
         }));
@@ -265,7 +285,14 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
     window.addEventListener('save-dashboard-settings', handleSaveRequest as EventListener);
     window.addEventListener('reset-dashboard-settings', handleResetRequest as EventListener);
     
-    // Dispatch current state to parent
+    return () => {
+      window.removeEventListener('save-dashboard-settings', handleSaveRequest as EventListener);
+      window.removeEventListener('reset-dashboard-settings', handleResetRequest as EventListener);
+    };
+  }, []); // Empty deps - handlers access latest values via closure
+
+  // Dispatch state changes to parent only when settings state changes
+  useEffect(() => {
     window.dispatchEvent(new CustomEvent('dashboard-settings-state', {
       detail: {
         hasChanges: dashboardSettings.hasChanges,
@@ -273,26 +300,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
         error: dashboardSettings.error,
       },
     }));
-    
-    return () => {
-      window.removeEventListener('save-dashboard-settings', handleSaveRequest as EventListener);
-      window.removeEventListener('reset-dashboard-settings', handleResetRequest as EventListener);
-    };
-  }, [
-    dashboardSettings.hasChanges, 
-    dashboardSettings.isSaving, 
-    dashboardSettings.error, 
-    dashboardSettings.saveSettings, 
-    dashboardSettings.resetToDefaults,
-    dashboardSettings.currentState,
-    dashboardSettings.updateCurrentState,
-    dashboardSettings.updateReportFilters,
-    layoutConfig,
-    dashboardReports,
-    selectedTeam,
-    selectedTreeType,
-    selectedSprint
-  ]);
+  }, [dashboardSettings.hasChanges, dashboardSettings.isSaving, dashboardSettings.error]);
 
   const handleBurndownResolved = useCallback((payload: ReportInstancePayload) => {
     const sprintFromMeta = payload?.meta?.sprint_name;
@@ -311,6 +319,15 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
       ),
     }),
     []
+  );
+
+  // Memoize controlledFilters to prevent infinite re-renders in ReportPanel
+  const controlledFilters = useMemo(
+    () => ({
+      team_name: selectedTeam,
+      isGroup: selectedTreeType === 'group',
+    }),
+    [selectedTeam, selectedTreeType]
   );
 
   if (loadingConfig) {
@@ -346,6 +363,9 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
     const savedReportFilters = dashboardSettings.savedState?.reportFilters?.[reportId] || {};
     const savedPinnedFilters = dashboardSettings.savedState?.pinnedFilters?.[reportId] || [];
     
+    console.log(`[TeamDashboard] Rendering ${reportId} with saved filters:`, savedReportFilters);
+    console.log(`[TeamDashboard] Saved pinned filters for ${reportId}:`, savedPinnedFilters);
+    
     switch (reportId) {
       case 'team-closed-sprints':
         // Use controlledFilters for dynamic values (team_name, isGroup) so they update when filter changes
@@ -355,10 +375,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             reportId="team-closed-sprints"
             initialFilters={{ months: 3, ...savedReportFilters }}
             initialPinnedFilters={savedPinnedFilters}
-            controlledFilters={{
-              team_name: selectedTeam || null,
-              isGroup: selectedTreeType === 'group',
-            }}
+            controlledFilters={controlledFilters}
             enabled
             onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
             onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
@@ -375,10 +392,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
               ...savedReportFilters
             }}
             initialPinnedFilters={savedPinnedFilters}
-            controlledFilters={{
-              team_name: selectedTeam || null,
-              isGroup: selectedTreeType === 'group',
-            }}
+            controlledFilters={controlledFilters}
             enabled
             componentProps={{
               sprintOptions: SPRINT_OPTIONS,
@@ -397,10 +411,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             reportId="team-issues-trend"
             initialFilters={{ issue_type: 'Bug', months: 6, ...savedReportFilters }}
             initialPinnedFilters={savedPinnedFilters}
-            controlledFilters={{
-              team_name: selectedTeam,
-              isGroup: selectedTreeType === 'group',
-            }}
+            controlledFilters={controlledFilters}
             enabled
             onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
             onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
@@ -413,10 +424,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             reportId="sprint-predictability"
             initialFilters={{ months: 3, ...savedReportFilters }}
             initialPinnedFilters={savedPinnedFilters}
-            controlledFilters={{
-              team_name: selectedTeam,
-              isGroup: selectedTreeType === 'group',
-            }}
+            controlledFilters={controlledFilters}
             enabled={Boolean(selectedTeam)}
             onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
             onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
@@ -436,10 +444,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             initialPinnedFilters={savedPinnedFilters}
             onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
             onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
-            controlledFilters={{
-              team_name: selectedTeam,
-              isGroup: selectedTreeType === 'group',
-            }}
+            controlledFilters={controlledFilters}
             enabled={Boolean(selectedTeam)}
             {...commonPanelProps}
           />
@@ -450,10 +455,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             reportId={reportId}
             initialFilters={savedReportFilters}
             initialPinnedFilters={savedPinnedFilters}
-            controlledFilters={{
-              team_name: selectedTeam,
-              isGroup: selectedTreeType === 'group',
-            }}
+            controlledFilters={controlledFilters}
             enabled={Boolean(selectedTeam)}
             onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
             onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
@@ -469,12 +471,6 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
     if (isMobile) {
       console.log('TeamDashboard: Rendering MOBILE view with modal');
       const allReportIds = layoutConfig.rows.flatMap((row) => row.reportIds);
-      
-      // Filter to only show reports that are in the configured list
-      const configuredReportIds = new Set(dashboardReports);
-      const filteredAvailableReports = availableReports.filter((report) => 
-        configuredReportIds.has(report.report_id)
-      );
       
       return (
         <>
@@ -493,7 +489,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
               modalShouldBeOpen.current = false;
               setIsAddReportsModalOpen(false);
             }}
-            availableReports={filteredAvailableReports}
+            availableReports={availableReports}
             currentReportIds={allReportIds}
             onUpdateReports={(reportIds: string[]) => {
               console.log('Mobile: handleUpdateReports called with:', reportIds);
@@ -591,12 +587,6 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
 
     const currentReportIds = layoutConfig.rows.flatMap((row) => row.reportIds);
     
-    // Filter to only show reports that are in the configured list (from system settings)
-    const configuredReportIds = new Set(dashboardReports);
-    const filteredAvailableReports = availableReports.filter((report) => 
-      configuredReportIds.has(report.report_id)
-    );
-
     return (
       <div className="h-full flex flex-col">
         <div className="flex-1 px-4 pb-4 overflow-auto">
@@ -617,7 +607,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             modalShouldBeOpen.current = false;
             setIsAddReportsModalOpen(false);
           }}
-          availableReports={filteredAvailableReports}
+          availableReports={availableReports}
           currentReportIds={currentReportIds}
           onUpdateReports={handleUpdateReports}
         />
@@ -659,9 +649,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
           modalShouldBeOpen.current = false;
           setIsAddReportsModalOpen(false);
         }}
-        availableReports={availableReports.filter((report) => 
-          new Set(dashboardReports).has(report.report_id)
-        )}
+        availableReports={availableReports}
         currentReportIds={dashboardReports}
         onUpdateReports={handleUpdateReportsFallback}
       />

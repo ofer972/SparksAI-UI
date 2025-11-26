@@ -129,16 +129,25 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
   const gracePeriod = Number(filters.plan_grace_period ?? 5);
   const isDashboard = componentProps?.isDashboard;
   
+  console.log('[PIMetricsSummary] Current filters:', { piName, teamName, isGroup });
+  
   // Look up ID from name to construct proper teamValue
   const teamValue = useMemo(() => {
-    if (!teamName) return null;
+    if (!teamName) {
+      console.log('[PIMetricsSummary] No team name, returning null');
+      return null;
+    }
     
     if (isGroup) {
       const group = groups.find(g => g.group_name === teamName);
-      return group ? `group:${group.group_key}` : null;
+      const value = group ? `group:${group.group_key}` : null;
+      console.log(`[PIMetricsSummary] Looking for group "${teamName}":`, value);
+      return value;
     } else {
       const team = teams.find(t => t.team_name === teamName);
-      return team ? `team:${team.team_key}` : null;
+      const value = team ? `team:${team.team_key}` : null;
+      console.log(`[PIMetricsSummary] Looking for team "${teamName}":`, value);
+      return value;
     }
   }, [teamName, isGroup, groups, teams]);
 

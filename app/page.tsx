@@ -23,13 +23,20 @@ import { getIssueTypes, getDefaultIssueType } from '@/lib/issueTypes';
 import { ApiService, verifyAdmin, listUsers, getUserRoles, getAllowlist, addAllowlist, deleteAllowlist, deleteUser, listRoles, assignRoleToUser, unassignRoleFromUser, getPendingRoles, assignPendingRole, unassignPendingRole, RoleDto, UserDto } from '@/lib/api';
 import DashboardAIMenu from '@/components/DashboardAIMenu';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
+import { usePageSettings } from '@/hooks/usePageSettings';
 
 export default function Home() {
   const router = useRouter();
   const { groups, teams, loading: teamsLoading } = useTeamsGroups();
+  
+  // Page settings hooks for insights pages
+  const teamInsightSettings = usePageSettings('team-insight');
+  const piInsightSettings = usePageSettings('pi-insight');
+  
   const [authChecked, setAuthChecked] = useState(false);
   const [pendingRestore, setPendingRestore] = useState<{dashboard: string, filters: any} | null>(null);
   const initializedTreeValues = useRef(false);
+  const appliedRestoreRef = useRef(false);
   useEffect(() => {
     (async () => {
       const token = getAccessToken();
@@ -46,12 +53,13 @@ export default function Home() {
     })();
   }, [router]);
 
-  // Apply pending filter restore when teams/groups finish loading
+  // Apply pending filter restore when teams/groups finish loading (only once)
   useEffect(() => {
-    if (!teamsLoading && pendingRestore && (groups.length > 0 || teams.length > 0)) {
+    if (!teamsLoading && pendingRestore && (groups.length > 0 || teams.length > 0) && !appliedRestoreRef.current) {
       console.log('[Dashboard Settings] Teams/groups loaded, applying pending restore');
       applyFilterRestore(pendingRestore.dashboard, pendingRestore.filters);
       setPendingRestore(null);
+      appliedRestoreRef.current = true;
     }
   }, [teamsLoading, groups, teams, pendingRestore]);
 
@@ -119,9 +127,27 @@ export default function Home() {
     }
   };
 
-  const [activeNavItem, setActiveNavItem] = useState('team-ai-insights');
+  type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-quarter' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin';
+  const [activeNavItem, setActiveNavItem] = useState<NavItemId>('team-ai-insights');
+  const prevActiveNavItemRef = useRef<NavItemId>(activeNavItem);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  
+  // Reset appliedRestoreRef only when changing between different dashboard types
+  useEffect(() => {
+    const prevNav = prevActiveNavItemRef.current;
+    const currentNav = activeNavItem;
+    
+    // Reset if switching between different dashboard types or entering a dashboard from non-dashboard
+    const isDashboardNav = (nav: NavItemId) => nav === 'team-dashboard' || nav === 'pi-dashboard';
+    
+    if (isDashboardNav(currentNav) && prevNav !== currentNav) {
+      console.log(`[App] Switching dashboard types from ${prevNav} to ${currentNav}, resetting restore flag`);
+      appliedRestoreRef.current = false;
+    }
+    
+    prevActiveNavItemRef.current = currentNav;
+  }, [activeNavItem]);
   
   // Separate filter state for each dashboard
   const [teamDashboardFilters, setTeamDashboardFilters] = useState({
@@ -175,6 +201,13 @@ export default function Home() {
     error: string | null;
   }>({ hasChanges: false, isSaving: false, error: null });
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  
+  // Insight settings state (for team-insight and pi-insight pages)
+  const [insightSettingsState, setInsightSettingsState] = useState<{
+    hasChanges: boolean;
+    isSaving: boolean;
+    error: string | null;
+  }>({ hasChanges: false, isSaving: false, error: null });
 
   // Initialize tree values for default teams when teams/groups data loads (only once)
   useEffect(() => {
@@ -263,6 +296,12 @@ export default function Home() {
       const { dashboard, filters } = event.detail;
       console.log(`[Dashboard Settings] Restoring filters for ${dashboard}:`, filters);
       
+      // If already applied, ignore
+      if (appliedRestoreRef.current) {
+        console.log('[Dashboard Settings] Restore already applied, ignoring');
+        return;
+      }
+      
       // If teams/groups are still loading, store for later
       if (teamsLoading || (groups.length === 0 && teams.length === 0)) {
         console.log('[Dashboard Settings] Teams/groups not loaded yet, storing restore for later');
@@ -272,6 +311,7 @@ export default function Home() {
       
       // Apply restore immediately
       applyFilterRestore(dashboard, filters);
+      appliedRestoreRef.current = true;
     };
     
     window.addEventListener('dashboard-settings-state', handleSettingsState as EventListener);
@@ -299,6 +339,133 @@ export default function Home() {
     // Reload the page to apply defaults
     setTimeout(() => window.location.reload(), 500);
   };
+
+  // Track team insight settings changes
+  useEffect(() => {
+    if (!teamInsightSettings.isLoading && activeNavItem === 'team-ai-insights') {
+      teamInsightSettings.updateCurrentState({
+        topBarFilters: {
+          selectedTeam,
+          selectedTreeType,
+        },
+        selectedCategories,
+      });
+    }
+  }, [selectedTeam, selectedTreeType, selectedCategories, activeNavItem, teamInsightSettings.isLoading]);
+
+  // Track PI insight settings changes
+  useEffect(() => {
+    if (!piInsightSettings.isLoading && activeNavItem === 'pi-quarter') {
+      piInsightSettings.updateCurrentState({
+        topBarFilters: {
+          selectedPI,
+          selectedTeam,
+          selectedTreeType,
+        },
+      });
+    }
+  }, [selectedPI, selectedTeam, selectedTreeType, activeNavItem, piInsightSettings.isLoading]);
+
+  // Update insight settings state based on active page
+  useEffect(() => {
+    if (activeNavItem === 'team-ai-insights') {
+      setInsightSettingsState({
+        hasChanges: teamInsightSettings.hasChanges,
+        isSaving: teamInsightSettings.isSaving,
+        error: teamInsightSettings.error,
+      });
+    } else if (activeNavItem === 'pi-quarter') {
+      setInsightSettingsState({
+        hasChanges: piInsightSettings.hasChanges,
+        isSaving: piInsightSettings.isSaving,
+        error: piInsightSettings.error,
+      });
+    }
+  }, [
+    activeNavItem,
+    teamInsightSettings.hasChanges,
+    teamInsightSettings.isSaving,
+    teamInsightSettings.error,
+    piInsightSettings.hasChanges,
+    piInsightSettings.isSaving,
+    piInsightSettings.error,
+  ]);
+
+  // Handle insight settings save
+  const handleSaveInsightSettings = async () => {
+    try {
+      if (activeNavItem === 'team-ai-insights') {
+        await teamInsightSettings.saveSettings();
+      } else if (activeNavItem === 'pi-quarter') {
+        await piInsightSettings.saveSettings();
+      }
+      setMessage({ type: 'success', text: 'Insight settings saved successfully' });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Failed to save insight settings' });
+      setTimeout(() => setMessage(null), 3000);
+    }
+  };
+
+  // Load saved team insight settings
+  useEffect(() => {
+    if (!teamInsightSettings.isLoading && teamInsightSettings.savedState && activeNavItem === 'team-ai-insights') {
+      const saved = teamInsightSettings.savedState;
+      if (saved.topBarFilters) {
+        const teamName = saved.topBarFilters.selectedTeam;
+        const treeType = saved.topBarFilters.selectedTreeType;
+        
+        if (teamName) {
+          setSelectedTeam(teamName);
+          setSelectedTreeLabel(teamName);
+          
+          // Find and set the tree value from the team/group name
+          if (treeType === 'group') {
+            const group = groups.find(g => g.group_name === teamName);
+            if (group) setSelectedTreeValue(`group:${group.group_key}`);
+          } else {
+            const team = teams.find(t => t.team_name === teamName);
+            if (team) setSelectedTreeValue(`team:${team.team_key}`);
+          }
+        }
+        
+        if (treeType) setSelectedTreeType(treeType);
+      }
+      // Apply saved categories (even if empty array)
+      if (saved.selectedCategories !== undefined) {
+        setSelectedCategories(saved.selectedCategories);
+      }
+    }
+  }, [teamInsightSettings.isLoading, teamInsightSettings.savedState, activeNavItem, groups, teams]);
+
+  // Load saved PI insight settings
+  useEffect(() => {
+    if (!piInsightSettings.isLoading && piInsightSettings.savedState && activeNavItem === 'pi-quarter') {
+      const saved = piInsightSettings.savedState;
+      if (saved.topBarFilters) {
+        if (saved.topBarFilters.selectedPI) setSelectedPI(saved.topBarFilters.selectedPI);
+        
+        const teamName = saved.topBarFilters.selectedTeam;
+        const treeType = saved.topBarFilters.selectedTreeType;
+        
+        if (teamName) {
+          setSelectedTeam(teamName);
+          setSelectedTreeLabel(teamName);
+          
+          // Find and set the tree value from the team/group name
+          if (treeType === 'group') {
+            const group = groups.find(g => g.group_name === teamName);
+            if (group) setSelectedTreeValue(`group:${group.group_key}`);
+          } else {
+            const team = teams.find(t => t.team_name === teamName);
+            if (team) setSelectedTreeValue(`team:${team.team_key}`);
+          }
+        }
+        
+        if (treeType) setSelectedTreeType(treeType);
+      }
+    }
+  }, [piInsightSettings.isLoading, piInsightSettings.savedState, activeNavItem, groups, teams]);
 
   const apiService = new ApiService();
 
@@ -1072,7 +1239,7 @@ export default function Home() {
                         {group.items.map((item) => (
                           <button
                             key={item.id}
-                            onClick={() => { setActiveNavItem(item.id); setMobileSidebarOpen(false); }}
+                            onClick={() => { setActiveNavItem(item.id as NavItemId); setMobileSidebarOpen(false); }}
                             className={`w-full flex items-center space-x-2 px-2 py-1.5 rounded-lg text-left transition-colors ${
                               activeNavItem === item.id
                                 ? 'bg-blue-50 text-blue-700 border border-blue-200'
@@ -1114,7 +1281,7 @@ export default function Home() {
                 {navigationGroups.flatMap((g) => g.items).map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => setActiveNavItem(item.id)}
+                    onClick={() => setActiveNavItem(item.id as NavItemId)}
                     className={`w-full flex items-center justify-center px-2 py-2 rounded-lg transition-colors ${
                       activeNavItem === item.id
                         ? 'bg-blue-50 text-blue-700 border border-blue-200'
@@ -1142,7 +1309,7 @@ export default function Home() {
                           {group.items.map((item) => (
                             <button
                               key={item.id}
-                              onClick={() => setActiveNavItem(item.id)}
+                              onClick={() => setActiveNavItem(item.id as NavItemId)}
                               className={`w-full flex items-center space-x-2 px-2 py-1.5 rounded-lg text-left transition-colors ${
                                 activeNavItem === item.id
                                   ? 'bg-blue-50 text-blue-700 border border-blue-200'
@@ -1316,7 +1483,7 @@ export default function Home() {
                     </svg>
                   </button>
                   
-                  {/* Save Settings Button */}
+                  {/* Save Settings Button - for dashboards */}
                   <button
                     onClick={handleSaveDashboardSettings}
                     disabled={!dashboardSettingsState.hasChanges || dashboardSettingsState.isSaving}
@@ -1340,21 +1507,25 @@ export default function Home() {
                     )}
                   </button>
                   
-                  {/* Reset to Defaults Button */}
-                  <button
-                    onClick={() => setShowResetConfirm(true)}
-                    disabled={dashboardSettingsState.isSaving}
-                    className="hidden md:inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-300 text-gray-500 hover:text-red-600 hover:border-red-400 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Reset dashboard to defaults"
-                    aria-label="Reset to defaults"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                    </svg>
-                  </button>
+                  {/* Reset to Defaults Button - for dashboards only */}
+                  {(['team-dashboard', 'pi-dashboard'].includes(activeNavItem)) && (
+                    <button
+                      onClick={() => setShowResetConfirm(true)}
+                      disabled={dashboardSettingsState.isSaving}
+                      className="hidden md:inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-300 text-gray-500 hover:text-red-600 hover:border-red-400 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Reset dashboard to defaults"
+                      aria-label="Reset to defaults"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                      </svg>
+                    </button>
+                  )}
                   
                   {/* Divider */}
-                  <div className="h-6 w-px bg-gray-300 mx-1"></div>
+                  {(['team-dashboard', 'pi-dashboard'].includes(activeNavItem)) && (
+                    <div className="h-6 w-px bg-gray-300 mx-1"></div>
+                  )}
                   
                   {/* AI Chat Button */}
                   <DashboardAIMenu
@@ -1428,6 +1599,7 @@ export default function Home() {
                     <InsightCategoryFilter
                       selectedCategories={selectedCategories}
                       onCategoriesChange={setSelectedCategories}
+                      settingsLoading={teamInsightSettings.isLoading}
                     />
                   </div>
                 )}
@@ -1435,8 +1607,34 @@ export default function Home() {
                 {/* Spacer to push actions to the right */}
                 <div className="flex-1"></div>
 
-                {/* Right side: user info */}
-                <div className="hidden md:flex items-center space-x-3">
+                {/* Right side: save button (for insights), user info, logout */}
+                <div className="hidden md:flex items-center gap-2">
+                  {/* Save Settings Button - for insights */}
+                  {(['team-ai-insights', 'pi-quarter'].includes(activeNavItem)) && (
+                    <button
+                      onClick={handleSaveInsightSettings}
+                      disabled={!insightSettingsState.hasChanges || insightSettingsState.isSaving}
+                      className={`inline-flex items-center justify-center h-8 w-8 rounded-lg border transition-all ${
+                        insightSettingsState.hasChanges && !insightSettingsState.isSaving
+                          ? 'border-blue-500 text-blue-600 hover:text-blue-700 hover:border-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer' 
+                          : 'border-gray-300 text-gray-400 cursor-not-allowed'
+                      }`}
+                      title={insightSettingsState.isSaving ? 'Saving...' : insightSettingsState.hasChanges ? 'Save insight filters' : 'No changes to save'}
+                      aria-label="Save insight settings"
+                    >
+                      {insightSettingsState.isSaving ? (
+                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                        </svg>
+                      )}
+                    </button>
+                  )}
+                  
                   <div className="flex items-center space-x-3 text-sm text-gray-700">
                     {(() => {
                       const u = getCurrentUser();
@@ -1493,6 +1691,7 @@ export default function Home() {
               <InsightCategoryFilter
                 selectedCategories={selectedCategories}
                 onCategoriesChange={setSelectedCategories}
+                settingsLoading={teamInsightSettings.isLoading}
               />
             )}
           </div>

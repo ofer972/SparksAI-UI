@@ -298,7 +298,7 @@ const IssuesByTeamView: React.FC<IssuesByTeamViewProps> = ({
                   <p className="text-gray-700" style={{ color }}>
                     {id}: {value}
                   </p>
-                </div>
+              </div>
               )}
               legends={[]}
               role="application"

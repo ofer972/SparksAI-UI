@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { ReportDefinition } from '@/lib/config';
 
 interface AddReportsModalProps {
@@ -23,36 +23,48 @@ export default function AddReportsModal({
 
   // Prevent immediate close on mobile
   const [justOpened, setJustOpened] = useState(false);
+  
+  // Track if modal was previously open to avoid resetting selection during interaction
+  const prevIsOpenRef = useRef(isOpen);
 
-  // Reset selection when modal opens or currentReportIds change
+  // Reset selection only when modal transitions from closed to open
   useEffect(() => {
-    if (isOpen) {
-      console.log('AddReportsModal: Modal is now open');
+    const wasJustOpened = !prevIsOpenRef.current && isOpen;
+    prevIsOpenRef.current = isOpen;
+    
+    if (wasJustOpened) {
+      console.log('AddReportsModal: Modal opened, initializing selection');
       setSelectedReports(new Set(currentReportIds));
       // Lock body scroll on mobile when modal is open
       document.body.style.overflow = 'hidden';
       // Set flag to prevent immediate close
       setJustOpened(true);
       setTimeout(() => setJustOpened(false), 300);
-    } else {
+    } else if (!isOpen) {
       // Restore body scroll when modal closes
       document.body.style.overflow = '';
       setJustOpened(false);
     }
     
     return () => {
-      document.body.style.overflow = '';
+      if (!isOpen) {
+        document.body.style.overflow = '';
+      }
     };
-  }, [isOpen, currentReportIds]);
+  }, [isOpen]); // Removed currentReportIds from dependencies
 
   const handleToggle = (reportId: string) => {
+    console.log('AddReportsModal: handleToggle called for reportId:', reportId);
     setSelectedReports((prev) => {
       const next = new Set(prev);
       if (next.has(reportId)) {
+        console.log('AddReportsModal: Removing report:', reportId);
         next.delete(reportId);
       } else {
+        console.log('AddReportsModal: Adding report:', reportId);
         next.add(reportId);
       }
+      console.log('AddReportsModal: New selection:', Array.from(next));
       return next;
     });
   };
@@ -71,8 +83,9 @@ export default function AddReportsModal({
 
   console.log('AddReportsModal: Modal IS OPEN - Rendering modal - SHOULD BE VISIBLE NOW');
   console.log('Available reports:', availableReports.length);
+  console.log('Available reports details:', availableReports.map(r => ({ id: r.report_id, name: r.report_name })));
   console.log('Current report IDs:', currentReportIds);
-  console.log('Stack trace:', new Error().stack);
+  console.log('Selected reports:', Array.from(selectedReports));
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     // Prevent immediate close on mobile (touch events can trigger click immediately)
@@ -98,8 +111,7 @@ export default function AddReportsModal({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        touchAction: 'none'
+        backgroundColor: 'rgba(0, 0, 0, 0.5)'
       }}
     >
       <div
@@ -124,25 +136,35 @@ export default function AddReportsModal({
         {/* Content */}
         <div className="flex-1 overflow-auto p-6">
           <div className="space-y-2">
-            {availableReports.map((report) => {
-              const isChecked = selectedReports.has(report.report_id);
-              const isCurrentlyDisplayed = currentReportIds.includes(report.report_id);
-              
-              return (
-                <label
-                  key={report.report_id}
-                  className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                    isChecked 
-                      ? 'border-blue-300 bg-blue-50' 
-                      : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => handleToggle(report.report_id)}
-                    className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
+            {availableReports.length === 0 ? (
+              <div className="text-center text-gray-500 py-8">
+                No reports available
+              </div>
+            ) : (
+              availableReports.map((report) => {
+                const isChecked = selectedReports.has(report.report_id);
+                const isCurrentlyDisplayed = currentReportIds.includes(report.report_id);
+                
+                return (
+                  <div
+                    key={report.report_id}
+                    className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                      isChecked 
+                        ? 'border-blue-300 bg-blue-50' 
+                        : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                    }`}
+                    onClick={() => {
+                      console.log('AddReportsModal: Div clicked for report:', report.report_id);
+                      handleToggle(report.report_id);
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => {}}
+                      readOnly
+                      className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer pointer-events-none"
+                    />
                   <div className="flex-1">
                     <div className="font-semibold text-gray-900 flex items-center gap-2">
                       {report.report_name}
@@ -159,9 +181,10 @@ export default function AddReportsModal({
                       Type: {report.chart_type}
                     </div>
                   </div>
-                </label>
-              );
-            })}
+                </div>
+                );
+              })
+            )}
           </div>
         </div>
 
