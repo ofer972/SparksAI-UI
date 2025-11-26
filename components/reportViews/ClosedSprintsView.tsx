@@ -137,12 +137,23 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
         if (key === 'start_date') {
           return false;
         }
+        // Hide columns with "keys" in the name
+        if (key.includes('keys')) {
+          return false;
+        }
         return true;
       })
       .sort((a, b) => {
         // Put sprint_goal at the end (rightmost)
         if (a === 'sprint_goal') return 1;
         if (b === 'sprint_goal') return -1;
+        
+        // Put completion_percentage immediately after complete_date (but don't move complete_date)
+        // If comparing completion_percentage with complete_date, put completion_percentage after
+        if (a === 'completion_percentage' && b === 'complete_date') return 1;
+        if (b === 'completion_percentage' && a === 'complete_date') return -1;
+        
+        // Keep other columns in their original order
         return 0;
       });
     
@@ -176,31 +187,6 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
           maxLength: isExpandable ? 300 : undefined, // Make sprint_goal wider
           render: (value: any, row: ClosedSprint) => {
             if (value === null || value === undefined) return '-';
-
-            // Handle fields with "keys" in the name (arrays of issue keys)
-            if (keyStr.includes('keys') && Array.isArray(value)) {
-              const keys = value.filter((k) => k != null && k !== '');
-              if (keys.length === 0) {
-                return <span className="text-sm text-gray-500">0</span>;
-              }
-              const link = getJiraSearchLink(keys, jiraUrl);
-              return (
-                <span
-                  className="text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer inline-block"
-                  title={keys.join(', ')}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    if (link && link !== '#') {
-                      window.open(link, '_blank', 'noopener,noreferrer');
-                    }
-                  }}
-                  style={{ position: 'relative', zIndex: 10, pointerEvents: 'auto' }}
-                >
-                  {keys.length}
-                </span>
-              );
-            }
 
             if (keyStr.includes('date') && typeof value === 'string') {
               return formatDate(value);
@@ -239,6 +225,40 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
                 {num}%
               </span>
             );
+          }
+
+          // Check if this numeric field has a corresponding keys array for clickable links
+          // e.g., issues_done -> issues_done_keys, issues_added -> issues_added_keys
+          const keysFieldName = `${key}_keys`;
+          const keysArray = (row as any)[keysFieldName];
+          
+          // If there's a corresponding keys array and value is a number, make it clickable
+          if (Array.isArray(keysArray) && typeof value === 'number') {
+            const keys = keysArray.filter((k: any) => k != null && k !== '');
+            if (keys.length > 0) {
+              const link = getJiraSearchLink(keys, jiraUrl);
+              // Apply color coding based on field type
+              let colorClass = 'text-blue-600';
+              if (keyStr.includes('issues_done')) {
+                colorClass = 'text-green-600';
+              } else if (keyStr.includes('issues_remaining')) {
+                colorClass = 'text-red-600';
+              } else if (keyStr.includes('issues_')) {
+                colorClass = 'text-gray-700';
+              }
+              
+              return (
+                <a
+                  href={link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`text-sm font-semibold ${colorClass} hover:text-blue-800 hover:underline`}
+                  title={keys.join(', ')}
+                >
+                  {value}
+                </a>
+              );
+            }
           }
 
           if (keyStr.includes('issues_done')) {
