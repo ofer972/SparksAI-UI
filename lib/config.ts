@@ -278,6 +278,7 @@ export interface ClosedSprint {
   sprint_name: string;
   start_date: string;
   end_date: string;
+  complete_date?: string;
   sprint_goal: string;
   completion_percentage: number;
   issues_planned: number;
@@ -370,7 +371,7 @@ export interface MonthlyStatusDurationDataset {
 export interface SprintPredictabilityItem {
   team_name?: string;
   sprint_name: string;
-  sprint_official_end_date?: string;
+  complete_date?: string;
   sprint_predictability?: number;
   avg_story_cycle_time?: number;
   completed_issue_keys?: string[];

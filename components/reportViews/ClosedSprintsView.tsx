@@ -114,35 +114,50 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
     if (!data.length) return [];
 
     const firstSprint = data[0];
-    return Object.keys(firstSprint).map((key) => {
-      let label = key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+    const hasCompleteDate = 'complete_date' in firstSprint && firstSprint.complete_date != null;
+    
+    return Object.keys(firstSprint)
+      .filter((key) => {
+        // Hide end_date column if complete_date exists
+        if (hasCompleteDate && key === 'end_date') {
+          return false;
+        }
+        return true;
+      })
+      .map((key) => {
+        let label = key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 
-      if (
-        key === 'completion_percentage' ||
-        key === 'completed_percentage' ||
-        key === 'completion' ||
-        (key.includes('completion') && key.includes('percentage'))
-      ) {
-        label = 'Completed (%)';
-      }
+        if (
+          key === 'completion_percentage' ||
+          key === 'completed_percentage' ||
+          key === 'completion' ||
+          (key.includes('completion') && key.includes('percentage'))
+        ) {
+          label = 'Completed (%)';
+        }
 
-      const keyStr = String(key);
-      const isLeftAlign = key === 'sprint_name' || key === 'sprint_goal';
-      const isExpandable = keyStr === 'sprint_goal';
+        // Set label for complete_date
+        if (key === 'complete_date') {
+          label = 'Complete Date';
+        }
 
-      return {
-        key,
-        label,
-        align: isLeftAlign ? 'left' : 'center',
-        sortable: true,
-        expandable: isExpandable,
-        maxLength: isExpandable ? 150 : undefined,
-        render: (value: any) => {
-          if (value === null || value === undefined) return '-';
+        const keyStr = String(key);
+        const isLeftAlign = key === 'sprint_name' || key === 'sprint_goal';
+        const isExpandable = keyStr === 'sprint_goal';
 
-          if (keyStr.includes('date') && typeof value === 'string') {
-            return formatDate(value);
-          }
+        return {
+          key,
+          label,
+          align: isLeftAlign ? 'left' : 'center',
+          sortable: true,
+          expandable: isExpandable,
+          maxLength: isExpandable ? 150 : undefined,
+          render: (value: any) => {
+            if (value === null || value === undefined) return '-';
+
+            if (keyStr.includes('date') && typeof value === 'string') {
+              return formatDate(value);
+            }
 
           if (keyStr === 'sprint_goal' && typeof value === 'string') {
             return value;
