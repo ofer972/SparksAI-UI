@@ -126,15 +126,27 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
     const hasCompleteDate = 'complete_date' in firstSprint && firstSprint.complete_date != null;
     const jiraUrl = getCleanJiraUrl();
     
-    return Object.keys(firstSprint)
+    // Get all keys, filter and sort them
+    const allKeys = Object.keys(firstSprint)
       .filter((key) => {
         // Hide end_date column if complete_date exists
         if (hasCompleteDate && key === 'end_date') {
           return false;
         }
+        // Hide start_date column
+        if (key === 'start_date') {
+          return false;
+        }
         return true;
       })
-      .map((key) => {
+      .sort((a, b) => {
+        // Put sprint_goal at the end (rightmost)
+        if (a === 'sprint_goal') return 1;
+        if (b === 'sprint_goal') return -1;
+        return 0;
+      });
+    
+    return allKeys.map((key) => {
         let label = key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 
         if (
@@ -161,7 +173,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
           align: isLeftAlign ? 'left' : 'center',
           sortable: true,
           expandable: isExpandable,
-          maxLength: isExpandable ? 150 : undefined,
+          maxLength: isExpandable ? 300 : undefined, // Make sprint_goal wider
           render: (value: any, row: ClosedSprint) => {
             if (value === null || value === undefined) return '-';
 
@@ -173,22 +185,20 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
               }
               const link = getJiraSearchLink(keys, jiraUrl);
               return (
-                <a
-                  href={link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                <span
+                  className="text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer inline-block"
                   title={keys.join(', ')}
                   onClick={(e) => {
                     e.stopPropagation();
+                    e.preventDefault();
                     if (link && link !== '#') {
-                      e.preventDefault();
                       window.open(link, '_blank', 'noopener,noreferrer');
                     }
                   }}
+                  style={{ position: 'relative', zIndex: 10, pointerEvents: 'auto' }}
                 >
                   {keys.length}
-                </a>
+                </span>
               );
             }
 
