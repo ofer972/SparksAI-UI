@@ -177,8 +177,15 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
                   href={link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                  className="text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
                   title={keys.join(', ')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (link && link !== '#') {
+                      e.preventDefault();
+                      window.open(link, '_blank', 'noopener,noreferrer');
+                    }
+                  }}
                 >
                   {keys.length}
                 </a>
