@@ -276,18 +276,18 @@ export interface CompletionRate {
 export interface ClosedSprint {
   sprint_id: number;
   sprint_name: string;
-  start_date: string;
-  end_date: string;
-  complete_date?: string;
-  sprint_goal: string;
-  completion_percentage: number;
-  issues_planned: number;
-  issues_added: number;
-  issues_done: number;
-  issues_remaining: number;
-  velocity: number;
-  predictability: number;
-  cycle_time: number;
+  sprint_official_start_date: string;
+  sprint_official_end_date: string;
+  avg_story_cycle_time: string | number;
+  issues_completed_in_sprint: number;
+  total_issues_in_sprint: number;
+  issues_not_completed: number;
+  completed_issue_keys?: string[];
+  total_committed_issue_keys?: string[];
+  issues_not_completed_keys?: string[];
+  sprint_predictability: string | number;
+  sprint_goal?: string;
+  team_name?: string;
 }
 
 export interface ClosedSprintsResponse {
