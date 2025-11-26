@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
-import { ClosedSprint } from '@/lib/config';
+import { ClosedSprint, getCleanJiraUrl } from '@/lib/config';
 import DataTable, { Column, SortConfig } from '../DataTable';
 import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
 import ReportCard from '../reporting/ReportCard';
@@ -110,11 +110,21 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
     });
   }, []);
 
+  const getJiraSearchLink = useCallback((keys: string[], jiraUrl: string) => {
+    if (!keys || keys.length === 0) {
+      return '#';
+    }
+    const keysParam = keys.join(',');
+    const jql = encodeURIComponent(`key IN (${keysParam})`);
+    return `${jiraUrl}/issues/?jql=${jql}`;
+  }, []);
+
   const columns: Column<ClosedSprint>[] = useMemo(() => {
     if (!data.length) return [];
 
     const firstSprint = data[0];
     const hasCompleteDate = 'complete_date' in firstSprint && firstSprint.complete_date != null;
+    const jiraUrl = getCleanJiraUrl();
     
     return Object.keys(firstSprint)
       .filter((key) => {
@@ -152,8 +162,28 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
           sortable: true,
           expandable: isExpandable,
           maxLength: isExpandable ? 150 : undefined,
-          render: (value: any) => {
+          render: (value: any, row: ClosedSprint) => {
             if (value === null || value === undefined) return '-';
+
+            // Handle fields with "keys" in the name (arrays of issue keys)
+            if (keyStr.includes('keys') && Array.isArray(value)) {
+              const keys = value.filter((k) => k != null && k !== '');
+              if (keys.length === 0) {
+                return <span className="text-sm text-gray-500">0</span>;
+              }
+              const link = getJiraSearchLink(keys, jiraUrl);
+              return (
+                <a
+                  href={link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                  title={keys.join(', ')}
+                >
+                  {keys.length}
+                </a>
+              );
+            }
 
             if (keyStr.includes('date') && typeof value === 'string') {
               return formatDate(value);
@@ -212,7 +242,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
         },
       };
     });
-  }, [data, formatDate]);
+  }, [data, formatDate, getJiraSearchLink]);
 
   const timePeriodOptions = [
     { value: 1, label: 'Last 1 month' },
