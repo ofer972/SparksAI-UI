@@ -43,7 +43,7 @@ const buildColumns = (jiraUrl: string): Column<SprintPredictabilityItem>[] => [
     align: 'left',
   },
   {
-    key: 'complete_date',
+    key: 'sprint_actual_complete_date',
     label: 'Complete Date',
     render: (value) => {
       if (!value) {

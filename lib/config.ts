@@ -371,7 +371,7 @@ export interface MonthlyStatusDurationDataset {
 export interface SprintPredictabilityItem {
   team_name?: string;
   sprint_name: string;
-  complete_date?: string;
+  sprint_actual_complete_date?: string;
   sprint_predictability?: number;
   avg_story_cycle_time?: number;
   completed_issue_keys?: string[];
