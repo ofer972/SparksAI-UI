@@ -43,8 +43,8 @@ const buildColumns = (jiraUrl: string): Column<SprintPredictabilityItem>[] => [
     align: 'left',
   },
   {
-    key: 'sprint_official_end_date',
-    label: 'End Date',
+    key: 'sprint_actual_complete_date',
+    label: 'Complete Date',
     render: (value) => {
       if (!value) {
         return <span className="text-sm text-gray-500">-</span>;

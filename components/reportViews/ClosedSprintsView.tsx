@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
-import { ClosedSprint } from '@/lib/config';
+import { ClosedSprint, getCleanJiraUrl } from '@/lib/config';
 import DataTable, { Column, SortConfig } from '../DataTable';
 import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
 import ReportCard from '../reporting/ReportCard';
@@ -110,94 +110,207 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
     });
   }, []);
 
+  const getJiraSearchLink = useCallback((keys: string[], jiraUrl: string) => {
+    if (!keys || keys.length === 0) {
+      return '#';
+    }
+    const keysParam = keys.join(',');
+    const jql = encodeURIComponent(`key IN (${keysParam})`);
+    return `${jiraUrl}/issues/?jql=${jql}`;
+  }, []);
+
   const columns: Column<ClosedSprint>[] = useMemo(() => {
     if (!data.length) return [];
 
     const firstSprint = data[0];
-    return Object.keys(firstSprint).map((key) => {
-      let label = key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+    const hasCompleteDate = 'sprint_official_end_date' in firstSprint && firstSprint.sprint_official_end_date != null;
+    const jiraUrl = getCleanJiraUrl();
+    
+    // Get all keys, filter and sort them
+    const allKeys = Object.keys(firstSprint)
+      .filter((key) => {
+        // Hide sprint_id column
+        if (key === 'sprint_id') {
+          return false;
+        }
+        // Hide sprint_official_start_date column
+        if (key === 'sprint_official_start_date') {
+          return false;
+        }
+        // Hide columns with "keys" in the name
+        if (key.includes('keys')) {
+          return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        // Define column order priority
+        const getOrder = (key: string): number => {
+          if (key === 'team_name') return 1;
+          if (key === 'sprint_name') return 2;
+          if (key === 'sprint_official_end_date') return 3;
+          if (key === 'sprint_predictability') return 4;
+          if (key === 'avg_story_cycle_time') return 5;
+          if (key === 'sprint_goal') return 999; // Last
+          return 10; // Other columns in between
+        };
+        
+        const orderA = getOrder(a);
+        const orderB = getOrder(b);
+        
+        return orderA - orderB;
+      });
+    
+    return allKeys.map((key) => {
+        let label = key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 
-      if (
-        key === 'completion_percentage' ||
-        key === 'completed_percentage' ||
-        key === 'completion' ||
-        (key.includes('completion') && key.includes('percentage'))
-      ) {
-        label = 'Completed (%)';
-      }
+        // Set label for sprint_official_end_date
+        if (key === 'sprint_official_end_date') {
+          label = 'Complete Date';
+        }
 
-      const keyStr = String(key);
-      const isLeftAlign = key === 'sprint_name' || key === 'sprint_goal';
-      const isExpandable = keyStr === 'sprint_goal';
+        // Set label for issues_completed_in_sprint
+        if (key === 'issues_completed_in_sprint') {
+          label = 'Issues Done';
+        }
 
-      return {
-        key,
-        label,
-        align: isLeftAlign ? 'left' : 'center',
-        sortable: true,
-        expandable: isExpandable,
-        maxLength: isExpandable ? 150 : undefined,
-        render: (value: any) => {
-          if (value === null || value === undefined) return '-';
+        // Set label for total_issues_in_sprint
+        if (key === 'total_issues_in_sprint') {
+          label = 'Total Issues';
+        }
 
-          if (keyStr.includes('date') && typeof value === 'string') {
-            return formatDate(value);
-          }
+        // Set label for issues_not_completed
+        if (key === 'issues_not_completed') {
+          label = 'Issues Remaining';
+        }
 
-          if (keyStr === 'sprint_goal' && typeof value === 'string') {
+        // Set label for sprint_predictability
+        if (key === 'sprint_predictability') {
+          label = 'Predictability %';
+        }
+
+        // Set label for avg_story_cycle_time
+        if (key === 'avg_story_cycle_time') {
+          label = 'Avg Cycle Time';
+        }
+
+        const keyStr = String(key);
+        const isLeftAlign = key === 'team_name' || key === 'sprint_name' || key === 'sprint_goal';
+        const isExpandable = key === 'sprint_goal';
+
+        return {
+          key,
+          label,
+          align: isLeftAlign ? 'left' : 'center',
+          sortable: true,
+          expandable: isExpandable,
+          maxLength: isExpandable ? 300 : undefined,
+          render: (value: any, row: ClosedSprint) => {
+            if (value === null || value === undefined) return '-';
+
+            // Format sprint_goal
+            if (keyStr === 'sprint_goal' && typeof value === 'string') {
+              return value;
+            }
+
+            // Format dates
+            if (keyStr.includes('date') && typeof value === 'string') {
+              return formatDate(value);
+            }
+
+            // Format sprint_predictability as percentage
+            if (keyStr === 'sprint_predictability') {
+              const num = typeof value === 'string' ? parseFloat(value) : (typeof value === 'number' ? value : 0);
+              const percent = num * 100;
+              const formatted = Math.round(percent);
+              return (
+                <span
+                  className={`font-semibold ${
+                    percent >= 80 ? 'text-green-600' : percent >= 60 ? 'text-yellow-600' : 'text-red-600'
+                  }`}
+                >
+                  {formatted}%
+                </span>
+              );
+            }
+
+            // Format avg_story_cycle_time
+            if (keyStr === 'avg_story_cycle_time') {
+              const num = typeof value === 'string' ? parseFloat(value) : (typeof value === 'number' ? value : 0);
+              let color = 'text-gray-900';
+              if (num > 15) {
+                color = 'text-red-600';
+              } else if (num >= 10) {
+                color = 'text-yellow-600';
+              } else if (num > 0) {
+                color = 'text-green-600';
+              }
+              return (
+                <span className={`text-sm font-semibold ${color}`}>{num.toFixed(1)}</span>
+              );
+            }
+
+            // Check if this numeric field has a corresponding keys array for clickable links
+            // Map field names to their keys array field names based on actual API response
+            const keysFieldMap: Record<string, string> = {
+              'issues_completed_in_sprint': 'completed_issue_keys',
+              'total_issues_in_sprint': 'total_committed_issue_keys',
+              'issues_not_completed': 'issues_not_completed_keys',
+            };
+            
+            const keysFieldName = keysFieldMap[key];
+            const keysArray = keysFieldName ? (row as any)[keysFieldName] : null;
+            
+            // If there's a corresponding keys array and value is a number, make it clickable
+            if (Array.isArray(keysArray) && typeof value === 'number' && value > 0) {
+              const keys = keysArray.filter((k: any) => k != null && k !== '');
+              if (keys.length > 0) {
+                const link = getJiraSearchLink(keys, jiraUrl);
+                // Apply color coding based on field type
+                let colorClass = 'text-blue-600';
+                if (keyStr === 'issues_completed_in_sprint') {
+                  colorClass = 'text-green-600';
+                } else if (keyStr === 'issues_not_completed') {
+                  colorClass = 'text-red-600';
+                } else if (keyStr === 'total_issues_in_sprint') {
+                  colorClass = 'text-gray-700';
+                }
+                
+                return (
+                  <a
+                    href={link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      window.open(link, '_blank', 'noopener,noreferrer');
+                    }}
+                    className={`text-sm font-semibold ${colorClass} hover:text-blue-800 hover:underline cursor-pointer`}
+                    title={keys.join(', ')}
+                  >
+                    {value}
+                  </a>
+                );
+              }
+            }
+
+            // Fallback rendering for numeric values
+            if (keyStr === 'issues_completed_in_sprint') {
+              return <span className="text-green-600 font-semibold">{value}</span>;
+            }
+            if (keyStr === 'issues_not_completed') {
+              return <span className="text-red-600 font-semibold">{value}</span>;
+            }
+            if (keyStr === 'total_issues_in_sprint') {
+              return <span className="text-gray-700 font-semibold">{value}</span>;
+            }
+
             return value;
-          }
-
-          if (
-            keyStr === 'completion_percentage' ||
-            keyStr === 'completed_percentage' ||
-            keyStr === 'completion' ||
-            (keyStr.includes('completion') && keyStr.includes('percentage'))
-          ) {
-            const num = Math.round(Number(value));
-            return (
-              <span
-                className={`font-bold ${
-                  num >= 75 ? 'text-green-600' : num >= 50 ? 'text-yellow-600' : 'text-red-600'
-                }`}
-              >
-                {num}%
-              </span>
-            );
-          }
-
-          if (keyStr.includes('predictability')) {
-            const num = Number(value);
-            return (
-              <span
-                className={`font-semibold ${
-                  num >= 80 ? 'text-green-600' : num >= 60 ? 'text-yellow-600' : 'text-red-600'
-                }`}
-              >
-                {num}%
-              </span>
-            );
-          }
-
-          if (keyStr.includes('issues_done')) {
-            return <span className="text-green-600 font-semibold">{value}</span>;
-          }
-          if (keyStr.includes('issues_remaining')) {
-            return <span className="text-red-600 font-semibold">{value}</span>;
-          }
-          if (keyStr.includes('issues_')) {
-            return <span className="text-gray-700">{value}</span>;
-          }
-
-          if (keyStr === 'velocity') {
-            return <span className="text-gray-900 font-semibold">{value}</span>;
-          }
-
-          return value;
-        },
-      };
+          },
+        };
     });
-  }, [data, formatDate]);
+  }, [data, formatDate, getJiraSearchLink]);
 
   const timePeriodOptions = [
     { value: 1, label: 'Last 1 month' },
