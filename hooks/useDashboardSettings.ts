@@ -27,14 +27,14 @@ export interface UseDashboardSettingsReturn {
 export function useDashboardSettings(dashboardType: 'team-dashboard' | 'pi-dashboard'): UseDashboardSettingsReturn {
   // Use the generic page settings hook internally
   const pageSettings = usePageSettings(dashboardType);
-
+  
   // Convert PageState to DashboardState (omit selectedCategories for dashboards)
   const currentState: DashboardState = {
     layoutConfig: pageSettings.currentState.layoutConfig || null,
     topBarFilters: pageSettings.currentState.topBarFilters || {},
     reportFilters: pageSettings.currentState.reportFilters || {},
     pinnedFilters: pageSettings.currentState.pinnedFilters || {},
-  };
+      };
 
   const savedState: DashboardState | null = pageSettings.savedState ? {
     layoutConfig: pageSettings.savedState.layoutConfig || null,

@@ -244,22 +244,26 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
 
     const expandColumn: ColumnDef<TreeNode> = {
       id: '__expander',
-      header: () => (
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            toggleAllExpanded();
-          }}
-          className="text-xs text-gray-600 hover:text-gray-800"
-        >
-          Expand/Collapse
-        </button>
-      ),
+      header: () => {
+        const hasExpanded = Object.keys(expanded).length > 0 && Object.values(expanded).some((v) => v);
+        return (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              toggleAllExpanded();
+            }}
+            className="text-xs text-gray-600 hover:text-gray-800 flex items-center justify-center w-6 h-6"
+            title={hasExpanded ? 'Collapse All' : 'Expand All'}
+          >
+            {hasExpanded ? '▼' : '▶'}
+          </button>
+        );
+      },
       cell: ({ row }) => {
         const item = row.original;
         if (!item.children || item.children.length === 0 || !item.key) {
-          return <span className="inline-block w-4" />;
+          return <span className="inline-block w-6 h-6" />;
         }
         const key = item.key;
         const expandedRecord = expanded as Record<string, boolean>;
@@ -273,7 +277,8 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
                 toggleExpanded(key);
               }
             }}
-            className="text-xs text-gray-600 hover:text-gray-900"
+            className="text-xs text-gray-600 hover:text-gray-900 flex items-center justify-center w-6 h-6"
+            title={isExpanded ? 'Collapse' : 'Expand'}
           >
             {isExpanded ? '▼' : '▶'}
           </button>

@@ -101,7 +101,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
       window.removeEventListener('open-add-reports-modal', handleOpenModal);
     };
   }, []); // Empty dependency array - only run once
-
+  
   const [selectedSprint, setSelectedSprint] = useState('');
   const [currentSprintName, setCurrentSprintName] = useState('');
 
@@ -171,40 +171,40 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
     
     // Apply saved top bar filters
     if (dashboardSettings.savedState?.topBarFilters && 
-        Object.keys(dashboardSettings.savedState.topBarFilters).length > 0) {
+            Object.keys(dashboardSettings.savedState.topBarFilters).length > 0) {
       console.log('[TeamDashboard] Applying saved top bar filters:', dashboardSettings.savedState.topBarFilters);
-      
-      if (dashboardSettings.savedState.topBarFilters.selectedSprint !== undefined) {
-        setSelectedSprint(dashboardSettings.savedState.topBarFilters.selectedSprint);
-      }
-      
+          
+          if (dashboardSettings.savedState.topBarFilters.selectedSprint !== undefined) {
+            setSelectedSprint(dashboardSettings.savedState.topBarFilters.selectedSprint);
+          }
+          
       // Only dispatch event if current props don't match saved settings
       const savedTeam = dashboardSettings.savedState.topBarFilters.selectedTeam || dashboardSettings.savedState.topBarFilters.team_name;
       const savedTreeType = dashboardSettings.savedState.topBarFilters.selectedTreeType || dashboardSettings.savedState.topBarFilters.isGroup ? 'group' : 'team';
       
       if (savedTeam && savedTeam !== selectedTeam) {
         console.log('[TeamDashboard] Team mismatch, dispatching restore event');
-        window.dispatchEvent(new CustomEvent('restore-dashboard-filters', {
-          detail: {
-            dashboard: 'team-dashboard',
-            filters: dashboardSettings.savedState.topBarFilters
-          }
-        }));
+          window.dispatchEvent(new CustomEvent('restore-dashboard-filters', {
+            detail: {
+              dashboard: 'team-dashboard',
+              filters: dashboardSettings.savedState.topBarFilters
+            }
+          }));
       }
-    }
-    
+        }
+        
     // Apply saved layout or fall back to system config
     if (dashboardSettings.savedState?.layoutConfig) {
-      setLayoutConfig(dashboardSettings.savedState.layoutConfig);
+          setLayoutConfig(dashboardSettings.savedState.layoutConfig);
       const reportIds = dashboardSettings.savedState.layoutConfig.rows.flatMap((row: any) => row.reportIds);
-      setDashboardReports(reportIds.length > 0 ? reportIds : TEAM_DASHBOARD_DEFAULTS);
+          setDashboardReports(reportIds.length > 0 ? reportIds : TEAM_DASHBOARD_DEFAULTS);
     } else if (systemConfigRef.current) {
       setDashboardReports(systemConfigRef.current.reportIds);
       setLayoutConfig(systemConfigRef.current.layoutConfig);
-    } else {
-      setDashboardReports(TEAM_DASHBOARD_DEFAULTS);
-      setLayoutConfig(null);
-    }
+          } else {
+            setDashboardReports(TEAM_DASHBOARD_DEFAULTS);
+            setLayoutConfig(null);
+          }
     
     settingsAppliedRef.current = true; // Mark as applied to prevent re-runs
     console.log('[TeamDashboard] Settings applied. Current saved state:', dashboardSettings.savedState);
@@ -224,7 +224,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
       
       if (prevLayoutRef.current !== layoutStr) {
         console.log('[TeamDashboard] Layout changed, updating state');
-        dashboardSettings.updateCurrentState({ layoutConfig });
+      dashboardSettings.updateCurrentState({ layoutConfig });
         prevLayoutRef.current = layoutStr;
       }
     }
@@ -237,8 +237,8 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
     if (!dashboardSettings.isLoading && settingsAppliedRef.current) {
       const newFilters = {
         selectedTeam,
-        selectedTreeType,
-        selectedSprint,
+          selectedTreeType,
+          selectedSprint,
       };
       
       const prev = prevFiltersRef.current;
@@ -586,7 +586,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
     };
 
     const currentReportIds = layoutConfig.rows.flatMap((row) => row.reportIds);
-    
+
     return (
       <div className="h-full flex flex-col">
         <div className="flex-1 px-4 pb-4 overflow-auto">

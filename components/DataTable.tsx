@@ -146,6 +146,7 @@ function DataTable<T extends Record<string, any>>({
     });
   }, [data, sortConfig, onSort]);
 
+
   const SortIcon = ({ columnKey }: { columnKey: string }) => {
     if (!sortConfig || sortConfig.key !== columnKey) {
       return (
@@ -260,7 +261,7 @@ function DataTable<T extends Record<string, any>>({
   );
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-2.5 h-full flex flex-col ${className}`}>
+    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden h-full max-h-full flex flex-col ${className}`} style={{ padding: 0, margin: 0 }}>
       {/* Header with Create Button, Refresh Button, and Filter */}
       {(onCreateItem || onRefresh) && (
         <div className="p-4 border-b border-gray-200 flex items-center gap-3 flex-shrink-0">
@@ -293,19 +294,19 @@ function DataTable<T extends Record<string, any>>({
       )}
 
       {/* Table Container with Sticky Header */}
-      <div className="flex-1 overflow-auto min-h-0" style={{ maxHeight }}>
-        <table className="w-full">
+      <div className="flex-1 overflow-auto min-h-0" style={{ marginBottom: 0, paddingBottom: 0 }}>
+        <table className="w-full border-collapse">
           <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
             <tr>
               {finalColumns.map((column) => (
                 <th
                   key={column.key}
-                  className={`px-4 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider ${
+                  className={`px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider ${
                     column.align === 'left' ? 'text-left' : 
                     column.align === 'right' ? 'text-right' : 
                     'text-center'
                   } ${column.sortable !== false && onSort ? 'cursor-pointer hover:bg-gray-100 transition-colors group' : ''}`}
-                  style={{ width: column.width }}
+                  style={{ width: column.width, height: '44px', paddingTop: '0.625rem', paddingBottom: '0.625rem' }}
                   onClick={() => {
                     if (column.sortable !== false && onSort && column.key !== '__actions__') {
                       // Call onSort - it accepts both string and keyof T
@@ -318,7 +319,7 @@ function DataTable<T extends Record<string, any>>({
                     column.align === 'left' ? 'justify-start' :
                     'justify-center'
                   }`}>
-                    <span>{column.label}</span>
+                    <span className="whitespace-nowrap">{column.label}</span>
                     {column.sortable !== false && onSort && column.key !== '__actions__' && (
                       <SortIcon columnKey={column.key} />
                     )}
@@ -327,7 +328,7 @@ function DataTable<T extends Record<string, any>>({
               ))}
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-gray-200 [&>tr:last-child]:border-b-0">
             {loading ? (
               <>
                 <SkeletonRow />
@@ -545,8 +546,8 @@ function DataTable<T extends Record<string, any>>({
 
       {/* Footer with row count */}
       {!loading && !error && sortedData.length > 0 && (
-        <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 flex-shrink-0">
-          <span className="text-xs text-gray-500">
+        <div className="px-4 bg-gray-50 border-t border-gray-200 flex-shrink-0 flex items-center" style={{ minHeight: '41px', margin: 0, paddingLeft: '1rem', paddingRight: '1rem', paddingTop: '0.5rem', paddingBottom: 0, width: '100%', boxSizing: 'border-box' }}>
+          <span className="text-xs text-gray-500" style={{ display: 'block', paddingBottom: '0.5rem' }}>
             Showing {sortedData.length} {sortedData.length === 1 ? 'row' : 'rows'}
           </span>
         </div>

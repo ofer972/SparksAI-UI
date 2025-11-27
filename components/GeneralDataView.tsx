@@ -33,12 +33,16 @@ export default function GeneralDataView() {
         return <TranscriptsTab />;
       case 'security-logs':
         return (
-          <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-            <div className="text-4xl mb-3">🔒</div>
-            <h2 className="text-lg font-semibold mb-2">Security Logs</h2>
-            <p className="text-sm text-gray-600">
-              Security Logs tab will be implemented using the generic architecture.
-            </p>
+          <div className="h-full flex flex-col min-h-0 px-6 pt-6">
+            <div className="flex-1 flex items-center justify-center">
+              <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+                <div className="text-4xl mb-3">🔒</div>
+                <h2 className="text-lg font-semibold mb-2">Security Logs</h2>
+                <p className="text-sm text-gray-600">
+                  Security Logs tab will be implemented using the generic architecture.
+                </p>
+              </div>
+            </div>
           </div>
         );
       default:
@@ -104,10 +108,8 @@ export default function GeneralDataView() {
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 p-6 overflow-hidden">
-        <div className="h-full">
-          {renderTabContent()}
-        </div>
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+        {renderTabContent()}
       </div>
     </div>
   );

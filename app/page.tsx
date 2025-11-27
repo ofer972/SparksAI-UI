@@ -481,27 +481,109 @@ export default function Home() {
     ...(isAdmin ? [{ id: 'users-admin', label: 'Users', icon: '👥' }] : []),
   ];
 
+  // Modern SVG icon components
+  const SidebarIcon = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
+    <span className={`inline-flex items-center justify-center ${className}`} style={{ width: '20px', height: '20px' }}>
+      {children}
+    </span>
+  );
+
+  const IconLightbulb = () => (
+    <SidebarIcon>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+      </svg>
+    </SidebarIcon>
+  );
+
+  const IconTarget = () => (
+    <SidebarIcon>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <circle cx="12" cy="12" r="10" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="12" cy="12" r="6" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="12" cy="12" r="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </SidebarIcon>
+  );
+
+  const IconChartBar = () => (
+    <SidebarIcon>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    </SidebarIcon>
+  );
+
+  const IconTrendingUp = () => (
+    <SidebarIcon>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+      </svg>
+    </SidebarIcon>
+  );
+
+  const IconFolder = () => (
+    <SidebarIcon>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+      </svg>
+    </SidebarIcon>
+  );
+
+  const IconUpload = () => (
+    <SidebarIcon>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+      </svg>
+    </SidebarIcon>
+  );
+
+  const IconCog = () => (
+    <SidebarIcon>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    </SidebarIcon>
+  );
+
+  const IconPlus = () => (
+    <SidebarIcon>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+      </svg>
+    </SidebarIcon>
+  );
+
+  const IconUsers = () => (
+    <SidebarIcon>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+    </SidebarIcon>
+  );
+
   // Accordion navigation groups for the sidebar UI (beautified)
-  const navigationGroups: Array<{ title: string; items: { id: string; label: string; icon: string }[] }> = [
+  const navigationGroups: Array<{ title: string; items: { id: string; label: string; icon: React.ReactNode }[] }> = [
     {
       title: 'Insights',
       items: [
-        { id: 'team-ai-insights', label: 'Team AI Insights', icon: '💡' },
-        { id: 'pi-quarter', label: 'PI AI Insights', icon: '🎯' },
+        { id: 'team-ai-insights', label: 'Team AI Insights', icon: <IconLightbulb /> },
+        { id: 'pi-quarter', label: 'PI AI Insights', icon: <IconTarget /> },
       ],
     },
     {
       title: 'Dashboards',
       items: [
-        { id: 'team-dashboard', label: 'Team Dashboard', icon: '📊' },
-        { id: 'pi-dashboard', label: 'PI Dashboard', icon: '📈' },
+        { id: 'team-dashboard', label: 'Team Dashboard', icon: <IconChartBar /> },
+        { id: 'pi-dashboard', label: 'PI Dashboard', icon: <IconTrendingUp /> },
       ],
     },
     {
       title: 'Management',
       items: [
-        { id: 'general-data', label: 'View General Data', icon: '📁' },
-        { id: 'upload-transcripts', label: 'Upload Transcripts', icon: '⬆️' },
+        { id: 'general-data', label: 'View General Data', icon: <IconFolder /> },
+        { id: 'upload-transcripts', label: 'Upload Transcripts', icon: <IconUpload /> },
       ],
     },
     ...(isAdmin
@@ -509,9 +591,9 @@ export default function Home() {
           {
             title: 'Administration',
             items: [
-              { id: 'settings', label: 'System Settings', icon: '⚙️' },
-              { id: 'create-agent-job', label: 'Create Agent Job', icon: '➕' },
-              { id: 'users-admin', label: 'Users', icon: '👥' },
+              { id: 'settings', label: 'System Settings', icon: <IconCog /> },
+              { id: 'create-agent-job', label: 'Create Agent Job', icon: <IconPlus /> },
+              { id: 'users-admin', label: 'Users', icon: <IconUsers /> },
             ],
           },
         ]
@@ -728,7 +810,7 @@ export default function Home() {
         return (
           <div className="h-full flex flex-col">
             {/* Content */}
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 overflow-hidden min-h-0">
               <SettingsScreen />
             </div>
           </div>
@@ -842,7 +924,7 @@ export default function Home() {
         return (
           <div className="h-full flex flex-col">
             {/* Content */}
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 overflow-hidden min-h-0">
               <GeneralDataView />
             </div>
           </div>
@@ -1229,10 +1311,17 @@ export default function Home() {
                   <div key={group.title}>
                     <button
                       onClick={() => toggleGroup(group.title)}
-                      className="w-full flex items-center justify-between px-2 py-2 text-[10px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-800"
+                      className="w-full flex items-center justify-between px-2 py-2 text-[10px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-800 transition-colors"
                     >
                       <span>{group.title}</span>
-                      <span className={`transition-transform ${expandedGroups[group.title] ? 'rotate-180' : ''}`}>⌄</span>
+                      <svg 
+                        className={`w-3 h-3 transition-transform duration-200 ${expandedGroups[group.title] ? 'rotate-180' : ''}`}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
                     </button>
                     {expandedGroups[group.title] && (
                       <div className="mt-1 space-y-1">
@@ -1240,14 +1329,14 @@ export default function Home() {
                           <button
                             key={item.id}
                             onClick={() => { setActiveNavItem(item.id as NavItemId); setMobileSidebarOpen(false); }}
-                            className={`w-full flex items-center space-x-2 px-2 py-1.5 rounded-lg text-left transition-colors ${
-                              activeNavItem === item.id
-                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                : 'text-gray-700 hover:bg-gray-50'
-                            }`}
-                            title={item.label}
-                          >
-                            <span className="text-sm flex-shrink-0">{item.icon}</span>
+                              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all duration-200 ${
+                                activeNavItem === item.id
+                                  ? 'bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 text-indigo-700 shadow-md border border-indigo-200/60'
+                                  : 'text-gray-700 hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
+                              }`}
+                              title={item.label}
+                            >
+                              <span className={`flex-shrink-0 flex items-center justify-center ${activeNavItem === item.id ? 'text-indigo-700' : 'text-gray-600'}`}>{item.icon}</span>
                             <span className="text-xs font-medium">{item.label}</span>
                           </button>
                         ))}
@@ -1282,14 +1371,14 @@ export default function Home() {
                   <button
                     key={item.id}
                     onClick={() => setActiveNavItem(item.id as NavItemId)}
-                    className={`w-full flex items-center justify-center px-2 py-2 rounded-lg transition-colors ${
+                    className={`w-full flex items-center justify-center px-2 py-2.5 rounded-lg transition-all duration-200 ${
                       activeNavItem === item.id
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                        : 'text-gray-700 hover:bg-gray-50'
+                        ? 'bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 text-indigo-700 shadow-md border border-indigo-200/60'
+                        : 'text-gray-600 hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
                     }`}
                     title={item.label}
                   >
-                    <span className="text-base">{item.icon}</span>
+                    <span className="flex items-center justify-center">{item.icon}</span>
                   </button>
                 ))}
               </div>
@@ -1299,10 +1388,17 @@ export default function Home() {
                   <div key={group.title}>
                     <button
                       onClick={() => toggleGroup(group.title)}
-                      className="w-full flex items-center justify-between px-2 py-2 text-[10px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-800"
+                      className="w-full flex items-center justify-between px-2 py-2 text-[10px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-800 transition-colors"
                     >
                       <span>{group.title}</span>
-                      <span className={`transition-transform ${expandedGroups[group.title] ? 'rotate-180' : ''}`}>⌄</span>
+                      <svg 
+                        className={`w-3 h-3 transition-transform duration-200 ${expandedGroups[group.title] ? 'rotate-180' : ''}`}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
                     </button>
                       {expandedGroups[group.title] && (
                         <div className="mt-1 space-y-1">
@@ -1310,14 +1406,14 @@ export default function Home() {
                             <button
                               key={item.id}
                               onClick={() => setActiveNavItem(item.id as NavItemId)}
-                              className={`w-full flex items-center space-x-2 px-2 py-1.5 rounded-lg text-left transition-colors ${
+                              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all duration-200 ${
                                 activeNavItem === item.id
-                                  ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                  : 'text-gray-700 hover:bg-gray-50'
+                                  ? 'bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 text-indigo-700 shadow-md border border-indigo-200/60'
+                                  : 'text-gray-700 hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
                               }`}
                               title={item.label}
                             >
-                              <span className="text-sm flex-shrink-0">{item.icon}</span>
+                              <span className={`flex-shrink-0 flex items-center justify-center ${activeNavItem === item.id ? 'text-indigo-700' : 'text-gray-600'}`}>{item.icon}</span>
                               <span className="text-xs font-medium">{item.label}</span>
                             </button>
                           ))}

@@ -23,7 +23,7 @@ export default function AddReportsModal({
 
   // Prevent immediate close on mobile
   const [justOpened, setJustOpened] = useState(false);
-  
+
   // Track if modal was previously open to avoid resetting selection during interaction
   const prevIsOpenRef = useRef(isOpen);
 
@@ -48,7 +48,7 @@ export default function AddReportsModal({
     
     return () => {
       if (!isOpen) {
-        document.body.style.overflow = '';
+      document.body.style.overflow = '';
       }
     };
   }, [isOpen]); // Removed currentReportIds from dependencies
@@ -142,29 +142,29 @@ export default function AddReportsModal({
               </div>
             ) : (
               availableReports.map((report) => {
-                const isChecked = selectedReports.has(report.report_id);
-                const isCurrentlyDisplayed = currentReportIds.includes(report.report_id);
-                
-                return (
+              const isChecked = selectedReports.has(report.report_id);
+              const isCurrentlyDisplayed = currentReportIds.includes(report.report_id);
+              
+              return (
                   <div
-                    key={report.report_id}
-                    className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                      isChecked 
-                        ? 'border-blue-300 bg-blue-50' 
-                        : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'
-                    }`}
+                  key={report.report_id}
+                  className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                    isChecked 
+                      ? 'border-blue-300 bg-blue-50' 
+                      : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                  }`}
                     onClick={() => {
                       console.log('AddReportsModal: Div clicked for report:', report.report_id);
                       handleToggle(report.report_id);
                     }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
                       onChange={() => {}}
                       readOnly
                       className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer pointer-events-none"
-                    />
+                  />
                   <div className="flex-1">
                     <div className="font-semibold text-gray-900 flex items-center gap-2">
                       {report.report_name}
@@ -182,7 +182,7 @@ export default function AddReportsModal({
                     </div>
                   </div>
                 </div>
-                );
+              );
               })
             )}
           </div>

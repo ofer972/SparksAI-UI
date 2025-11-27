@@ -136,31 +136,31 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     const viewConfig = systemConfigRef.current?.config;
     const definitionMap = systemConfigRef.current?.definitionMap || {};
 
-    const normalizeAllowedViews = (report?: ReportDefinition): string[] => {
+        const normalizeAllowedViews = (report?: ReportDefinition): string[] => {
       if (!report) return ['every-dashboard'];
-      const raw = Array.isArray(report.meta_schema?.allowed_views)
-        ? report.meta_schema.allowed_views
-        : ['every-dashboard'];
-      const normalized = raw
-        .map((view) => (typeof view === 'string' ? view.trim().toLowerCase() : ''))
-        .filter((view): view is string => view.length > 0);
-      return normalized.length > 0 ? Array.from(new Set(normalized)) : ['every-dashboard'];
-    };
+          const raw = Array.isArray(report.meta_schema?.allowed_views)
+            ? report.meta_schema.allowed_views
+            : ['every-dashboard'];
+          const normalized = raw
+            .map((view) => (typeof view === 'string' ? view.trim().toLowerCase() : ''))
+            .filter((view): view is string => view.length > 0);
+          return normalized.length > 0 ? Array.from(new Set(normalized)) : ['every-dashboard'];
+        };
 
-    const filterReportsForView = (reportIds: string[], view: string): string[] => {
-      const unique: string[] = [];
-      const seen = new Set<string>();
-      reportIds.forEach((reportId) => {
+        const filterReportsForView = (reportIds: string[], view: string): string[] => {
+          const unique: string[] = [];
+          const seen = new Set<string>();
+          reportIds.forEach((reportId) => {
         if (seen.has(reportId)) return;
-        const definition = definitionMap[reportId];
-        const allowedViews = normalizeAllowedViews(definition);
-        if (allowedViews.includes('every-dashboard') || allowedViews.includes(view)) {
-          seen.add(reportId);
-          unique.push(reportId);
-        }
-      });
-      return unique;
-    };
+            const definition = definitionMap[reportId];
+            const allowedViews = normalizeAllowedViews(definition);
+            if (allowedViews.includes('every-dashboard') || allowedViews.includes(view)) {
+              seen.add(reportId);
+              unique.push(reportId);
+            }
+          });
+          return unique;
+        };
 
     // Apply saved top bar filters
     if (dashboardSettings.savedState?.topBarFilters && 
@@ -175,42 +175,42 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
       
       if (needsRestore) {
         console.log('[PIDashboard] Props mismatch, dispatching restore event');
-        window.dispatchEvent(new CustomEvent('restore-dashboard-filters', {
-          detail: {
-            dashboard: 'pi-dashboard',
-            filters: dashboardSettings.savedState.topBarFilters
-          }
-        }));
+          window.dispatchEvent(new CustomEvent('restore-dashboard-filters', {
+            detail: {
+              dashboard: 'pi-dashboard',
+              filters: dashboardSettings.savedState.topBarFilters
+            }
+          }));
       }
-    }
-    
+        }
+        
     // Apply saved layout or fall back to system config
     if (dashboardSettings.savedState?.layoutConfig) {
-      setLayoutConfig(dashboardSettings.savedState.layoutConfig);
+          setLayoutConfig(dashboardSettings.savedState.layoutConfig);
       const reportIds = dashboardSettings.savedState.layoutConfig.rows.flatMap((row: any) => row.reportIds);
-      const filteredReports = filterReportsForView(reportIds, 'pi-dashboard');
-      setReportOrder(filteredReports.length > 0 ? filteredReports : PI_DASHBOARD_DEFAULTS);
-    } else {
-      // Fall back to system config
-      const configuredReports = Array.isArray(viewConfig?.reportIds)
-        ? filterReportsForView(viewConfig!.reportIds, 'pi-dashboard')
-        : [];
-      const fallbackReports = filterReportsForView(PI_DASHBOARD_DEFAULTS, 'pi-dashboard');
+          const filteredReports = filterReportsForView(reportIds, 'pi-dashboard');
+          setReportOrder(filteredReports.length > 0 ? filteredReports : PI_DASHBOARD_DEFAULTS);
+        } else {
+          // Fall back to system config
+          const configuredReports = Array.isArray(viewConfig?.reportIds)
+            ? filterReportsForView(viewConfig!.reportIds, 'pi-dashboard')
+            : [];
+          const fallbackReports = filterReportsForView(PI_DASHBOARD_DEFAULTS, 'pi-dashboard');
 
-      if (configuredReports.length > 0) {
-        setReportOrder(configuredReports);
-        setLayoutConfig(viewConfig?.layout_config || null);
-      } else if (fallbackReports.length > 0) {
-        setReportOrder(fallbackReports);
-        setLayoutConfig(null);
-      } else {
-        setReportOrder(PI_DASHBOARD_DEFAULTS);
-        setLayoutConfig(null);
-      }
-    }
+          if (configuredReports.length > 0) {
+            setReportOrder(configuredReports);
+            setLayoutConfig(viewConfig?.layout_config || null);
+          } else if (fallbackReports.length > 0) {
+            setReportOrder(fallbackReports);
+            setLayoutConfig(null);
+          } else {
+            setReportOrder(PI_DASHBOARD_DEFAULTS);
+            setLayoutConfig(null);
+          }
+        }
     
     settingsAppliedRef.current = true; // Mark as applied to prevent re-runs
-    setConfigLoaded(true);
+          setConfigLoaded(true);
   }, [dashboardSettings.isLoading, dashboardSettings.savedState]);
   
   const prevLayoutRef = useRef<string | null>(null);
@@ -223,7 +223,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
       
       if (prevLayoutRef.current !== layoutStr) {
         console.log('[PIDashboard] Layout changed, updating state');
-        dashboardSettings.updateCurrentState({ layoutConfig });
+      dashboardSettings.updateCurrentState({ layoutConfig });
         prevLayoutRef.current = layoutStr;
       }
     }
@@ -233,9 +233,9 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   useEffect(() => {
     if (!dashboardSettings.isLoading && settingsAppliedRef.current) {
       const newFilters = {
-        selectedPI,
+          selectedPI,
         selectedTeam,
-        selectedTreeType,
+          selectedTreeType,
       };
       
       const prev = prevFiltersRef.current;
@@ -596,7 +596,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     };
 
     const currentReportIds = layoutConfig.rows.flatMap((row) => row.reportIds);
-    
+
     return (
       <div className="h-full flex flex-col">
         <div className="flex-1 px-4 pb-4 overflow-auto">

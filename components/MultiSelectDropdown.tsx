@@ -50,7 +50,9 @@ export default function MultiSelectDropdown({
   };
 
   const handleSelectAll = () => {
-    onChange(options);
+    if (options && options.length > 0) {
+      onChange(options);
+    }
   };
 
   const handleClearAll = () => {
@@ -61,7 +63,7 @@ export default function MultiSelectDropdown({
     if (selectedValues.length === 0) {
       return placeholder;
     }
-    if (selectedValues.length === options.length) {
+    if (options && selectedValues.length === options.length) {
       return 'All selected';
     }
     if (selectedValues.length <= 2) {
@@ -106,7 +108,7 @@ export default function MultiSelectDropdown({
             {/* Header with actions */}
             <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-gray-50">
               <span className="text-xs font-medium text-gray-700">
-                {selectedValues.length} of {options.length} selected
+                {selectedValues.length} of {options?.length || 0} selected
               </span>
               <div className="flex gap-2">
                 <button
@@ -129,7 +131,7 @@ export default function MultiSelectDropdown({
 
             {/* Options list */}
             <div className="overflow-y-auto flex-1">
-              {options.length === 0 ? (
+              {!options || options.length === 0 ? (
                 <div className="px-3 py-4 text-center text-sm text-gray-500">
                   No options available
                 </div>

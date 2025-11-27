@@ -1233,11 +1233,68 @@ export class ApiService {
     };
   }
 
+  async createInsightType(data: {
+    insight_type: string;
+    insight_description: string;
+    insight_categories?: string[];
+    active?: boolean;
+    cron_config?: {
+      day_of_week?: string;
+      hour?: number;
+      minute?: number;
+    } | null;
+  }): Promise<InsightType> {
+    const url = buildBackendUrl(API_CONFIG.endpoints.insightTypes.update);
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorText = await response.text();
+        if (errorText) {
+          console.error('Create insight type API error:', response.status, errorText);
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.message || errorJson.error || errorMessage;
+          } catch {
+            if (errorText.length < 200) {
+              errorMessage = errorText;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error reading error response:', e);
+      }
+      throw new Error(`Failed to create insight type: ${errorMessage}`);
+    }
+
+    const result: ApiResponse<InsightType> = await response.json();
+    
+    // Support both wrapped and direct response formats
+    if (result.success && result.data) {
+      return result.data;
+    }
+    
+    return result as unknown as InsightType;
+  }
+
   async updateInsightType(id: number, data: {
     insight_type?: string;
     insight_description?: string;
     insight_categories?: string[];
     active?: boolean;
+    cron_config?: {
+      day_of_week?: string;
+      hour?: number;
+      minute?: number;
+    } | null;
   }): Promise<InsightType> {
     const url = `${buildBackendUrl(API_CONFIG.endpoints.insightTypes.update)}/${id}`;
     

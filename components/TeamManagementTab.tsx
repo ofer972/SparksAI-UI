@@ -617,9 +617,9 @@ export default function TeamManagementTab() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="h-full flex flex-col min-h-0 space-y-3">
       {/* Header */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-3">
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-3 flex-shrink-0">
         <div>
           <h2 className="text-xl font-bold text-gray-900">Team Management</h2>
           <p className="text-sm text-gray-600">Organize your teams into groups with a hierarchical structure</p>
@@ -627,9 +627,9 @@ export default function TeamManagementTab() {
       </div>
 
       {/* Tree Structure and Unassigned Teams - Side by Side */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
         {/* Team Hierarchy */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col" style={{ height: '574px' }}>
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col min-h-0">
           <div className="flex items-center justify-between p-3 border-b border-gray-200 flex-shrink-0 bg-gradient-to-r from-gray-50 to-white">
             <h3 className="text-base font-semibold text-gray-900">Team Hierarchy</h3>
             <div className="flex items-center gap-2">
@@ -706,7 +706,7 @@ export default function TeamManagementTab() {
       </div>
 
         {/* Teams Panel with Tabs */}
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col" style={{ height: '574px' }}>
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col min-h-0">
           {/* Header - matching Team Hierarchy style */}
           <div className="flex items-center justify-between p-3 border-b border-gray-200 flex-shrink-0 bg-gradient-to-r from-gray-50 to-white">
             <h3 className="text-base font-semibold text-gray-900">Teams</h3>
@@ -826,7 +826,7 @@ export default function TeamManagementTab() {
       </div>
 
       {/* Stats - Bottom */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3 flex-shrink-0">
         {/* Total Groups */}
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col">
           <div className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-white">

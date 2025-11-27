@@ -31,26 +31,29 @@ export default function TranscriptsTab() {
   return (
     <>
       <Toast message={toastMessage} type={toastType} onClose={clearToast} />
-      <div className="mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <input
-          type="text"
-          value={filterText}
-          onChange={(event) => handleFilterChange(event.target.value)}
-          placeholder="Search transcripts..."
-          className="w-full sm:w-72 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+      <div className="h-full flex flex-col min-h-0 px-6 pt-6">
+        <div className="mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 flex-shrink-0">
+          <input
+            type="text"
+            value={filterText}
+            onChange={(event) => handleFilterChange(event.target.value)}
+            placeholder="Search transcripts..."
+            className="w-full sm:w-72 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="flex-1 min-h-0">
+          <DataTable<TranscriptRecord>
+            config={transcriptsConfig}
+            data={sortedData}
+            loading={loading}
+            error={error}
+            sortConfig={sortConfig}
+            onSort={handleSort}
+            onViewItem={handleViewItem}
+            onDeleteItem={handleDeleteItem}
+          />
+        </div>
       </div>
-      <DataTable<TranscriptRecord>
-        config={transcriptsConfig}
-        data={sortedData}
-        loading={loading}
-        error={error}
-        sortConfig={sortConfig}
-        onSort={handleSort}
-        onViewItem={handleViewItem}
-        onDeleteItem={handleDeleteItem}
-        onRefresh={refetch}
-      />
 
       {/* Modals */}
       <ViewRecordModal
