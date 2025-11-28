@@ -1448,12 +1448,12 @@ export default function Home() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <div className="bg-gradient-to-b from-white to-gray-50 border-b border-gray-200 flex-shrink-0 relative z-30 rounded-tl-2xl">
-          <div className="flex flex-wrap md:flex-nowrap items-center gap-2 h-[62px] md:h-auto md:min-h-[62px]">
+        <div className="bg-gradient-to-b from-white to-gray-50 border-b border-gray-200 flex-shrink-0 relative z-30 rounded-tl-2xl md:rounded-tl-2xl overflow-hidden">
+          <div className="flex flex-wrap md:flex-nowrap items-center gap-0 md:gap-2 h-[62px] md:h-auto md:min-h-[62px] pl-3 md:pl-0">
             {/* Mobile hamburger */}
             <button
               onClick={() => setMobileSidebarOpen(true)}
-              className="md:hidden p-2 rounded hover:bg-gray-100 text-gray-600 ml-3"
+              className="md:hidden p-2 rounded hover:bg-gray-100 text-gray-600"
               aria-label="Open sidebar"
             >
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1463,9 +1463,9 @@ export default function Home() {
 
             {/* Dashboard views: Unified top bar */}
             {(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') ? (
-              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 flex-1 min-w-0 px-3 md:px-4 py-2 w-full">
+              <div className="flex flex-col md:flex-row md:items-center gap-0 md:gap-4 flex-1 min-w-0 pr-3 md:px-4 md:py-2 w-full">
                 {/* Mobile: Title and Actions Row */}
-                <div className="flex md:hidden items-center justify-between w-full gap-2">
+                <div className="flex md:hidden items-center justify-between w-full gap-0 h-full">
                   {/* View title */}
                   <h1 className="text-lg font-semibold text-gray-900 whitespace-nowrap truncate">
                     {navigationItems.find(item => item.id === activeNavItem)?.label || 'SparksAI'}
@@ -1499,6 +1499,15 @@ export default function Home() {
                       onPromptChange={setSelectedPrompt}
                       loadingPrompts={loadingPrompts}
                     />
+                    
+                    {/* Mobile Logout Button */}
+                    <button
+                      onClick={() => { logout(); try { location.assign('/login'); } catch {} }}
+                      className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 text-gray-700"
+                      title="Logout"
+                    >
+                      Logout
+                    </button>
                   </div>
                 </div>
 
@@ -1657,9 +1666,26 @@ export default function Home() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0 h-full px-3 md:px-4">
-                {/* View title */}
-                <h1 className="text-xl font-semibold text-gray-900 whitespace-nowrap">
+              <div className="flex flex-col md:flex-row md:items-center gap-0 md:gap-4 flex-1 min-w-0 pr-3 md:px-4 md:py-2 w-full">
+                {/* Mobile: Title and Logout Row */}
+                <div className="flex md:hidden items-center justify-between w-full gap-0 h-full">
+                  {/* View title */}
+                  <h1 className="text-lg font-semibold text-gray-900 whitespace-nowrap truncate">
+                    {navigationItems.find(item => item.id === activeNavItem)?.label || 'SparksAI'}
+                  </h1>
+                  
+                  {/* Mobile Logout Button */}
+                  <button
+                    onClick={() => { logout(); try { location.assign('/login'); } catch {} }}
+                    className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 text-gray-700"
+                    title="Logout"
+                  >
+                    Logout
+                  </button>
+                </div>
+                
+                {/* Desktop: View title */}
+                <h1 className="hidden md:block text-xl font-semibold text-gray-900 whitespace-nowrap">
                   {navigationItems.find(item => item.id === activeNavItem)?.label || 'SparksAI'}
                 </h1>
 
@@ -1757,9 +1783,8 @@ export default function Home() {
               </div>
             )}
           </div>
-        </div>
-        {/* Mobile controls panel (everything except title) */}
-        <div className="md:hidden border-t border-gray-200 px-3 py-2 space-y-2 relative z-10">
+          {/* Mobile controls panel (everything except title) */}
+          <div className="md:hidden border-t border-gray-200 bg-gradient-to-b from-white to-gray-50 pl-3 pr-3 pt-2 pb-2 space-y-2 -mt-[1px]">
           {/* Filters */}
           <div className="flex flex-col gap-2">
             {/* PI Filter - shown first for PI views */}
@@ -1795,6 +1820,7 @@ export default function Home() {
           {/* Dashboard controls - removed duplicate AI menu on mobile */}
 
           {/* Search removed on mobile */}
+          </div>
         </div>
 
         {/* Content Area */}

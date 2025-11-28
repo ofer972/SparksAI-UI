@@ -74,6 +74,12 @@ export default function SettingsScreen() {
   const [openaiApiKey, setOpenaiApiKey] = useState('');
   const [originalGeminiApiKey, setOriginalGeminiApiKey] = useState<string | null>(null);
   const [originalOpenaiApiKey, setOriginalOpenaiApiKey] = useState<string | null>(null);
+  // Store original values for change tracking
+  const [originalAiProvider, setOriginalAiProvider] = useState<string>('openai');
+  const [originalGeminiModel, setOriginalGeminiModel] = useState<string>('gemini-2.5-flash');
+  const [originalOpenaiModel, setOriginalOpenaiModel] = useState<string>('gpt-4o-mini');
+  const [originalGeminiTemperature, setOriginalGeminiTemperature] = useState<number>(0);
+  const [originalOpenaiTemperature, setOriginalOpenaiTemperature] = useState<number>(0.7);
   const MASK = '********';
   const [saving, setSaving] = useState(false);
 
@@ -164,29 +170,42 @@ export default function SettingsScreen() {
         // Support both { data: { settings: {...} } } and flat objects
         const s = (result as any).settings ?? result;
 
-        // Provider
-        if (s.ai_provider) setAiProvider(s.ai_provider);
+        // Provider (normalize: backend may return 'chatgpt', we use 'openai' internally)
+        const rawProvider = s.ai_provider || 'openai';
+        const normalizedProvider = rawProvider === 'chatgpt' ? 'openai' : rawProvider;
+        setAiProvider(normalizedProvider);
+        setOriginalAiProvider(normalizedProvider);
 
         // Models (backend provides ai_chatgpt_model for chatgpt/openai and ai_gemini_model for gemini)
-        if (s.ai_chatgpt_model) setOpenaiModel(s.ai_chatgpt_model);
-        if (s.ai_gemini_model) setGeminiModel(s.ai_gemini_model);
+        const loadedOpenaiModel = s.ai_chatgpt_model || 'gpt-4o-mini';
+        const loadedGeminiModel = s.ai_gemini_model || 'gemini-2.5-flash';
+        setOpenaiModel(loadedOpenaiModel);
+        setGeminiModel(loadedGeminiModel);
+        setOriginalOpenaiModel(loadedOpenaiModel);
+        setOriginalGeminiModel(loadedGeminiModel);
 
         // Temperatures (map strings to numbers if needed)
+        let loadedGeminiTemp = 0;
         if (s.ai_gemini_temperature !== undefined) {
           const v = typeof s.ai_gemini_temperature === 'string' ? parseFloat(s.ai_gemini_temperature) : s.ai_gemini_temperature;
-          if (!Number.isNaN(v)) setGeminiTemperature(v);
+          if (!Number.isNaN(v)) loadedGeminiTemp = v;
         } else if (s.gemini_temperature !== undefined) {
           const v = typeof s.gemini_temperature === 'string' ? parseFloat(s.gemini_temperature) : s.gemini_temperature;
-          if (!Number.isNaN(v)) setGeminiTemperature(v);
+          if (!Number.isNaN(v)) loadedGeminiTemp = v;
         }
+        setGeminiTemperature(loadedGeminiTemp);
+        setOriginalGeminiTemperature(loadedGeminiTemp);
 
+        let loadedOpenaiTemp = 0.7;
         if (s.ai_chatgpt_temperature !== undefined) {
           const v = typeof s.ai_chatgpt_temperature === 'string' ? parseFloat(s.ai_chatgpt_temperature) : s.ai_chatgpt_temperature;
-          if (!Number.isNaN(v)) setOpenaiTemperature(v);
+          if (!Number.isNaN(v)) loadedOpenaiTemp = v;
         } else if (s.openai_temperature !== undefined) {
           const v = typeof s.openai_temperature === 'string' ? parseFloat(s.openai_temperature) : s.openai_temperature;
-          if (!Number.isNaN(v)) setOpenaiTemperature(v);
+          if (!Number.isNaN(v)) loadedOpenaiTemp = v;
         }
+        setOpenaiTemperature(loadedOpenaiTemp);
+        setOriginalOpenaiTemperature(loadedOpenaiTemp);
 
         // API keys presence
         const hasGeminiKey = Boolean(s.gemini_api_key && String(s.gemini_api_key).length > 0);
@@ -284,6 +303,30 @@ export default function SettingsScreen() {
     };
   }, [activeTab, isSystemUser, layoutLoaded]);
 
+  // Check if AI config has changes
+  const hasAiConfigChanges = (): boolean => {
+    // Check provider
+    if (aiProvider !== originalAiProvider) return true;
+
+    // Check models
+    if (openaiModel !== originalOpenaiModel) return true;
+    if (geminiModel !== originalGeminiModel) return true;
+
+    // Check temperatures
+    if (openaiTemperature !== originalOpenaiTemperature) return true;
+    if (geminiTemperature !== originalGeminiTemperature) return true;
+
+    // Check API keys (only if changed from masked value)
+    const geminiKeyChanged = geminiApiKey && geminiApiKey !== MASK && geminiApiKey !== (originalGeminiApiKey ?? '');
+    const openaiKeyChanged = openaiApiKey && openaiApiKey !== MASK && openaiApiKey !== (originalOpenaiApiKey ?? '');
+
+    // Also check if key was cleared (was set, now empty)
+    const geminiKeyCleared = originalGeminiApiKey !== null && (!geminiApiKey || geminiApiKey === '');
+    const openaiKeyCleared = originalOpenaiApiKey !== null && (!openaiApiKey || openaiApiKey === '');
+
+    return geminiKeyChanged || openaiKeyChanged || geminiKeyCleared || openaiKeyCleared;
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -311,11 +354,16 @@ export default function SettingsScreen() {
 
       const result = await api.updateSettings(payload, 'admin@example.com');
 
-      // After save, mask and update originals
-      setOriginalGeminiApiKey(payload.gemini_api_key);
-      setOriginalOpenaiApiKey(payload.chatgpt_api_key);
-      setGeminiApiKey(MASK);
-      setOpenaiApiKey(MASK);
+      // After save, update all original values
+      setOriginalAiProvider(aiProvider);
+      setOriginalOpenaiModel(openaiModel);
+      setOriginalGeminiModel(geminiModel);
+      setOriginalOpenaiTemperature(openaiTemperature);
+      setOriginalGeminiTemperature(geminiTemperature);
+      setOriginalGeminiApiKey(geminiKeyToSend || null);
+      setOriginalOpenaiApiKey(openaiKeyToSend || null);
+      setGeminiApiKey(geminiKeyToSend ? MASK : '');
+      setOpenaiApiKey(openaiKeyToSend ? MASK : '');
 
       setToastType('success');
       setToastMessage('Settings saved successfully');
@@ -528,12 +576,29 @@ export default function SettingsScreen() {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'ai-config':
+        const hasChanges = hasAiConfigChanges();
+        const currentActiveProvider = originalAiProvider === 'openai' ? 'OpenAI ChatGPT' : 'Google Gemini';
+        
         return (
           <div className="space-y-4">
-            {/* Active LLM Provider Selection - Top */}
+            {/* Currently Active AI - Display Only */}
             <div className="bg-white rounded-lg shadow-sm p-4">
               <div className="flex items-center space-x-4">
-                <span className="text-sm font-semibold text-gray-700">Active LLM Provider:</span>
+                <span className="text-sm font-semibold text-gray-700">Currently Active AI:</span>
+                <span className={`px-3 py-1.5 text-sm font-medium rounded ${
+                  originalAiProvider === 'openai' 
+                    ? 'bg-blue-100 text-blue-700' 
+                    : 'bg-green-100 text-green-700'
+                }`}>
+                  {currentActiveProvider}
+                </span>
+              </div>
+            </div>
+
+            {/* AI Provider Selection */}
+            <div className="bg-white rounded-lg shadow-sm p-4">
+              <div className="flex items-center space-x-4">
+                <span className="text-sm font-semibold text-gray-700">Select AI Model to Configure:</span>
                 <select
                   value={aiProvider}
                   onChange={(e) => setAiProvider(e.target.value)}
@@ -542,24 +607,14 @@ export default function SettingsScreen() {
                   <option value="openai">OpenAI ChatGPT</option>
                   <option value="gemini">Google Gemini</option>
                 </select>
-                {aiProvider === 'openai' && (
-                  <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">Active</span>
-                )}
-                {aiProvider === 'gemini' && (
-                  <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded">Active</span>
-                )}
               </div>
             </div>
 
-            {/* Two Side-by-Side Containers */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* OpenAI ChatGPT Settings Container */}
-              <div className={`bg-white rounded-lg shadow-sm p-4 ${aiProvider === 'openai' ? 'border-2 border-blue-500' : 'border border-gray-200'}`}>
+            {/* Single Settings Container - Only for Selected Provider */}
+            {aiProvider === 'openai' ? (
+              <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-gray-800">OpenAI ChatGPT Settings</h3>
-                  {aiProvider === 'openai' && (
-                    <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">Active</span>
-                  )}
                 </div>
                 <div className="space-y-3">
                   <div className="flex flex-col space-y-1">
@@ -600,14 +655,10 @@ export default function SettingsScreen() {
                   </div>
                 </div>
               </div>
-
-              {/* Google Gemini Settings Container */}
-              <div className={`bg-white rounded-lg shadow-sm p-4 ${aiProvider === 'gemini' ? 'border-2 border-green-500' : 'border border-gray-200'}`}>
+            ) : (
+              <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-gray-800">Google Gemini Settings</h3>
-                  {aiProvider === 'gemini' && (
-                    <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded">Active</span>
-                  )}
                 </div>
                 <div className="space-y-3">
                   <div className="flex flex-col space-y-1">
@@ -648,15 +699,17 @@ export default function SettingsScreen() {
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Save Button - Centered */}
             <div className="flex items-center justify-center">
               <button
                 onClick={handleSave}
-                disabled={saving}
+                disabled={saving || !hasChanges}
                 className={`px-4 py-2 text-sm rounded ${
-                  saving ? 'bg-blue-300 text-white cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'
+                  saving || !hasChanges
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
                 {saving ? 'Saving...' : 'Save Settings'}
