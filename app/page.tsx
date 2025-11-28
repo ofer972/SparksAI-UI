@@ -411,6 +411,10 @@ export default function Home() {
   // Track if we're loading team insights for the first time
   const [teamInsightsReady, setTeamInsightsReady] = useState(false);
   const teamInsightsReadyRef = useRef(false);
+  
+  // Track if we're loading PI insights for the first time
+  const [piInsightsReady, setPiInsightsReady] = useState(false);
+  const piInsightsReadyRef = useRef(false);
 
   // Clear state when navigating TO team-ai-insights
   useEffect(() => {
@@ -475,17 +479,46 @@ export default function Home() {
     }
   }, [activeNavItem, teamInsightSettings.isLoading, teamInsightSettings.savedState, groups, teams]);
 
-  // Load saved PI insight settings
+  // Clear state when navigating TO pi-quarter
   useEffect(() => {
-    if (!piInsightSettings.isLoading && piInsightSettings.savedState && activeNavItem === 'pi-quarter') {
+    if (activeNavItem === 'pi-quarter') {
+      console.log('[App] Navigating to pi-quarter, clearing state...');
+      
+      // Mark as not ready IMMEDIATELY using ref (synchronous)
+      piInsightsReadyRef.current = false;
+      setPiInsightsReady(false);
+      
+      // Clear state immediately when navigating to pi-quarter
+      setSelectedPI('');
+      setSelectedTeam('');
+      setSelectedTreeValue(null);
+      setSelectedTreeLabel('');
+      setSelectedTreeType('team');
+      setSelectedCategories([]);
+    } else {
+      // Reset when leaving pi-quarter
+      piInsightsReadyRef.current = false;
+      setPiInsightsReady(false);
+    }
+  }, [activeNavItem]);
+
+  // Load saved PI insight settings after clearing
+  useEffect(() => {
+    if (activeNavItem === 'pi-quarter' && !piInsightSettings.isLoading && piInsightSettings.savedState) {
+      console.log('[App] Loading saved PI insight settings:', piInsightSettings.savedState);
       const saved = piInsightSettings.savedState;
+      
       if (saved.topBarFilters) {
-        if (saved.topBarFilters.selectedPI) setSelectedPI(saved.topBarFilters.selectedPI);
+        if (saved.topBarFilters.selectedPI) {
+          console.log('[App] PI Insight: Setting selectedPI to:', saved.topBarFilters.selectedPI);
+          setSelectedPI(saved.topBarFilters.selectedPI);
+        }
         
         const teamName = saved.topBarFilters.selectedTeam;
         const treeType = saved.topBarFilters.selectedTreeType;
         
         if (teamName) {
+          console.log('[App] PI Insight: Setting selectedTeam to:', teamName);
           setSelectedTeam(teamName);
           setSelectedTreeLabel(teamName);
           
@@ -501,8 +534,19 @@ export default function Home() {
         
         if (treeType) setSelectedTreeType(treeType);
       }
+      
+      // Restore saved categories if they exist
+      if (saved.selectedCategories !== undefined) {
+        console.log('[App] Restoring saved PI categories:', saved.selectedCategories);
+        setSelectedCategories(saved.selectedCategories);
+      }
+      
+      // Mark as ready after settings are loaded (both ref and state)
+      piInsightsReadyRef.current = true;
+      setPiInsightsReady(true);
+      console.log('[App] PI insights ready!');
     }
-  }, [piInsightSettings.isLoading, piInsightSettings.savedState, activeNavItem, groups, teams]);
+  }, [activeNavItem, piInsightSettings.isLoading, piInsightSettings.savedState, groups, teams]);
 
   const apiService = new ApiService();
 
@@ -862,6 +906,43 @@ export default function Home() {
           </div>
         );
       case 'pi-quarter':
+        // Wait for settings to load before rendering to avoid fetching with wrong PI
+        // Use ref for immediate check (synchronous) to prevent any rendering with stale state
+        if (!piInsightsReadyRef.current || !piInsightsReady || piInsightSettings.isLoading) {
+          console.log('[App] PI insights not ready yet, showing loading...', {
+            refReady: piInsightsReadyRef.current,
+            stateReady: piInsightsReady,
+            isLoading: piInsightSettings.isLoading
+          });
+          return (
+            <div className="flex items-center justify-center h-full min-h-[400px]">
+              <div className="text-center px-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading PI insights...</p>
+              </div>
+            </div>
+          );
+        }
+        
+        // Check if no PI is selected (after settings are loaded)
+        const noPISelected = !selectedPI || 
+          selectedPI.trim() === '' || 
+          selectedPI === 'Select PI';
+        
+        if (noPISelected) {
+          return (
+            <div className="flex items-center justify-center h-full min-h-[400px]">
+              <div className="text-center px-4">
+                <div className="text-6xl mb-4">🎯</div>
+                <h2 className="text-2xl font-semibold text-gray-800 mb-2">Select a PI</h2>
+                <p className="text-gray-600 max-w-md mx-auto">
+                  Please select a PI from the dropdown above to view AI insights.
+                </p>
+              </div>
+            </div>
+          );
+        }
+        
         return (
           <div className="h-full overflow-auto">
             <div className="p-2" style={{ zoom: 0.90 }}>
