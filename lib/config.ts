@@ -75,9 +75,9 @@ export const API_CONFIG = {
 
     // Settings endpoints
     settings: {
-      get: '/settings/getAll',
+      get: '/llm-settings',
       update: '/settings',
-      batch: '/settings/batch',
+      batch: '/llm-settings',
     },
 
     // Insight Types endpoints

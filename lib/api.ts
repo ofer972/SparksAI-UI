@@ -1129,7 +1129,7 @@ export class ApiService {
     }
     
     const url = buildBackendUrl(API_CONFIG.endpoints.settings.batch);
-    // Send object shape expected by batch endpoint: { settings: { ... }, updated_by }
+    // Send object shape expected by backend: { settings: { ... }, updated_by }
     const body = { settings: stringSettings, updated_by: updatedBy || 'ui' };
     
     const response = await fetch(url, {
@@ -1138,12 +1138,19 @@ export class ApiService {
       body: JSON.stringify(body),
     });
     
-    if (response.ok) {
-      return response.json();
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Failed to update settings: ${response.status} ${response.statusText}${text ? ` - ${text}` : ''}`);
     }
     
-    const text = await response.text();
-    throw new Error(`Failed to update settings: ${response.status} ${response.statusText}${text ? ` - ${text}` : ''}`);
+    const result = await response.json();
+    
+    // Validate backend response structure
+    if (!result || result.success !== true) {
+      throw new Error(`Backend returned unsuccessful response: ${JSON.stringify(result)}`);
+    }
+    
+    return result;
   }
 
   // Insight Types API

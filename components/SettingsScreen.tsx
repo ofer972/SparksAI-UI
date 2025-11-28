@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { ApiService, verifySystem } from '../lib/api';
+import { getCurrentUser } from '../lib/auth';
 import { DashboardViewConfig, ReportDefinition } from '../lib/config';
 import Toast from './Toast';
 import DashboardLayoutArranger, { DashboardLayout } from './DashboardLayoutArranger';
@@ -86,6 +87,8 @@ export default function SettingsScreen() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [isSystemUser, setIsSystemUser] = useState(false);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [availableReports, setAvailableReports] = useState<ReportDefinition[]>([]);
   const [selectedReportsByView, setSelectedReportsByView] = useState<Record<string, string[]>>({
     'team-dashboard': [],
@@ -163,22 +166,38 @@ export default function SettingsScreen() {
   useEffect(() => {
     const load = async () => {
       try {
+        setIsLoading(true);
+        setLoadingError(null);
         const api = new ApiService();
         const result = await api.getSettings();
-        if (!result) return;
+        if (!result) {
+          setLoadingError('Failed to load settings: No data received from server');
+          setIsLoading(false);
+          return;
+        }
 
         // Support both { data: { settings: {...} } } and flat objects
         const s = (result as any).settings ?? result;
 
         // Provider (normalize: backend may return 'chatgpt', we use 'openai' internally)
-        const rawProvider = s.ai_provider || 'openai';
+        const rawProvider = s.ai_provider;
+        if (!rawProvider) {
+          setLoadingError('Failed to load settings: Missing AI provider');
+          setIsLoading(false);
+          return;
+        }
         const normalizedProvider = rawProvider === 'chatgpt' ? 'openai' : rawProvider;
         setAiProvider(normalizedProvider);
         setOriginalAiProvider(normalizedProvider);
 
         // Models (backend provides ai_chatgpt_model for chatgpt/openai and ai_gemini_model for gemini)
-        const loadedOpenaiModel = s.ai_chatgpt_model || 'gpt-4o-mini';
-        const loadedGeminiModel = s.ai_gemini_model || 'gemini-2.5-flash';
+        const loadedOpenaiModel = s.ai_chatgpt_model;
+        const loadedGeminiModel = s.ai_gemini_model;
+        if (!loadedOpenaiModel || !loadedGeminiModel) {
+          setLoadingError('Failed to load settings: Missing model configuration');
+          setIsLoading(false);
+          return;
+        }
         setOpenaiModel(loadedOpenaiModel);
         setGeminiModel(loadedGeminiModel);
         setOriginalOpenaiModel(loadedOpenaiModel);
@@ -207,17 +226,17 @@ export default function SettingsScreen() {
         setOpenaiTemperature(loadedOpenaiTemp);
         setOriginalOpenaiTemperature(loadedOpenaiTemp);
 
-        // API keys presence
-        const hasGeminiKey = Boolean(s.gemini_api_key && String(s.gemini_api_key).length > 0);
-        const openaiKeyValue = s.chatgpt_api_key || s.openai_api_key;
-        const hasOpenaiKey = Boolean(openaiKeyValue && String(openaiKeyValue).length > 0);
-
-        setOriginalGeminiApiKey(hasGeminiKey ? String(s.gemini_api_key) : null);
-        setOriginalOpenaiApiKey(hasOpenaiKey ? String(openaiKeyValue) : null);
-        setGeminiApiKey(hasGeminiKey ? MASK : '');
-        setOpenaiApiKey(hasOpenaiKey ? MASK : '');
-      } catch (e) {
+        // API keys - backend doesn't return them, so always show MASK
+        setOriginalGeminiApiKey(null);
+        setOriginalOpenaiApiKey(null);
+        setGeminiApiKey(MASK);
+        setOpenaiApiKey(MASK);
+        
+        setIsLoading(false);
+      } catch (e: any) {
         console.error('Failed to load settings', e);
+        setLoadingError(e?.message || 'Failed to load settings from server');
+        setIsLoading(false);
       }
     };
     load();
@@ -332,27 +351,27 @@ export default function SettingsScreen() {
       setSaving(true);
       setToastMessage(null);
       const api = new ApiService();
-      // Match backend field names and types per /settings/batch
-      const providerForApi = aiProvider === 'openai' ? 'chatgpt' : aiProvider; // backend expects 'chatgpt'
-      // Determine keys to send: send original value if user didn't change (masked)
-      const geminiKeyToSend = geminiApiKey && geminiApiKey !== MASK
-        ? geminiApiKey
-        : (originalGeminiApiKey ?? '');
-      const openaiKeyToSend = openaiApiKey && openaiApiKey !== MASK
-        ? openaiApiKey
-        : (originalOpenaiApiKey ?? '');
-
+      
+      // Always send all settings
       const payload: Record<string, any> = {
-        ai_provider: String(providerForApi),
+        ai_provider: String(aiProvider),
         ai_chatgpt_model: String(openaiModel),
         ai_gemini_model: String(geminiModel),
         ai_gemini_temperature: String(geminiTemperature),
         ai_chatgpt_temperature: String(openaiTemperature),
-        gemini_api_key: String(geminiKeyToSend),
-        chatgpt_api_key: String(openaiKeyToSend),
       };
 
-      const result = await api.updateSettings(payload, 'admin@example.com');
+      // Only include API keys if they were changed by the user (not MASK and not empty)
+      if (geminiApiKey && geminiApiKey !== MASK && geminiApiKey !== '') {
+        payload.gemini_api_key = String(geminiApiKey);
+      }
+      if (openaiApiKey && openaiApiKey !== MASK && openaiApiKey !== '') {
+        payload.chatgpt_api_key = String(openaiApiKey);
+      }
+
+      const user = getCurrentUser();
+      const updatedBy = user?.email || 'ui';
+      const result = await api.updateSettings(payload, updatedBy);
 
       // After save, update all original values
       setOriginalAiProvider(aiProvider);
@@ -360,10 +379,16 @@ export default function SettingsScreen() {
       setOriginalGeminiModel(geminiModel);
       setOriginalOpenaiTemperature(openaiTemperature);
       setOriginalGeminiTemperature(geminiTemperature);
-      setOriginalGeminiApiKey(geminiKeyToSend || null);
-      setOriginalOpenaiApiKey(openaiKeyToSend || null);
-      setGeminiApiKey(geminiKeyToSend ? MASK : '');
-      setOpenaiApiKey(openaiKeyToSend ? MASK : '');
+      
+      // Update API key state - if a key was sent, mark it as saved (show MASK), otherwise keep current state
+      if (payload.gemini_api_key) {
+        setOriginalGeminiApiKey(payload.gemini_api_key);
+        setGeminiApiKey(MASK);
+      }
+      if (payload.chatgpt_api_key) {
+        setOriginalOpenaiApiKey(payload.chatgpt_api_key);
+        setOpenaiApiKey(MASK);
+      }
 
       setToastType('success');
       setToastMessage('Settings saved successfully');
@@ -577,32 +602,36 @@ export default function SettingsScreen() {
     switch (activeTab) {
       case 'ai-config':
         const hasChanges = hasAiConfigChanges();
-        const currentActiveProvider = originalAiProvider === 'openai' ? 'OpenAI ChatGPT' : 'Google Gemini';
+        
+        if (isLoading) {
+          return (
+            <div className="bg-white rounded-lg shadow-sm p-4 text-center">
+              <p className="text-gray-600">Loading settings...</p>
+            </div>
+          );
+        }
+        
+        if (loadingError) {
+          return (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center space-x-2">
+                <span className="text-red-600 font-semibold">Error:</span>
+                <span className="text-red-700">{loadingError}</span>
+              </div>
+            </div>
+          );
+        }
         
         return (
           <div className="space-y-4">
-            {/* Currently Active AI - Display Only */}
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <div className="flex items-center space-x-4">
-                <span className="text-sm font-semibold text-gray-700">Currently Active AI:</span>
-                <span className={`px-3 py-1.5 text-sm font-medium rounded ${
-                  originalAiProvider === 'openai' 
-                    ? 'bg-blue-100 text-blue-700' 
-                    : 'bg-green-100 text-green-700'
-                }`}>
-                  {currentActiveProvider}
-                </span>
-              </div>
-            </div>
-
             {/* AI Provider Selection */}
             <div className="bg-white rounded-lg shadow-sm p-4">
               <div className="flex items-center space-x-4">
-                <span className="text-sm font-semibold text-gray-700">Select AI Model to Configure:</span>
+                <span className="text-sm font-bold text-gray-700">Select Active AI model (and configure):</span>
                 <select
                   value={aiProvider}
                   onChange={(e) => setAiProvider(e.target.value)}
-                  className="border border-gray-300 rounded px-3 py-1.5 text-sm w-48"
+                  className="border border-gray-300 rounded px-3 py-1.5 text-sm font-bold w-48"
                 >
                   <option value="openai">OpenAI ChatGPT</option>
                   <option value="gemini">Google Gemini</option>
