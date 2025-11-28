@@ -622,127 +622,213 @@ export default function SettingsScreen() {
           );
         }
         
+        const currentActiveProvider = originalAiProvider === 'openai' ? 'OpenAI ChatGPT' : 'Google Gemini';
+        
         return (
-          <div className="space-y-4">
-            {/* AI Provider Selection */}
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <div className="flex items-center space-x-4">
-                <span className="text-sm font-bold text-gray-700">Select Active AI model (and configure):</span>
-                <select
-                  value={aiProvider}
-                  onChange={(e) => setAiProvider(e.target.value)}
-                  className="border border-gray-300 rounded px-3 py-1.5 text-sm font-bold w-48"
-                >
-                  <option value="openai">OpenAI ChatGPT</option>
-                  <option value="gemini">Google Gemini</option>
-                </select>
-              </div>
-            </div>
+          <div className="w-full">
+            <div className="w-full max-w-2xl ml-0 md:ml-8">
+              <div className="bg-gradient-to-br from-white via-gray-50 to-blue-50 rounded-lg shadow-lg border border-gray-200 p-6 space-y-6">
+                {/* Currently Active LLM Badge */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-full">
+                        {originalAiProvider === 'openai' ? (
+                          /* OpenAI Logo */
+                          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.4397-1.7845l-1.6589-2.8692a5.4025 5.4025 0 0 0-2.2856-2.2856l-2.8692-1.6589a5.9217 5.9217 0 0 0-3.5691-.4398L9.1919 1.2954a5.5054 5.5054 0 0 0-4.3872 4.3872L3.707 8.7157a5.9847 5.9847 0 0 0-.4397 1.7845l-1.6589 2.8692a5.4025 5.4025 0 0 0-2.2856 2.2856l-2.8692 1.6589a5.9217 5.9217 0 0 0-.4398 3.5691l1.2954 3.2678a5.5054 5.5054 0 0 0 4.3872 4.3872l3.2678 1.2954a5.9847 5.9847 0 0 0 1.7845.4397l2.8692 1.6589a5.4025 5.4025 0 0 0 2.2856 2.2856l1.6589 2.8692a5.9217 5.9217 0 0 0 3.5691.4398l3.2678-1.2954a5.5054 5.5054 0 0 0 4.3872-4.3872l1.2954-3.2678a5.9847 5.9847 0 0 0 .4397-1.7845l1.6589-2.8692a5.4025 5.4025 0 0 0 2.2856-2.2856l2.8692-1.6589a5.9217 5.9217 0 0 0 .4398-3.5691l-1.2954-3.2678a5.5054 5.5054 0 0 0-4.3872-4.3872l-3.2678-1.2954z" fill="#10A37F"/>
+                            <path d="M12.8135 3.6211L8.9332 8.9336a3.9872 3.9872 0 0 0 0 5.6416l3.8803 5.3125a4.0042 4.0042 0 0 0 5.6416 0l3.8803-5.3125a3.9872 3.9872 0 0 0 0-5.6416L18.4551 3.6211a4.0042 4.0042 0 0 0-5.6416 0z" fill="#FFFFFF"/>
+                          </svg>
+                        ) : (
+                          /* Google Gemini Logo */
+                          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#4285F4"/>
+                            <path d="M2 17L12 22L22 17V12L12 17L2 12V17Z" fill="#34A853"/>
+                            <path d="M2 12L12 17L22 12" stroke="#EA4335" strokeWidth="2" fill="none"/>
+                            <path d="M12 2V12" stroke="#FBBC04" strokeWidth="2"/>
+                          </svg>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-gray-600">Currently Active LLM</p>
+                        <p className="text-sm font-semibold text-gray-900">{currentActiveProvider}</p>
+                      </div>
+                    </div>
+                    <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
+                      originalAiProvider === 'openai' 
+                        ? 'bg-blue-100 text-blue-700' 
+                        : 'bg-green-100 text-green-700'
+                    }`}>
+                      Active
+                    </span>
+                  </div>
+                </div>
 
-            {/* Single Settings Container - Only for Selected Provider */}
-            {aiProvider === 'openai' ? (
-              <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-gray-800">OpenAI ChatGPT Settings</h3>
+                {/* AI Provider Selection */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <div className="flex flex-col space-y-3">
+                    <label className="text-sm font-semibold text-gray-700">Select AI Provider to Configure</label>
+                    <select
+                      value={aiProvider}
+                      onChange={(e) => setAiProvider(e.target.value)}
+                      className="border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-medium w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    >
+                      <option value="openai">OpenAI ChatGPT</option>
+                      <option value="gemini">Google Gemini</option>
+                    </select>
+                  </div>
                 </div>
-              <div className="space-y-3">
-                  <div className="flex flex-col space-y-1">
-                    <label className="text-xs text-gray-600">Model</label>
-                  <select
-                      value={openaiModel}
-                      onChange={(e) => setOpenaiModel(e.target.value)}
-                      className="border border-gray-300 rounded px-2 py-1.5 text-xs w-full"
-                  >
-                      {openaiModels.map((model) => (
-                      <option key={model.value} value={model.value}>
-                        {model.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                  <div className="flex flex-col space-y-1">
-                    <label className="text-xs text-gray-600">Temperature</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="1"
-                      value={openaiTemperature}
-                      onChange={(e) => setOpenaiTemperature(parseFloat(e.target.value))}
-                      className="border border-gray-300 rounded px-2 py-1.5 text-xs w-full"
-                  />
-                </div>
-                  <div className="flex flex-col space-y-1">
-                    <label className="text-xs text-gray-600">API Key</label>
-                  <input
-                    type="password"
-                      value={openaiApiKey}
-                      onChange={(e) => setOpenaiApiKey(e.target.value)}
-                      placeholder="Enter ChatGPT API key"
-                      className="border border-gray-300 rounded px-2 py-1.5 text-xs w-full"
-                  />
-                </div>
-              </div>
-            </div>
-            ) : (
-              <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-gray-800">Google Gemini Settings</h3>
-                </div>
-              <div className="space-y-3">
-                  <div className="flex flex-col space-y-1">
-                    <label className="text-xs text-gray-600">Model</label>
-                  <select
-                      value={geminiModel}
-                      onChange={(e) => setGeminiModel(e.target.value)}
-                      className="border border-gray-300 rounded px-2 py-1.5 text-xs w-full"
-                  >
-                      {geminiModels.map((model) => (
-                      <option key={model.value} value={model.value}>
-                        {model.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                  <div className="flex flex-col space-y-1">
-                    <label className="text-xs text-gray-600">Temperature</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="1"
-                      value={geminiTemperature}
-                      onChange={(e) => setGeminiTemperature(parseFloat(e.target.value))}
-                      className="border border-gray-300 rounded px-2 py-1.5 text-xs w-full"
-                  />
-                </div>
-                  <div className="flex flex-col space-y-1">
-                    <label className="text-xs text-gray-600">API Key</label>
-                  <input
-                    type="password"
-                      value={geminiApiKey}
-                      onChange={(e) => setGeminiApiKey(e.target.value)}
-                      placeholder="Enter Gemini API key"
-                      className="border border-gray-300 rounded px-2 py-1.5 text-xs w-full"
-                  />
-                </div>
-              </div>
-            </div>
-            )}
 
-            {/* Save Button - Centered */}
-            <div className="flex items-center justify-center">
-              <button
-                onClick={handleSave}
-                disabled={saving || !hasChanges}
-                className={`px-4 py-2 text-sm rounded ${
-                  saving || !hasChanges
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-              >
-                {saving ? 'Saving...' : 'Save Settings'}
-              </button>
+                {/* Single Settings Container - Only for Selected Provider */}
+                {aiProvider === 'openai' ? (
+                  <div className={`bg-white rounded-lg p-6 border-2 transition-all ${
+                    originalAiProvider === 'openai' ? 'border-blue-500' : 'border-gray-200'
+                  }`}>
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                          {/* OpenAI Logo */}
+                          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/20000/svg">
+                            <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.4397-1.7845l-1.6589-2.8692a5.4025 5.4025 0 0 0-2.2856-2.2856l-2.8692-1.6589a5.9217 5.9217 0 0 0-3.5691-.4398L9.1919 1.2954a5.5054 5.5054 0 0 0-4.3872 4.3872L3.707 8.7157a5.9847 5.9847 0 0 0-.4397 1.7845l-1.6589 2.8692a5.4025 5.4025 0 0 0-2.2856 2.2856l-2.8692 1.6589a5.9217 5.9217 0 0 0-.4398 3.5691l1.2954 3.2678a5.5054 5.5054 0 0 0 4.3872 4.3872l3.2678 1.2954a5.9847 5.9847 0 0 0 1.7845.4397l2.8692 1.6589a5.4025 5.4025 0 0 0 2.2856 2.2856l1.6589 2.8692a5.9217 5.9217 0 0 0 3.5691.4398l3.2678-1.2954a5.5054 5.5054 0 0 0 4.3872-4.3872l1.2954-3.2678a5.9847 5.9847 0 0 0 .4397-1.7845l1.6589-2.8692a5.4025 5.4025 0 0 0 2.2856-2.2856l2.8692-1.6589a5.9217 5.9217 0 0 0 .4398-3.5691l-1.2954-3.2678a5.5054 5.5054 0 0 0-4.3872-4.3872l-3.2678-1.2954z" fill="#10A37F"/>
+                            <path d="M12.8135 3.6211L8.9332 8.9336a3.9872 3.9872 0 0 0 0 5.6416l3.8803 5.3125a4.0042 4.0042 0 0 0 5.6416 0l3.8803-5.3125a3.9872 3.9872 0 0 0 0-5.6416L18.4551 3.6211a4.0042 4.0042 0 0 0-5.6416 0z" fill="#FFFFFF"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="text-base font-semibold text-gray-800">OpenAI ChatGPT Settings</h3>
+                          <p className="text-xs text-gray-500">Configure your OpenAI API settings</p>
+                        </div>
+                      </div>
+                      {originalAiProvider === 'openai' && (
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+                          Active
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex flex-col space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Model</label>
+                        <select
+                          value={openaiModel}
+                          onChange={(e) => setOpenaiModel(e.target.value)}
+                          className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        >
+                          {openaiModels.map((model) => (
+                            <option key={model.value} value={model.value}>
+                              {model.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex flex-col space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Temperature</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="1"
+                          value={openaiTemperature}
+                          onChange={(e) => setOpenaiTemperature(parseFloat(e.target.value))}
+                          className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        />
+                        <p className="text-xs text-gray-500">Controls randomness (0 = deterministic, 1 = creative)</p>
+                      </div>
+                      <div className="flex flex-col space-y-2">
+                        <label className="text-sm font-medium text-gray-700">API Key</label>
+                        <input
+                          type="password"
+                          value={openaiApiKey}
+                          onChange={(e) => setOpenaiApiKey(e.target.value)}
+                          placeholder="Enter your OpenAI API key"
+                          className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        />
+                        <p className="text-xs text-gray-500">Your API key is encrypted and stored securely</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`bg-white rounded-lg p-6 border-2 transition-all ${
+                    originalAiProvider === 'gemini' ? 'border-green-500' : 'border-gray-200'
+                  }`}>
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                          {/* Google Gemini Logo */}
+                          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#4285F4"/>
+                            <path d="M2 17L12 22L22 17V12L12 17L2 12V17Z" fill="#34A853"/>
+                            <path d="M2 12L12 17L22 12" stroke="#EA4335" strokeWidth="2" fill="none"/>
+                            <path d="M12 2V12" stroke="#FBBC04" strokeWidth="2"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="text-base font-semibold text-gray-800">Google Gemini Settings</h3>
+                          <p className="text-xs text-gray-500">Configure your Google Gemini API settings</p>
+                        </div>
+                      </div>
+                      {originalAiProvider === 'gemini' && (
+                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                          Active
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex flex-col space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Model</label>
+                        <select
+                          value={geminiModel}
+                          onChange={(e) => setGeminiModel(e.target.value)}
+                          className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                        >
+                          {geminiModels.map((model) => (
+                            <option key={model.value} value={model.value}>
+                              {model.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex flex-col space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Temperature</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="1"
+                          value={geminiTemperature}
+                          onChange={(e) => setGeminiTemperature(parseFloat(e.target.value))}
+                          className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                        />
+                        <p className="text-xs text-gray-500">Controls randomness (0 = deterministic, 1 = creative)</p>
+                      </div>
+                      <div className="flex flex-col space-y-2">
+                        <label className="text-sm font-medium text-gray-700">API Key</label>
+                        <input
+                          type="password"
+                          value={geminiApiKey}
+                          onChange={(e) => setGeminiApiKey(e.target.value)}
+                          placeholder="Enter your Google Gemini API key"
+                          className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                        />
+                        <p className="text-xs text-gray-500">Your API key is encrypted and stored securely</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Save Button - Right Aligned */}
+                <div className="flex items-center justify-end pt-2">
+                  <button
+                    onClick={handleSave}
+                    disabled={saving || !hasChanges}
+                    className={`px-6 py-2.5 text-sm font-semibold rounded-lg transition-all ${
+                      saving || !hasChanges
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                        : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
+                    }`}
+                  >
+                    {saving ? 'Saving...' : 'Save Settings'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         );
