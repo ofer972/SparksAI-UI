@@ -76,8 +76,6 @@ export default function SettingsScreen() {
   const [originalOpenaiApiKey, setOriginalOpenaiApiKey] = useState<string | null>(null);
   const MASK = '********';
   const [saving, setSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
@@ -289,8 +287,7 @@ export default function SettingsScreen() {
   const handleSave = async () => {
     try {
       setSaving(true);
-      setSaveMessage(null);
-      setSaveError(null);
+      setToastMessage(null);
       const api = new ApiService();
       // Match backend field names and types per /settings/batch
       const providerForApi = aiProvider === 'openai' ? 'chatgpt' : aiProvider; // backend expects 'chatgpt'
@@ -304,7 +301,6 @@ export default function SettingsScreen() {
 
       const payload: Record<string, any> = {
         ai_provider: String(providerForApi),
-        ai_model: String(aiProvider === 'openai' ? openaiModel : geminiModel),
         ai_chatgpt_model: String(openaiModel),
         ai_gemini_model: String(geminiModel),
         ai_gemini_temperature: String(geminiTemperature),
@@ -321,10 +317,12 @@ export default function SettingsScreen() {
       setGeminiApiKey(MASK);
       setOpenaiApiKey(MASK);
 
-      setSaveMessage('Settings saved successfully');
+      setToastType('success');
+      setToastMessage('Settings saved successfully');
     } catch (e) {
       console.error('Failed to save settings', e);
-      setSaveError((e as any)?.message || 'Failed to save settings');
+      setToastType('error');
+      setToastMessage((e as any)?.message || 'Failed to save settings');
     } finally {
       setSaving(false);
     }
@@ -662,15 +660,6 @@ export default function SettingsScreen() {
                 {saving ? 'Saving...' : 'Save Settings'}
               </button>
             </div>
-
-            {/* Save Message/Error */}
-            {(saveMessage || saveError) && (
-              <div
-                className={`text-xs text-center ${saveError ? 'text-red-600' : 'text-green-600'}`}
-              >
-                {saveError || saveMessage}
-              </div>
-            )}
           </div>
         );
       case 'dashboard-layout':
