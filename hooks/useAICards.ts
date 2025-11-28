@@ -25,30 +25,62 @@ export function useAICards(teamName?: string, categories?: string[]): UseAICards
   const categoriesKey = useMemo(() => JSON.stringify(categories || []), [categories]);
 
   const fetchCards = useCallback(async () => {
-    if (!teamName) {
+    console.log('[useAICards] fetchCards called with teamName:', teamName, 'categories:', categories);
+    
+    if (!teamName || teamName.trim() === '') {
+      console.log('[useAICards] No team name, skipping fetch');
       setCards([]);
       setLoading(false);
       return;
     }
 
+    // Create a flag to track if this request is still valid
+    let isCancelled = false;
+    const currentTeam = teamName;
+
     try {
+      console.log('[useAICards] Fetching cards for team:', teamName, 'categories:', categories);
       setLoading(true);
       setError(null);
       const apiService = new ApiService();
       // Use the new endpoint with recommendations, pass categories if provided
       const response = await apiService.getTeamAICardsWithRecommendations(teamName, categories);
-      setCards(response.ai_cards || []);
+      
+      // Only update state if this request hasn't been cancelled
+      if (!isCancelled) {
+        console.log('[useAICards] Received cards for team:', currentTeam, 'count:', response.ai_cards?.length || 0);
+        setCards(response.ai_cards || []);
+      } else {
+        console.log('[useAICards] Request cancelled for team:', currentTeam, 'ignoring response');
+      }
     } catch (err) {
-      console.error('Error fetching AI cards:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch AI cards');
-      setCards([]);
+      if (!isCancelled) {
+        console.error('[useAICards] Error fetching AI cards:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch AI cards');
+        setCards([]);
+      }
     } finally {
-      setLoading(false);
+      if (!isCancelled) {
+        setLoading(false);
+      }
     }
+
+    // Return cleanup function
+    return () => {
+      isCancelled = true;
+      console.log('[useAICards] Cancelling request for team:', currentTeam);
+    };
   }, [teamName, categoriesKey, categories]);
 
   useEffect(() => {
-    fetchCards();
+    const cleanup = fetchCards();
+    return () => {
+      if (cleanup && typeof cleanup.then === 'function') {
+        cleanup.then(cleanupFn => {
+          if (cleanupFn) cleanupFn();
+        });
+      }
+    };
   }, [fetchCards]);
 
   return { cards, loading, error, refetch: fetchCards };

@@ -14,13 +14,15 @@ interface InsightCategoryFilterProps {
   onCategoriesChange: (categories: string[]) => void;
   className?: string;
   settingsLoading?: boolean; // Indicates if saved settings are still loading
+  hasSavedSettings?: boolean; // Indicates if settings were successfully loaded from backend
 }
 
 export default function InsightCategoryFilter({ 
   selectedCategories, 
   onCategoriesChange, 
   className = '',
-  settingsLoading = false
+  settingsLoading = false,
+  hasSavedSettings = false
 }: InsightCategoryFilterProps) {
   const [categories, setCategories] = useState<InsightCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,6 +31,27 @@ export default function InsightCategoryFilter({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const autoSelectDone = useRef(false);
+  const prevHasSavedSettingsRef = useRef(hasSavedSettings);
+  
+  // Reset auto-select flag on mount (when navigating to this page)
+  useEffect(() => {
+    console.log('[InsightCategoryFilter] Component mounted, resetting auto-select flag');
+    autoSelectDone.current = false;
+    
+    return () => {
+      console.log('[InsightCategoryFilter] Component unmounting');
+    };
+  }, []);
+  
+  // Reset auto-select flag when hasSavedSettings changes (e.g., when navigating back and settings load)
+  useEffect(() => {
+    if (prevHasSavedSettingsRef.current !== hasSavedSettings) {
+      console.log('[InsightCategoryFilter] hasSavedSettings changed from', prevHasSavedSettingsRef.current, 'to', hasSavedSettings, '- resetting auto-select flag');
+      autoSelectDone.current = false;
+      prevHasSavedSettingsRef.current = hasSavedSettings;
+    }
+  }, [hasSavedSettings]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -74,14 +97,40 @@ export default function InsightCategoryFilter({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-select "daily" after settings have loaded if no categories are selected
+  // Only run this if:
+  // 1. Settings are done loading
+  // 2. No settings were found (new user or no saved preferences)
+  // 3. No categories are currently selected
+  // 4. We haven't auto-selected yet
+  // 5. Categories list is loaded
   useEffect(() => {
-    if (!settingsLoading && categories.length > 0 && selectedCategories.length === 0) {
-      const dailyCategory = categories.find(cat => cat.name.toLowerCase() === 'daily');
-      if (dailyCategory) {
-        onCategoriesChange([dailyCategory.name]);
-      }
+    console.log('[InsightCategoryFilter] Auto-select check:', {
+      settingsLoading,
+      hasSavedSettings,
+      categoriesLength: categories.length,
+      selectedCategoriesLength: selectedCategories.length,
+      autoSelectDone: autoSelectDone.current,
+      loading
+    });
+    
+    // Don't auto-select if:
+    // - Settings are still loading
+    // - We have saved settings AND categories are selected (respect user's saved choice)
+    // - Categories haven't loaded yet
+    // - We already have categories selected
+    // - We've already done the auto-select
+    if (settingsLoading || (hasSavedSettings && selectedCategories.length > 0) || loading || categories.length === 0 || selectedCategories.length > 0 || autoSelectDone.current) {
+      console.log('[InsightCategoryFilter] Auto-select conditions not met, returning.');
+      return;
     }
-  }, [settingsLoading, categories, selectedCategories, onCategoriesChange]);
+    
+    const dailyCategory = categories.find(cat => cat.name.toLowerCase() === 'daily');
+    if (dailyCategory) {
+      console.log('[InsightCategoryFilter] Auto-selecting Daily category');
+      onCategoriesChange([dailyCategory.name]);
+      autoSelectDone.current = true;
+    }
+  }, [settingsLoading, hasSavedSettings, categories, selectedCategories, onCategoriesChange, loading]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

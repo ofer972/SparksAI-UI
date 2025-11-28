@@ -146,6 +146,7 @@ export default function Home() {
       appliedRestoreRef.current = false;
     }
     
+    
     prevActiveNavItemRef.current = currentNav;
   }, [activeNavItem]);
   
@@ -407,15 +408,44 @@ export default function Home() {
     }
   };
 
-  // Load saved team insight settings
+  // Track if we're loading team insights for the first time
+  const [teamInsightsReady, setTeamInsightsReady] = useState(false);
+  const teamInsightsReadyRef = useRef(false);
+
+  // Clear state when navigating TO team-ai-insights
   useEffect(() => {
-    if (!teamInsightSettings.isLoading && teamInsightSettings.savedState && activeNavItem === 'team-ai-insights') {
+    if (activeNavItem === 'team-ai-insights') {
+      console.log('[App] Navigating to team-ai-insights, clearing state...');
+      
+      // Mark as not ready IMMEDIATELY using ref (synchronous)
+      teamInsightsReadyRef.current = false;
+      setTeamInsightsReady(false);
+      
+      // Clear state immediately when navigating to team-ai-insights
+      setSelectedTeam('');
+      setSelectedTreeValue(null);
+      setSelectedTreeLabel('');
+      setSelectedTreeType('team');
+      setSelectedCategories([]);
+    } else {
+      // Reset when leaving team-ai-insights
+      teamInsightsReadyRef.current = false;
+      setTeamInsightsReady(false);
+    }
+  }, [activeNavItem]);
+
+  // Load saved team insight settings after clearing
+  useEffect(() => {
+    if (activeNavItem === 'team-ai-insights' && !teamInsightSettings.isLoading && teamInsightSettings.savedState) {
+      console.log('[App] Loading saved team insight settings:', teamInsightSettings.savedState);
       const saved = teamInsightSettings.savedState;
+      
       if (saved.topBarFilters) {
         const teamName = saved.topBarFilters.selectedTeam;
         const treeType = saved.topBarFilters.selectedTreeType;
         
         if (teamName) {
+          console.log('[App] Team Insight: Setting selectedTeam to:', teamName);
           setSelectedTeam(teamName);
           setSelectedTreeLabel(teamName);
           
@@ -431,12 +461,19 @@ export default function Home() {
         
         if (treeType) setSelectedTreeType(treeType);
       }
-      // Apply saved categories (even if empty array)
+      
+      // Restore saved categories if they exist
       if (saved.selectedCategories !== undefined) {
+        console.log('[App] Restoring saved categories:', saved.selectedCategories);
         setSelectedCategories(saved.selectedCategories);
       }
+      
+      // Mark as ready after settings are loaded (both ref and state)
+      teamInsightsReadyRef.current = true;
+      setTeamInsightsReady(true);
+      console.log('[App] Team insights ready!');
     }
-  }, [teamInsightSettings.isLoading, teamInsightSettings.savedState, activeNavItem, groups, teams]);
+  }, [activeNavItem, teamInsightSettings.isLoading, teamInsightSettings.savedState, groups, teams]);
 
   // Load saved PI insight settings
   useEffect(() => {
@@ -757,7 +794,25 @@ export default function Home() {
   const renderMainContent = () => {
     switch (activeNavItem) {
       case 'team-ai-insights':
-        // Check if no team is selected
+        // Wait for settings to load before rendering to avoid fetching with wrong team
+        // Use ref for immediate check (synchronous) to prevent any rendering with stale state
+        if (!teamInsightsReadyRef.current || !teamInsightsReady || teamInsightSettings.isLoading) {
+          console.log('[App] Team insights not ready yet, showing loading...', {
+            refReady: teamInsightsReadyRef.current,
+            stateReady: teamInsightsReady,
+            isLoading: teamInsightSettings.isLoading
+          });
+          return (
+            <div className="flex items-center justify-center h-full min-h-[400px]">
+              <div className="text-center px-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading team insights...</p>
+              </div>
+            </div>
+          );
+        }
+        
+        // Check if no team is selected (after settings are loaded)
         const noTeamSelected = !selectedTeam || 
           selectedTeam.trim() === '' || 
           selectedTeam === 'Select team or group' ||
@@ -1744,6 +1799,7 @@ export default function Home() {
                       selectedCategories={selectedCategories}
                       onCategoriesChange={setSelectedCategories}
                       settingsLoading={teamInsightSettings.isLoading}
+                      hasSavedSettings={!!teamInsightSettings.savedState}
                     />
                   </div>
                 )}
@@ -1836,6 +1892,7 @@ export default function Home() {
                 selectedCategories={selectedCategories}
                 onCategoriesChange={setSelectedCategories}
                 settingsLoading={teamInsightSettings.isLoading}
+                hasSavedSettings={!!teamInsightSettings.savedState}
               />
             )}
           </div>
