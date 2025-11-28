@@ -625,12 +625,12 @@ export default function SettingsScreen() {
         const currentActiveProvider = originalAiProvider === 'openai' ? 'OpenAI ChatGPT' : 'Google Gemini';
         
         return (
-          <div className="w-full">
-            <div className="w-full max-w-2xl ml-0 md:ml-8">
-              <div className="bg-gradient-to-br from-white via-gray-50 to-blue-50 rounded-lg shadow-lg border border-gray-200 p-6 space-y-6">
+          <div className="w-full h-full overflow-auto">
+            <div className="w-full max-w-2xl ml-0 md:ml-8 pb-4">
+              <div className="bg-gradient-to-br from-white via-gray-50 to-blue-50 rounded-lg shadow-lg border border-gray-200 p-4 md:p-6 space-y-4 md:space-y-6">
                 {/* Currently Active LLM Badge */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-4">
-                  <div className="flex items-center justify-between">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-3 md:p-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div className="flex items-center space-x-3">
                       <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-full">
                         {originalAiProvider === 'openai' ? (
@@ -665,8 +665,8 @@ export default function SettingsScreen() {
                 </div>
 
                 {/* AI Provider Selection */}
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                  <div className="flex flex-col space-y-3">
+                <div className="bg-white rounded-lg border border-gray-200 p-3 md:p-4">
+                  <div className="flex flex-col space-y-2 md:space-y-3">
                     <label className="text-sm font-semibold text-gray-700">Select AI Provider to Configure</label>
                     <select
                       value={aiProvider}
@@ -681,10 +681,10 @@ export default function SettingsScreen() {
 
                 {/* Single Settings Container - Only for Selected Provider */}
                 {aiProvider === 'openai' ? (
-                  <div className={`bg-white rounded-lg p-6 border-2 transition-all ${
+                  <div className={`bg-white rounded-lg p-4 md:p-6 border-2 transition-all ${
                     originalAiProvider === 'openai' ? 'border-blue-500' : 'border-gray-200'
                   }`}>
-                    <div className="flex items-center justify-between mb-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 md:mb-6">
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                           {/* OpenAI Logo */}
@@ -746,10 +746,10 @@ export default function SettingsScreen() {
                     </div>
                   </div>
                 ) : (
-                  <div className={`bg-white rounded-lg p-6 border-2 transition-all ${
+                  <div className={`bg-white rounded-lg p-4 md:p-6 border-2 transition-all ${
                     originalAiProvider === 'gemini' ? 'border-green-500' : 'border-gray-200'
                   }`}>
-                    <div className="flex items-center justify-between mb-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 md:mb-6">
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                           {/* Google Gemini Logo */}
@@ -819,7 +819,7 @@ export default function SettingsScreen() {
                   <button
                     onClick={handleSave}
                     disabled={saving || !hasChanges}
-                    className={`px-6 py-2.5 text-sm font-semibold rounded-lg transition-all ${
+                    className={`w-full sm:w-auto px-6 py-2.5 text-sm font-semibold rounded-lg transition-all ${
                       saving || !hasChanges
                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
                         : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
