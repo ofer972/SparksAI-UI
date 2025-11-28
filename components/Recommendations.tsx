@@ -4,11 +4,16 @@ import { useRecommendations } from '@/hooks';
 import RecommendationsInsight from './insights/RecommendationsInsight';
 
 interface RecommendationsProps {
-  teamName: string;
+  teamName?: string;
 }
 
 export default function Recommendations({ teamName }: RecommendationsProps) {
   const { recommendations, loading, error, refetch } = useRecommendations(teamName, 3);
+
+  // Don't render if no team name is provided
+  if (!teamName || teamName.trim() === '') {
+    return null;
+  }
 
   return (
     <RecommendationsInsight

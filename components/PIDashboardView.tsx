@@ -302,11 +302,33 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   const commonPanelProps = useMemo(
     () => ({
       // No loadingFallback - let report views handle loading within ReportCard
-      errorFallback: (errorMessage: string) => (
-        <div className="flex items-center justify-center h-96">
-          <div className="text-red-500">Error: {errorMessage}</div>
-        </div>
-      ),
+      errorFallback: (errorMessage: string) => {
+        // Check if error is related to missing team/group - show empty state instead of error
+        const isTeamNotFoundError = 
+          typeof errorMessage === 'string' && (
+            errorMessage.includes("Team '") && errorMessage.includes("' not found") ||
+            errorMessage.includes('404: Team') ||
+            errorMessage.includes('Team not found') ||
+            errorMessage.includes('Group not found') ||
+            errorMessage.includes("Group '") && errorMessage.includes("' not found")
+          );
+        
+        if (isTeamNotFoundError) {
+          // Return empty state instead of error
+          return (
+            <div className="flex items-center justify-center h-96">
+              <div className="text-gray-500 text-sm">No data available</div>
+            </div>
+          );
+        }
+        
+        // Show error for other types of errors
+        return (
+          <div className="flex items-center justify-center h-96">
+            <div className="text-red-500">Error: {errorMessage}</div>
+          </div>
+        );
+      },
     }),
     []
   );
@@ -315,7 +337,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   const controlledFiltersPI = useMemo(() => ({ pi: selectedPI || null }), [selectedPI]);
   const controlledFiltersPINames = useMemo(() => ({ 
     pi_names: selectedPI ? [selectedPI] : [],
-    team_name: selectedTeam || null,
+    ...(selectedTeam ? { team_name: selectedTeam } : {}),
     isGroup: selectedTreeType === 'group',
   }), [selectedPI, selectedTeam, selectedTreeType]);
   const controlledFiltersTeam = useMemo(() => ({
@@ -327,7 +349,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   }), [selectedPI]);
   const controlledFiltersPITeam = useMemo(() => ({
     pi: selectedPI || null,
-    team_name: selectedTeam || null,
+    ...(selectedTeam ? { team_name: selectedTeam } : {}),
     isGroup: selectedTreeType === 'group',
   }), [selectedPI, selectedTeam, selectedTreeType]);
   const controlledFiltersDefault = useMemo(() => ({

@@ -6,7 +6,7 @@ import { LineChart, Line, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendDataPoint } from '@/lib/config';
 
 interface TeamMetricsProps {
-  teamName: string;
+  teamName?: string;
   isGroup?: boolean;
 }
 
@@ -236,6 +236,11 @@ const MetricCard = ({ id, icon, value, label, tooltip, className = "", isLeftmos
 export default function TeamMetrics({ teamName, isGroup }: TeamMetricsProps) {
   const { sprintMetrics, completionRate, loading, error } = useTeamMetrics(teamName, isGroup);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+
+  // Don't render if no team name is provided
+  if (!teamName || teamName.trim() === '') {
+    return null;
+  }
 
   if (loading) {
     return (

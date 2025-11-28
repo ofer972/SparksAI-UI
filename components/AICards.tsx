@@ -5,12 +5,17 @@ import AICardsInsight from './insights/AICardsInsight';
 import { teamAICardsConfig } from '@/lib/teamAICardsConfig';
 
 interface AICardProps {
-  teamName: string;
+  teamName?: string;
   categories?: string[];
 }
 
 export default function AICards({ teamName, categories }: AICardProps) {
   const { cards, loading, error, refetch } = useAICards(teamName, categories);
+
+  // Don't render if no team name is provided
+  if (!teamName || teamName.trim() === '') {
+    return null;
+  }
 
   return (
     <AICardsInsight

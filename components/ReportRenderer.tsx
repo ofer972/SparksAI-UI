@@ -208,10 +208,28 @@ const ReportRenderer: React.FC<ReportRendererProps> = ({
         console.error(`Error fetching report '${reportId}':`, err);
         const message =
           err instanceof Error ? err.message : `Failed to fetch report '${reportId}'`;
-        setError(message);
+        
+        // Check if error is related to missing team/group - treat as empty result instead of error
+        const isTeamNotFoundError = 
+          typeof message === 'string' && (
+            message.includes("Team '") && message.includes("' not found") ||
+            message.includes('404: Team') ||
+            message.includes('Team not found') ||
+            message.includes('Group not found') ||
+            message.includes("Group '") && message.includes("' not found")
+          );
+        
+        if (isTeamNotFoundError) {
+          // Treat as empty result, not an error
+          setError(null);
+          setResult([]);
+          setMeta({});
+        } else {
+          setError(message);
+          setResult([]);
+          setMeta(null);
+        }
         setLoading(false);
-        setResult([]);
-        setMeta(null);
       }
     };
 

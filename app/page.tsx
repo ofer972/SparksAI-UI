@@ -151,7 +151,7 @@ export default function Home() {
   
   // Separate filter state for each dashboard
   const [teamDashboardFilters, setTeamDashboardFilters] = useState({
-    selectedTeam: 'AutoDesign-Dev',
+    selectedTeam: '',
     selectedTreeValue: null as string | null,
     selectedTreeLabel: '',
     selectedTreeType: 'team' as 'group' | 'team',
@@ -159,14 +159,14 @@ export default function Home() {
   
   const [piDashboardFilters, setPiDashboardFilters] = useState({
     selectedPI: 'Q32025',
-    selectedTeam: 'AutoDesign-Dev',
+    selectedTeam: '',
     selectedTreeValue: null as string | null,
     selectedTreeLabel: '',
     selectedTreeType: 'team' as 'group' | 'team',
   });
   
   // Legacy state for backward compatibility (team AI insights, etc.)
-  const [selectedTeam, setSelectedTeam] = useState('AutoDesign-Dev');
+  const [selectedTeam, setSelectedTeam] = useState('');
   const [selectedTreeValue, setSelectedTreeValue] = useState<string | null>(null);
   const [selectedTreeLabel, setSelectedTreeLabel] = useState<string>('');
   const [selectedTreeType, setSelectedTreeType] = useState<'group' | 'team'>('team');
