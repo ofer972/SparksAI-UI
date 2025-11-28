@@ -21,7 +21,7 @@ export default function SparksAILogo({ collapsed = false, size = 'medium' }: Spa
   }
 
   return (
-    <div className="flex items-center justify-start w-full py-0">
+    <div className="flex items-center justify-center w-full py-0">
       <div className={`${sizeClasses[size]} relative`}>
         <Image
           src="/SparksAI.png"

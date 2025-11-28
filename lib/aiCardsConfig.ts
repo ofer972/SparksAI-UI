@@ -21,9 +21,13 @@ export const aiCardsConfig: EntityConfig<AICard> = {
   },
   
   fetchList: async (teamName?: string) => {
+    // Return empty array if no team name is provided
+    if (!teamName || teamName.trim() === '') {
+      return [];
+    }
     const { ApiService } = await import('./api');
     const apiService = new ApiService();
-    const result = await apiService.getAICards(teamName || 'AutoDesign-Dev');
+    const result = await apiService.getAICards(teamName);
     return result.ai_cards;
   },
   

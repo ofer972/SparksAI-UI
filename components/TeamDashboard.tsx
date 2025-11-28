@@ -312,19 +312,42 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
   const commonPanelProps = useMemo(
     () => ({
       // No loadingFallback - let report views handle loading within ReportCard
-      errorFallback: (errorMessage: string) => (
+      errorFallback: (errorMessage: string) => {
+        // Check if error is related to missing team/group - show empty state instead of error
+        const isTeamNotFoundError = 
+          typeof errorMessage === 'string' && (
+            errorMessage.includes("Team '") && errorMessage.includes("' not found") ||
+            errorMessage.includes('404: Team') ||
+            errorMessage.includes('Team not found') ||
+            errorMessage.includes('Group not found') ||
+            errorMessage.includes("Group '") && errorMessage.includes("' not found")
+          );
+        
+        if (isTeamNotFoundError) {
+          // Return empty state instead of error
+          return (
+            <div className="flex items-center justify-center h-96">
+              <div className="text-gray-500 text-sm">No data available</div>
+            </div>
+          );
+        }
+        
+        // Show error for other types of errors
+        return (
         <div className="flex items-center justify-center h-96">
           <div className="text-red-500">Error: {errorMessage}</div>
         </div>
-      ),
+        );
+      },
     }),
     []
   );
 
   // Memoize controlledFilters to prevent infinite re-renders in ReportPanel
+  // Only include team_name if selectedTeam is truthy (not empty string)
   const controlledFilters = useMemo(
     () => ({
-      team_name: selectedTeam,
+      ...(selectedTeam ? { team_name: selectedTeam } : {}),
       isGroup: selectedTreeType === 'group',
     }),
     [selectedTeam, selectedTreeType]

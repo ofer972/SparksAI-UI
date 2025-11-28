@@ -23,15 +23,10 @@ export default function TeamFilter({ selectedTeam, onTeamChange, className = '' 
         const response = await apiService.getTeams();
         
         setTeams(response.teams);
-        // Set default team if none selected
-        if (!selectedTeam && response.teams.length > 0) {
-          onTeamChange(response.teams[0]);
-        }
       } catch (err) {
         console.error('Error fetching teams:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch teams');
-        // Fallback to default team
-        setTeams(['AutoDesign-Dev']);
+        setTeams([]);
       } finally {
         setLoading(false);
       }

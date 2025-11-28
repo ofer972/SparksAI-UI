@@ -247,17 +247,17 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
       header: () => {
         const hasExpanded = Object.keys(expanded).length > 0 && Object.values(expanded).some((v) => v);
         return (
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              toggleAllExpanded();
-            }}
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            toggleAllExpanded();
+          }}
             className="text-xs text-gray-600 hover:text-gray-800 flex items-center justify-center w-6 h-6"
             title={hasExpanded ? 'Collapse All' : 'Expand All'}
-          >
+        >
             {hasExpanded ? '▼' : '▶'}
-          </button>
+        </button>
         );
       },
       cell: ({ row }) => {

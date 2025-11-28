@@ -645,89 +645,89 @@ export default function SettingsScreen() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-gray-800">OpenAI ChatGPT Settings</h3>
                 </div>
-                <div className="space-y-3">
+              <div className="space-y-3">
                   <div className="flex flex-col space-y-1">
                     <label className="text-xs text-gray-600">Model</label>
-                    <select
+                  <select
                       value={openaiModel}
                       onChange={(e) => setOpenaiModel(e.target.value)}
                       className="border border-gray-300 rounded px-2 py-1.5 text-xs w-full"
-                    >
+                  >
                       {openaiModels.map((model) => (
-                        <option key={model.value} value={model.value}>
-                          {model.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                      <option key={model.value} value={model.value}>
+                        {model.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                   <div className="flex flex-col space-y-1">
                     <label className="text-xs text-gray-600">Temperature</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      max="1"
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="1"
                       value={openaiTemperature}
                       onChange={(e) => setOpenaiTemperature(parseFloat(e.target.value))}
                       className="border border-gray-300 rounded px-2 py-1.5 text-xs w-full"
-                    />
-                  </div>
+                  />
+                </div>
                   <div className="flex flex-col space-y-1">
                     <label className="text-xs text-gray-600">API Key</label>
-                    <input
-                      type="password"
+                  <input
+                    type="password"
                       value={openaiApiKey}
                       onChange={(e) => setOpenaiApiKey(e.target.value)}
                       placeholder="Enter ChatGPT API key"
                       className="border border-gray-300 rounded px-2 py-1.5 text-xs w-full"
-                    />
-                  </div>
+                  />
                 </div>
               </div>
+            </div>
             ) : (
               <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-gray-800">Google Gemini Settings</h3>
                 </div>
-                <div className="space-y-3">
+              <div className="space-y-3">
                   <div className="flex flex-col space-y-1">
                     <label className="text-xs text-gray-600">Model</label>
-                    <select
+                  <select
                       value={geminiModel}
                       onChange={(e) => setGeminiModel(e.target.value)}
                       className="border border-gray-300 rounded px-2 py-1.5 text-xs w-full"
-                    >
+                  >
                       {geminiModels.map((model) => (
-                        <option key={model.value} value={model.value}>
-                          {model.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                      <option key={model.value} value={model.value}>
+                        {model.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                   <div className="flex flex-col space-y-1">
                     <label className="text-xs text-gray-600">Temperature</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      max="1"
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="1"
                       value={geminiTemperature}
                       onChange={(e) => setGeminiTemperature(parseFloat(e.target.value))}
                       className="border border-gray-300 rounded px-2 py-1.5 text-xs w-full"
-                    />
-                  </div>
+                  />
+                </div>
                   <div className="flex flex-col space-y-1">
                     <label className="text-xs text-gray-600">API Key</label>
-                    <input
-                      type="password"
+                  <input
+                    type="password"
                       value={geminiApiKey}
                       onChange={(e) => setGeminiApiKey(e.target.value)}
                       placeholder="Enter Gemini API key"
                       className="border border-gray-300 rounded px-2 py-1.5 text-xs w-full"
-                    />
-                  </div>
+                  />
                 </div>
               </div>
+            </div>
             )}
 
             {/* Save Button - Centered */}
@@ -974,29 +974,55 @@ export default function SettingsScreen() {
   return (
     <div className="h-full flex flex-col px-4 md:px-6">
       {/* Settings Header */}
-      <div className="bg-white rounded-lg shadow-sm p-4 flex-shrink-0">
-        {/* Settings Tabs (wrap on small screens, single row on md+) */}
-        <div className="flex flex-wrap md:flex-nowrap gap-1 border-b border-gray-200">
-          {settingsTabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => handleTabChange(tab.id)}
-              className={`flex items-center gap-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600 bg-white'
-                  : 'border-transparent text-gray-600 hover:text-gray-800 bg-gray-50 hover:bg-gray-100'
-              }`}
-            >
-              <span>{tab.icon}</span>
-              <span className="truncate">{tab.label}</span>
-            </button>
-          ))}
+      <div className="bg-white border-b border-gray-200 flex-shrink-0">
+        <div className="px-4 md:px-6 py-3 md:py-4 md:overflow-x-auto">
+          {/* Mobile: 3 tabs per row grid */}
+          <nav className="grid grid-cols-3 gap-1 md:hidden">
+            {settingsTabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => handleTabChange(tab.id)}
+                  className={`
+                    px-2 py-2 text-xs font-medium rounded-t-lg border transition-colors
+                    ${isActive ? 'bg-white text-blue-600 border-gray-300 z-10' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}
+                  `}
+                  style={{ boxShadow: isActive ? '0 -1px 0 0 #ffffff inset' : undefined }}
+                >
+                  <span className="mr-1">{tab.icon}</span>
+                  <span className="truncate">{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Desktop: single row */}
+          <nav className="hidden md:flex md:flex-nowrap gap-1">
+            {settingsTabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => handleTabChange(tab.id)}
+                  className={`
+                    px-4 py-2 text-sm font-medium rounded-t-lg border transition-colors
+                    ${isActive ? 'bg-white text-blue-600 border-gray-300 z-10' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}
+                  `}
+                  style={{ boxShadow: isActive ? '0 -1px 0 0 #ffffff inset' : undefined }}
+                >
+                  <span className="mr-2">{tab.icon}</span>
+                  <span className="truncate">{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
         </div>
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-hidden flex flex-col min-h-0 mt-4">
-        {renderTabContent()}
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0 mt-4 mb-4">
+      {renderTabContent()}
       </div>
 
       <Toast message={toastMessage} type={toastType} onClose={() => setToastMessage(null)} />
