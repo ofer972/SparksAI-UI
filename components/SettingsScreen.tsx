@@ -169,9 +169,9 @@ export default function SettingsScreen() {
         // Provider
         if (s.ai_provider) setAiProvider(s.ai_provider);
 
-        // Models (backend provides a single ai_model for chatgpt/openai)
-        if (s.ai_model) setOpenaiModel(s.ai_model);
-        if (s.gemini_model) setGeminiModel(s.gemini_model);
+        // Models (backend provides ai_chatgpt_model for chatgpt/openai and ai_gemini_model for gemini)
+        if (s.ai_chatgpt_model) setOpenaiModel(s.ai_chatgpt_model);
+        if (s.ai_gemini_model) setGeminiModel(s.ai_gemini_model);
 
         // Temperatures (map strings to numbers if needed)
         if (s.ai_gemini_temperature !== undefined) {
@@ -304,7 +304,8 @@ export default function SettingsScreen() {
 
       const payload: Record<string, any> = {
         ai_provider: String(providerForApi),
-        ai_model: String(openaiModel),
+        ai_chatgpt_model: String(openaiModel),
+        ai_gemini_model: String(geminiModel),
         ai_gemini_temperature: String(geminiTemperature),
         ai_chatgpt_temperature: String(openaiTemperature),
         gemini_api_key: String(geminiKeyToSend),
