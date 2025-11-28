@@ -319,10 +319,12 @@ export default function SettingsScreen() {
 
       setToastType('success');
       setToastMessage('Settings saved successfully');
+      setTimeout(() => setToastMessage(null), 3000);
     } catch (e) {
       console.error('Failed to save settings', e);
       setToastType('error');
       setToastMessage((e as any)?.message || 'Failed to save settings');
+      setTimeout(() => setToastMessage(null), 3000);
     } finally {
       setSaving(false);
     }
