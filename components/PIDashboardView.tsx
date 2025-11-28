@@ -489,8 +489,14 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
 
   if (!selectedPI) {
     return (
-      <div className="p-6 text-center text-gray-500">
-        Select a PI to view dashboard insights.
+      <div className="flex items-center justify-center h-full min-h-[400px]">
+        <div className="text-center px-4">
+          <div className="text-6xl mb-4">🎯</div>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-2">Select a PI</h2>
+          <p className="text-gray-600 max-w-md mx-auto">
+            Please select a PI from the dropdown above to view dashboard insights and reports.
+          </p>
+        </div>
       </div>
     );
   }

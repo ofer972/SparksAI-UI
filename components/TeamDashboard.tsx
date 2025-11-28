@@ -52,16 +52,16 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
   
   // Track component lifecycle
   useEffect(() => {
-    console.log('TeamDashboard: Component MOUNTED for team:', selectedTeam);
+    console.log('TeamDashboard: Component MOUNTED');
     return () => {
-      console.log('TeamDashboard: Component UNMOUNTING for team:', selectedTeam);
+      console.log('TeamDashboard: Component UNMOUNTING');
       // Reset refs on unmount so settings can be reapplied when returning to dashboard
       settingsAppliedRef.current = false;
       configLoadedRef.current = false;
       prevLayoutRef.current = null;
       prevFiltersRef.current = { selectedTeam: '', selectedTreeType: 'team', selectedSprint: '' };
     };
-  }, [selectedTeam]);
+  }, []);
 
   // Detect mobile screen size
   useEffect(() => {
@@ -375,8 +375,14 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
 
   if (!selectedTeam) {
     return (
-      <div className="p-6 text-center text-gray-500">
-        Select a team to view dashboard insights.
+      <div className="flex items-center justify-center h-full min-h-[400px]">
+        <div className="text-center px-4">
+          <div className="text-6xl mb-4">👥</div>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-2">Select a Team or Group</h2>
+          <p className="text-gray-600 max-w-md mx-auto">
+            Please select a team or group from the dropdown above to view dashboard insights and reports.
+          </p>
+        </div>
       </div>
     );
   }

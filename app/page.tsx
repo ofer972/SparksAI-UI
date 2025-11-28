@@ -794,26 +794,6 @@ export default function Home() {
           </>
         );
       case 'team-dashboard':
-        // Check if no team is selected
-        const noTeamSelectedForDashboard = !selectedTeam || 
-          selectedTeam.trim() === '' || 
-          selectedTeam === 'Select team or group' ||
-          selectedTeam.trim() === 'Select team or group';
-        
-        if (noTeamSelectedForDashboard) {
-          return (
-            <div className="flex items-center justify-center h-full min-h-[400px]">
-              <div className="text-center px-4">
-                <div className="text-6xl mb-4">👥</div>
-                <h2 className="text-2xl font-semibold text-gray-800 mb-2">Select a Team or Group</h2>
-                <p className="text-gray-600 max-w-md mx-auto">
-                  Please select a team or group from the dropdown above to view dashboard insights and reports.
-                </p>
-              </div>
-            </div>
-          );
-        }
-        
         return (
           <div className="h-full flex flex-col">
             {/* Dashboard Content */}
