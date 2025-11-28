@@ -757,6 +757,26 @@ export default function Home() {
   const renderMainContent = () => {
     switch (activeNavItem) {
       case 'team-ai-insights':
+        // Check if no team is selected
+        const noTeamSelected = !selectedTeam || 
+          selectedTeam.trim() === '' || 
+          selectedTeam === 'Select team or group' ||
+          selectedTeam.trim() === 'Select team or group';
+        
+        if (noTeamSelected) {
+          return (
+            <div className="flex items-center justify-center h-full min-h-[400px]">
+              <div className="text-center px-4">
+                <div className="text-6xl mb-4">👥</div>
+                <h2 className="text-2xl font-semibold text-gray-800 mb-2">Select a Team or Group</h2>
+                <p className="text-gray-600 max-w-md mx-auto">
+                  Please select a team or group from the dropdown above to view AI insights and metrics.
+                </p>
+              </div>
+            </div>
+          );
+        }
+        
         return (
           <>
             <div className="pt-2 pb-2 pr-2 pl-[7px]" style={{ zoom: 0.90 }}>
@@ -774,6 +794,26 @@ export default function Home() {
           </>
         );
       case 'team-dashboard':
+        // Check if no team is selected
+        const noTeamSelectedForDashboard = !selectedTeam || 
+          selectedTeam.trim() === '' || 
+          selectedTeam === 'Select team or group' ||
+          selectedTeam.trim() === 'Select team or group';
+        
+        if (noTeamSelectedForDashboard) {
+          return (
+            <div className="flex items-center justify-center h-full min-h-[400px]">
+              <div className="text-center px-4">
+                <div className="text-6xl mb-4">👥</div>
+                <h2 className="text-2xl font-semibold text-gray-800 mb-2">Select a Team or Group</h2>
+                <p className="text-gray-600 max-w-md mx-auto">
+                  Please select a team or group from the dropdown above to view dashboard insights and reports.
+                </p>
+              </div>
+            </div>
+          );
+        }
+        
         return (
           <div className="h-full flex flex-col">
             {/* Dashboard Content */}
@@ -1295,7 +1335,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-black/30" onClick={() => setMobileSidebarOpen(false)}></div>
           <div className="absolute inset-y-0 left-0 w-56 bg-white shadow-xl border-r border-gray-200 flex flex-col">
             <div className="flex items-center justify-between px-3 pt-3 pb-[10px] bg-white">
-              <div className="w-32">
+              <div className="w-32 flex justify-center">
                 <SparksAILogo collapsed={false} size="small" />
               </div>
               <button
@@ -1538,25 +1578,26 @@ export default function Home() {
                     onSelect={(value, label, type) => {
                       // Update legacy state
                       setSelectedTreeValue(value);
-                      setSelectedTreeLabel(label);
+                      setSelectedTreeLabel(value ? label : '');
                       setSelectedTreeType(type);
-                      setSelectedTeam(label);
+                      // If value is null (All Teams selected), set to empty string instead of placeholder text
+                      setSelectedTeam(value ? label : '');
                       
                       // Update dashboard-specific state
                       if (activeNavItem === 'team-dashboard') {
                         setTeamDashboardFilters(prev => ({
                           ...prev,
-                          selectedTeam: label,
+                          selectedTeam: value ? label : '',
                           selectedTreeValue: value,
-                          selectedTreeLabel: label,
+                          selectedTreeLabel: value ? label : '',
                           selectedTreeType: type,
                         }));
                       } else if (activeNavItem === 'pi-dashboard') {
                         setPiDashboardFilters(prev => ({
                           ...prev,
-                          selectedTeam: label,
+                          selectedTeam: value ? label : '',
                           selectedTreeValue: value,
-                          selectedTreeLabel: label,
+                          selectedTreeLabel: value ? label : '',
                           selectedTreeType: type,
                         }));
                       }
@@ -1706,9 +1747,10 @@ export default function Home() {
                       selectedValue={selectedTreeValue}
                       onSelect={(value, label, type) => {
                         setSelectedTreeValue(value);
-                        setSelectedTreeLabel(label);
+                        setSelectedTreeLabel(value ? label : '');
                         setSelectedTreeType(type);
-                        setSelectedTeam(label);
+                        // If value is null (All Teams selected), set to empty string instead of placeholder text
+                        setSelectedTeam(value ? label : '');
                       }}
                       placeholder="Select team or group"
                     />
@@ -1800,9 +1842,10 @@ export default function Home() {
                 selectedValue={selectedTreeValue}
                 onSelect={(value, label, type) => {
                   setSelectedTreeValue(value);
-                  setSelectedTreeLabel(label);
+                  setSelectedTreeLabel(value ? label : '');
                   setSelectedTreeType(type);
-                  setSelectedTeam(label);
+                  // If value is null (All Teams selected), set to empty string instead of placeholder text
+                  setSelectedTeam(value ? label : '');
                 }}
                 placeholder="Select team or group"
               />

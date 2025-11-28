@@ -24,9 +24,16 @@ export function useTeamMetrics(teamName?: string, isGroup?: boolean): UseTeamMet
   const [error, setError] = useState<string | null>(null);
 
   const fetchMetrics = useCallback(async () => {
-    if (!teamName) {
+    // Check if teamName is empty, whitespace, or placeholder text
+    const isEmptyOrPlaceholder = !teamName || 
+      teamName.trim() === '' || 
+      teamName === 'Select team or group' ||
+      teamName.trim() === 'Select team or group';
+    
+    if (isEmptyOrPlaceholder) {
       setSprintMetrics(null);
       setCompletionRate(null);
+      setError(null);
       setLoading(false);
       return;
     }
@@ -40,9 +47,28 @@ export function useTeamMetrics(teamName?: string, isGroup?: boolean): UseTeamMet
       setCompletionRate(completionRate);
     } catch (err) {
       console.error('Error fetching team metrics:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch metrics');
-      setSprintMetrics(null);
-      setCompletionRate(null);
+      const message = err instanceof Error ? err.message : 'Failed to fetch metrics';
+      
+      // Check if error is related to missing team/group - treat as empty result instead of error
+      const isTeamNotFoundError = 
+        typeof message === 'string' && (
+          message.includes("Team '") && message.includes("' not found") ||
+          message.includes('404: Team') ||
+          message.includes('Team not found') ||
+          message.includes('Group not found') ||
+          message.includes("Group '") && message.includes("' not found")
+        );
+      
+      if (isTeamNotFoundError) {
+        // Treat as empty result, not an error
+        setError(null);
+        setSprintMetrics(null);
+        setCompletionRate(null);
+      } else {
+        setError(message);
+        setSprintMetrics(null);
+        setCompletionRate(null);
+      }
     } finally {
       setLoading(false);
     }

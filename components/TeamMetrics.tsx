@@ -237,8 +237,11 @@ export default function TeamMetrics({ teamName, isGroup }: TeamMetricsProps) {
   const { sprintMetrics, completionRate, loading, error } = useTeamMetrics(teamName, isGroup);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
-  // Don't render if no team name is provided
-  if (!teamName || teamName.trim() === '') {
+  // Don't render if no team name is provided or if it's the placeholder text
+  if (!teamName || 
+      teamName.trim() === '' || 
+      teamName === 'Select team or group' ||
+      teamName.trim() === 'Select team or group') {
     return null;
   }
 
@@ -259,6 +262,21 @@ export default function TeamMetrics({ teamName, isGroup }: TeamMetricsProps) {
   }
 
   if (error) {
+    // Check if error is related to missing team/group - show empty state instead of error
+    const isTeamNotFoundError = 
+      typeof error === 'string' && (
+        error.includes("Team '") && error.includes("' not found") ||
+        error.includes('404: Team') ||
+        error.includes('Team not found') ||
+        error.includes('Group not found') ||
+        error.includes("Group '") && error.includes("' not found")
+      );
+    
+    if (isTeamNotFoundError) {
+      // Return empty state instead of error
+      return null;
+    }
+    
     return (
       <div className="overflow-x-hidden">
         <div className="text-center py-4">
