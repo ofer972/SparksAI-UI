@@ -324,9 +324,9 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
         
         // Show error for other types of errors
         return (
-          <div className="flex items-center justify-center h-96">
-            <div className="text-red-500">Error: {errorMessage}</div>
-          </div>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-red-500">Error: {errorMessage}</div>
+        </div>
         );
       },
     }),

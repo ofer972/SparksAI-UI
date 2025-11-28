@@ -1370,12 +1370,12 @@ export default function Home() {
                             key={item.id}
                             onClick={() => { setActiveNavItem(item.id as NavItemId); setMobileSidebarOpen(false); }}
                               className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all duration-200 ${
-                                activeNavItem === item.id
+                              activeNavItem === item.id
                                   ? 'bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 text-indigo-700 shadow-md border border-indigo-200/60'
                                   : 'text-gray-700 hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
-                              }`}
-                              title={item.label}
-                            >
+                            }`}
+                            title={item.label}
+                          >
                               <span className={`flex-shrink-0 flex items-center justify-center ${activeNavItem === item.id ? 'text-indigo-700' : 'text-gray-600'}`}>{item.icon}</span>
                             <span className="text-xs font-medium">{item.label}</span>
                           </button>
@@ -1655,22 +1655,22 @@ export default function Home() {
                   
                   {/* Reset to Defaults Button - for dashboards only */}
                   {(['team-dashboard', 'pi-dashboard'].includes(activeNavItem)) && (
-                    <button
-                      onClick={() => setShowResetConfirm(true)}
-                      disabled={dashboardSettingsState.isSaving}
-                      className="hidden md:inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-300 text-gray-500 hover:text-red-600 hover:border-red-400 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Reset dashboard to defaults"
-                      aria-label="Reset to defaults"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                      </svg>
-                    </button>
+                  <button
+                    onClick={() => setShowResetConfirm(true)}
+                    disabled={dashboardSettingsState.isSaving}
+                    className="hidden md:inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-300 text-gray-500 hover:text-red-600 hover:border-red-400 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Reset dashboard to defaults"
+                    aria-label="Reset to defaults"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                    </svg>
+                  </button>
                   )}
                   
                   {/* Divider */}
                   {(['team-dashboard', 'pi-dashboard'].includes(activeNavItem)) && (
-                    <div className="h-6 w-px bg-gray-300 mx-1"></div>
+                  <div className="h-6 w-px bg-gray-300 mx-1"></div>
                   )}
                   
                   {/* AI Chat Button */}
@@ -1710,7 +1710,7 @@ export default function Home() {
               <div className="flex flex-col md:flex-row md:items-center gap-0 md:gap-4 flex-1 min-w-0 pr-3 md:px-4 md:py-2 w-full">
                 {/* Mobile: Title and Logout Row */}
                 <div className="flex md:hidden items-center justify-between w-full gap-0 h-full">
-                  {/* View title */}
+                {/* View title */}
                   <h1 className="text-lg font-semibold text-gray-900 whitespace-nowrap truncate">
                     {navigationItems.find(item => item.id === activeNavItem)?.label || 'SparksAI'}
                   </h1>
@@ -1824,8 +1824,8 @@ export default function Home() {
                 </div>
               </div>
             )}
-          </div>
-          {/* Mobile controls panel (everything except title) */}
+        </div>
+        {/* Mobile controls panel (everything except title) */}
           <div className="md:hidden border-t border-gray-200 bg-gradient-to-b from-white to-gray-50 pl-3 pr-3 pt-2 pb-2 space-y-2 -mt-[1px] overflow-visible">
           {/* Filters */}
           <div className="flex flex-col gap-2">

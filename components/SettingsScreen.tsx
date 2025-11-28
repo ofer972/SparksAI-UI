@@ -981,18 +981,18 @@ export default function SettingsScreen() {
             {settingsTabs.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
-                <button
-                  key={tab.id}
-                  onClick={() => handleTabChange(tab.id)}
+            <button
+              key={tab.id}
+              onClick={() => handleTabChange(tab.id)}
                   className={`
                     px-2 py-2 text-xs font-medium rounded-t-lg border transition-colors
                     ${isActive ? 'bg-white text-blue-600 border-gray-300 z-10' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}
                   `}
                   style={{ boxShadow: isActive ? '0 -1px 0 0 #ffffff inset' : undefined }}
-                >
+            >
                   <span className="mr-1">{tab.icon}</span>
-                  <span className="truncate">{tab.label}</span>
-                </button>
+              <span className="truncate">{tab.label}</span>
+            </button>
               );
             })}
           </nav>
