@@ -1448,7 +1448,7 @@ export default function Home() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <div className="bg-gradient-to-b from-white to-gray-50 border-b border-gray-200 flex-shrink-0 relative z-30 rounded-tl-2xl md:rounded-tl-2xl overflow-hidden">
+        <div className="bg-gradient-to-b from-white to-gray-50 border-b border-gray-200 flex-shrink-0 relative z-30 rounded-tl-2xl md:rounded-tl-2xl overflow-visible md:overflow-hidden">
           <div className="flex flex-wrap md:flex-nowrap items-center gap-0 md:gap-2 h-[62px] md:h-auto md:min-h-[62px] pl-3 md:pl-0">
             {/* Mobile hamburger */}
             <button
@@ -1784,7 +1784,7 @@ export default function Home() {
             )}
           </div>
           {/* Mobile controls panel (everything except title) */}
-          <div className="md:hidden border-t border-gray-200 bg-gradient-to-b from-white to-gray-50 pl-3 pr-3 pt-2 pb-2 space-y-2 -mt-[1px]">
+          <div className="md:hidden border-t border-gray-200 bg-gradient-to-b from-white to-gray-50 pl-3 pr-3 pt-2 pb-2 space-y-2 -mt-[1px] overflow-visible">
           {/* Filters */}
           <div className="flex flex-col gap-2">
             {/* PI Filter - shown first for PI views */}

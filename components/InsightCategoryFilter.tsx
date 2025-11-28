@@ -27,6 +27,8 @@ export default function InsightCategoryFilter({
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -104,12 +106,19 @@ export default function InsightCategoryFilter({
   };
 
   const handleToggleDropdown = () => {
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 4,
+        left: rect.left,
+      });
+    }
     setIsOpen(!isOpen);
   };
 
   if (loading) {
     return (
-      <div className={`relative z-10 flex items-center space-x-1 ${className}`}>
+      <div className={`relative z-[100] flex items-center space-x-1 ${className}`}>
         <span className="text-sm font-medium text-gray-700">Today:</span>
         <button 
           className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
@@ -123,7 +132,7 @@ export default function InsightCategoryFilter({
 
   if (error) {
     return (
-      <div className={`relative z-10 flex items-center space-x-1 ${className}`}>
+      <div className={`relative z-[100] flex items-center space-x-1 ${className}`}>
         <span className="text-sm font-medium text-gray-700">Today:</span>
         <button 
           className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
@@ -136,11 +145,12 @@ export default function InsightCategoryFilter({
   }
 
   return (
-    <div className={`relative z-10 ${className}`} ref={dropdownRef}>
+    <div className={`relative z-[100] ${className}`} ref={dropdownRef}>
       <div className="flex items-center space-x-1">
         <span className="text-sm font-medium text-gray-700">Today:</span>
         <div className="relative">
           <button
+            ref={buttonRef}
             onClick={handleToggleDropdown}
             className="border border-gray-300 rounded px-2 py-1 text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center space-x-1 min-w-[300px] justify-between"
           >
@@ -162,7 +172,14 @@ export default function InsightCategoryFilter({
           </button>
 
           {isOpen && (
-            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 min-w-[300px] max-h-60 overflow-y-auto">
+            <>
+              <div 
+                className="fixed bg-white border border-gray-300 rounded-lg shadow-lg z-[9999] min-w-[300px] max-h-60 overflow-y-auto"
+                style={{
+                  top: `${dropdownPosition.top}px`,
+                  left: `${dropdownPosition.left}px`,
+                }}
+              >
           <div className="p-2">
             {categories.length === 0 ? (
               <div className="text-sm text-gray-500 py-2">No Team categories available</div>
@@ -184,6 +201,7 @@ export default function InsightCategoryFilter({
             )}
           </div>
         </div>
+            </>
           )}
         </div>
       </div>
