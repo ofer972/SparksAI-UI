@@ -304,6 +304,7 @@ export default function SettingsScreen() {
 
       const payload: Record<string, any> = {
         ai_provider: String(providerForApi),
+        ai_model: String(aiProvider === 'openai' ? openaiModel : geminiModel),
         ai_chatgpt_model: String(openaiModel),
         ai_gemini_model: String(geminiModel),
         ai_gemini_temperature: String(geminiTemperature),
