@@ -34,10 +34,6 @@ export function useAICards(teamName?: string, categories?: string[]): UseAICards
       return;
     }
 
-    // Create a flag to track if this request is still valid
-    let isCancelled = false;
-    const currentTeam = teamName;
-
     try {
       console.log('[useAICards] Fetching cards for team:', teamName, 'categories:', categories);
       setLoading(true);
@@ -45,42 +41,19 @@ export function useAICards(teamName?: string, categories?: string[]): UseAICards
       const apiService = new ApiService();
       // Use the new endpoint with recommendations, pass categories if provided
       const response = await apiService.getTeamAICardsWithRecommendations(teamName, categories);
-      
-      // Only update state if this request hasn't been cancelled
-      if (!isCancelled) {
-        console.log('[useAICards] Received cards for team:', currentTeam, 'count:', response.ai_cards?.length || 0);
-        setCards(response.ai_cards || []);
-      } else {
-        console.log('[useAICards] Request cancelled for team:', currentTeam, 'ignoring response');
-      }
+      console.log('[useAICards] Received cards for team:', teamName, 'count:', response.ai_cards?.length || 0);
+      setCards(response.ai_cards || []);
     } catch (err) {
-      if (!isCancelled) {
-        console.error('[useAICards] Error fetching AI cards:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch AI cards');
-        setCards([]);
-      }
+      console.error('[useAICards] Error fetching AI cards:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch AI cards');
+      setCards([]);
     } finally {
-      if (!isCancelled) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
-
-    // Return cleanup function
-    return () => {
-      isCancelled = true;
-      console.log('[useAICards] Cancelling request for team:', currentTeam);
-    };
   }, [teamName, categoriesKey, categories]);
 
   useEffect(() => {
-    const cleanup = fetchCards();
-    return () => {
-      if (cleanup && typeof cleanup.then === 'function') {
-        cleanup.then(cleanupFn => {
-          if (cleanupFn) cleanupFn();
-        });
-      }
-    };
+    fetchCards();
   }, [fetchCards]);
 
   return { cards, loading, error, refetch: fetchCards };
