@@ -23,7 +23,7 @@ interface DashboardTopBarContentProps {
     onTreeSelect: (value: string | null, label: string, type: 'team' | 'group') => void;
   };
   aiChat: {
-    onOpenChat: () => void;
+    onOpenChat: (dashboardData?: any) => void;
     prompts: any[];
     selectedPrompt: string;
     onPromptChange: (prompt: string) => void;
@@ -78,6 +78,28 @@ export default function DashboardTopBarContent({
             selectedPrompt={aiChat.selectedPrompt}
             onPromptChange={aiChat.onPromptChange}
             loadingPrompts={aiChat.loadingPrompts}
+            onCollectDashboardData={() => {
+              // Wait for response event
+              return new Promise<any>((resolve) => {
+                const handler = (e: Event) => {
+                  const customEvent = e as CustomEvent;
+                  window.removeEventListener('dashboard-data-collected', handler);
+                  console.log('[DashboardTopBarContent] Received dashboard data:', customEvent.detail);
+                  resolve(customEvent.detail);
+                };
+                // Add listener FIRST
+                window.addEventListener('dashboard-data-collected', handler);
+                // Then dispatch event to collect dashboard data
+                console.log('[DashboardTopBarContent] Dispatching collect-dashboard-data event');
+                window.dispatchEvent(new CustomEvent('collect-dashboard-data'));
+                // Timeout after 1 second
+                setTimeout(() => {
+                  console.log('[DashboardTopBarContent] Timeout reached, resolving with null');
+                  window.removeEventListener('dashboard-data-collected', handler);
+                  resolve(null);
+                }, 1000);
+              });
+            }}
           />
           
           {/* Mobile Logout Button */}
@@ -191,6 +213,28 @@ export default function DashboardTopBarContent({
             selectedPrompt={aiChat.selectedPrompt}
             onPromptChange={aiChat.onPromptChange}
             loadingPrompts={aiChat.loadingPrompts}
+            onCollectDashboardData={() => {
+              // Wait for response event
+              return new Promise<any>((resolve) => {
+                const handler = (e: Event) => {
+                  const customEvent = e as CustomEvent;
+                  window.removeEventListener('dashboard-data-collected', handler);
+                  console.log('[DashboardTopBarContent] Received dashboard data:', customEvent.detail);
+                  resolve(customEvent.detail);
+                };
+                // Add listener FIRST
+                window.addEventListener('dashboard-data-collected', handler);
+                // Then dispatch event to collect dashboard data
+                console.log('[DashboardTopBarContent] Dispatching collect-dashboard-data event');
+                window.dispatchEvent(new CustomEvent('collect-dashboard-data'));
+                // Timeout after 1 second
+                setTimeout(() => {
+                  console.log('[DashboardTopBarContent] Timeout reached, resolving with null');
+                  window.removeEventListener('dashboard-data-collected', handler);
+                  resolve(null);
+                }, 1000);
+              });
+            }}
           />
           
           <div className="flex items-center space-x-3 text-sm text-gray-700">

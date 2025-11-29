@@ -1065,6 +1065,7 @@ export class ApiService {
     recommendation_id?: string;
     insights_id?: string;
     prompt_name?: string;
+    dashboard_data?: any;
   }): Promise<{
     success: boolean;
     data: {
@@ -1079,6 +1080,7 @@ export class ApiService {
         recommendation_id?: string;
         insights_id?: string;
         prompt_name?: string;
+        dashboard_data?: any;
       };
     };
     message: string;

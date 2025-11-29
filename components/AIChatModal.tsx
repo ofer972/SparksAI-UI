@@ -6,6 +6,13 @@ import remarkGfm from 'remark-gfm';
 import { ApiService } from '@/lib/api';
 import { useUser } from '@/hooks';
 
+export interface DashboardData {
+  layoutConfig: any;
+  topBarFilters: Record<string, any>;
+  reportFilters: Record<string, any>;
+  pinnedFilters: Record<string, any>;
+}
+
 interface AIChatModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -19,6 +26,7 @@ interface AIChatModalProps {
   teamName?: string;
   piName?: string;
   promptName?: string;
+  dashboardData?: DashboardData | null;
 }
 
 interface Message {
@@ -35,6 +43,7 @@ export default function AIChatModal({
   teamName,
   piName,
   promptName,
+  dashboardData,
 }: AIChatModalProps) {
   const { user } = useUser();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -105,6 +114,7 @@ export default function AIChatModal({
     question: string,
     convId: string | null
   ) => {
+    console.log('[AIChatModal] buildChatRequest - dashboardData:', dashboardData);
     const request: any = {
       question: question,
       user_id: user?.user_id || '',
@@ -125,6 +135,15 @@ export default function AIChatModal({
       request.conversation_id = convId;
     }
     
+    // Include dashboard_data if provided (for dashboard chat types)
+    if (dashboardData) {
+      console.log('[AIChatModal] Adding dashboard_data to request');
+      request.dashboard_data = dashboardData;
+    } else {
+      console.log('[AIChatModal] No dashboard_data to add');
+    }
+    
+    console.log('[AIChatModal] Final request:', request);
     return request;
   };
 
@@ -174,7 +193,7 @@ export default function AIChatModal({
     } finally {
       setLoading(false);
     }
-  }, [chatType, insightsId, recommendationId, teamName, piName, promptName, user]);
+  }, [chatType, insightsId, recommendationId, teamName, piName, promptName, dashboardData, user]);
 
   // Reset state when modal closes
   useEffect(() => {

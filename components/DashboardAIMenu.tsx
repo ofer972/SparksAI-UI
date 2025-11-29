@@ -3,12 +3,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
+export interface DashboardData {
+  layoutConfig: any;
+  topBarFilters: Record<string, any>;
+  reportFilters: Record<string, any>;
+  pinnedFilters: Record<string, any>;
+}
+
 interface DashboardAIMenuProps {
-  onOpenAIChat: () => void;
+  onOpenAIChat: (dashboardData?: DashboardData | null) => void;
   prompts: any[];
   selectedPrompt: string;
   onPromptChange: (prompt: string) => void;
   loadingPrompts: boolean;
+  onCollectDashboardData?: () => Promise<DashboardData | null> | DashboardData | null;
 }
 
 function DashboardAIMenu({
@@ -17,6 +25,7 @@ function DashboardAIMenu({
   selectedPrompt,
   onPromptChange,
   loadingPrompts,
+  onCollectDashboardData,
 }: DashboardAIMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
@@ -101,8 +110,11 @@ function DashboardAIMenu({
       <div className="p-5 space-y-4">
         {/* AI Insights Button */}
         <button
-          onClick={() => {
-            onOpenAIChat();
+          onClick={async () => {
+            console.log('[DashboardAIMenu] Collecting dashboard data...');
+            const dashboardData = await onCollectDashboardData?.();
+            console.log('[DashboardAIMenu] Collected dashboard data:', dashboardData);
+            onOpenAIChat(dashboardData);
             setIsOpen(false);
           }}
           className="w-full group relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-3.5 rounded-xl text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"

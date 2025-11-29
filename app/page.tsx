@@ -170,6 +170,7 @@ export default function Home() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isDashboardChatModalOpen, setIsDashboardChatModalOpen] = useState(false);
+  const [collectedDashboardData, setCollectedDashboardData] = useState<any>(null);
   
   // Debug: Log when modal state changes
   useEffect(() => {
@@ -1028,8 +1029,9 @@ export default function Home() {
             hasSavedSettings: !!teamInsightSettings.savedState,
           }}
           aiChat={(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') ? {
-            onOpenChat: () => {
-              console.log('[AI Menu] Opening chat modal');
+            onOpenChat: (dashboardData?: any) => {
+              console.log('[AI Menu] Opening chat modal with dashboard data:', dashboardData);
+              setCollectedDashboardData(dashboardData || null);
               setIsDashboardChatModalOpen(true);
             },
             prompts,
@@ -1063,6 +1065,7 @@ export default function Home() {
           onClose={() => {
             console.log('[AI Modal] Closing modal');
             setIsDashboardChatModalOpen(false);
+            setCollectedDashboardData(null);
           }}
           chatType={
             activeNavItem === 'team-dashboard' 
@@ -1074,6 +1077,7 @@ export default function Home() {
           teamName={activeNavItem === 'team-dashboard' ? selectedTeam : undefined}
           piName={activeNavItem === 'pi-dashboard' ? selectedPI : undefined}
           promptName={selectedPrompt && selectedPrompt.trim() !== '' && selectedPrompt !== '[use default]' ? selectedPrompt : undefined}
+          dashboardData={collectedDashboardData}
         />
       )}
       

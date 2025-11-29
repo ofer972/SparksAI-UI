@@ -251,6 +251,28 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     }
   }, [selectedPI, selectedTeam, selectedTreeType, dashboardSettings.isLoading]);
   
+  // Create refs to hold latest values for event handlers
+  const latestValuesRef = useRef({
+    layoutConfig,
+    selectedPI,
+    selectedTeam,
+    selectedTreeType,
+    reportFilters: dashboardSettings.currentState.reportFilters,
+    pinnedFilters: dashboardSettings.currentState.pinnedFilters,
+  });
+  
+  // Update refs whenever values change
+  useEffect(() => {
+    latestValuesRef.current = {
+      layoutConfig,
+      selectedPI,
+      selectedTeam,
+      selectedTreeType,
+      reportFilters: dashboardSettings.currentState.reportFilters,
+      pinnedFilters: dashboardSettings.currentState.pinnedFilters,
+    };
+  }, [layoutConfig, selectedPI, selectedTeam, selectedTreeType, dashboardSettings.currentState.reportFilters, dashboardSettings.currentState.pinnedFilters]);
+  
   // Set up event listeners once
   useEffect(() => {
     const handleSaveRequest = async () => {
@@ -279,14 +301,34 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
       }
     };
     
+    const handleCollectDashboardData = () => {
+      console.log('[PIDashboard] Dashboard data collection requested');
+      // Use ref to access latest values
+      const latest = latestValuesRef.current;
+      const data = {
+        layoutConfig: latest.layoutConfig,
+        topBarFilters: {
+          selectedPI: latest.selectedPI,
+          selectedTeam: latest.selectedTeam,
+          selectedTreeType: latest.selectedTreeType,
+        },
+        reportFilters: latest.reportFilters,
+        pinnedFilters: latest.pinnedFilters,
+      };
+      console.log('[PIDashboard] Collected dashboard data:', data);
+      window.dispatchEvent(new CustomEvent('dashboard-data-collected', { detail: data }));
+    };
+    
     window.addEventListener('save-dashboard-settings', handleSaveRequest as EventListener);
     window.addEventListener('reset-dashboard-settings', handleResetRequest as EventListener);
+    window.addEventListener('collect-dashboard-data', handleCollectDashboardData as EventListener);
     
     return () => {
       window.removeEventListener('save-dashboard-settings', handleSaveRequest as EventListener);
       window.removeEventListener('reset-dashboard-settings', handleResetRequest as EventListener);
+      window.removeEventListener('collect-dashboard-data', handleCollectDashboardData as EventListener);
     };
-  }, []); // Empty deps - handlers access latest values via refs
+  }, []); // Empty deps - handlers access latest values via ref
 
   // Dispatch state changes to parent only when settings state changes
   useEffect(() => {
