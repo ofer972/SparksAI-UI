@@ -73,7 +73,7 @@ export default function GeneralDataView() {
         return <TranscriptsTab />;
       case 'security-logs':
         return (
-          <div className="h-full flex flex-col min-h-0 px-6 pt-6">
+          <div className="h-full flex flex-col min-h-0">
             <div className="flex-1 flex items-center justify-center">
           <div className="bg-white rounded-lg shadow-sm p-6 text-center">
             <div className="text-4xl mb-3">🔒</div>

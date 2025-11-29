@@ -31,7 +31,7 @@ export default function AgentJobsTab() {
   return (
     <>
       <Toast message={toastMessage} type={toastType} onClose={clearToast} />
-      <div className="h-full flex flex-col min-h-0 px-6 pt-6">
+      <div className="h-full flex flex-col min-h-0">
         <div className="mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 flex-shrink-0">
           <input
             type="text"
