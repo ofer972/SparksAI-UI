@@ -565,15 +565,71 @@ export default function SettingsScreen() {
 
   const settingsTabs = useMemo(() => {
     const tabs = [
-      { id: 'ai-config', label: 'AI Configuration', icon: '🤖' },
-      { id: 'insight-types', label: 'Insight Types', icon: '💡' },
-      { id: 'prompts', label: 'Prompts', icon: '🧠' },
-      { id: 'team-management', label: 'Team Management', icon: '👥' },
-      { id: 'notifications', label: 'Notifications', icon: '🔔' },
-      { id: 'integrations', label: 'Integrations', icon: '🔗' },
+      { 
+        id: 'ai-config', 
+        label: 'AI Configuration', 
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+          </svg>
+        )
+      },
+      { 
+        id: 'insight-types', 
+        label: 'Insight Types', 
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+          </svg>
+        )
+      },
+      { 
+        id: 'prompts', 
+        label: 'Prompts', 
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        )
+      },
+      { 
+        id: 'team-management', 
+        label: 'Team Management', 
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        )
+      },
+      { 
+        id: 'notifications', 
+        label: 'Notifications', 
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+        )
+      },
+      { 
+        id: 'integrations', 
+        label: 'Integrations', 
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+          </svg>
+        )
+      },
     ];
     if (isSystemUser) {
-      tabs.push({ id: 'dashboard-layout', label: 'Dashboard Layout', icon: '🗂️' });
+      tabs.push({ 
+        id: 'dashboard-layout', 
+        label: 'Dashboard Layout', 
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 12a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z" />
+          </svg>
+        )
+      });
     }
     return tabs;
   }, [isSystemUser]);
@@ -626,8 +682,8 @@ export default function SettingsScreen() {
         
         return (
           <div className="w-full h-full overflow-auto">
-            <div className="w-full max-w-2xl ml-0 md:ml-8 pb-4">
-              <div className="bg-gradient-to-br from-white via-gray-50 to-blue-50 rounded-lg shadow-lg border border-gray-200 p-4 md:p-6 space-y-4 md:space-y-6">
+            <div className="w-full max-w-2xl">
+              <div className="bg-gradient-to-br from-white via-gray-50 to-blue-50 rounded-lg shadow-sm border border-gray-200 p-4 md:p-6 space-y-4 md:space-y-6">
                 {/* Currently Active LLM Badge */}
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-3 md:p-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -1060,8 +1116,8 @@ export default function SettingsScreen() {
   return (
     <div className="h-full flex flex-col px-4 md:px-6">
       {/* Settings Header */}
-      <div className="bg-white border-b border-gray-200 flex-shrink-0">
-        <div className="px-4 md:px-6 py-3 md:py-4 md:overflow-x-auto">
+      <div className="flex-shrink-0 mt-4">
+        <div className="px-4 md:pl-0 md:pr-6">
           {/* Mobile: 3 tabs per row grid */}
           <nav className="grid grid-cols-3 gap-1 md:hidden">
             {settingsTabs.map((tab) => {
@@ -1071,20 +1127,19 @@ export default function SettingsScreen() {
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
                   className={`
-                    px-2 py-2 text-xs font-medium rounded-t-lg border transition-colors
-                    ${isActive ? 'bg-white text-blue-600 border-gray-300 z-10' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}
+                    flex flex-col items-center justify-center px-2 py-2 text-xs font-medium rounded-t-lg border transition-colors
+                    ${isActive ? 'bg-white text-blue-600 border-x border-t border-gray-300 border-b-white -mb-px relative z-10' : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'}
                   `}
-                  style={{ boxShadow: isActive ? '0 -1px 0 0 #ffffff inset' : undefined }}
             >
-                  <span className="mr-1">{tab.icon}</span>
-              <span className="truncate">{tab.label}</span>
+                  <span className="mb-1">{tab.icon}</span>
+              <span className="truncate text-center leading-tight">{tab.label}</span>
             </button>
               );
             })}
           </nav>
 
           {/* Desktop: single row */}
-          <nav className="hidden md:flex md:flex-nowrap gap-1">
+          <nav className="hidden md:flex md:flex-nowrap gap-1 md:justify-start">
             {settingsTabs.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
@@ -1092,13 +1147,12 @@ export default function SettingsScreen() {
                   key={tab.id}
                   onClick={() => handleTabChange(tab.id)}
                   className={`
-                    px-4 py-2 text-sm font-medium rounded-t-lg border transition-colors
-                    ${isActive ? 'bg-white text-blue-600 border-gray-300 z-10' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}
+                    flex items-center px-4 py-2.5 text-sm font-medium rounded-t-lg border transition-colors whitespace-nowrap
+                    ${isActive ? 'bg-white text-blue-600 border-x border-t border-gray-300 border-b-white -mb-px relative z-10' : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'}
                   `}
-                  style={{ boxShadow: isActive ? '0 -1px 0 0 #ffffff inset' : undefined }}
                 >
                   <span className="mr-2">{tab.icon}</span>
-                  <span className="truncate">{tab.label}</span>
+                  <span>{tab.label}</span>
                 </button>
               );
             })}
@@ -1107,8 +1161,10 @@ export default function SettingsScreen() {
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-hidden flex flex-col min-h-0 mt-4 mb-4">
-      {renderTabContent()}
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0 bg-white border border-gray-300 rounded-tr-lg rounded-b-lg shadow-sm mb-4">
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0 p-4 md:p-6">
+          {renderTabContent()}
+        </div>
       </div>
 
       <Toast message={toastMessage} type={toastType} onClose={() => setToastMessage(null)} />
