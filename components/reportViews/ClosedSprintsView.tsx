@@ -44,6 +44,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
   const months = Number(filters.months ?? 3);
   const teamName = (filters.team_name as string) ?? '';
   const isGroup = (filters.isGroup as boolean) ?? false;
+  const issueType = (filters.issue_type as string) ?? '';
   
   // Look up ID from name to construct proper teamValue
   const teamValue = useMemo(() => {
@@ -57,6 +58,13 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
       return team ? `team:${team.team_key}` : null;
     }
   }, [teamName, isGroup, groups, teams]);
+
+  const availableIssueTypes = useMemo(() => {
+    if (meta && Array.isArray(meta.available_issue_types)) {
+      return meta.available_issue_types as string[];
+    }
+    return [];
+  }, [meta]);
 
   const hasAutoSelectedRef = useRef(false);
 
@@ -97,6 +105,16 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
           isGroup: type === 'group',
         }));
       }
+    },
+    [setFilters]
+  );
+
+  const handleIssueTypeChange = useCallback(
+    (value: string) => {
+      setFilters((prev) => ({
+        ...prev,
+        issue_type: value || null,
+      }));
     },
     [setFilters]
   );
@@ -404,6 +422,21 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
           ))}
         </select>
       </ReportFilterField>
+
+      <ReportFilterField label="Issue Type">
+        <select
+          value={issueType}
+          onChange={(e) => handleIssueTypeChange(e.target.value)}
+          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+        >
+          <option value="">All Issue Types</option>
+          {availableIssueTypes.map((type) => (
+            <option key={type} value={type}>
+              {type}
+            </option>
+          ))}
+        </select>
+      </ReportFilterField>
     </ReportFiltersRow>
   );
 
@@ -429,8 +462,17 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
       });
     }
     
+    if (issueType) {
+      badges.push({
+        label: 'Issue Type',
+        value: issueType,
+        filterKey: 'issue_type',
+        isPinned: pinnedFilters.includes('issue_type'),
+      });
+    }
+    
     return badges;
-  }, [teamName, isGroup, months, pinnedFilters]);
+  }, [teamName, isGroup, months, issueType, pinnedFilters]);
 
   return (
     <ReportCard
