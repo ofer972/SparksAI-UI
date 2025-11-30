@@ -27,7 +27,7 @@ export default function UnsavedChangesModal({
       {/* Modal */}
       <div className="relative bg-gradient-to-b from-gray-50 to-white rounded-3xl shadow-2xl w-full max-w-xs overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Content */}
-        <div className="px-10 py-8">
+        <div className="px-6 py-8">
           {/* Logo Icon */}
           <div className="flex items-center justify-center mb-6">
             <div className="w-20 h-20 bg-white rounded-2xl shadow-lg flex items-center justify-center p-3">
@@ -60,7 +60,7 @@ export default function UnsavedChangesModal({
             {/* Save Button */}
             <button
               onClick={onSave}
-              className="w-full px-6 py-3.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg transition-colors duration-150 font-medium text-[15px]"
+              className="w-full px-6 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg transition-colors duration-150 font-medium text-[15px]"
             >
               Save
             </button>
@@ -68,7 +68,7 @@ export default function UnsavedChangesModal({
             {/* Don't Save Button */}
             <button
               onClick={onDiscard}
-              className="w-full px-6 py-3.5 bg-gray-200 hover:bg-gray-300 active:bg-gray-400 text-gray-800 rounded-lg transition-colors duration-150 font-medium text-[15px]"
+              className="w-full px-6 py-2 bg-gray-200 hover:bg-gray-300 active:bg-gray-400 text-gray-800 rounded-lg transition-colors duration-150 font-medium text-[15px]"
             >
               Don't Save
             </button>
@@ -76,7 +76,7 @@ export default function UnsavedChangesModal({
             {/* Cancel Button */}
             <button
               onClick={onCancel}
-              className="w-full px-6 py-3.5 bg-gray-200 hover:bg-gray-300 active:bg-gray-400 text-gray-800 rounded-lg transition-colors duration-150 font-medium text-[15px]"
+              className="w-full px-6 py-2 bg-gray-200 hover:bg-gray-300 active:bg-gray-400 text-gray-800 rounded-lg transition-colors duration-150 font-medium text-[15px]"
             >
               Cancel
             </button>
