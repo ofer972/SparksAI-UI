@@ -37,7 +37,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
 }) => {
   const { groups, teams } = useTeamsGroups();
   const [sortConfig, setSortConfig] = useState<SortConfig>({
-    key: null,
+    key: 'team_name',
     direction: 'asc',
   });
 
@@ -133,12 +133,19 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
         if (key === 'sprint_id') {
           return false;
         }
-        // Hide sprint_official_start_date column
-        if (key === 'sprint_official_start_date') {
+        // Hide sprint_official_start_date column and any start date variations
+        if (key === 'sprint_official_start_date' || 
+            key === 'start_date' ||
+            key.toLowerCase().includes('start_date') ||
+            (key.toLowerCase().includes('start') && key.toLowerCase().includes('date'))) {
           return false;
         }
         // Hide columns with "keys" in the name
         if (key.includes('keys')) {
+          return false;
+        }
+        // Hide bugs_planned_plus_added column
+        if (key === 'bugs_planned_plus_added') {
           return false;
         }
         return true;
@@ -148,11 +155,18 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
         const getOrder = (key: string): number => {
           if (key === 'team_name') return 1;
           if (key === 'sprint_name') return 2;
-          if (key === 'sprint_official_end_date') return 3;
-          if (key === 'sprint_predictability') return 4;
-          if (key === 'avg_story_cycle_time') return 5;
+          if (key === 'sprint_official_end_date' || key === 'complete_date') return 3; // Before Completed %
+          if (key === 'completed_percentage') return 4; // After Complete Date
+          if (key === 'issues_at_start') return 5;
+          if (key === 'issues_added') return 6;
+          if (key === 'issues_done' || key === 'issues_completed_in_sprint') return 7;
+          if (key === 'issues_remaining' || key === 'issues_not_completed') return 8;
+          if (key === 'bugs_planned_plus_added') return 9;
+          if (key === 'bug_resolved_during_sprint') return 10;
+          if (key === 'sprint_predictability') return 11;
+          if (key === 'avg_story_cycle_time') return 12;
           if (key === 'sprint_goal') return 999; // Last
-          return 10; // Other columns in between
+          return 20; // Other columns in between
         };
         
         const orderA = getOrder(a);
@@ -162,36 +176,49 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
       });
     
     return allKeys.map((key) => {
+        // Default: convert snake_case to Title Case
         let label = key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 
-        // Set label for sprint_official_end_date
-        if (key === 'sprint_official_end_date') {
-          label = 'Complete Date';
-        }
-
-        // Set label for issues_completed_in_sprint
-        if (key === 'issues_completed_in_sprint') {
-          label = 'Issues Done';
-        }
-
-        // Set label for total_issues_in_sprint
-        if (key === 'total_issues_in_sprint') {
-          label = 'Total Issues';
-        }
-
-        // Set label for issues_not_completed
-        if (key === 'issues_not_completed') {
-          label = 'Issues Remaining';
-        }
-
-        // Set label for sprint_predictability
-        if (key === 'sprint_predictability') {
-          label = 'Predictability %';
-        }
-
-        // Set label for avg_story_cycle_time
-        if (key === 'avg_story_cycle_time') {
-          label = 'Avg Cycle Time';
+        // Set compact multi-line labels for better space usage
+        if (key === 'issues_completed_in_sprint' || key === 'issues_done') {
+          label = 'Issues\nDone';
+        } else if (key === 'total_issues_in_sprint') {
+          label = 'Total\nIssues';
+        } else if (key === 'issues_not_completed' || key === 'issues_remaining') {
+          label = 'Issues Not\nDone';
+        } else if (key === 'issues_at_start') {
+          label = 'Issues At\nStart';
+        } else if (key === 'issues_added') {
+          label = 'Issues\nAdded';
+        } else if (key === 'bugs_planned_plus_added') {
+          label = 'Bugs Planned\nPlus Added';
+        } else if (key === 'bug_resolved_during_sprint') {
+          label = 'Bugs\nResolved';
+        } else if (key === 'completed_percentage') {
+          label = 'Completed\n%';
+        } else if (key === 'sprint_predictability') {
+          label = 'Predictability\n%';
+        } else if (key === 'avg_story_cycle_time') {
+          label = 'Avg Cycle\nTime';
+        } else if (key === 'sprint_official_end_date' || key === 'complete_date') {
+          label = 'Complete\nDate';
+        } else if (key === 'team_name') {
+          label = 'Team\nName';
+        } else if (key === 'sprint_name') {
+          label = 'Sprint\nName';
+        } else if (key === 'sprint_goal') {
+          label = 'Sprint\nGoal';
+        } else {
+          // For other labels, try to split on common words if they're long
+          const words = label.split(' ');
+          if (words.length > 2 && label.length > 12) {
+            // Split into two lines: first half and second half
+            const mid = Math.ceil(words.length / 2);
+            label = words.slice(0, mid).join(' ') + '\n' + words.slice(mid).join(' ');
+          } else if (words.length === 2 && label.length > 10) {
+            // Split two-word labels
+            label = words[0] + '\n' + words[1];
+          }
         }
 
         const keyStr = String(key);
@@ -204,13 +231,14 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
           align: isLeftAlign ? 'left' : 'center',
           sortable: true,
           expandable: isExpandable,
-          maxLength: isExpandable ? 300 : undefined,
+          maxLength: isExpandable ? 100 : undefined, // Reduced to 100 to show "Read more" more often
+          width: key === 'sprint_goal' ? '288px' : undefined, // 10% smaller than previous width (was 320px)
           render: (value: any, row: ClosedSprint) => {
             if (value === null || value === undefined) return '-';
 
-            // Format sprint_goal
+            // Format sprint_goal - return as string for expandable cell to handle
             if (keyStr === 'sprint_goal' && typeof value === 'string') {
-              return value;
+              return value; // DataTable's ExpandableCell will handle truncation and "Read more"
             }
 
             // Format dates
@@ -218,11 +246,26 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
               return formatDate(value);
             }
 
-            // Format sprint_predictability as percentage
+            // Format completed_percentage (rounded to integer)
+            if (keyStr === 'completed_percentage') {
+              const num = typeof value === 'string' ? parseFloat(value) : (typeof value === 'number' ? value : 0);
+              const formatted = Math.round(num); // Round to integer
+              return (
+                <span
+                  className={`font-semibold ${
+                    num >= 80 ? 'text-green-600' : num >= 60 ? 'text-yellow-600' : 'text-red-600'
+                  }`}
+                >
+                  {formatted}%
+                </span>
+              );
+            }
+
+            // Format sprint_predictability as percentage (rounded to integer)
             if (keyStr === 'sprint_predictability') {
               const num = typeof value === 'string' ? parseFloat(value) : (typeof value === 'number' ? value : 0);
               const percent = num * 100;
-              const formatted = Math.round(percent);
+              const formatted = Math.round(percent); // Already rounded to integer
               return (
                 <span
                   className={`font-semibold ${
@@ -253,9 +296,17 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
             // Check if this numeric field has a corresponding keys array for clickable links
             // Map field names to their keys array field names based on actual API response
             const keysFieldMap: Record<string, string> = {
+              // Old field names (for backward compatibility)
               'issues_completed_in_sprint': 'completed_issue_keys',
               'total_issues_in_sprint': 'total_committed_issue_keys',
               'issues_not_completed': 'issues_not_completed_keys',
+              // New field names from backend
+              'issues_done': 'completed_issue_keys',
+              'issues_remaining': 'issues_remaining_keys',
+              'issues_at_start': 'issues_at_start_keys',
+              'issues_added': 'issues_added_keys',
+              'bugs_planned_plus_added': 'bugs_planned_plus_added_keys',
+              'bug_resolved_during_sprint': 'bug_resolved_during_sprint_keys',
             };
             
             const keysFieldName = keysFieldMap[key];
@@ -266,14 +317,12 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
               const keys = keysArray.filter((k: any) => k != null && k !== '');
               if (keys.length > 0) {
                 const link = getJiraSearchLink(keys, jiraUrl);
-                // Apply color coding based on field type
+                // Apply color coding - most are blue, but issues_remaining is red and bug_resolved is purple
                 let colorClass = 'text-blue-600';
-                if (keyStr === 'issues_completed_in_sprint') {
-                  colorClass = 'text-green-600';
-                } else if (keyStr === 'issues_not_completed') {
+                if (keyStr === 'issues_not_completed' || keyStr === 'issues_remaining') {
                   colorClass = 'text-red-600';
-                } else if (keyStr === 'total_issues_in_sprint') {
-                  colorClass = 'text-gray-700';
+                } else if (keyStr === 'bug_resolved_during_sprint') {
+                  colorClass = 'text-purple-600';
                 }
                 
                 return (
@@ -286,7 +335,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
                       e.preventDefault();
                       window.open(link, '_blank', 'noopener,noreferrer');
                     }}
-                    className={`text-sm font-semibold ${colorClass} hover:text-blue-800 hover:underline cursor-pointer`}
+                    className={`text-sm font-bold ${colorClass} underline hover:opacity-80 cursor-pointer`}
                     title={keys.join(', ')}
                   >
                     {value}
@@ -295,15 +344,25 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
               }
             }
 
-            // Fallback rendering for numeric values
-            if (keyStr === 'issues_completed_in_sprint') {
-              return <span className="text-green-600 font-semibold">{value}</span>;
+            // Fallback rendering for numeric values (when no keys array available)
+            // Note: These should normally have keys arrays, but keeping as fallback
+            if (keyStr === 'issues_completed_in_sprint' || keyStr === 'issues_done') {
+              return <span className="text-blue-600 font-semibold">{value}</span>;
             }
-            if (keyStr === 'issues_not_completed') {
+            if (keyStr === 'issues_not_completed' || keyStr === 'issues_remaining') {
               return <span className="text-red-600 font-semibold">{value}</span>;
             }
             if (keyStr === 'total_issues_in_sprint') {
-              return <span className="text-gray-700 font-semibold">{value}</span>;
+              return <span className="text-blue-600 font-semibold">{value}</span>;
+            }
+            if (keyStr === 'issues_at_start' || keyStr === 'issues_added') {
+              return <span className="text-blue-600 font-semibold">{value}</span>;
+            }
+            if (keyStr === 'bug_resolved_during_sprint') {
+              return <span className="text-purple-600 font-semibold">{value}</span>;
+            }
+            if (keyStr === 'bugs_planned_plus_added') {
+              return <span className="text-blue-600 font-semibold">{value}</span>;
             }
 
             return value;

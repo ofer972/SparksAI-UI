@@ -298,15 +298,15 @@ function DataTable<T extends Record<string, any>>({
         <table className="w-full border-collapse">
           <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
             <tr>
-              {finalColumns.map((column) => (
+              {finalColumns.map((column, colIndex) => (
                 <th
                   key={column.key}
-                  className={`px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider ${
+                  className={`px-2 text-xs font-semibold text-gray-700 uppercase tracking-tight ${
                     column.align === 'left' ? 'text-left' : 
                     column.align === 'right' ? 'text-right' : 
                     'text-center'
-                  } ${column.sortable !== false && onSort ? 'cursor-pointer hover:bg-gray-100 transition-colors group' : ''}`}
-                  style={{ width: column.width, height: '44px', paddingTop: '0.625rem', paddingBottom: '0.625rem' }}
+                  } ${colIndex < finalColumns.length - 1 ? 'border-r border-gray-200' : ''} ${column.sortable !== false && onSort ? 'cursor-pointer hover:bg-gray-100 transition-colors group' : ''}`}
+                  style={{ width: column.width, minHeight: '32px', paddingTop: '0.375rem', paddingBottom: '0.375rem' }}
                   onClick={() => {
                     if (column.sortable !== false && onSort && column.key !== '__actions__') {
                       // Call onSort - it accepts both string and keyof T
@@ -314,12 +314,20 @@ function DataTable<T extends Record<string, any>>({
                     }
                   }}
                 >
-                  <div className={`flex items-center gap-2 ${
-                    column.align === 'right' ? 'justify-end' :
-                    column.align === 'left' ? 'justify-start' :
-                    'justify-center'
+                  <div className={`flex flex-col items-center gap-0.5 ${
+                    column.align === 'right' ? 'items-end' :
+                    column.align === 'left' ? 'items-start' :
+                    'items-center'
                   }`}>
-                    <span className="whitespace-nowrap">{column.label}</span>
+                    {typeof column.label === 'string' && column.label.includes('\n') ? (
+                      <span className="text-center leading-tight">
+                        {column.label.split('\n').map((line, idx) => (
+                          <span key={idx} className="block">{line}</span>
+                        ))}
+                      </span>
+                    ) : (
+                      <span className="text-center leading-tight whitespace-normal break-words">{column.label}</span>
+                    )}
                     {column.sortable !== false && onSort && column.key !== '__actions__' && (
                       <SortIcon columnKey={column.key} />
                     )}
@@ -366,13 +374,13 @@ function DataTable<T extends Record<string, any>>({
                     striped ? (index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50') : 'bg-white'
                   } ${hoverable ? 'hover:bg-blue-50/50' : ''}`}
                 >
-                  {finalColumns.map((column) => {
+                  {finalColumns.map((column, colIndex) => {
                     // Handle actions column
                     if (column.key === '__actions__') {
                       return (
                         <td
                           key={column.key}
-                          className="px-4 py-3 text-sm text-gray-900 text-right"
+                          className={`px-2 py-2 text-sm text-gray-900 text-right ${colIndex < finalColumns.length - 1 ? 'border-r border-gray-200' : ''}`}
                         >
                           <div className="flex items-center justify-end gap-2">
                             {onViewItem && (
@@ -520,11 +528,11 @@ function DataTable<T extends Record<string, any>>({
                     return (
                       <td
                         key={column.key}
-                        className={`px-4 py-3 text-sm text-gray-900 ${
+                        className={`px-2 py-2 text-sm text-gray-900 ${
                           column.align === 'left' ? 'text-left' : 
                           column.align === 'right' ? 'text-right' : 
                           'text-center'
-                        } ${isExpandable && column.align !== 'center' ? 'max-w-md' : ''}`}
+                        } ${colIndex < finalColumns.length - 1 ? 'border-r border-gray-200' : ''} ${isExpandable && column.align !== 'center' ? 'max-w-md' : ''}`}
                       >
                         {isExpandable ? (
                           <ExpandableCell 
