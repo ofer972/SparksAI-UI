@@ -19,6 +19,7 @@ import SystemSettingsView from '@/components/views/SystemSettingsView';
 import CreateAgentJobView from '@/components/views/CreateAgentJobView';
 import UploadTranscriptsView from '@/components/views/UploadTranscriptsView';
 import UsersAdminView from '@/components/views/UsersAdminView';
+import UnsavedChangesModal from '@/components/UnsavedChangesModal';
 
 export default function Home() {
   const router = useRouter();
@@ -128,6 +129,79 @@ export default function Home() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   
+  // Function to check if current view has unsaved changes
+  const hasUnsavedChanges = () => {
+    if (activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') {
+      return dashboardSettingsState.hasChanges;
+    }
+    if (activeNavItem === 'team-ai-insights' || activeNavItem === 'pi-quarter') {
+      return insightSettingsState.hasChanges;
+    }
+    return false;
+  };
+  
+  // Function to handle navigation with unsaved changes check
+  const handleNavigation = (navItem: NavItemId) => {
+    if (navItem === activeNavItem) {
+      return; // Already on this view
+    }
+    
+    if (hasUnsavedChanges()) {
+      // Show confirmation modal
+      setPendingNavItem(navItem);
+      setShowUnsavedChangesModal(true);
+    } else {
+      // Navigate directly
+      setActiveNavItem(navItem);
+      setMobileSidebarOpen(false);
+    }
+  };
+  
+  // Handle save and navigate
+  const handleSaveAndNavigate = async () => {
+    try {
+      // Trigger save based on current view
+      if (activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') {
+        window.dispatchEvent(new CustomEvent('save-dashboard-settings'));
+        // Wait a bit for save to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } else if (activeNavItem === 'team-ai-insights') {
+        await teamInsightSettings.saveSettings();
+      } else if (activeNavItem === 'pi-quarter') {
+        await piInsightSettings.saveSettings();
+      }
+      
+      // Navigate to pending item
+      if (pendingNavItem) {
+        setActiveNavItem(pendingNavItem);
+        setMobileSidebarOpen(false);
+      }
+    } catch (err) {
+      console.error('Error saving settings:', err);
+      setMessage({ type: 'error', text: 'Failed to save settings' });
+      setTimeout(() => setMessage(null), 3000);
+    } finally {
+      setShowUnsavedChangesModal(false);
+      setPendingNavItem(null);
+    }
+  };
+  
+  // Handle discard and navigate
+  const handleDiscardAndNavigate = () => {
+    if (pendingNavItem) {
+      setActiveNavItem(pendingNavItem);
+      setMobileSidebarOpen(false);
+    }
+    setShowUnsavedChangesModal(false);
+    setPendingNavItem(null);
+  };
+  
+  // Handle cancel navigation
+  const handleCancelNavigation = () => {
+    setShowUnsavedChangesModal(false);
+    setPendingNavItem(null);
+  };
+  
   // Reset appliedRestoreRef only when changing between different dashboard types
   useEffect(() => {
     const prevNav = prevActiveNavItemRef.current;
@@ -195,6 +269,10 @@ export default function Home() {
     isSaving: boolean;
     error: string | null;
   }>({ hasChanges: false, isSaving: false, error: null });
+  
+  // Unsaved changes modal state
+  const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
+  const [pendingNavItem, setPendingNavItem] = useState<NavItemId | null>(null);
 
   // Initialize tree values for default teams when teams/groups data loads (only once)
   useEffect(() => {
@@ -849,7 +927,7 @@ export default function Home() {
                         {group.items.map((item) => (
                           <button
                             key={item.id}
-                            onClick={() => { setActiveNavItem(item.id as NavItemId); setMobileSidebarOpen(false); }}
+                            onClick={() => handleNavigation(item.id as NavItemId)}
                               className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all duration-200 ${
                               activeNavItem === item.id
                                   ? 'bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 text-indigo-700 shadow-md border border-indigo-200/60'
@@ -891,7 +969,7 @@ export default function Home() {
                 {navigationGroups.flatMap((g) => g.items).map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => setActiveNavItem(item.id as NavItemId)}
+                    onClick={() => handleNavigation(item.id as NavItemId)}
                     className={`w-full flex items-center justify-center px-2 py-2.5 rounded-lg transition-all duration-200 ${
                       activeNavItem === item.id
                         ? 'bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 text-indigo-700 shadow-md border border-indigo-200/60'
@@ -926,7 +1004,7 @@ export default function Home() {
                           {group.items.map((item) => (
                             <button
                               key={item.id}
-                              onClick={() => setActiveNavItem(item.id as NavItemId)}
+                              onClick={() => handleNavigation(item.id as NavItemId)}
                               className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all duration-200 ${
                                 activeNavItem === item.id
                                   ? 'bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 text-indigo-700 shadow-md border border-indigo-200/60'
@@ -1106,6 +1184,14 @@ export default function Home() {
           </div>
         </div>
       )}
+      
+      {/* Unsaved Changes Modal */}
+      <UnsavedChangesModal
+        isOpen={showUnsavedChangesModal}
+        onSave={handleSaveAndNavigate}
+        onDiscard={handleDiscardAndNavigate}
+        onCancel={handleCancelNavigation}
+      />
     </div>
   ) : (
     <div className="min-h-screen flex items-center justify-center text-sm text-gray-600">
