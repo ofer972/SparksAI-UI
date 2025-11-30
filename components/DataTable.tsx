@@ -306,7 +306,7 @@ function DataTable<T extends Record<string, any>>({
                     column.align === 'right' ? 'text-right' : 
                     'text-center'
                   } ${colIndex < finalColumns.length - 1 ? 'border-r border-gray-200' : ''} ${column.sortable !== false && onSort ? 'cursor-pointer hover:bg-gray-100 transition-colors group' : ''}`}
-                  style={{ width: column.width, minHeight: '32px', paddingTop: '0.375rem', paddingBottom: '0.375rem' }}
+                  style={{ width: column.width, minHeight: '48px', paddingTop: '0.75rem', paddingBottom: '0.75rem' }}
                   onClick={() => {
                     if (column.sortable !== false && onSort && column.key !== '__actions__') {
                       // Call onSort - it accepts both string and keyof T
@@ -314,20 +314,17 @@ function DataTable<T extends Record<string, any>>({
                     }
                   }}
                 >
-                  <div className={`flex flex-col items-center gap-0.5 ${
-                    column.align === 'right' ? 'items-end' :
-                    column.align === 'left' ? 'items-start' :
-                    'items-center'
+                  <div className={`flex items-center gap-1.5 ${
+                    column.align === 'right' ? 'justify-end' :
+                    column.align === 'left' ? 'justify-start' :
+                    'justify-center'
                   }`}>
-                    {typeof column.label === 'string' && column.label.includes('\n') ? (
-                      <span className="text-center leading-tight">
-                        {column.label.split('\n').map((line, idx) => (
-                          <span key={idx} className="block">{line}</span>
-                        ))}
-                      </span>
-                    ) : (
-                      <span className="text-center leading-tight whitespace-normal break-words">{column.label}</span>
-                    )}
+                    <span className="leading-tight whitespace-nowrap">
+                      {typeof column.label === 'string' && column.label.includes('\n') 
+                        ? column.label.replace(/\n/g, ' ')
+                        : column.label
+                      }
+                    </span>
                     {column.sortable !== false && onSort && column.key !== '__actions__' && (
                       <SortIcon columnKey={column.key} />
                     )}
