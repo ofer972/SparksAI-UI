@@ -352,7 +352,9 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             errorMessage.includes('404: Team') ||
             errorMessage.includes('Team not found') ||
             errorMessage.includes('Group not found') ||
-            errorMessage.includes("Group '") && errorMessage.includes("' not found")
+            errorMessage.includes("Group '") && errorMessage.includes("' not found") ||
+            errorMessage.includes("Group '") && errorMessage.includes("' has no teams") ||
+            errorMessage.includes('has no teams')
           );
         
         if (isTeamNotFoundError) {

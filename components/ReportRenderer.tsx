@@ -216,7 +216,9 @@ const ReportRenderer: React.FC<ReportRendererProps> = ({
             message.includes('404: Team') ||
             message.includes('Team not found') ||
             message.includes('Group not found') ||
-            message.includes("Group '") && message.includes("' not found")
+            message.includes("Group '") && message.includes("' not found") ||
+            message.includes("Group '") && message.includes("' has no teams") ||
+            message.includes('has no teams')
           );
         
         if (isTeamNotFoundError) {
