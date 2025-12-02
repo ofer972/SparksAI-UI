@@ -111,7 +111,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
             <button
               type="button"
               onClick={onAIChat}
-              className="inline-flex items-center justify-center h-7 w-7 rounded-lg bg-white border-2 border-blue-300 text-blue-600 hover:bg-blue-50 hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 shadow-sm"
+              className="inline-flex items-center justify-center h-7 w-7 rounded-lg bg-white border-2 border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 shadow-sm"
               aria-label="AI Chat for this report"
               title="Open AI chat for this report"
             >
