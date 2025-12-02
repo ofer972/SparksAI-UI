@@ -10,6 +10,11 @@ export interface DashboardData {
   pinnedFilters: Record<string, any>;
 }
 
+interface ReportInfo {
+  id: string;
+  name: string;
+}
+
 interface DashboardAIMenuProps {
   onOpenAIChat: (dashboardData?: DashboardData | null) => void;
   prompts: any[];
@@ -31,6 +36,8 @@ function DashboardAIMenu({
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const [availableReports, setAvailableReports] = useState<ReportInfo[]>([]);
+  const [selectedReports, setSelectedReports] = useState<Set<string>>(new Set());
 
   // Update dropdown position
   const updatePosition = () => {
@@ -42,6 +49,41 @@ function DashboardAIMenu({
       });
     }
   };
+
+  // Extract available reports from dashboard data when opened
+  useEffect(() => {
+    if (isOpen && onCollectDashboardData) {
+      const fetchReports = async () => {
+        const data = await onCollectDashboardData();
+        if (data?.layoutConfig?.rows) {
+          const reports: ReportInfo[] = [];
+          const reportIds = new Set<string>();
+          
+          // Extract all unique report IDs from layout
+          data.layoutConfig.rows.forEach((row: any) => {
+            if (row.reportIds) {
+              row.reportIds.forEach((id: string) => {
+                if (!reportIds.has(id)) {
+                  reportIds.add(id);
+                  // Convert report ID to readable name
+                  const name = id
+                    .split('-')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ');
+                  reports.push({ id, name });
+                }
+              });
+            }
+          });
+          
+          setAvailableReports(reports);
+          // Select all reports by default
+          setSelectedReports(new Set(reports.map(r => r.id)));
+        }
+      };
+      fetchReports();
+    }
+  }, [isOpen, onCollectDashboardData]);
 
   // Update position when opened
   useEffect(() => {
@@ -81,6 +123,49 @@ function DashboardAIMenu({
     };
   }, []);
 
+  // Toggle report selection
+  const toggleReport = (reportId: string) => {
+    setSelectedReports(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(reportId)) {
+        newSet.delete(reportId);
+      } else {
+        newSet.add(reportId);
+      }
+      return newSet;
+    });
+  };
+
+  // Toggle all reports
+  const toggleAllReports = () => {
+    if (selectedReports.size === availableReports.length) {
+      setSelectedReports(new Set());
+    } else {
+      setSelectedReports(new Set(availableReports.map(r => r.id)));
+    }
+  };
+
+  // Filter dashboard data to only include selected reports
+  const filterDashboardData = (data: DashboardData | null): DashboardData | null => {
+    if (!data || selectedReports.size === 0) return data;
+    
+    // Filter layoutConfig to only include selected reports
+    const filteredLayoutConfig = {
+      ...data.layoutConfig,
+      rows: data.layoutConfig.rows
+        .map((row: any) => ({
+          ...row,
+          reportIds: row.reportIds.filter((id: string) => selectedReports.has(id))
+        }))
+        .filter((row: any) => row.reportIds.length > 0) // Remove empty rows
+    };
+
+    return {
+      ...data,
+      layoutConfig: filteredLayoutConfig
+    };
+  };
+
   const dropdownContent = isOpen && (
     <div 
       ref={menuRef}
@@ -108,16 +193,55 @@ function DashboardAIMenu({
 
       {/* Content */}
       <div className="p-5 space-y-4">
+        {/* Report Selection */}
+        {availableReports.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center space-x-2 text-xs font-semibold text-gray-700">
+                <svg className="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Select Reports ({selectedReports.size}/{availableReports.length})</span>
+              </label>
+              <button
+                onClick={toggleAllReports}
+                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+              >
+                {selectedReports.size === availableReports.length ? 'Deselect All' : 'Select All'}
+              </button>
+            </div>
+            <div className="max-h-48 overflow-y-auto bg-gray-50 rounded-xl p-3 space-y-2 border border-gray-200">
+              {availableReports.map((report) => (
+                <label
+                  key={report.id}
+                  className="flex items-center space-x-2 cursor-pointer hover:bg-white rounded-lg p-2 transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedReports.has(report.id)}
+                    onChange={() => toggleReport(report.id)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">{report.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* AI Insights Button */}
         <button
           onClick={async () => {
             console.log('[DashboardAIMenu] Collecting dashboard data...');
             const dashboardData = await onCollectDashboardData?.();
             console.log('[DashboardAIMenu] Collected dashboard data:', dashboardData);
-            onOpenAIChat(dashboardData);
+            const filteredData = filterDashboardData(dashboardData);
+            console.log('[DashboardAIMenu] Filtered dashboard data:', filteredData);
+            onOpenAIChat(filteredData);
             setIsOpen(false);
           }}
-          className="w-full group relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-3.5 rounded-xl text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
+          disabled={selectedReports.size === 0}
+          className="w-full group relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-3.5 rounded-xl text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
         >
           <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
           <div className="relative flex items-center justify-center space-x-2">
