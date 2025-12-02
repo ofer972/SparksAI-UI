@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import ReportPanel from './ReportPanel';
 import DraggableResizableGrid from './DraggableResizableGrid';
 import AddReportsModal from './AddReportsModal';
@@ -341,6 +341,38 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     }));
   }, [dashboardSettings.hasChanges, dashboardSettings.isSaving, dashboardSettings.error]);
 
+  // Handler to open AI chat for a specific report
+  const handleReportAIChat = useCallback((reportId: string) => {
+    console.log('[PIDashboardView] Opening AI chat for report:', reportId);
+    
+    // Get current dashboard data from ref
+    const latest = latestValuesRef.current;
+    const data = {
+      layoutConfig: {
+        rows: [{
+          id: 'single-report',
+          reportIds: [reportId]
+        }]
+      },
+      topBarFilters: {
+        selectedPI: latest.selectedPI,
+        selectedTeam: latest.selectedTeam,
+        selectedTreeType: latest.selectedTreeType,
+      },
+      reportFilters: {
+        [reportId]: latest.reportFilters[reportId] || {}
+      },
+      pinnedFilters: {
+        [reportId]: latest.pinnedFilters[reportId] || []
+      },
+    };
+    
+    console.log('[PIDashboardView] Dispatching report AI chat data:', data);
+    
+    // Dispatch event to open AI chat with this specific report's data
+    window.dispatchEvent(new CustomEvent('open-report-ai-chat', { detail: data }));
+  }, []);
+
   const commonPanelProps = useMemo(
     () => ({
       // No loadingFallback - let report views handle loading within ReportCard
@@ -424,7 +456,10 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             initialPinnedFilters={savedPinnedFilters}
             controlledFilters={controlledFiltersPI}
             enabled={true}
-            componentProps={{ isDashboard: true }}
+            componentProps={{ 
+              isDashboard: true,
+              onAIChat: () => handleReportAIChat(reportId),
+            }}
             onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
             onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
             {...commonPanelProps}
@@ -444,7 +479,10 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             initialPinnedFilters={savedPinnedFilters}
             controlledFilters={controlledFiltersPINames}
             enabled={true}
-            componentProps={{ isDashboard: true }}
+            componentProps={{ 
+              isDashboard: true,
+              onAIChat: () => handleReportAIChat(reportId),
+            }}
             onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
             onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
             {...commonPanelProps}
@@ -464,7 +502,10 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             initialPinnedFilters={savedPinnedFilters}
             controlledFilters={controlledFiltersTeam}
             enabled={Boolean(selectedPI)}
-            componentProps={{ isDashboard: true }}
+            componentProps={{ 
+              isDashboard: true,
+              onAIChat: () => handleReportAIChat(reportId),
+            }}
             onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
             onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
             {...commonPanelProps}
@@ -482,7 +523,12 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             initialPinnedFilters={savedPinnedFilters}
             controlledFilters={controlledFiltersQuarters}
             enabled={true}
-            componentProps={{ autoSelectFirst: false, selectedPI, isDashboard: true }}
+            componentProps={{ 
+              autoSelectFirst: false, 
+              selectedPI, 
+              isDashboard: true,
+              onAIChat: () => handleReportAIChat(reportId),
+            }}
             onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
             onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
             {...commonPanelProps}
@@ -502,7 +548,10 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             initialPinnedFilters={savedPinnedFilters}
             controlledFilters={controlledFiltersPITeam}
             enabled={true}
-            componentProps={{ isDashboard: true }}
+            componentProps={{ 
+              isDashboard: true,
+              onAIChat: () => handleReportAIChat(reportId),
+            }}
             onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
             onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
             {...commonPanelProps}
@@ -522,7 +571,10 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             initialPinnedFilters={savedPinnedFilters}
             controlledFilters={controlledFiltersDefault}
             enabled={Boolean(selectedPI)}
-            componentProps={{ isDashboard: true }}
+            componentProps={{ 
+              isDashboard: true,
+              onAIChat: () => handleReportAIChat(reportId),
+            }}
             onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
             onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
             {...commonPanelProps}

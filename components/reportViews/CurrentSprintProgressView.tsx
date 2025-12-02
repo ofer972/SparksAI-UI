@@ -94,6 +94,7 @@ const CurrentSprintProgressView: React.FC<CurrentSprintProgressViewProps> = ({
         onTogglePin={togglePin}
         onRefresh={refresh}
         onClose={componentProps?.onClose}
+        onAIChat={componentProps?.onAIChat}
       >
         <div className="flex items-center justify-center h-full">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -111,6 +112,7 @@ const CurrentSprintProgressView: React.FC<CurrentSprintProgressViewProps> = ({
         onTogglePin={togglePin}
         onRefresh={refresh}
         onClose={componentProps?.onClose}
+        onAIChat={componentProps?.onAIChat}
       >
         <div className="text-red-500 p-4">{error}</div>
       </ReportCard>
@@ -126,6 +128,7 @@ const CurrentSprintProgressView: React.FC<CurrentSprintProgressViewProps> = ({
         onTogglePin={togglePin}
         onRefresh={refresh}
         onClose={componentProps?.onClose}
+        onAIChat={componentProps?.onAIChat}
       >
         <div className="text-gray-500 p-4">No active sprint found for team '{filters.team_name}'.</div>
       </ReportCard>
@@ -160,6 +163,7 @@ const CurrentSprintProgressView: React.FC<CurrentSprintProgressViewProps> = ({
       onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
+      onAIChat={componentProps?.onAIChat}
     >
       <div className="p-4 h-full flex flex-col justify-between">
         <div className="text-center mb-4">

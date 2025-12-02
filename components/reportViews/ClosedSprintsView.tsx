@@ -483,6 +483,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
       onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
+      onAIChat={componentProps?.onAIChat}
     >
       {loading && (
         <div className="flex-1 flex items-center justify-center h-64">

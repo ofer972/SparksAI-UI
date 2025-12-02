@@ -19,7 +19,7 @@ interface PIBurndownViewProps {
   setFilters: (updater: ReportFiltersUpdater) => void;
   refresh: () => void;
   meta?: Record<string, any>;
-  componentProps?: { isDashboard?: boolean; reportId?: string; onClose?: () => void };
+  componentProps?: { isDashboard?: boolean; reportId?: string; onClose?: () => void; onAIChat?: () => void };
   togglePin?: (filterKey: string) => void;
   pinnedFilters?: string[];
 }
@@ -159,6 +159,7 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
       onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
+      onAIChat={componentProps?.onAIChat}
     >
       <div className="w-full h-full flex flex-col">
         <div className="relative flex-1 min-h-[350px]">

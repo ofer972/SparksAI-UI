@@ -233,6 +233,7 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
       onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
+      onAIChat={componentProps?.onAIChat}
     >
       <div className="w-full h-full flex flex-col">
         <div className="relative flex-1 min-h-[350px]">

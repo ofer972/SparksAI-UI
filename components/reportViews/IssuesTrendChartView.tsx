@@ -411,6 +411,7 @@ const IssuesTrendChartView: React.FC<IssuesTrendChartViewProps> = ({
       onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
+      onAIChat={componentProps?.onAIChat}
     >
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">

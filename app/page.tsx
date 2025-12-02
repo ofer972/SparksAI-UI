@@ -246,6 +246,21 @@ export default function Home() {
   const [isDashboardChatModalOpen, setIsDashboardChatModalOpen] = useState(false);
   const [collectedDashboardData, setCollectedDashboardData] = useState<any>(null);
   
+  // Listen for report-specific AI chat requests
+  useEffect(() => {
+    const handleReportAIChat = (event: CustomEvent) => {
+      console.log('[App] Received open-report-ai-chat event:', event.detail);
+      setCollectedDashboardData(event.detail || null);
+      setIsDashboardChatModalOpen(true);
+    };
+
+    window.addEventListener('open-report-ai-chat', handleReportAIChat as EventListener);
+    
+    return () => {
+      window.removeEventListener('open-report-ai-chat', handleReportAIChat as EventListener);
+    };
+  }, []);
+  
   // Debug: Log when modal state changes
   useEffect(() => {
     console.log('[AI Modal State]', { isDashboardChatModalOpen, activeNavItem });

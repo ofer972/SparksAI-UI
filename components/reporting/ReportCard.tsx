@@ -21,6 +21,7 @@ interface ReportCardProps {
   onRefresh?: () => void;
   onClose?: () => void;
   onTogglePin?: (filterKey: string) => void; // Callback to toggle pin state
+  onAIChat?: () => void; // Callback to open AI chat for this specific report
   className?: string;
 }
 
@@ -38,6 +39,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
   onRefresh,
   onClose,
   onTogglePin,
+  onAIChat,
   className = '',
 }) => {
   const [collapsed, setCollapsed] = React.useState(defaultCollapsed);
@@ -105,6 +107,20 @@ const ReportCard: React.FC<ReportCardProps> = ({
         </div>
         <div className="flex items-center gap-1.5 mr-8">
           {actions}
+          {onAIChat && (
+            <button
+              type="button"
+              onClick={onAIChat}
+              className="inline-flex items-center justify-center h-7 w-7 rounded-lg bg-white border-2 border-blue-300 text-blue-600 hover:bg-blue-50 hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 shadow-sm"
+              aria-label="AI Chat for this report"
+              title="Open AI chat for this report"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 3.5a1.5 1.5 0 011.5 1.5v1.5a1.5 1.5 0 01-3 0V5a1.5 1.5 0 011.5-1.5zM5.5 11a1.5 1.5 0 00-1.5 1.5v1.5a1.5 1.5 0 003 0V12.5a1.5 1.5 0 00-1.5-1.5zM14.5 11a1.5 1.5 0 00-1.5 1.5v1.5a1.5 1.5 0 003 0V12.5a1.5 1.5 0 00-1.5-1.5zM10 9a1 1 0 00-1 1v1a1 1 0 002 0v-1a1 1 0 00-1-1z" />
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0 2a10 10 0 100-20 10 10 0 000 20z" clipRule="evenodd" />
+              </svg>
+            </button>
+          )}
           {filters && (
             <button
               type="button"

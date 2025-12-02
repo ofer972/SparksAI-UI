@@ -213,6 +213,7 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
       onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
+      onAIChat={componentProps?.onAIChat}
     >
       <div className="h-full w-full flex flex-col">
         {loading && (

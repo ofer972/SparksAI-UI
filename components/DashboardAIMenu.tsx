@@ -235,7 +235,7 @@ function DashboardAIMenu({
             console.log('[DashboardAIMenu] Collecting dashboard data...');
             const dashboardData = await onCollectDashboardData?.();
             console.log('[DashboardAIMenu] Collected dashboard data:', dashboardData);
-            const filteredData = filterDashboardData(dashboardData);
+            const filteredData = filterDashboardData(dashboardData || null);
             console.log('[DashboardAIMenu] Filtered dashboard data:', filteredData);
             onOpenAIChat(filteredData);
             setIsOpen(false);

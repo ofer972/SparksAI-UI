@@ -351,6 +351,33 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
     }
   }, []);
 
+  // Handler to open AI chat for a specific report
+  const handleReportAIChat = useCallback((reportId: string) => {
+    console.log('[TeamDashboard] Opening AI chat for report:', reportId);
+    
+    // Get current dashboard data
+    const data = {
+      layoutConfig: {
+        rows: [{
+          id: 'single-report',
+          reportIds: [reportId]
+        }]
+      },
+      topBarFilters: dashboardSettings.currentState.topBarFilters,
+      reportFilters: {
+        [reportId]: dashboardSettings.currentState.reportFilters[reportId] || {}
+      },
+      pinnedFilters: {
+        [reportId]: dashboardSettings.currentState.pinnedFilters[reportId] || []
+      },
+    };
+    
+    console.log('[TeamDashboard] Dispatching report AI chat data:', data);
+    
+    // Dispatch event to open AI chat with this specific report's data
+    window.dispatchEvent(new CustomEvent('open-report-ai-chat', { detail: data }));
+  }, [dashboardSettings.currentState]);
+
   const commonPanelProps = useMemo(
     () => ({
       // No loadingFallback - let report views handle loading within ReportCard
@@ -450,6 +477,9 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             initialPinnedFilters={savedPinnedFilters}
             controlledFilters={controlledFilters}
             enabled
+            componentProps={{
+              onAIChat: () => handleReportAIChat(reportId),
+            }}
             onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
             onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
             {...commonPanelProps}
@@ -471,6 +501,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
               sprintOptions: SPRINT_OPTIONS,
               onSprintChange: setSelectedSprint,
               currentSprintName,
+              onAIChat: () => handleReportAIChat(reportId),
             }}
             onResolved={handleBurndownResolved}
             onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
@@ -486,6 +517,9 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             initialPinnedFilters={savedPinnedFilters}
             controlledFilters={controlledFilters}
             enabled
+            componentProps={{
+              onAIChat: () => handleReportAIChat(reportId),
+            }}
             onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
             onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
             {...commonPanelProps}
@@ -499,6 +533,9 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             initialPinnedFilters={savedPinnedFilters}
             controlledFilters={controlledFilters}
             enabled={Boolean(selectedTeam)}
+            componentProps={{
+              onAIChat: () => handleReportAIChat(reportId),
+            }}
             onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
             onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
             {...commonPanelProps}
@@ -519,6 +556,9 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
             controlledFilters={controlledFilters}
             enabled={Boolean(selectedTeam)}
+            componentProps={{
+              onAIChat: () => handleReportAIChat(reportId),
+            }}
             {...commonPanelProps}
           />
         );
@@ -530,6 +570,9 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             initialPinnedFilters={savedPinnedFilters}
             controlledFilters={controlledFilters}
             enabled={Boolean(selectedTeam)}
+            componentProps={{
+              onAIChat: () => handleReportAIChat(reportId),
+            }}
             onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
             onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
             {...commonPanelProps}

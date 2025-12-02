@@ -40,7 +40,7 @@ interface PIMetricsSummaryViewProps {
   setFilters: (updater: ReportFiltersUpdater) => void;
   refresh: () => void;
   meta?: Record<string, any> | null;
-  componentProps?: { isDashboard?: boolean; reportId?: string; onClose?: () => void };
+  componentProps?: { isDashboard?: boolean; reportId?: string; onClose?: () => void; onAIChat?: () => void };
   togglePin?: (filterKey: string) => void;
   pinnedFilters?: string[];
 }
@@ -319,6 +319,7 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
       onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
+      onAIChat={componentProps?.onAIChat}
     >
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">

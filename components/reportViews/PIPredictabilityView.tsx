@@ -19,7 +19,7 @@ export interface PIPredictabilityViewProps {
   setFilters: (updater: ReportFiltersUpdater) => void;
   refresh: () => void;
   meta?: Record<string, any> | null;
-  componentProps?: { isDashboard?: boolean; reportId?: string; onClose?: () => void };
+  componentProps?: { isDashboard?: boolean; reportId?: string; onClose?: () => void; onAIChat?: () => void };
   togglePin?: (filterKey: string) => void;
   pinnedFilters?: string[];
 }
@@ -352,6 +352,7 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
       onTogglePin={togglePin}
       onRefresh={refresh}
       onClose={componentProps?.onClose}
+      onAIChat={componentProps?.onAIChat}
     >
       {loading && (
         <div className="flex-1 flex items-center justify-center h-64">
