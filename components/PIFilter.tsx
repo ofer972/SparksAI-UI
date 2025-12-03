@@ -64,7 +64,7 @@ export default function PIFilter({ selectedPI, onPIChange, className = '' }: PIF
 
   if (loading) {
     return (
-      <select className={`w-full border border-gray-300 rounded-lg px-4 py-2 text-sm bg-white ${className}`} disabled>
+      <select className={`w-full border border-gray-300 rounded-lg px-4 py-1 text-sm bg-white ${className}`} disabled>
         <option>Loading PIs...</option>
       </select>
     );
@@ -72,7 +72,7 @@ export default function PIFilter({ selectedPI, onPIChange, className = '' }: PIF
 
   if (error) {
     return (
-      <select className={`w-full border border-gray-300 rounded-lg px-4 py-2 text-sm bg-white ${className}`} disabled>
+      <select className={`w-full border border-gray-300 rounded-lg px-4 py-1 text-sm bg-white ${className}`} disabled>
         <option>Error loading PIs</option>
       </select>
     );
@@ -82,7 +82,7 @@ export default function PIFilter({ selectedPI, onPIChange, className = '' }: PIF
     <select
       value={selectedPI}
       onChange={(e) => onPIChange(e.target.value)}
-      className={`w-full border border-gray-300 rounded-lg px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 hover:border-gray-400 transition-colors ${className}`}
+      className={`w-full border border-gray-300 rounded-lg px-4 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 hover:border-gray-400 transition-colors ${className}`}
     >
       {pis.map((pi) => (
         <option key={pi.pi_name} value={pi.pi_name}>

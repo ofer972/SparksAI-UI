@@ -38,7 +38,7 @@ export default function InsightsTopBarContent({
   onLogout,
 }: InsightsTopBarContentProps) {
   return (
-    <div className="flex flex-col md:flex-row md:items-center gap-0 md:gap-4 flex-1 min-w-0 pr-3 md:px-4 md:py-2 w-full">
+    <div className="flex flex-col md:flex-row md:items-center gap-0 md:gap-4 flex-1 min-w-0 pr-3 md:px-0 md:py-2 w-full">
       {/* Mobile: Title and Logout Row */}
       <div className="flex md:hidden items-center justify-between w-full gap-0 h-full">
         {/* View title */}
@@ -57,7 +57,7 @@ export default function InsightsTopBarContent({
       </div>
       
       {/* Desktop: View title */}
-      <h1 className="hidden md:block text-xl font-semibold text-gray-900 whitespace-nowrap">
+      <h1 className="hidden md:block text-xl font-semibold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent whitespace-nowrap tracking-tight">
         {viewTitle}
       </h1>
 
@@ -104,7 +104,7 @@ export default function InsightsTopBarContent({
           <button
             onClick={insightSettings.onSave}
             disabled={!insightSettings.hasChanges || insightSettings.isSaving}
-            className={`inline-flex items-center justify-center h-8 w-8 rounded-lg border transition-all ${
+            className={`inline-flex items-center justify-center h-7 w-7 rounded-lg border transition-all ${
               insightSettings.hasChanges && !insightSettings.isSaving
                 ? 'border-blue-500 text-blue-600 hover:text-blue-700 hover:border-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer' 
                 : 'border-gray-300 text-gray-400 cursor-not-allowed'

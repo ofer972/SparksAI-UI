@@ -902,7 +902,7 @@ export default function Home() {
   };
 
   return authChecked ? (
-    <div className="h-screen bg-white flex overflow-hidden">
+    <div className="h-screen bg-white flex flex-col overflow-hidden">
       {/* Mobile Sidebar Overlay */}
       {mobileSidebarOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
@@ -965,19 +965,105 @@ export default function Home() {
         </div>
       )}
 
-      {/* Left Sidebar Navigation (desktop) */}
-      <div className={`hidden md:block bg-white shadow-sm border-r border-gray-200 flex-shrink-0 transition-all duration-300 ${
-        sidebarCollapsed ? 'w-16' : 'w-56'
-      }`}>
-        <div className="h-full flex flex-col">
+      {/* Top Row: Logo + TopBar in same container */}
+      <div className="hidden md:flex flex-shrink-0 items-center bg-gradient-to-r from-white to-gray-50 py-1">
+        {/* Spacer matching sidebar width */}
+        <div className={`flex-shrink-0 ml-[5px] transition-all duration-300 ${
+          sidebarCollapsed ? 'w-16' : 'w-56'
+        }`}>
           {!sidebarCollapsed && (
-            <div className="px-3 pt-3 pb-[10px] bg-white">
+            <div className="flex justify-center">
               <SparksAILogo collapsed={sidebarCollapsed} size="medium" />
             </div>
           )}
+        </div>
+
+        {/* TopBar Content - will render inline due to contents class */}
+        <div className="flex-1 px-4">
+          <TopBar
+            activeNavItem={activeNavItem}
+            navigationItems={navigationItems}
+            onToggleMobileSidebar={() => setMobileSidebarOpen(true)}
+            dashboardSettings={(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') ? {
+              hasChanges: dashboardSettingsState.hasChanges,
+              isSaving: dashboardSettingsState.isSaving,
+              onSave: handleSaveDashboardSettings,
+              onReset: () => setShowResetConfirm(true),
+            } : undefined}
+            insightSettings={(['team-ai-insights', 'pi-quarter'].includes(activeNavItem)) ? {
+              hasChanges: insightSettingsState.hasChanges,
+              isSaving: insightSettingsState.isSaving,
+              onSave: handleSaveInsightSettings,
+            } : undefined}
+            filters={{
+              selectedPI: activeNavItem === 'pi-dashboard' ? piDashboardFilters.selectedPI : selectedPI,
+              onPIChange: (pi: string) => {
+                if (activeNavItem === 'pi-dashboard') {
+                  setSelectedPI(pi);
+                  setPiDashboardFilters(prev => ({ ...prev, selectedPI: pi }));
+                } else {
+                  setSelectedPI(pi);
+                }
+              },
+              selectedTreeValue: activeNavItem === 'team-dashboard' ? teamDashboardFilters.selectedTreeValue : 
+                                 activeNavItem === 'pi-dashboard' ? piDashboardFilters.selectedTreeValue : 
+                                 selectedTreeValue,
+              onTreeSelect: (value: string | null, label: string, type: 'team' | 'group') => {
+                setSelectedTreeValue(value);
+                setSelectedTreeLabel(value ? label : '');
+                setSelectedTreeType(type);
+                setSelectedTeam(value ? label : '');
+                
+                if (activeNavItem === 'team-dashboard') {
+                  setTeamDashboardFilters(prev => ({
+                    ...prev,
+                    selectedTeam: value ? label : '',
+                    selectedTreeValue: value,
+                    selectedTreeLabel: value ? label : '',
+                    selectedTreeType: type,
+                  }));
+                } else if (activeNavItem === 'pi-dashboard') {
+                  setPiDashboardFilters(prev => ({
+                    ...prev,
+                    selectedTeam: value ? label : '',
+                    selectedTreeValue: value,
+                    selectedTreeLabel: value ? label : '',
+                    selectedTreeType: type,
+                  }));
+                }
+              },
+              selectedCategories,
+              onCategoriesChange: setSelectedCategories,
+              settingsLoading: teamInsightSettings.isLoading,
+              hasSavedSettings: !!teamInsightSettings.savedState,
+            }}
+            aiChat={(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') ? {
+              onOpenChat: (dashboardData?: any) => {
+                console.log('[AI Menu] Opening chat modal with dashboard data:', dashboardData);
+                setCollectedDashboardData(dashboardData || null);
+                setIsDashboardChatModalOpen(true);
+              },
+              prompts,
+              selectedPrompt,
+              onPromptChange: setSelectedPrompt,
+              loadingPrompts,
+            } : undefined}
+            currentUser={getCurrentUser()}
+            onLogout={() => { logout(); try { location.assign('/login'); } catch {} }}
+          />
+        </div>
+      </div>
+
+      {/* Bottom Row: Sidebar + Content */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Sidebar Navigation (desktop) */}
+        <div className={`hidden md:block bg-white shadow-sm ml-[5px] flex-shrink-0 transition-all duration-300 ${
+          sidebarCollapsed ? 'w-16' : 'w-56'
+        }`}>
+          <div className="h-full flex flex-col">
           
-          <nav className={`flex-1 overflow-y-auto bg-gradient-to-b from-white to-gray-50 px-3 ${
-            sidebarCollapsed ? 'rounded-none border-t-0 pt-3 pb-0' : 'rounded-tl-2xl border-t border-gray-200 pt-3 pb-3'
+          <nav className={`flex-1 overflow-y-auto px-3 bg-gradient-to-b from-white to-gray-50 border border-gray-200 rounded-tl-2xl ${
+            sidebarCollapsed ? 'pt-3 pb-0' : 'pt-3 pb-3'
           }`}>
             {sidebarCollapsed ? (
               <div className="space-y-1">
@@ -1059,82 +1145,82 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header */}
-        <TopBar
-          activeNavItem={activeNavItem}
-          navigationItems={navigationItems}
-          onToggleMobileSidebar={() => setMobileSidebarOpen(true)}
-          dashboardSettings={(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') ? {
-            hasChanges: dashboardSettingsState.hasChanges,
-            isSaving: dashboardSettingsState.isSaving,
-            onSave: handleSaveDashboardSettings,
-            onReset: () => setShowResetConfirm(true),
-          } : undefined}
-          insightSettings={(['team-ai-insights', 'pi-quarter'].includes(activeNavItem)) ? {
-            hasChanges: insightSettingsState.hasChanges,
-            isSaving: insightSettingsState.isSaving,
-            onSave: handleSaveInsightSettings,
-          } : undefined}
-          filters={{
-            selectedPI: activeNavItem === 'pi-dashboard' ? piDashboardFilters.selectedPI : selectedPI,
-            onPIChange: (pi: string) => {
-              if (activeNavItem === 'pi-dashboard') {
-                setSelectedPI(pi);
-                setPiDashboardFilters(prev => ({ ...prev, selectedPI: pi }));
-              } else {
-                setSelectedPI(pi);
-              }
-            },
-            selectedTreeValue: activeNavItem === 'team-dashboard' ? teamDashboardFilters.selectedTreeValue : 
-                               activeNavItem === 'pi-dashboard' ? piDashboardFilters.selectedTreeValue : 
-                               selectedTreeValue,
-            onTreeSelect: (value: string | null, label: string, type: 'team' | 'group') => {
-              // Update legacy state
-              setSelectedTreeValue(value);
-              setSelectedTreeLabel(value ? label : '');
-              setSelectedTreeType(type);
-              setSelectedTeam(value ? label : '');
-              
-              // Update dashboard-specific state
-              if (activeNavItem === 'team-dashboard') {
-                setTeamDashboardFilters(prev => ({
-                  ...prev,
-                  selectedTeam: value ? label : '',
-                  selectedTreeValue: value,
-                  selectedTreeLabel: value ? label : '',
-                  selectedTreeType: type,
-                }));
-              } else if (activeNavItem === 'pi-dashboard') {
-                setPiDashboardFilters(prev => ({
-                  ...prev,
-                  selectedTeam: value ? label : '',
-                  selectedTreeValue: value,
-                  selectedTreeLabel: value ? label : '',
-                  selectedTreeType: type,
-                }));
-              }
-            },
-            selectedCategories,
-            onCategoriesChange: setSelectedCategories,
-            settingsLoading: teamInsightSettings.isLoading,
-            hasSavedSettings: !!teamInsightSettings.savedState,
-          }}
-          aiChat={(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') ? {
-            onOpenChat: (dashboardData?: any) => {
-              console.log('[AI Menu] Opening chat modal with dashboard data:', dashboardData);
-              setCollectedDashboardData(dashboardData || null);
-              setIsDashboardChatModalOpen(true);
-            },
-            prompts,
-            selectedPrompt,
-            onPromptChange: setSelectedPrompt,
-            loadingPrompts,
-          } : undefined}
-          currentUser={getCurrentUser()}
-          onLogout={() => { logout(); try { location.assign('/login'); } catch {} }}
-        />
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col min-w-0 border-t border-gray-200">
+          {/* Mobile TopBar */}
+          <div className="md:hidden">
+            <TopBar
+              activeNavItem={activeNavItem}
+              navigationItems={navigationItems}
+              onToggleMobileSidebar={() => setMobileSidebarOpen(true)}
+              dashboardSettings={(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') ? {
+                hasChanges: dashboardSettingsState.hasChanges,
+                isSaving: dashboardSettingsState.isSaving,
+                onSave: handleSaveDashboardSettings,
+                onReset: () => setShowResetConfirm(true),
+              } : undefined}
+              insightSettings={(['team-ai-insights', 'pi-quarter'].includes(activeNavItem)) ? {
+                hasChanges: insightSettingsState.hasChanges,
+                isSaving: insightSettingsState.isSaving,
+                onSave: handleSaveInsightSettings,
+              } : undefined}
+              filters={{
+                selectedPI: activeNavItem === 'pi-dashboard' ? piDashboardFilters.selectedPI : selectedPI,
+                onPIChange: (pi: string) => {
+                  if (activeNavItem === 'pi-dashboard') {
+                    setSelectedPI(pi);
+                    setPiDashboardFilters(prev => ({ ...prev, selectedPI: pi }));
+                  } else {
+                    setSelectedPI(pi);
+                  }
+                },
+                selectedTreeValue: activeNavItem === 'team-dashboard' ? teamDashboardFilters.selectedTreeValue : 
+                                   activeNavItem === 'pi-dashboard' ? piDashboardFilters.selectedTreeValue : 
+                                   selectedTreeValue,
+                onTreeSelect: (value: string | null, label: string, type: 'team' | 'group') => {
+                  setSelectedTreeValue(value);
+                  setSelectedTreeLabel(value ? label : '');
+                  setSelectedTreeType(type);
+                  setSelectedTeam(value ? label : '');
+                  
+                  if (activeNavItem === 'team-dashboard') {
+                    setTeamDashboardFilters(prev => ({
+                      ...prev,
+                      selectedTeam: value ? label : '',
+                      selectedTreeValue: value,
+                      selectedTreeLabel: value ? label : '',
+                      selectedTreeType: type,
+                    }));
+                  } else if (activeNavItem === 'pi-dashboard') {
+                    setPiDashboardFilters(prev => ({
+                      ...prev,
+                      selectedTeam: value ? label : '',
+                      selectedTreeValue: value,
+                      selectedTreeLabel: value ? label : '',
+                      selectedTreeType: type,
+                    }));
+                  }
+                },
+                selectedCategories,
+                onCategoriesChange: setSelectedCategories,
+                settingsLoading: teamInsightSettings.isLoading,
+                hasSavedSettings: !!teamInsightSettings.savedState,
+              }}
+              aiChat={(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') ? {
+                onOpenChat: (dashboardData?: any) => {
+                  console.log('[AI Menu] Opening chat modal with dashboard data:', dashboardData);
+                  setCollectedDashboardData(dashboardData || null);
+                  setIsDashboardChatModalOpen(true);
+                },
+                prompts,
+                selectedPrompt,
+                onPromptChange: setSelectedPrompt,
+                loadingPrompts,
+              } : undefined}
+              currentUser={getCurrentUser()}
+              onLogout={() => { logout(); try { location.assign('/login'); } catch {} }}
+            />
+          </div>
 
         {/* Content Area */}
         <div className="flex-1 p-2 overflow-auto">
@@ -1149,6 +1235,7 @@ export default function Home() {
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {/* Dashboard Insights AI Chat Modal */}

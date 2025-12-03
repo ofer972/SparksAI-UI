@@ -170,7 +170,7 @@ export default function InsightCategoryFilter({
       <div className={`relative z-[100] flex items-center space-x-1 ${className}`}>
         <span className="text-sm font-medium text-gray-700">Today:</span>
         <button 
-          className="border border-gray-300 rounded-lg px-4 py-2 text-sm bg-white"
+          className="border border-gray-300 rounded-lg px-4 py-1 text-sm bg-white"
           disabled
         >
           Loading...
@@ -184,7 +184,7 @@ export default function InsightCategoryFilter({
       <div className={`relative z-[100] flex items-center space-x-1 ${className}`}>
         <span className="text-sm font-medium text-gray-700">Today:</span>
         <button 
-          className="border border-gray-300 rounded-lg px-4 py-2 text-sm bg-white"
+          className="border border-gray-300 rounded-lg px-4 py-1 text-sm bg-white"
           disabled
         >
           Error
@@ -201,7 +201,7 @@ export default function InsightCategoryFilter({
           <button
             ref={buttonRef}
             onClick={handleToggleDropdown}
-            className="border border-gray-300 rounded-lg px-4 py-2 text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400 hover:border-gray-400 transition-colors flex items-center space-x-1 min-w-[300px] justify-between"
+            className="border border-gray-300 rounded-lg px-4 py-1 text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400 hover:border-gray-400 transition-colors flex items-center space-x-1 min-w-[300px] justify-between"
           >
             <span className="truncate">
               {selectedCategories.length === 0 

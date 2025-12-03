@@ -43,7 +43,7 @@ export default function DashboardTopBarContent({
   onLogout,
 }: DashboardTopBarContentProps) {
   return (
-    <div className="flex flex-col md:flex-row md:items-center gap-0 md:gap-4 flex-1 min-w-0 pr-3 md:px-4 md:py-2 w-full">
+    <div className="flex flex-col md:flex-row md:items-center gap-0 md:gap-4 flex-1 min-w-0 pr-3 md:px-0 md:py-2 w-full">
       {/* Mobile: Title and Actions Row */}
       <div className="flex md:hidden items-center justify-between w-full gap-0 h-full">
         {/* View title */}
@@ -61,7 +61,7 @@ export default function DashboardTopBarContent({
               console.log('Manage Reports button clicked (mobile)');
               window.dispatchEvent(new CustomEvent('open-add-reports-modal'));
             }}
-            className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-300 text-gray-500 active:text-green-600 active:border-green-400 active:bg-green-50 transition-all touch-manipulation"
+            className="inline-flex items-center justify-center h-7 w-7 rounded-lg border border-gray-300 text-gray-500 active:text-green-600 active:border-green-400 active:bg-green-50 transition-all touch-manipulation"
             title="Manage dashboard reports"
             aria-label="Manage reports"
             type="button"
@@ -116,7 +116,7 @@ export default function DashboardTopBarContent({
       {/* Desktop: Full Layout */}
       <div className="hidden md:flex md:items-center md:gap-4 w-full">
         {/* View title */}
-        <h1 className="text-xl font-semibold text-gray-900 whitespace-nowrap">
+        <h1 className="text-xl font-semibold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent whitespace-nowrap tracking-tight">
           {viewTitle}
         </h1>
 
@@ -152,7 +152,7 @@ export default function DashboardTopBarContent({
               console.log('Manage Reports button clicked (desktop)');
               window.dispatchEvent(new CustomEvent('open-add-reports-modal'));
             }}
-            className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-300 text-gray-500 hover:text-green-600 hover:border-green-400 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
+            className="inline-flex items-center justify-center h-7 w-7 rounded-lg border border-gray-300 text-gray-500 hover:text-green-600 hover:border-green-400 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
             title="Manage dashboard reports"
             aria-label="Manage reports"
             type="button"
@@ -166,7 +166,7 @@ export default function DashboardTopBarContent({
           <button
             onClick={dashboardSettings.onSave}
             disabled={!dashboardSettings.hasChanges || dashboardSettings.isSaving}
-            className={`hidden md:inline-flex items-center justify-center h-8 w-8 rounded-lg border transition-all ${
+            className={`hidden md:inline-flex items-center justify-center h-7 w-7 rounded-lg border transition-all ${
               dashboardSettings.hasChanges && !dashboardSettings.isSaving
                 ? 'border-blue-500 text-blue-600 hover:text-blue-700 hover:border-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer' 
                 : 'border-gray-300 text-gray-400 cursor-not-allowed'
@@ -191,7 +191,7 @@ export default function DashboardTopBarContent({
             <button
               onClick={dashboardSettings.onReset}
               disabled={dashboardSettings.isSaving}
-              className="hidden md:inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-300 text-gray-500 hover:text-red-600 hover:border-red-400 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="hidden md:inline-flex items-center justify-center h-7 w-7 rounded-lg border border-gray-300 text-gray-500 hover:text-red-600 hover:border-red-400 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               title="Reset dashboard to defaults"
               aria-label="Reset to defaults"
             >

@@ -69,8 +69,8 @@ export default function TopBar({
   const viewTitle = navigationItems.find(item => item.id === activeNavItem)?.label || 'SparksAI';
 
   return (
-    <div className="bg-gradient-to-b from-white to-gray-50 border-b border-gray-200 flex-shrink-0 relative z-30 rounded-tl-2xl md:rounded-tl-2xl overflow-visible">
-      <div className="flex flex-wrap md:flex-nowrap items-center gap-0 md:gap-2 h-[62px] md:h-auto md:min-h-[62px] pl-3 md:pl-0">
+    <div className="md:contents bg-gradient-to-r from-white to-gray-50 border-b border-l-0 border-gray-200 md:border-0 flex-shrink-0 relative z-30 overflow-visible">
+      <div className="flex flex-wrap md:flex-nowrap items-center gap-0 md:gap-4 h-[40px] md:h-auto md:py-0 pl-3 md:pl-0 md:flex-1">
         {/* Mobile hamburger */}
         <button
           onClick={onToggleMobileSidebar}
