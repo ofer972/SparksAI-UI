@@ -57,6 +57,7 @@ export default function TeamAIInsightsView({
         <AICards 
           teamName={selectedTeam} 
           categories={selectedCategories.length > 0 ? selectedCategories : undefined}
+          isGroup={selectedTreeType === 'group'}
         />
       </div>
       {/* Team Metrics on mobile - inline after content */}

@@ -375,7 +375,7 @@ export class ApiService {
     return result.data;
   }
 
-  async getTeamAICardsWithRecommendations(teamName: string, categories?: string[]): Promise<AICardsResponse> {
+  async getTeamAICardsWithRecommendations(teamName: string, categories?: string[], isGroup?: boolean): Promise<AICardsResponse> {
     const params = new URLSearchParams({
       team_name: teamName,
     });
@@ -385,6 +385,11 @@ export class ApiService {
       categories.forEach(cat => {
         params.append('category', cat);
       });
+    }
+
+    // Add isGroup parameter if provided
+    if (isGroup !== undefined) {
+      params.append('isGroup', String(isGroup));
     }
 
     const response = await fetch(`${buildBackendUrl('/team-ai-cards/getTopCardsWithRecommendations')}?${params}`);

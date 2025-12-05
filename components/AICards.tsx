@@ -7,11 +7,12 @@ import { teamAICardsConfig } from '@/lib/teamAICardsConfig';
 interface AICardProps {
   teamName?: string;
   categories?: string[];
+  isGroup?: boolean;
 }
 
-export default function AICards({ teamName, categories }: AICardProps) {
-  console.log('[AICards] Rendering with teamName:', teamName, 'categories:', categories);
-  const { cards, loading, error, refetch } = useAICards(teamName, categories);
+export default function AICards({ teamName, categories, isGroup }: AICardProps) {
+  console.log('[AICards] Rendering with teamName:', teamName, 'categories:', categories, 'isGroup:', isGroup);
+  const { cards, loading, error, refetch } = useAICards(teamName, categories, isGroup);
   console.log('[AICards] Hook returned - cards:', cards.length, 'loading:', loading, 'error:', error);
 
   // Don't render if no team name is provided

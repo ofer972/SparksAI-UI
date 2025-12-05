@@ -14,9 +14,10 @@ interface UseAICardsReturn {
  * 
  * @param teamName - The name of the team to fetch AI cards for
  * @param categories - Optional category filters array
+ * @param isGroup - Optional boolean indicating if the teamName is a group (true) or a team (false)
  * @returns Object containing cards data, loading state, error state, and refetch function
  */
-export function useAICards(teamName?: string, categories?: string[]): UseAICardsReturn {
+export function useAICards(teamName?: string, categories?: string[], isGroup?: boolean): UseAICardsReturn {
   const [cards, setCards] = useState<AICard[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +26,7 @@ export function useAICards(teamName?: string, categories?: string[]): UseAICards
   const categoriesKey = useMemo(() => JSON.stringify(categories || []), [categories]);
 
   const fetchCards = useCallback(async () => {
-    console.log('[useAICards] fetchCards called with teamName:', teamName, 'categories:', categories);
+    console.log('[useAICards] fetchCards called with teamName:', teamName, 'categories:', categories, 'isGroup:', isGroup);
     
     if (!teamName || teamName.trim() === '') {
       console.log('[useAICards] No team name, skipping fetch');
@@ -35,12 +36,12 @@ export function useAICards(teamName?: string, categories?: string[]): UseAICards
     }
 
     try {
-      console.log('[useAICards] Fetching cards for team:', teamName, 'categories:', categories);
+      console.log('[useAICards] Fetching cards for team:', teamName, 'categories:', categories, 'isGroup:', isGroup);
       setLoading(true);
       setError(null);
       const apiService = new ApiService();
-      // Use the new endpoint with recommendations, pass categories if provided
-      const response = await apiService.getTeamAICardsWithRecommendations(teamName, categories);
+      // Use the new endpoint with recommendations, pass categories and isGroup if provided
+      const response = await apiService.getTeamAICardsWithRecommendations(teamName, categories, isGroup);
       console.log('[useAICards] Received cards for team:', teamName, 'count:', response.ai_cards?.length || 0);
       setCards(response.ai_cards || []);
     } catch (err) {
@@ -50,7 +51,7 @@ export function useAICards(teamName?: string, categories?: string[]): UseAICards
     } finally {
       setLoading(false);
     }
-  }, [teamName, categoriesKey, categories]);
+  }, [teamName, categoriesKey, categories, isGroup]);
 
   useEffect(() => {
     fetchCards();
