@@ -424,6 +424,7 @@ export default function CreateAgentJobView() {
       {toast && (
         <Toast
           message={toast}
+          type="success"
           onClose={() => setToast(null)}
         />
       )}
