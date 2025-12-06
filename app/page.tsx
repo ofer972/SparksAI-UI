@@ -861,14 +861,7 @@ export default function Home() {
       case 'settings':
         return <SystemSettingsView />;
       case 'create-agent-job':
-        return (
-          <CreateAgentJobView
-            selectedTeam={selectedTeam}
-            selectedPI={selectedPI}
-            onTeamChange={setSelectedTeam}
-            onPIChange={setSelectedPI}
-          />
-        );
+        return <CreateAgentJobView />;
       case 'general-data':
         return (
           <div className="h-full flex flex-col">

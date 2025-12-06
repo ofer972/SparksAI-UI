@@ -21,6 +21,7 @@ import {
   InsightTypesResponse,
   InsightType,
   InsightCategoriesResponse,
+  CreateJobResponse,
   ReportDefinition,
   ReportInstancePayload,
   DashboardViewConfig,
@@ -711,8 +712,13 @@ export class ApiService {
     };
   }
 
-  // Create Team Agent Job
+  // Create Team Agent Job (legacy method name for backward compatibility)
   async createTeamAgentJob(jobType: string, teamName: string): Promise<any> {
+    return this.createTeamJob(jobType, teamName);
+  }
+
+  // Create Team Job (new method name matching Reports project)
+  async createTeamJob(jobType: string, teamName: string): Promise<CreateJobResponse> {
     const response = await fetch(buildBackendUrl(API_CONFIG.endpoints.generalData.createTeamJob), {
       method: 'POST',
       headers: {
@@ -725,15 +731,29 @@ export class ApiService {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to create team agent job: ${response.statusText}`);
+      const errorText = await response.text();
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch {
+        if (errorText && errorText.length < 200) {
+          errorMessage = errorText;
+        }
+      }
+      throw new Error(errorMessage);
     }
 
-    const result = await response.json();
-    return result;
+    return response.json();
   }
 
-  // Create PI Agent Job
+  // Create PI Agent Job (legacy method name for backward compatibility)
   async createPiAgentJob(jobType: string, pi: string): Promise<any> {
+    return this.createPIJob(jobType, pi);
+  }
+
+  // Create PI Job (new method name matching Reports project)
+  async createPIJob(jobType: string, pi: string): Promise<CreateJobResponse> {
     const response = await fetch(buildBackendUrl(API_CONFIG.endpoints.generalData.createPiJob), {
       method: 'POST',
       headers: {
@@ -746,33 +766,86 @@ export class ApiService {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to create PI agent job: ${response.statusText}`);
+      const errorText = await response.text();
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch {
+        if (errorText && errorText.length < 200) {
+          errorMessage = errorText;
+        }
+      }
+      throw new Error(errorMessage);
     }
 
-    const result = await response.json();
-    return result;
+    return response.json();
   }
 
-  // Create PI Job for Team
+  // Create PI Job for Team (legacy method name for backward compatibility)
   async createPiJobForTeam(jobType: string, pi: string, teamName: string): Promise<any> {
+    return this.createPIJobForTeam(jobType, pi, teamName);
+  }
+
+  // Create PI Job for Team (new method name matching Reports project)
+  async createPIJobForTeam(jobType: string, pi: string, teamName: string): Promise<CreateJobResponse> {
     const response = await fetch(buildBackendUrl(API_CONFIG.endpoints.generalData.createPiJobForTeam), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        job_type: jobType,
         pi: pi,
         team_name: teamName,
-        job_type: jobType,
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to create PI job for team: ${response.statusText}`);
+      const errorText = await response.text();
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch {
+        if (errorText && errorText.length < 200) {
+          errorMessage = errorText;
+        }
+      }
+      throw new Error(errorMessage);
     }
 
-    const result = await response.json();
-    return result;
+    return response.json();
+  }
+
+  // Create Group Job
+  async createGroupJob(jobType: string, groupName: string): Promise<CreateJobResponse> {
+    const response = await fetch(buildBackendUrl('/agent-jobs/create-group-job'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        job_type: jobType,
+        group_name: groupName,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch {
+        if (errorText && errorText.length < 200) {
+          errorMessage = errorText;
+        }
+      }
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
   }
 
   // Upload Team Transcript
@@ -1204,6 +1277,34 @@ export class ApiService {
     };
   }
 
+  async getActiveInsightTypes(): Promise<InsightTypesResponse> {
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.insightTypes.get)}?active=true`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to fetch active insight types: ${errorText || response.statusText}`);
+    }
+    
+    const result = await response.json();
+    
+    // Handle wrapped response format
+    if (result.success && result.data) {
+      return result.data;
+    }
+    
+    // If response is direct object with insight_types
+    if (result.insight_types) {
+      return result;
+    }
+    
+    // Fallback: assume it's an array
+    return {
+      insight_types: Array.isArray(result) ? result : [],
+      count: Array.isArray(result) ? result.length : 0,
+    };
+  }
+
   async getInsightCategories(): Promise<InsightCategoriesResponse> {
     const url = buildBackendUrl(API_CONFIG.endpoints.insightTypes.getCategories);
     const response = await fetch(url);
@@ -1412,6 +1513,24 @@ export class ApiService {
       groups: normalizedGroups,
       count: result.data?.count || normalizedGroups.length,
     };
+  }
+
+  async getGroups(): Promise<{ groups: string[] }> {
+    const url = buildBackendUrl(API_CONFIG.endpoints.groups.getAll);
+    const response = await authFetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch groups: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    // API returns: { success: true, data: { groups: [...], count: number }, message: string }
+    if (result && result.success && result.data && Array.isArray(result.data.groups)) {
+      const groupNames = result.data.groups.map((g: any) => g.name || g.group_name);
+      return { groups: groupNames };
+    }
+    
+    return { groups: [] };
   }
 
   async createGroup(groupName: string, parentGroupKey?: number | null): Promise<Group> {

@@ -457,12 +457,24 @@ export interface DashboardViewConfig {
 
 export interface InsightType {
   id: number;
+  name?: string; // Display name for the insight type
   insight_type: string;
   insight_description: string;
+  description?: string; // Alias for insight_description
   insight_category?: string; // Legacy field, may not be present
   insight_categories?: string[]; // Array of category names this insight type uses
   categories?: string[]; // Alias for insight_categories for backward compatibility
+  requirePI?: boolean; // Whether this insight requires a PI
+  require_pi?: boolean; // Snake case variant
+  requires_pi?: boolean; // Alternative snake case variant
+  requireTeam?: boolean; // Whether this insight requires a Team
+  require_team?: boolean; // Snake case variant
+  requires_team?: boolean; // Alternative snake case variant
+  requireGroup?: boolean; // Whether this insight requires a Group
+  require_group?: boolean; // Snake case variant
+  requires_group?: boolean; // Alternative snake case variant
   active: boolean;
+  is_active?: boolean; // Alternative field name
   cron_config?: {
     day_of_week?: string;
     hour?: number;
@@ -470,11 +482,18 @@ export interface InsightType {
   } | null;
   created_at: string;
   updated_at: string;
+  [key: string]: any; // Allow for additional fields from API
 }
 
 export interface InsightTypesResponse {
   insight_types: InsightType[];
   count: number;
+}
+
+export interface CreateJobResponse {
+  success: boolean;
+  data?: any;
+  message: string;
 }
 
 export interface InsightCategoriesResponse {

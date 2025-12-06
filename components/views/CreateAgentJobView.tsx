@@ -1,175 +1,440 @@
 'use client';
 
-import React, { useState } from 'react';
-import TeamFilter from '@/components/TeamFilter';
-import PIFilter from '@/components/PIFilter';
+import { useState, useEffect } from 'react';
 import { ApiService } from '@/lib/api';
+import { InsightType } from '@/lib/config';
+import Toast from '@/components/Toast';
+import ErrorModal from '@/components/ErrorModal';
 
-interface CreateAgentJobViewProps {
-  selectedTeam: string;
-  selectedPI: string;
-  onTeamChange: (team: string) => void;
-  onPIChange: (pi: string) => void;
-}
-
-export default function CreateAgentJobView({
-  selectedTeam,
-  selectedPI,
-  onTeamChange,
-  onPIChange,
-}: CreateAgentJobViewProps) {
-  const [loading, setLoading] = useState({
-    sprintGoal: false,
-    dailyAgent: false,
-    piSync: false,
-    teamPiInsight: false,
-  });
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+export default function CreateAgentJobView() {
   const apiService = new ApiService();
 
-  const handleCreateJob = async (jobType: 'Sprint Goal' | 'Daily Agent' | 'PI Sync' | 'Team PI Insight') => {
-    const loadingKey = jobType === 'Sprint Goal' ? 'sprintGoal' : 
-                     jobType === 'Daily Agent' ? 'dailyAgent' : 
-                     jobType === 'PI Sync' ? 'piSync' : 'teamPiInsight';
-    
-    setLoading(prev => ({ ...prev, [loadingKey]: true }));
-    setMessage(null);
+  // State
+  const [insightTypes, setInsightTypes] = useState<InsightType[]>([]);
+  const [availablePIs, setAvailablePIs] = useState<string[]>([]);
+  const [availableTeams, setAvailableTeams] = useState<string[]>([]);
+  const [availableGroups, setAvailableGroups] = useState<string[]>([]);
+  const [selectedPI, setSelectedPI] = useState<Record<string | number, string>>({});
+  const [selectedTeam, setSelectedTeam] = useState<Record<string | number, string>>({});
+  const [selectedGroup, setSelectedGroup] = useState<Record<string | number, string>>({});
+  const [loading, setLoading] = useState<Record<string | number, boolean>>({});
+  const [toast, setToast] = useState<string | null>(null);
+  const [errorModal, setErrorModal] = useState<string | null>(null);
+  const [fetching, setFetching] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
+  // Fetch available PIs for dropdown
+  const fetchPIs = async () => {
     try {
-      if (jobType === 'PI Sync') {
-        if (!selectedPI) {
-          throw new Error('Please select a PI');
-        }
-        await apiService.createPiAgentJob(jobType, selectedPI);
-      } else if (jobType === 'Team PI Insight') {
-        if (!selectedTeam) {
-          throw new Error('Please select a team');
-        }
-        if (!selectedPI) {
-          throw new Error('Please select a PI');
-        }
-        await apiService.createPiJobForTeam(jobType, selectedPI, selectedTeam);
-      } else {
-        if (!selectedTeam) {
-          throw new Error('Please select a team');
-        }
-        await apiService.createTeamAgentJob(jobType, selectedTeam);
+      const pisResponse = await apiService.getPIs();
+      if (pisResponse.pis && pisResponse.pis.length > 0) {
+        const piNames = pisResponse.pis.map(pi => pi.pi_name);
+        setAvailablePIs(piNames);
       }
-
-      setMessage({ type: 'success', text: `${jobType} job created successfully!` });
-    } catch (error) {
-      console.error(`Error creating ${jobType} job:`, error);
-      setMessage({ 
-        type: 'error', 
-        text: `Failed to create ${jobType} job: ${error instanceof Error ? error.message : 'Unknown error'}` 
-      });
-    } finally {
-      setLoading(prev => ({ ...prev, [loadingKey]: false }));
+    } catch (err) {
+      console.error('Failed to fetch PIs:', err);
     }
   };
 
-  return (
-    <div className="h-full flex flex-col">
-      <div className="flex-1 overflow-auto space-y-6">
-        <div className="bg-white rounded-lg shadow-sm p-6 relative">
+  // Fetch available Teams for dropdown
+  const fetchTeams = async () => {
+    try {
+      const teamsResponse = await apiService.getTeams();
+      if (teamsResponse.teams && teamsResponse.teams.length > 0) {
+        setAvailableTeams(teamsResponse.teams);
+      }
+    } catch (err) {
+      console.error('Failed to fetch teams:', err);
+    }
+  };
+
+  // Fetch available Groups for dropdown
+  const fetchGroups = async () => {
+    try {
+      const groupsResponse = await apiService.getGroups();
+      if (groupsResponse.groups && groupsResponse.groups.length > 0) {
+        setAvailableGroups(groupsResponse.groups);
+      }
+    } catch (err) {
+      console.error('Failed to fetch groups:', err);
+    }
+  };
+
+  // Fetch active insight types
+  const fetchInsightTypes = async () => {
+    setFetching(true);
+    setFetchError(null);
+    try {
+      const response = await apiService.getActiveInsightTypes();
+      // Normalize field names - API returns snake_case, we need camelCase
+      const normalizedTypes = response.insight_types.map((type: any) => {
+        const normalized = {
+          id: type.id,
+          name: type.name || type.insight_type || 'Unknown',
+          insight_type: type.insight_type,
+          description: type.description || type.insight_description || '',
+          insight_description: type.insight_description || type.description || '',
+          requirePI: Boolean(type.requirePI ?? type.requires_pi ?? type.require_pi ?? false),
+          requireTeam: Boolean(type.requireTeam ?? type.requires_team ?? type.require_team ?? false),
+          requireGroup: Boolean(type.requireGroup ?? type.requires_group ?? type.require_group ?? false),
+          active: Boolean(type.active ?? type.is_active ?? false),
+          ...type // Keep original fields for reference
+        };
+        return normalized;
+      });
+      setInsightTypes(normalizedTypes);
+    } catch (err) {
+      console.error('Error fetching insight types:', err);
+      setFetchError(err instanceof Error ? err.message : 'Failed to fetch insight types');
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  // Fetch all data on mount
+  useEffect(() => {
+    fetchInsightTypes();
+    fetchPIs();
+    fetchTeams();
+    fetchGroups();
+  }, []);
+
+  // Create job handler
+  const handleCreateJob = async (insightType: InsightType) => {
+    // Validation
+    if (insightType.requirePI && !selectedPI[insightType.id]) {
+      setErrorModal('PI is required for this insight type');
+      return;
+    }
+    if (insightType.requireTeam && !selectedTeam[insightType.id]) {
+      setErrorModal('Team is required for this insight type');
+      return;
+    }
+    if (insightType.requireGroup && !selectedGroup[insightType.id]) {
+      setErrorModal('Group is required for this insight type');
+      return;
+    }
+
+    setLoading(prev => ({ ...prev, [insightType.id]: true }));
+    try {
+      let response;
+      // Use insight type name (job_type) instead of ID
+      const jobType = insightType.name || insightType.insight_type || 'Unknown';
+      
+      if (insightType.requirePI && insightType.requireTeam) {
+        response = await apiService.createPIJobForTeam(
+          jobType,
+          selectedPI[insightType.id],
+          selectedTeam[insightType.id]
+        );
+      } else if (insightType.requireTeam) {
+        response = await apiService.createTeamJob(
+          jobType,
+          selectedTeam[insightType.id]
+        );
+      } else if (insightType.requirePI) {
+        response = await apiService.createPIJob(
+          jobType,
+          selectedPI[insightType.id]
+        );
+      } else if (insightType.requireGroup) {
+        response = await apiService.createGroupJob(
+          jobType,
+          selectedGroup[insightType.id]
+        );
+      }
+
+      if (response?.success) {
+        // Build toast message with agent name, PI, team, and group if they exist
+        const agentName = insightType.name || 'Agent';
+        const parts: string[] = [`${agentName} job created`];
+        
+        if (selectedPI[insightType.id]) {
+          parts.push(`PI: ${selectedPI[insightType.id]}`);
+        }
+        
+        if (selectedTeam[insightType.id]) {
+          parts.push(`Team: ${selectedTeam[insightType.id]}`);
+        }
+        
+        if (selectedGroup[insightType.id]) {
+          parts.push(`Group: ${selectedGroup[insightType.id]}`);
+        }
+        
+        setToast(parts.join(', '));
+      } else {
+        setErrorModal(response?.message || 'Failed to create job');
+      }
+    } catch (err) {
+      setErrorModal(err instanceof Error ? err.message : 'Failed to create job');
+    } finally {
+      setLoading(prev => ({ ...prev, [insightType.id]: false }));
+    }
+  };
+
+  // Render card for each insight type
+  const renderInsightTypeCard = (insightType: InsightType) => {
+    const canCreate = 
+      (!insightType.requirePI || selectedPI[insightType.id]) &&
+      (!insightType.requireTeam || selectedTeam[insightType.id]) &&
+      (!insightType.requireGroup || selectedGroup[insightType.id]);
+    const isLoading = loading[insightType.id] || false;
+
+    return (
+      <div key={insightType.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 p-3 flex flex-col w-full">
+        <div className="flex items-start justify-between mb-2">
+          <h3 className="text-base font-bold text-gray-900 flex-1">
+            {insightType.name || `Insight Type ${insightType.id}`}
+          </h3>
+          <div className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+            insightType.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+          }`}>
+            {insightType.active ? 'Active' : 'Inactive'}
+          </div>
+        </div>
+        
+        {insightType.description && (
+          <p className="text-xs text-gray-600 mb-3 leading-relaxed">
+            {insightType.description}
+          </p>
+        )}
+        
+        <div className="space-y-2 flex-1">
+          {insightType.requirePI && (
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-semibold text-gray-700 whitespace-nowrap min-w-[50px]">
+                PI:
+              </label>
+              <select
+                value={selectedPI[insightType.id] || ''}
+                onChange={(e) => setSelectedPI(prev => ({
+                  ...prev,
+                  [insightType.id]: e.target.value
+                }))}
+                className="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                disabled={isLoading}
+              >
+                <option value="">Select PI</option>
+                {availablePIs.length > 0 ? (
+                  availablePIs.map(pi => (
+                    <option key={pi} value={pi}>{pi}</option>
+                  ))
+                ) : (
+                  <option value="" disabled>Loading PIs...</option>
+                )}
+              </select>
+            </div>
+          )}
           
-          {/* Sprint Goal Row */}
-          <div className="border border-gray-200 rounded-lg p-4 mb-4">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-              <h3 className="text-lg font-medium text-gray-900 mr-4">Sprint Goal</h3>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 gap-2 flex-1">
-                <TeamFilter
-                  selectedTeam={selectedTeam}
-                  onTeamChange={onTeamChange}
-                />
-                <button
-                  onClick={() => handleCreateJob('Sprint Goal')}
-                  disabled={loading.sprintGoal || !selectedTeam}
-                  className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                >
-                  {loading.sprintGoal ? 'Creating...' : 'Create Job'}
-                </button>
-              </div>
+          {insightType.requireTeam && (
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-semibold text-gray-700 whitespace-nowrap min-w-[50px]">
+                Team:
+              </label>
+              <select
+                value={selectedTeam[insightType.id] || ''}
+                onChange={(e) => setSelectedTeam(prev => ({
+                  ...prev,
+                  [insightType.id]: e.target.value
+                }))}
+                className="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                disabled={isLoading}
+              >
+                <option value="">Select Team</option>
+                {availableTeams.length > 0 ? (
+                  availableTeams.map(team => (
+                    <option key={team} value={team}>{team}</option>
+                  ))
+                ) : (
+                  <option value="" disabled>Loading Teams...</option>
+                )}
+              </select>
             </div>
-          </div>
-
-          {/* Daily Agent Row */}
-          <div className="border border-gray-200 rounded-lg p-4 mb-4">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-              <h3 className="text-lg font-medium text-gray-900 mr-4">Daily Agent</h3>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 gap-2 flex-1">
-                <TeamFilter
-                  selectedTeam={selectedTeam}
-                  onTeamChange={onTeamChange}
-                />
-                <button
-                  onClick={() => handleCreateJob('Daily Agent')}
-                  disabled={loading.dailyAgent || !selectedTeam}
-                  className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                >
-                  {loading.dailyAgent ? 'Creating...' : 'Create Job'}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* PI Sync Row */}
-          <div className="border border-gray-200 rounded-lg p-4 mb-4">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-              <h3 className="text-lg font-medium text-gray-900 mr-4">PI Sync</h3>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 gap-2 flex-1">
-                <PIFilter
-                  selectedPI={selectedPI}
-                  onPIChange={onPIChange}
-                />
-                <button
-                  onClick={() => handleCreateJob('PI Sync')}
-                  disabled={loading.piSync || !selectedPI}
-                  className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                >
-                  {loading.piSync ? 'Creating...' : 'Create Job'}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Team PI Insight Row */}
-          <div className="border border-gray-200 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900 mr-4">Team PI Insight</h3>
-              <div className="flex items-center space-x-4 flex-1">
-                <TeamFilter
-                  selectedTeam={selectedTeam}
-                  onTeamChange={onTeamChange}
-                />
-                <PIFilter
-                  selectedPI={selectedPI}
-                  onPIChange={onPIChange}
-                />
-                <button
-                  onClick={() => handleCreateJob('Team PI Insight')}
-                  disabled={loading.teamPiInsight || !selectedTeam || !selectedPI}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                >
-                  {loading.teamPiInsight ? 'Creating...' : 'Create Job'}
-                </button>
-              </div>
-            </div>
-          </div>
+          )}
           
-          {/* Success/Error Message - Fixed at bottom */}
-          {message && (
-            <div className={`p-4 rounded-lg mt-6 ${
-              message.type === 'success' 
-                ? 'bg-green-50 border border-green-200 text-green-800' 
-                : 'bg-red-50 border border-red-200 text-red-800'
-            }`}>
-              {message.text}
+          {insightType.requireGroup && (
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-semibold text-gray-700 whitespace-nowrap min-w-[50px]">
+                Group:
+              </label>
+              <select
+                value={selectedGroup[insightType.id] || ''}
+                onChange={(e) => setSelectedGroup(prev => ({
+                  ...prev,
+                  [insightType.id]: e.target.value
+                }))}
+                className="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                disabled={isLoading}
+              >
+                <option value="">Select Group</option>
+                {availableGroups.length > 0 ? (
+                  availableGroups.map(group => (
+                    <option key={group} value={group}>{group}</option>
+                  ))
+                ) : (
+                  <option value="" disabled>Loading Groups...</option>
+                )}
+              </select>
             </div>
           )}
         </div>
+
+        {(!insightType.requirePI && !insightType.requireTeam && !insightType.requireGroup) && (
+          <p className="text-xs text-gray-500 italic mb-2">No filters required for this insight type.</p>
+        )}
+
+        <div className="mt-3 flex justify-center">
+          <button
+            onClick={() => handleCreateJob(insightType)}
+            disabled={!canCreate || isLoading}
+            className="w-full px-4 py-2 text-xs font-semibold bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-md hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
+          >
+            {isLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Creating...
+              </span>
+            ) : 'Create Job'}
+          </button>
+        </div>
       </div>
+    );
+  };
+
+  // Separate insight types into Team Insights, Group Insights, and PI Insights
+  const teamInsights = insightTypes
+    .filter(type => type.requireTeam === true && !type.requireGroup)
+    .sort((a, b) => {
+      if (a.requirePI && !b.requirePI) return 1;
+      if (!a.requirePI && b.requirePI) return -1;
+      return 0;
+    });
+  const groupInsights = insightTypes.filter(type => type.requireGroup === true);
+  const piInsights = insightTypes.filter(type => type.requireTeam !== true && type.requireGroup !== true);
+
+  return (
+    <div className="h-full flex flex-col">{/* Removed space-y-6 overflow-auto pb-6 */}
+      {fetching && (
+        <div className="flex-1 flex items-center justify-center bg-white">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-600 font-medium">Loading insight types...</p>
+          </div>
+        </div>
+      )}
+
+      {fetchError && (
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="bg-red-50 border-2 border-red-200 rounded-lg p-5 shadow-sm max-w-md">
+            <div className="flex items-center gap-3">
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="text-sm font-medium text-red-800">{fetchError}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!fetching && !fetchError && insightTypes.length === 0 && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+            <p className="text-gray-600 font-medium">No active insight types found.</p>
+          </div>
+        </div>
+      )}
+
+      {!fetching && !fetchError && insightTypes.length > 0 && (
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 overflow-hidden">{/* Changed gap-6 to gap-4 and added flex-1 overflow-hidden */}
+          {/* Team Insights Container */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200 p-4 shadow-lg flex flex-col overflow-hidden">
+            <div className="flex items-center gap-3 mb-4 flex-shrink-0">
+              <div className="p-2 bg-blue-600 rounded-lg">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Team Insights</h2>
+            </div>
+
+            {teamInsights.length > 0 ? (
+              <div className="space-y-3 overflow-y-auto flex-1">
+                {teamInsights.map(renderInsightTypeCard)}
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg border border-gray-200 p-6 text-center">
+                <p className="text-gray-500 font-medium">No Team Insights available</p>
+              </div>
+            )}
+          </div>
+
+          {/* Group Insights Container */}
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border-2 border-purple-200 p-4 shadow-lg flex flex-col overflow-hidden">
+            <div className="flex items-center gap-3 mb-4 flex-shrink-0">
+              <div className="p-2 bg-purple-600 rounded-lg">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Group Insights</h2>
+            </div>
+
+            {groupInsights.length > 0 ? (
+              <div className="space-y-3 overflow-y-auto flex-1">
+                {groupInsights.map(renderInsightTypeCard)}
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg border border-gray-200 p-6 text-center">
+                <p className="text-gray-500 font-medium">No Group Insights available</p>
+              </div>
+            )}
+          </div>
+
+          {/* PI Insights Container */}
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border-2 border-green-200 p-4 shadow-lg flex flex-col overflow-hidden">
+            <div className="flex items-center gap-3 mb-4 flex-shrink-0">
+              <div className="p-2 bg-green-600 rounded-lg">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">PI Insights</h2>
+            </div>
+
+            {piInsights.length > 0 ? (
+              <div className="space-y-3 overflow-y-auto flex-1">
+                {piInsights.map(renderInsightTypeCard)}
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg border border-gray-200 p-6 text-center">
+                <p className="text-gray-500 font-medium">No PI Insights available</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Success Toast */}
+      {toast && (
+        <Toast
+          message={toast}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {/* Error Modal/Popup */}
+      {errorModal && (
+        <ErrorModal
+          message={errorModal}
+          onClose={() => setErrorModal(null)}
+        />
+      )}
     </div>
   );
 }
-
