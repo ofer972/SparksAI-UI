@@ -17,6 +17,9 @@ export default function CreateAgentJobView() {
   const [selectedPI, setSelectedPI] = useState<Record<string | number, string>>({});
   const [selectedTeam, setSelectedTeam] = useState<Record<string | number, string>>({});
   const [selectedGroup, setSelectedGroup] = useState<Record<string | number, string>>({});
+  const [globalTeamFilter, setGlobalTeamFilter] = useState<string>('');
+  const [globalPIFilter, setGlobalPIFilter] = useState<string>('');
+  const [globalGroupFilter, setGlobalGroupFilter] = useState<string>('');
   const [loading, setLoading] = useState<Record<string | number, boolean>>({});
   const [toast, setToast] = useState<string | null>(null);
   const [errorModal, setErrorModal] = useState<string | null>(null);
@@ -98,6 +101,72 @@ export default function CreateAgentJobView() {
     fetchTeams();
     fetchGroups();
   }, []);
+
+  // Apply global team filter when insight types or filter changes
+  useEffect(() => {
+    if (globalTeamFilter && insightTypes.length > 0) {
+      const teamInsightIds = insightTypes
+        .filter(type => type.requireTeam === true)
+        .map(type => type.id);
+      
+      setSelectedTeam(prev => {
+        const updated = { ...prev };
+        teamInsightIds.forEach(id => {
+          updated[id] = globalTeamFilter;
+        });
+        return updated;
+      });
+    }
+  }, [globalTeamFilter, insightTypes]);
+
+  // Apply global PI filter when insight types or filter changes
+  useEffect(() => {
+    if (globalPIFilter && insightTypes.length > 0) {
+      const piInsightIds = insightTypes
+        .filter(type => type.requireTeam !== true && type.requireGroup !== true)
+        .map(type => type.id);
+      
+      setSelectedPI(prev => {
+        const updated = { ...prev };
+        piInsightIds.forEach(id => {
+          updated[id] = globalPIFilter;
+        });
+        return updated;
+      });
+    }
+  }, [globalPIFilter, insightTypes]);
+
+  // Apply global group filter when insight types or filter changes
+  useEffect(() => {
+    if (globalGroupFilter && insightTypes.length > 0) {
+      const groupInsightIds = insightTypes
+        .filter(type => type.requireGroup === true)
+        .map(type => type.id);
+      
+      setSelectedGroup(prev => {
+        const updated = { ...prev };
+        groupInsightIds.forEach(id => {
+          updated[id] = globalGroupFilter;
+        });
+        return updated;
+      });
+    }
+  }, [globalGroupFilter, insightTypes]);
+
+  // Handle global team filter - applies to all team insights
+  const handleGlobalTeamFilter = (team: string) => {
+    setGlobalTeamFilter(team);
+  };
+
+  // Handle global PI filter - applies to all PI insights
+  const handleGlobalPIFilter = (pi: string) => {
+    setGlobalPIFilter(pi);
+  };
+
+  // Handle global group filter - applies to all group insights
+  const handleGlobalGroupFilter = (group: string) => {
+    setGlobalGroupFilter(group);
+  };
 
   // Create job handler
   const handleCreateJob = async (insightType: InsightType) => {
@@ -354,13 +423,35 @@ export default function CreateAgentJobView() {
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 overflow-hidden">{/* Changed gap-6 to gap-4 and added flex-1 overflow-hidden */}
           {/* Team Insights Container */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200 p-4 shadow-lg flex flex-col overflow-hidden">
-            <div className="flex items-center gap-3 mb-4 flex-shrink-0">
+            <div className="flex items-center gap-3 mb-3 flex-shrink-0">
               <div className="p-2 bg-blue-600 rounded-lg">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
               </div>
               <h2 className="text-xl font-bold text-gray-900">Team Insights</h2>
+            </div>
+            
+            {/* Global Team Filter */}
+            <div className="mb-3 bg-white rounded-lg p-3 shadow-sm border border-blue-100 flex-shrink-0">
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                Apply to All Teams:
+              </label>
+              <select
+                value={globalTeamFilter}
+                onChange={(e) => handleGlobalTeamFilter(e.target.value)}
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                disabled={teamInsights.length === 0}
+              >
+                <option value="">Select Team</option>
+                {availableTeams.length > 0 ? (
+                  availableTeams.map(team => (
+                    <option key={team} value={team}>{team}</option>
+                  ))
+                ) : (
+                  <option value="" disabled>Loading Teams...</option>
+                )}
+              </select>
             </div>
 
             {teamInsights.length > 0 ? (
@@ -376,13 +467,35 @@ export default function CreateAgentJobView() {
 
           {/* Group Insights Container */}
           <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border-2 border-purple-200 p-4 shadow-lg flex flex-col overflow-hidden">
-            <div className="flex items-center gap-3 mb-4 flex-shrink-0">
+            <div className="flex items-center gap-3 mb-3 flex-shrink-0">
               <div className="p-2 bg-purple-600 rounded-lg">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
               <h2 className="text-xl font-bold text-gray-900">Group Insights</h2>
+            </div>
+            
+            {/* Global Group Filter */}
+            <div className="mb-3 bg-white rounded-lg p-3 shadow-sm border border-purple-100 flex-shrink-0">
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                Apply to All Groups:
+              </label>
+              <select
+                value={globalGroupFilter}
+                onChange={(e) => handleGlobalGroupFilter(e.target.value)}
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                disabled={groupInsights.length === 0}
+              >
+                <option value="">Select Group</option>
+                {availableGroups.length > 0 ? (
+                  availableGroups.map(group => (
+                    <option key={group} value={group}>{group}</option>
+                  ))
+                ) : (
+                  <option value="" disabled>Loading Groups...</option>
+                )}
+              </select>
             </div>
 
             {groupInsights.length > 0 ? (
@@ -398,13 +511,35 @@ export default function CreateAgentJobView() {
 
           {/* PI Insights Container */}
           <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border-2 border-green-200 p-4 shadow-lg flex flex-col overflow-hidden">
-            <div className="flex items-center gap-3 mb-4 flex-shrink-0">
+            <div className="flex items-center gap-3 mb-3 flex-shrink-0">
               <div className="p-2 bg-green-600 rounded-lg">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </div>
               <h2 className="text-xl font-bold text-gray-900">PI Insights</h2>
+            </div>
+            
+            {/* Global PI Filter */}
+            <div className="mb-3 bg-white rounded-lg p-3 shadow-sm border border-green-100 flex-shrink-0">
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                Apply to All PIs:
+              </label>
+              <select
+                value={globalPIFilter}
+                onChange={(e) => handleGlobalPIFilter(e.target.value)}
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
+                disabled={piInsights.length === 0}
+              >
+                <option value="">Select PI</option>
+                {availablePIs.length > 0 ? (
+                  availablePIs.map(pi => (
+                    <option key={pi} value={pi}>{pi}</option>
+                  ))
+                ) : (
+                  <option value="" disabled>Loading PIs...</option>
+                )}
+              </select>
             </div>
 
             {piInsights.length > 0 ? (
