@@ -236,13 +236,24 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           setConfigLoaded(true);
   }, [dashboardSettings.isLoading, dashboardSettings.savedState]);
 
-  // Clear restoring flag when PI is actually set
+  // Clear restoring flag when PI is actually set OR when PI is cleared (user deselected) OR when there's no saved PI to restore
   useEffect(() => {
-    if (selectedPI && restoringFiltersRef.current) {
-      console.log('[PIDashboard] PI restored, clearing restoring flag');
-      restoringFiltersRef.current = false;
+    const hasValidPI = selectedPI && typeof selectedPI === 'string' && selectedPI.trim().length > 0;
+    if (restoringFiltersRef.current) {
+      if (hasValidPI) {
+        console.log('[PIDashboard] PI restored, clearing restoring flag');
+        restoringFiltersRef.current = false;
+      } else if (!dashboardSettings.isLoading && settingsAppliedRef.current) {
+        // PI was deselected by user or no PI to restore (not during initial load), clear the flag
+        console.log('[PIDashboard] PI deselected by user or no PI to restore, clearing restoring flag');
+        restoringFiltersRef.current = false;
+      } else if (!dashboardSettings.isLoading && !dashboardSettings.savedState?.topBarFilters?.selectedPI && !dashboardSettings.savedState?.topBarFilters?.pi) {
+        // No saved PI to restore, clear the flag immediately
+        console.log('[PIDashboard] No saved PI to restore, clearing restoring flag');
+        restoringFiltersRef.current = false;
+      }
     }
-  }, [selectedPI]);
+  }, [selectedPI, dashboardSettings.isLoading, dashboardSettings.savedState]);
   
   const prevLayoutRef = useRef<string | null>(null);
   const prevFiltersRef = useRef({ selectedPI, selectedTeam, selectedTreeType });
@@ -641,14 +652,32 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
 
   // Wait for settings to apply before rendering reports to avoid fetching with wrong filters
   // Also wait if we don't have a PI yet (might be restoring)
-  if (dashboardSettings.isLoading || restoringFiltersRef.current || (!selectedPI && dashboardSettings.savedState?.topBarFilters)) {
+  const hasValidPI = selectedPI && typeof selectedPI === 'string' && selectedPI.trim().length > 0;
+  const hasPIInFilters = controlledFiltersPI.pi === selectedPI;
+  
+  // Check if user intentionally deselected PI (no PI, settings applied, not loading)
+  const userDeselectedPI = !hasValidPI && !dashboardSettings.isLoading && settingsAppliedRef.current;
+  
+  // Only show loading spinner if we're actually loading/restoring AND NOT if user intentionally deselected
+  const isActuallyLoading = dashboardSettings.isLoading;
+  const needsPIInFilters = hasValidPI && !hasPIInFilters; // Only wait for filters if we have a PI
+  // Only show "restoring" spinner if we're restoring AND we have a PI (not if user cleared it)
+  const isRestoringWithExpectedPI = restoringFiltersRef.current && (dashboardSettings.savedState?.topBarFilters?.selectedPI || dashboardSettings.savedState?.topBarFilters?.pi);
+  
+  // Show spinner only if actually loading OR actively restoring with expected PI OR if we have a PI but filters aren't ready yet
+  // But NEVER if user intentionally deselected (skip spinner check entirely)
+  if (userDeselectedPI) {
+    // If user intentionally deselected, skip spinner and show "Select a PI" message below
+  } else if (isActuallyLoading || isRestoringWithExpectedPI || needsPIInFilters) {
+    console.log(`[PIDashboard] Early return: hasValidPI=${hasValidPI}, hasPIInFilters=${hasPIInFilters}, isLoading=${dashboardSettings.isLoading}, restoring=${restoringFiltersRef.current}, expectedPI=${isRestoringWithExpectedPI}`);
     return (
       <div className="flex items-center justify-center h-96">
         <div className="flex flex-col items-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
           <div className="text-sm text-gray-600">
             {dashboardSettings.isLoading ? 'Loading dashboard settings...' : 
-             restoringFiltersRef.current ? 'Restoring saved filters...' : 
+             isRestoringWithExpectedPI ? 'Restoring saved filters...' : 
+             needsPIInFilters ? 'Preparing filters...' :
              'Loading PI selection...'}
           </div>
         </div>
@@ -656,7 +685,8 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     );
   }
 
-  if (!selectedPI) {
+  // Show "Select a PI" message if no PI is selected (user intentionally deselected)
+  if (!hasValidPI) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
         <div className="text-center px-4">

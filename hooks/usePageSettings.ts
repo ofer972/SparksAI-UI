@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { PageSettings, PageType, getPageSettings, updatePageSettings, resetUserSettings } from '@/lib/api';
+import { PageSettings, PageType, getPageSettings, updatePageSettings } from '@/lib/api';
 import { getCurrentUser } from '@/lib/auth';
 import { LayoutConfig } from '@/lib/config';
 
@@ -201,7 +201,7 @@ export function usePageSettings(pageType: PageType): UsePageSettingsReturn {
     }
   }, [pageType]);
 
-  // Reset to defaults
+  // Reset to defaults - only resets the current page type, not all pages
   const resetToDefaults = useCallback(async () => {
     setIsSaving(true);
     setError(null);
@@ -212,8 +212,7 @@ export function usePageSettings(pageType: PageType): UsePageSettingsReturn {
         throw new Error('No user ID found');
       }
 
-      await resetUserSettings(user.id);
-      
+      // Reset only this specific page type's settings, not all user settings
       const emptyState: PageState = {
         layoutConfig: null,
         topBarFilters: {},
@@ -222,17 +221,22 @@ export function usePageSettings(pageType: PageType): UsePageSettingsReturn {
         selectedCategories: [],
       };
       
+      // Update the page settings to empty values (this effectively resets just this page)
+      await updatePageSettings(user.id, pageType, emptyState);
+      
       setSavedState(null);
       setCurrentState(emptyState);
       setHasChanges(false);
+      
+      console.log(`[usePageSettings] Reset settings for page type: ${pageType}`);
     } catch (err) {
-      console.error('[usePageSettings] Failed to reset settings:', err);
+      console.error('[usePageSettings] Failed to reset page settings:', err);
       setError('Failed to reset page settings');
       throw err;
     } finally {
       setIsSaving(false);
     }
-  }, []);
+  }, [pageType]);
 
   // Update current state
   const updateCurrentState = useCallback((updates: Partial<PageState>) => {
