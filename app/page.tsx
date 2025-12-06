@@ -416,8 +416,7 @@ export default function Home() {
     setShowResetConfirm(false);
     setMessage({ type: 'success', text: 'Dashboard settings reset to defaults' });
     setTimeout(() => setMessage(null), 3000);
-    // Reload the page to apply defaults
-    setTimeout(() => window.location.reload(), 500);
+    // Don't reload the page - let the dashboard components handle the reset via event listener
   };
 
   // Track team insight settings changes

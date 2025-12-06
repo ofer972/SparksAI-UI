@@ -202,6 +202,7 @@ export function usePageSettings(pageType: PageType): UsePageSettingsReturn {
   }, [pageType]);
 
   // Reset to defaults - only resets the current page type, not all pages
+  // Preserves topBarFilters (selectedTeam, selectedPI, etc.) - only resets layout, report filters, and pinned filters
   const resetToDefaults = useCallback(async () => {
     setIsSaving(true);
     setError(null);
@@ -212,23 +213,34 @@ export function usePageSettings(pageType: PageType): UsePageSettingsReturn {
         throw new Error('No user ID found');
       }
 
-      // Reset only this specific page type's settings, not all user settings
-      const emptyState: PageState = {
+      // Preserve current topBarFilters - only reset layout, report filters, and pinned filters
+      const resetState: PageState = {
         layoutConfig: null,
-        topBarFilters: {},
+        topBarFilters: currentState.topBarFilters || {}, // Keep existing topbar filters
         reportFilters: {},
         pinnedFilters: {},
-        selectedCategories: [],
+        selectedCategories: currentState.selectedCategories || [], // Keep categories for insights pages
       };
       
-      // Update the page settings to empty values (this effectively resets just this page)
-      await updatePageSettings(user.id, pageType, emptyState);
+      // Update the page settings (this effectively resets just layout, report filters, and pinned filters)
+      await updatePageSettings(user.id, pageType, resetState);
       
-      setSavedState(null);
-      setCurrentState(emptyState);
+      // Update saved state but preserve topBarFilters
+      const newSavedState: PageState = {
+        ...resetState,
+        topBarFilters: currentState.topBarFilters || {},
+      };
+      
+      setSavedState(newSavedState);
+      setCurrentState(resetState);
       setHasChanges(false);
       
-      console.log(`[usePageSettings] Reset settings for page type: ${pageType}`);
+      // Dispatch event to notify dashboard components that settings were reset
+      window.dispatchEvent(new CustomEvent('dashboard-settings-reset', { 
+        detail: { pageType } 
+      }));
+      
+      console.log(`[usePageSettings] Reset settings for page type: ${pageType} (preserved topBarFilters)`);
     } catch (err) {
       console.error('[usePageSettings] Failed to reset page settings:', err);
       setError('Failed to reset page settings');
@@ -236,7 +248,7 @@ export function usePageSettings(pageType: PageType): UsePageSettingsReturn {
     } finally {
       setIsSaving(false);
     }
-  }, [pageType]);
+  }, [pageType, currentState.topBarFilters, currentState.selectedCategories]);
 
   // Update current state
   const updateCurrentState = useCallback((updates: Partial<PageState>) => {

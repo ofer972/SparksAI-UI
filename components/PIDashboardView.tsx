@@ -110,8 +110,12 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           definitionMap[definition.report_id] = definition;
         });
 
-        // Filter reports for PI dashboard
+        // Filter reports for PI dashboard (exclude removed reports)
         const piReports = definitions.filter((r) => {
+          // Explicitly exclude removed reports
+          if (r.report_id === 'pi-metrics-summary-by-team') {
+            return false;
+          }
           const allowedViews = r.meta_schema?.allowed_views || ['every-dashboard'];
           return allowedViews.includes('every-dashboard') || allowedViews.includes('pi-dashboard');
         });
@@ -174,6 +178,10 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           const seen = new Set<string>();
           reportIds.forEach((reportId) => {
         if (seen.has(reportId)) return;
+            // Explicitly exclude removed reports
+            if (reportId === 'pi-metrics-summary-by-team') {
+              return;
+            }
             const definition = definitionMap[reportId];
             const allowedViews = normalizeAllowedViews(definition);
             if (allowedViews.includes('every-dashboard') || allowedViews.includes(view)) {
@@ -338,6 +346,12 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     const handleResetRequest = async () => {
       try {
         await dashboardSettings.resetToDefaults();
+        // Reset the settings applied flag so settings can be reapplied
+        settingsAppliedRef.current = false;
+        // Force rerender by clearing layout config - it will reload from system defaults
+        setLayoutConfig(null);
+        setReportOrder(PI_DASHBOARD_DEFAULTS);
+        console.log('[PIDashboard] Reset completed, forcing rerender');
       } catch (err) {
         console.error('Failed to reset settings:', err);
       }

@@ -334,6 +334,12 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
     const handleResetRequest = async () => {
       try {
         await dashboardSettings.resetToDefaults();
+        // Reset the settings applied flag so settings can be reapplied
+        settingsAppliedRef.current = false;
+        // Force rerender by clearing layout config - it will reload from system defaults
+        setLayoutConfig(null);
+        setDashboardReports(TEAM_DASHBOARD_DEFAULTS);
+        console.log('[TeamDashboard] Reset completed, forcing rerender');
       } catch (err) {
         console.error('Failed to reset settings:', err);
       }

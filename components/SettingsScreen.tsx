@@ -54,6 +54,10 @@ const sanitizeDashboardLayout = (
   allViews.forEach((view) => {
     const selected = layout[view] ?? [];
     const filtered = selected.filter((id) => {
+      // Explicitly exclude removed reports
+      if (id === 'pi-metrics-summary-by-team') {
+        return false;
+      }
       const report = reportMap.get(id);
       return report ? isReportAllowedForView(report, view) : false;
     });
@@ -1004,8 +1008,9 @@ export default function SettingsScreen() {
                   };
                 }
                 
+                // Filter out removed reports (like pi-metrics-summary-by-team)
                 const reportsForView = availableReports.filter((report) => 
-                  isReportAllowedForView(report, view)
+                  isReportAllowedForView(report, view) && report.report_id !== 'pi-metrics-summary-by-team'
                 );
                 const selectedReportsForView = reportsForView.filter((report) =>
                   selectedReports.includes(report.report_id)
