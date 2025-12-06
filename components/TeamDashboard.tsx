@@ -7,6 +7,7 @@ import AddReportsModal from './AddReportsModal';
 import type { ReportInstancePayload, LayoutConfig, ReportDefinition } from '@/lib/config';
 import { ApiService } from '@/lib/api';
 import { useDashboardSettings } from '@/hooks/useDashboardSettings';
+import { configCache } from '@/lib/configCache';
 
 interface TeamDashboardProps {
   selectedTeam: string;
@@ -133,9 +134,11 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
       setConfigError(null);
       try {
         const apiService = new ApiService();
+        
+        // Use cache to prevent duplicate API calls
         const [config, reports] = await Promise.all([
-          apiService.getDashboardViewConfigs(),
-          apiService.getReportDefinitions(),
+          configCache.getDashboardConfigs(() => apiService.getDashboardViewConfigs()),
+          configCache.getReportDefinitions(() => apiService.getReportDefinitions()),
         ]);
         
         // Filter reports for team dashboard
@@ -164,6 +167,22 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
   }, []);
 
   const settingsAppliedRef = useRef(false);
+  const restoringFiltersRef = useRef(false);
+
+  // Check if we need to restore filters BEFORE rendering (synchronous check)
+  const needsRestore = useMemo(() => {
+    if (dashboardSettings.isLoading || !dashboardSettings.savedState?.topBarFilters) {
+      // If settings are loading, assume we might need to restore (be conservative)
+      return dashboardSettings.isLoading;
+    }
+    const savedTeam = dashboardSettings.savedState.topBarFilters.selectedTeam || dashboardSettings.savedState.topBarFilters.team_name;
+    return savedTeam && savedTeam !== selectedTeam;
+  }, [dashboardSettings.isLoading, dashboardSettings.savedState, selectedTeam]);
+
+  // Set restoring flag immediately if restore is needed OR if settings are still loading
+  if ((needsRestore || dashboardSettings.isLoading) && !restoringFiltersRef.current && !selectedTeam) {
+    restoringFiltersRef.current = true;
+  }
 
   // Apply saved settings when they become available (only once)
   useEffect(() => {
@@ -184,6 +203,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
       
       if (savedTeam && savedTeam !== selectedTeam) {
         console.log('[TeamDashboard] Team mismatch, dispatching restore event');
+        restoringFiltersRef.current = true; // Mark that we're waiting for filter restore
           window.dispatchEvent(new CustomEvent('restore-dashboard-filters', {
             detail: {
               dashboard: 'team-dashboard',
@@ -209,6 +229,21 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
     settingsAppliedRef.current = true; // Mark as applied to prevent re-runs
     console.log('[TeamDashboard] Settings applied. Current saved state:', dashboardSettings.savedState);
   }, [dashboardSettings.isLoading, dashboardSettings.savedState]);
+
+  // Clear restoring flag when team is actually set OR when team is cleared (user deselected)
+  useEffect(() => {
+    const hasValidTeam = selectedTeam && typeof selectedTeam === 'string' && selectedTeam.trim().length > 0;
+    if (restoringFiltersRef.current) {
+      if (hasValidTeam) {
+        console.log('[TeamDashboard] Team restored, clearing restoring flag');
+        restoringFiltersRef.current = false;
+      } else if (!dashboardSettings.isLoading && settingsAppliedRef.current) {
+        // Team was deselected by user (not during initial load), clear the flag
+        console.log('[TeamDashboard] Team deselected by user, clearing restoring flag');
+        restoringFiltersRef.current = false;
+      }
+    }
+  }, [selectedTeam, dashboardSettings.isLoading]);
 
   useEffect(() => {
     setSelectedSprint('');
@@ -417,12 +452,18 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
   // Memoize controlledFilters to prevent infinite re-renders in ReportPanel
   // Only include team_name if selectedTeam is truthy (not empty string)
   const controlledFilters = useMemo(
-    () => ({
-      ...(selectedTeam ? { team_name: selectedTeam } : {}),
-      isGroup: selectedTreeType === 'group',
-    }),
+    () => {
+      const hasValidTeam = selectedTeam && typeof selectedTeam === 'string' && selectedTeam.trim().length > 0;
+      return {
+        ...(hasValidTeam ? { team_name: selectedTeam } : {}),
+        isGroup: selectedTreeType === 'group',
+      };
+    },
     [selectedTeam, selectedTreeType]
   );
+
+  // Ensure controlledFilters has team_name before rendering reports
+  const hasTeamInFilters = controlledFilters.team_name && controlledFilters.team_name.trim().length > 0;
 
   if (loadingConfig) {
     return (
@@ -444,7 +485,40 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
     );
   }
 
-  if (!selectedTeam) {
+  // Wait for settings to apply before rendering reports to avoid fetching with wrong filters
+  // Also wait if we don't have a team yet (might be restoring) OR if controlledFilters doesn't have team_name yet
+  const hasValidTeam = selectedTeam && typeof selectedTeam === 'string' && selectedTeam.trim().length > 0;
+  
+  // Check if user intentionally deselected team (no team, settings applied, not loading)
+  const userDeselectedTeam = !hasValidTeam && !dashboardSettings.isLoading && settingsAppliedRef.current;
+  
+  // Only show loading spinner if we're actually loading/restoring AND NOT if user intentionally deselected
+  const isActuallyLoading = dashboardSettings.isLoading;
+  const needsTeamInFilters = hasValidTeam && !hasTeamInFilters; // Only wait for filters if we have a team
+  // Only show "restoring" spinner if we're restoring AND we have a team (not if user cleared it)
+  const isRestoringWithTeam = restoringFiltersRef.current && hasValidTeam;
+  
+  // Show spinner only if actually loading OR actively restoring with team OR if we have a team but filters aren't ready yet
+  // But NEVER if user intentionally deselected (skip spinner check entirely)
+  if (!userDeselectedTeam && (isActuallyLoading || isRestoringWithTeam || needsTeamInFilters)) {
+    console.log(`[TeamDashboard] Early return: hasValidTeam=${hasValidTeam}, hasTeamInFilters=${hasTeamInFilters}, isLoading=${dashboardSettings.isLoading}, restoring=${restoringFiltersRef.current}, userDeselected=${userDeselectedTeam}`);
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+          <div className="text-sm text-gray-600">
+            {dashboardSettings.isLoading ? 'Loading dashboard settings...' : 
+             isRestoringWithTeam ? 'Restoring saved filters...' : 
+             needsTeamInFilters ? 'Preparing filters...' :
+             'Loading team selection...'}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show "Select a Team" message if no team is selected (user intentionally deselected)
+  if (!hasValidTeam) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
         <div className="text-center px-4">
@@ -459,6 +533,22 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
   }
 
   const renderReportSection = (reportId: string) => {
+    // Don't render reports if team is not set (must be non-empty string) or we're restoring filters
+    // Also ensure controlledFilters has team_name before rendering
+    const hasValidTeam = selectedTeam && typeof selectedTeam === 'string' && selectedTeam.trim().length > 0;
+    const filtersHaveTeam = controlledFilters.team_name && controlledFilters.team_name.trim().length > 0;
+    if (!hasValidTeam || !filtersHaveTeam || restoringFiltersRef.current || dashboardSettings.isLoading) {
+      console.log(`[TeamDashboard] Blocking render of ${reportId}: selectedTeam="${selectedTeam}", hasValidTeam=${hasValidTeam}, filtersHaveTeam=${filtersHaveTeam}, restoring=${restoringFiltersRef.current}, loading=${dashboardSettings.isLoading}`);
+      return (
+        <div className="flex items-center justify-center h-full min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+            <div className="text-sm text-gray-600">Loading...</div>
+          </div>
+        </div>
+      );
+    }
+
     // Get saved filters and pinned state for this report from user settings
     const savedReportFilters = dashboardSettings.savedState?.reportFilters?.[reportId] || {};
     const savedPinnedFilters = dashboardSettings.savedState?.pinnedFilters?.[reportId] || [];
@@ -470,10 +560,16 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
       case 'team-closed-sprints':
         // Use controlledFilters for dynamic values (team_name, isGroup) so they update when filter changes
         // initialFilters only applies on mount, controlledFilters react to prop changes
+        // Include team_name in initialFilters to prevent duplicate fetches
         return (
           <ReportPanel
             reportId="team-closed-sprints"
-            initialFilters={{ months: 3, ...savedReportFilters }}
+            initialFilters={{ 
+              months: 3,
+              ...(controlledFilters.team_name ? { team_name: controlledFilters.team_name } : {}),
+              ...(controlledFilters.isGroup !== undefined ? { isGroup: controlledFilters.isGroup } : {}),
+              ...savedReportFilters 
+            }}
             initialPinnedFilters={savedPinnedFilters}
             controlledFilters={controlledFilters}
             enabled
@@ -513,7 +609,13 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
         return (
           <ReportPanel
             reportId="team-issues-trend"
-            initialFilters={{ issue_type: 'Bug', months: 6, ...savedReportFilters }}
+            initialFilters={{ 
+              issue_type: 'Bug', 
+              months: 6,
+              ...(controlledFilters.team_name ? { team_name: controlledFilters.team_name } : {}),
+              ...(controlledFilters.isGroup !== undefined ? { isGroup: controlledFilters.isGroup } : {}),
+              ...savedReportFilters 
+            }}
             initialPinnedFilters={savedPinnedFilters}
             controlledFilters={controlledFilters}
             enabled
@@ -549,6 +651,8 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
               issue_type: 'Bug',
               status_category: null,
               include_done: false,
+              ...(controlledFilters.team_name ? { team_name: controlledFilters.team_name } : {}),
+              ...(controlledFilters.isGroup !== undefined ? { isGroup: controlledFilters.isGroup } : {}),
               ...savedReportFilters
             }}
             initialPinnedFilters={savedPinnedFilters}
@@ -566,7 +670,11 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
         return (
           <ReportPanel
             reportId={reportId}
-            initialFilters={savedReportFilters}
+            initialFilters={{
+              ...(controlledFilters.team_name ? { team_name: controlledFilters.team_name } : {}),
+              ...(controlledFilters.isGroup !== undefined ? { isGroup: controlledFilters.isGroup } : {}),
+              ...savedReportFilters
+            }}
             initialPinnedFilters={savedPinnedFilters}
             controlledFilters={controlledFilters}
             enabled={Boolean(selectedTeam)}
@@ -583,6 +691,20 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
 
   // Render with layout configuration if available
   if (layoutConfig && layoutConfig.rows && layoutConfig.rows.length > 0) {
+    // Don't render reports if team is not set or we're restoring filters
+    if (!selectedTeam || restoringFiltersRef.current) {
+      return (
+        <div className="flex items-center justify-center h-96">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+            <div className="text-sm text-gray-600">
+              {restoringFiltersRef.current ? 'Restoring saved filters...' : 'Loading...'}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // On mobile, render as single column regardless of layout
     if (isMobile) {
       console.log('TeamDashboard: Rendering MOBILE view with modal');
@@ -737,6 +859,20 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
     // For the fallback case, just update the display order
     setDashboardReports(reportIds);
   };
+
+  // Don't render reports if team is not set or we're restoring filters
+  if (!selectedTeam || restoringFiltersRef.current) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+          <div className="text-sm text-gray-600">
+            {restoringFiltersRef.current ? 'Restoring saved filters...' : 'Loading...'}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col">

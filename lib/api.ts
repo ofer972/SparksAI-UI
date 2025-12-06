@@ -151,15 +151,21 @@ export class ApiService {
       return '';
     }
 
-    const params = new URLSearchParams();
+    const queryParts: string[] = [];
     for (const [key, value] of Object.entries(filters)) {
       if (value === null || value === undefined) {
         continue;
       }
+      
+      // Encode the key
+      const encodedKey = encodeURIComponent(key);
+      
       if (Array.isArray(value)) {
         value.forEach(item => {
           if (item !== null && item !== undefined && String(item).trim() !== '') {
-            params.append(key, String(item));
+            // Explicitly encode each value to ensure special characters like +, &, =, etc. are properly encoded
+            const encodedValue = encodeURIComponent(String(item));
+            queryParts.push(`${encodedKey}=${encodedValue}`);
           }
         });
       } else {
@@ -167,11 +173,14 @@ export class ApiService {
         if (stringValue.trim() === '') {
           continue;
         }
-        params.append(key, stringValue);
+        // Explicitly encode the value to ensure special characters like +, &, =, etc. are properly encoded
+        // This ensures values like "AutoDesign Dev+Test" are properly encoded as "AutoDesign%20Dev%2BTest"
+        const encodedValue = encodeURIComponent(stringValue);
+        queryParts.push(`${encodedKey}=${encodedValue}`);
       }
     }
 
-    return params.toString();
+    return queryParts.join('&');
   }
 
   private normalizeDashboardConfigs(payload: any): DashboardViewConfig[] {

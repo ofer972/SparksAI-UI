@@ -9,6 +9,7 @@ import DashboardLayoutArranger, { DashboardLayout } from './DashboardLayoutArran
 import PromptsTab from './PromptsTab';
 import TeamManagementTab from './TeamManagementTab';
 import InsightTypesTab from './InsightTypesTab';
+import { configCache } from '../lib/configCache';
 
 const DASHBOARD_VIEWS = ['team-dashboard', 'pi-dashboard'];
 const DEFAULT_ALLOWED_VIEW = 'every-dashboard';
@@ -278,10 +279,13 @@ export default function SettingsScreen() {
       setLayoutError(null);
       try {
         const api = new ApiService();
+        
+        // Use cache to prevent duplicate API calls
         const [reports, configs] = await Promise.all([
-          api.getReportDefinitions(),
-          api.getDashboardViewConfigs(),
+          configCache.getReportDefinitions(() => api.getReportDefinitions()),
+          configCache.getDashboardConfigs(() => api.getDashboardViewConfigs()),
         ]);
+        
         if (cancelled) {
           return;
         }

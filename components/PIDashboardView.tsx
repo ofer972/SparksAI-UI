@@ -7,6 +7,7 @@ import AddReportsModal from './AddReportsModal';
 import { ApiService } from '@/lib/api';
 import type { ReportDefinition, LayoutConfig } from '@/lib/config';
 import { useDashboardSettings } from '@/hooks/useDashboardSettings';
+import { configCache } from '@/lib/configCache';
 
 interface PIDashboardViewProps {
   selectedPI?: string;
@@ -95,10 +96,13 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     const loadSystemConfig = async () => {
       try {
         const api = new ApiService();
+        
+        // Use cache to prevent duplicate API calls
         const [configs, definitions] = await Promise.all([
-          api.getDashboardViewConfigs(),
-          api.getReportDefinitions(),
+          configCache.getDashboardConfigs(() => api.getDashboardViewConfigs()),
+          configCache.getReportDefinitions(() => api.getReportDefinitions()),
         ]);
+        
         if (cancelled) return;
 
         const definitionMap: Record<string, ReportDefinition> = {};
@@ -128,6 +132,24 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
       cancelled = true;
     };
   }, []);
+
+  const restoringFiltersRef = useRef(false);
+
+  // Check if we need to restore filters BEFORE rendering (synchronous check)
+  const needsRestore = useMemo(() => {
+    if (dashboardSettings.isLoading || !dashboardSettings.savedState?.topBarFilters) {
+      // If settings are loading, assume we might need to restore (be conservative)
+      return dashboardSettings.isLoading;
+    }
+    const savedTeam = dashboardSettings.savedState.topBarFilters.selectedTeam || dashboardSettings.savedState.topBarFilters.team_name;
+    const savedPI = dashboardSettings.savedState.topBarFilters.selectedPI;
+    return (savedTeam && savedTeam !== selectedTeam) || (savedPI && savedPI !== selectedPI);
+  }, [dashboardSettings.isLoading, dashboardSettings.savedState, selectedTeam, selectedPI]);
+
+  // Set restoring flag immediately if restore is needed OR if settings are still loading
+  if ((needsRestore || dashboardSettings.isLoading) && !restoringFiltersRef.current && !selectedPI) {
+    restoringFiltersRef.current = true;
+  }
 
   // Apply saved settings when they become available (only once)
   useEffect(() => {
@@ -171,10 +193,11 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
       const savedTeam = dashboardSettings.savedState.topBarFilters.selectedTeam || dashboardSettings.savedState.topBarFilters.team_name;
       const savedPI = dashboardSettings.savedState.topBarFilters.selectedPI;
       
-      const needsRestore = (savedTeam && savedTeam !== selectedTeam) || (savedPI && savedPI !== selectedPI);
+      const needsRestoreInEffect = (savedTeam && savedTeam !== selectedTeam) || (savedPI && savedPI !== selectedPI);
       
-      if (needsRestore) {
+      if (needsRestoreInEffect) {
         console.log('[PIDashboard] Props mismatch, dispatching restore event');
+        restoringFiltersRef.current = true; // Mark that we're waiting for filter restore
           window.dispatchEvent(new CustomEvent('restore-dashboard-filters', {
             detail: {
               dashboard: 'pi-dashboard',
@@ -212,6 +235,14 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     settingsAppliedRef.current = true; // Mark as applied to prevent re-runs
           setConfigLoaded(true);
   }, [dashboardSettings.isLoading, dashboardSettings.savedState]);
+
+  // Clear restoring flag when PI is actually set
+  useEffect(() => {
+    if (selectedPI && restoringFiltersRef.current) {
+      console.log('[PIDashboard] PI restored, clearing restoring flag');
+      restoringFiltersRef.current = false;
+    }
+  }, [selectedPI]);
   
   const prevLayoutRef = useRef<string | null>(null);
   const prevFiltersRef = useRef({ selectedPI, selectedTeam, selectedTreeType });
@@ -438,6 +469,20 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   const buildPanelKey = (reportId: string) => reportId;
 
   const renderReportSection = (reportId: string, panelKey: string) => {
+    // Don't render reports if PI is not set (must be non-empty string) or we're restoring filters
+    const hasValidPI = selectedPI && typeof selectedPI === 'string' && selectedPI.trim().length > 0;
+    if (!hasValidPI || restoringFiltersRef.current || dashboardSettings.isLoading) {
+      console.log(`[PIDashboard] Blocking render of ${reportId}: selectedPI="${selectedPI}", hasValidPI=${hasValidPI}, restoring=${restoringFiltersRef.current}, loading=${dashboardSettings.isLoading}`);
+      return (
+        <div className="flex items-center justify-center h-full min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+            <div className="text-sm text-gray-600">Loading...</div>
+          </div>
+        </div>
+      );
+    }
+
     // Get saved filters and pinned state for this report from user settings
     const savedReportFilters = dashboardSettings.savedState?.reportFilters?.[reportId] || {};
     const savedPinnedFilters = dashboardSettings.savedState?.pinnedFilters?.[reportId] || [];
@@ -583,6 +628,34 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     }
   };
 
+  if (!configLoaded || !reportOrder) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+          <div className="text-sm text-gray-600">Loading dashboard configuration...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Wait for settings to apply before rendering reports to avoid fetching with wrong filters
+  // Also wait if we don't have a PI yet (might be restoring)
+  if (dashboardSettings.isLoading || restoringFiltersRef.current || (!selectedPI && dashboardSettings.savedState?.topBarFilters)) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+          <div className="text-sm text-gray-600">
+            {dashboardSettings.isLoading ? 'Loading dashboard settings...' : 
+             restoringFiltersRef.current ? 'Restoring saved filters...' : 
+             'Loading PI selection...'}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!selectedPI) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
@@ -597,19 +670,22 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     );
   }
 
-  if (!configLoaded || !reportOrder) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-          <div className="text-sm text-gray-600">Loading dashboard configuration...</div>
-        </div>
-      </div>
-    );
-  }
-
   // Render with layout configuration if available
   if (layoutConfig && layoutConfig.rows && layoutConfig.rows.length > 0) {
+    // Don't render reports if PI is not set or we're restoring filters
+    if (!selectedPI || restoringFiltersRef.current) {
+      return (
+        <div className="flex items-center justify-center h-96">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+            <div className="text-sm text-gray-600">
+              {restoringFiltersRef.current ? 'Restoring saved filters...' : 'Loading...'}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // On mobile, render as single column regardless of layout
     if (isMobile) {
       console.log('PIDashboardView: Rendering MOBILE view with modal');
@@ -751,6 +827,20 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     // For the fallback case, just update the display order
     setReportOrder(reportIds);
   };
+
+  // Don't render reports if PI is not set or we're restoring filters
+  if (!selectedPI || restoringFiltersRef.current) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+          <div className="text-sm text-gray-600">
+            {restoringFiltersRef.current ? 'Restoring saved filters...' : 'Loading...'}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col">

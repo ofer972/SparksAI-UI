@@ -183,10 +183,16 @@ const ReportRenderer: React.FC<ReportRendererProps> = ({
 
     const fetchReport = async () => {
       try {
+        console.log(`[ReportRenderer] 🌐 Fetching report: ${reportId}`, {
+          filters: sanitizedFilters,
+          filterCacheKey,
+          refreshKey
+        });
         setLoading(true);
         setError(null);
 
         const payload = await apiService.getReport(reportId, sanitizedFilters);
+        console.log(`[ReportRenderer] ✅ Report fetched successfully: ${reportId}`);
 
         if (!isMounted) {
           return;
