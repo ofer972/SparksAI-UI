@@ -718,17 +718,17 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   if (layoutConfig && layoutConfig.rows && layoutConfig.rows.length > 0) {
     // Don't render reports if PI is not set or we're restoring filters
     if (!selectedPI || restoringFiltersRef.current) {
-      return (
-        <div className="flex items-center justify-center h-96">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
             <div className="text-sm text-gray-600">
               {restoringFiltersRef.current ? 'Restoring saved filters...' : 'Loading...'}
             </div>
-          </div>
         </div>
-      );
-    }
+      </div>
+    );
+  }
 
     // On mobile, render as single column regardless of layout
     if (isMobile) {

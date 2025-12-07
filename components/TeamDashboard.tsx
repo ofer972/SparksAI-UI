@@ -462,7 +462,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
       const hasValidTeam = selectedTeam && typeof selectedTeam === 'string' && selectedTeam.trim().length > 0;
       return {
         ...(hasValidTeam ? { team_name: selectedTeam } : {}),
-        isGroup: selectedTreeType === 'group',
+      isGroup: selectedTreeType === 'group',
       };
     },
     [selectedTeam, selectedTreeType]

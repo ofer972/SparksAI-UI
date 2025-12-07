@@ -249,7 +249,7 @@ export default function CreateAgentJobView() {
       (!insightType.requireGroup || selectedGroup[insightType.id]);
     const isLoading = loading[insightType.id] || false;
 
-    return (
+  return (
       <div key={insightType.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 p-3 flex flex-col w-full">
         <div className="flex items-start justify-between mb-2">
           <h3 className="text-base font-bold text-gray-900 flex-1">
@@ -353,11 +353,11 @@ export default function CreateAgentJobView() {
         )}
 
         <div className="mt-3 flex justify-center">
-          <button
+                <button
             onClick={() => handleCreateJob(insightType)}
             disabled={!canCreate || isLoading}
             className="w-full px-4 py-2 text-xs font-semibold bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-md hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
-          >
+                >
             {isLoading ? (
               <span className="flex items-center justify-center gap-2">
                 <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
@@ -367,8 +367,8 @@ export default function CreateAgentJobView() {
                 Creating...
               </span>
             ) : 'Create Job'}
-          </button>
-        </div>
+                </button>
+              </div>
       </div>
     );
   };
@@ -518,8 +518,8 @@ export default function CreateAgentJobView() {
                 </svg>
               </div>
               <h2 className="text-xl font-bold text-gray-900">PI Insights</h2>
-            </div>
-            
+          </div>
+          
             {/* Global PI Filter */}
             <div className="mb-3 bg-white rounded-lg p-3 shadow-sm border border-green-100 flex-shrink-0">
               <label className="block text-xs font-semibold text-gray-700 mb-1.5">
@@ -549,10 +549,10 @@ export default function CreateAgentJobView() {
             ) : (
               <div className="bg-white rounded-lg border border-gray-200 p-6 text-center">
                 <p className="text-gray-500 font-medium">No PI Insights available</p>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
+      </div>
       )}
 
       {/* Success Toast */}

@@ -34,13 +34,13 @@ export default function AgentJobsTab() {
       <div className="h-full flex flex-col min-h-0">
         <div className="mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 flex-shrink-0">
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <input
-              type="text"
-              value={filterText}
-              onChange={(event) => handleFilterChange(event.target.value)}
-              placeholder="Search agent jobs..."
+          <input
+            type="text"
+            value={filterText}
+            onChange={(event) => handleFilterChange(event.target.value)}
+            placeholder="Search agent jobs..."
               className="flex-1 sm:w-72 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+          />
             <button
               onClick={refetch}
               disabled={loading}

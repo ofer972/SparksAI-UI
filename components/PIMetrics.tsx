@@ -52,7 +52,7 @@ function MetricCard({
 
   return (
     <div 
-      className="relative group flex-1 bg-white rounded-2xl shadow-sm border border-gray-200 p-3 flex flex-col items-center justify-center min-h-[85px] min-w-[175px] max-w-[208px]"
+      className="relative group flex-1 bg-gradient-to-br from-white to-gray-50 rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 p-4 flex flex-col items-center text-center h-full"
       onMouseEnter={() => setActiveTooltip(cardId)}
       onMouseLeave={() => setActiveTooltip(null)}
     >
@@ -73,76 +73,80 @@ function MetricCard({
       </div>
 
       {/* Icon at top or Epic Closure info or In Progress Epics info */}
-      {dependencies && dependencies.length > 0 ? (
-        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-xs font-semibold text-gray-700 text-center whitespace-nowrap">
-          Teams with top 3 Dependencies
-        </div>
-      ) : remainingEpics !== undefined || idealRemaining !== undefined ? (
-        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-700 text-center">
+      {dependencies && dependencies.length > 0 ? null : remainingEpics !== undefined || idealRemaining !== undefined ? (
+        <div className="text-xs text-gray-700 text-center mb-2">
           <div className="whitespace-nowrap">
             Remaining: {remainingEpics !== undefined ? remainingEpics : '-'}, Ideal: {idealRemaining !== undefined ? idealRemaining : '-'}
           </div>
         </div>
       ) : totalEpics !== undefined || inProgressPercentage !== undefined ? (
-        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-700 text-center">
+        <div className="text-xs text-gray-700 text-center mb-2">
           <div className="whitespace-nowrap">
             Total Epics: {totalEpics !== undefined ? totalEpics : '-'}, WIP%: {inProgressPercentage !== undefined ? Math.round(inProgressPercentage) : '-'}
           </div>
         </div>
       ) : icon ? (
-        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-lg">
+        <div className="w-8 h-8 mb-2 flex items-center justify-center text-2xl rounded">
           {icon}
         </div>
       ) : null}
 
       {/* Metric Value Area */}
-      <div className="flex-1 flex items-center justify-center pt-4">
+      <div className={`flex-1 flex ${dependencies && dependencies.length > 0 ? 'items-start justify-center' : 'items-center justify-center'}`}>
         {loading ? (
           <div className="animate-pulse">
             <div className="h-8 w-16 bg-gray-200 rounded"></div>
           </div>
         ) : dependencies && dependencies.length > 0 ? (
-          <div className="w-full mt-3">
-            <table className="w-full text-xs border border-gray-300 table-fixed">
-              <colgroup>
-                <col className="w-[72%]" />
-                <col className="w-[28%]" />
-              </colgroup>
-              <thead>
-                <tr className="border-b border-gray-300 bg-gray-50">
-                  <th className="text-left py-0.5 px-1 font-semibold text-gray-700 border-r border-gray-300">Team</th>
-                  <th className="text-center py-0.5 px-1 font-semibold text-gray-700" title="Uncompleted Dependencies">
-                    <div className="leading-tight">
-                      <div>Uncom.</div>
-                      <div>Dep.</div>
-                    </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {dependencies.map((dep, idx) => (
-                  <tr key={idx} className="border-b border-gray-300 last:border-b-0">
-                    <td className="py-1 px-1.5 text-gray-700 truncate border-r border-gray-300 overflow-hidden" title={dep.team}>
+          <div className="w-full space-y-1.5 px-1" style={{ paddingBottom: '10px' }}>
+            {dependencies.map((dep, idx) => {
+              // Calculate max value for relative sizing (use the highest value in the list)
+              const maxIssues = Math.max(...dependencies.map(d => d.uncompletedIssues), 1);
+              const percentage = (dep.uncompletedIssues / maxIssues) * 100;
+              
+              // Determine color based on severity
+              const getBarColor = () => {
+                if (dep.uncompletedIssues >= maxIssues * 0.7) return 'bg-red-500';
+                if (dep.uncompletedIssues >= maxIssues * 0.4) return 'bg-yellow-500';
+                return 'bg-orange-400';
+              };
+              
+              return (
+                <div key={idx} className="space-y-0.5">
+                  {/* Team name and count */}
+                  <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                    <span 
+                      className="text-xs font-semibold text-gray-700 flex-1 min-w-0 break-words leading-tight" 
+                      title={dep.team}
+                    >
                       {dep.team}
-                    </td>
-                    <td className="py-1 px-1.5 text-gray-600 text-center">
+                    </span>
+                    <span className="text-xs font-bold text-gray-800 bg-gray-100 px-1 py-0.5 rounded whitespace-nowrap flex-shrink-0">
                       {dep.uncompletedIssues}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </span>
+                  </div>
+                  
+                  {/* Progress bar visualization */}
+                  <div className="w-full bg-gray-200 rounded-full h-1 overflow-hidden">
+                    <div 
+                      className={`h-full ${getBarColor()} rounded-full transition-all duration-300`}
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : (
-          <div className={`text-xl font-bold ${getColorClass()}`}>
+          <div className={`text-lg font-bold mb-1.5 ${getColorClass()}`}>
             {value !== undefined ? value : '-'}
           </div>
         )}
       </div>
 
       {/* Title at bottom */}
-      <div className="mt-auto pt-1 pb-1 w-full">
-        <h3 className="text-xs font-semibold text-gray-700 text-center">{title}</h3>
+      <div className="mt-auto w-full">
+        <h3 className="text-xs text-gray-700 break-words text-center font-semibold">{title}</h3>
       </div>
     </div>
   );
@@ -163,9 +167,9 @@ export default function PIMetrics({ piName }: PIMetricsProps) {
   if (loading) {
     return (
       <div className="overflow-x-auto">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-12 min-w-max">
+        <div className="grid gap-3 w-full" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-3 flex flex-col items-center justify-center min-h-[85px] min-w-[175px] max-w-[208px] animate-pulse">
+            <div key={i} className="bg-gradient-to-br from-white to-gray-50 rounded-lg border border-gray-200 shadow-sm p-4 flex flex-col items-center text-center h-full animate-pulse">
               <div className="w-8 h-8 bg-gray-200 rounded mb-2"></div>
               <div className="h-5 w-16 bg-gray-200 rounded mb-1.5"></div>
               <div className="h-3 w-20 bg-gray-200 rounded"></div>
@@ -282,7 +286,7 @@ export default function PIMetrics({ piName }: PIMetricsProps) {
 
   return (
     <div className="relative" style={{ overflow: 'visible' }}>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-12 overflow-x-auto" style={{ overflow: 'visible' }}>
+      <div className="grid gap-3 w-full" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', overflow: 'visible' }}>
         {metricsList.map((metric) => (
           <MetricCard
             key={metric.cardId}
