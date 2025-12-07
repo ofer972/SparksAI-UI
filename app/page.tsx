@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getAccessToken, refreshAccessToken, clearTokens, getCurrentUser, logout } from '@/lib/auth';
 import SparksAILogo from '@/components/SparksAILogo';
 import TeamMetrics from '@/components/TeamMetrics';
+import PIMetrics from '@/components/PIMetrics';
 import PIDashboardView from '@/components/PIDashboardView';
 import GeneralDataView from '@/components/GeneralDataView';
 import AIChatModal from '@/components/AIChatModal';
@@ -1221,9 +1222,18 @@ export default function Home() {
 
         {/* Team Metrics Bottom Bar - only for team-ai-insights on desktop */}
         {activeNavItem === 'team-ai-insights' && (
-          <div className="hidden md:flex flex-shrink-0 border-t border-gray-200 bg-white relative z-30" style={{ zoom: 0.90 }}>
-            <div className="px-3 md:px-4 py-2 md:py-2.5 w-full">
+          <div className="hidden md:flex flex-shrink-0 border-t border-gray-200 bg-white relative z-30" style={{ zoom: 0.90, overflow: 'visible' }}>
+            <div className="px-3 md:px-4 py-2 md:py-2.5 w-full" style={{ overflow: 'visible' }}>
               <TeamMetrics teamName={selectedTeam} isGroup={selectedTreeType === 'group'} />
+            </div>
+          </div>
+        )}
+
+        {/* PI Metrics Bottom Bar - only for pi-quarter on desktop */}
+        {activeNavItem === 'pi-quarter' && (
+          <div className="hidden md:flex flex-shrink-0 border-t border-gray-200 bg-white relative z-30" style={{ zoom: 0.90, overflow: 'visible' }}>
+            <div className="px-3 md:px-4 py-2 md:py-2.5 w-full" style={{ overflow: 'visible' }}>
+              <PIMetrics piName={selectedPI} />
             </div>
           </div>
         )}

@@ -25,6 +25,7 @@ export const API_CONFIG = {
       getPredictability: '/pis/predictability',
       getBurndown: '/pis/burndown',
       getScopeChanges: '/pis/scope-changes',
+      getPIStatusForToday: '/pis/get-pi-status-for-today',
     },
     
     // Burndown endpoints
@@ -410,6 +411,31 @@ export interface PIMetricsSummaryData {
   remaining_epics?: number;
   ideal_remaining?: number;
   [key: string]: any;
+}
+
+export interface PIStatusForTodayItem {
+  pi_name?: string;
+  pi_start_date?: string;
+  pi_end_date?: string;
+  latest_snapshot_date?: string;
+  planned_epics?: number;
+  added_epics?: number;
+  removed_epics?: number;
+  closed_epics?: number;
+  remaining_epics?: number;
+  ideal_remaining?: number;
+  total_issues?: number;
+  progress_delta_pct: number;
+  progress_delta_pct_status: 'red' | 'yellow' | 'green';
+  in_progress_percentage?: number;
+  count_in_progress_status?: 'red' | 'yellow' | 'green';
+  [key: string]: any; // Allow other fields in response
+}
+
+export interface PIStatusForTodayResponse {
+  data: PIStatusForTodayItem[];
+  count: number;
+  message: string;
 }
 
 export interface ScopeChangesResponse {

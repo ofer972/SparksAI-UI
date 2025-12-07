@@ -2,6 +2,7 @@
 
 import React from 'react';
 import PIAICards from '@/components/PIAICards';
+import PIMetrics from '@/components/PIMetrics';
 
 interface PIAIInsightsViewProps {
   selectedPI: string;
@@ -46,14 +47,17 @@ export default function PIAIInsightsView({
   }
   
   return (
-    <div className="h-full overflow-auto">
-      <div className="p-2" style={{ zoom: 0.90 }}>
-        {/* PI AI Cards Section */}
-        <div className="mb-4">
-          <PIAICards piName={selectedPI} />
+    <>
+      <div className="pt-2 pb-2 pr-2 pl-[7px]" style={{ zoom: 0.90 }}>
+        <PIAICards piName={selectedPI} />
+      </div>
+      {/* PI Metrics on mobile - inline after content */}
+      <div className="md:hidden mt-4 border-t border-gray-200 bg-white" style={{ zoom: 0.90, overflow: 'visible' }}>
+        <div className="px-3 py-2" style={{ overflow: 'visible' }}>
+          <PIMetrics piName={selectedPI} />
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

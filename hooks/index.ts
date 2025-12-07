@@ -5,4 +5,5 @@ export * from './useAgentJobs';
 export * from './usePIAICards';
 export * from './usePIRecommendations';
 export * from './usePageSettings';
+export * from './usePIMetrics';
 export { useUser, useUserId } from '@/contexts/UserContext';

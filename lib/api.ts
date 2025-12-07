@@ -26,7 +26,9 @@ import {
   ReportInstancePayload,
   DashboardViewConfig,
   Group,
-  Team
+  Team,
+  PIStatusForTodayResponse,
+  PIStatusForTodayItem
 } from './config';
 import { getAuthHeaders, refreshAccessToken, clearTokens, getCurrentUser } from './auth';
 
@@ -367,6 +369,34 @@ export class ApiService {
     }
 
     return response.json();
+  }
+
+  // PI Status For Today API
+  async getPIStatusForToday(targetPiName: string): Promise<PIStatusForTodayResponse> {
+    const params = new URLSearchParams({
+      pi: targetPiName,
+    });
+
+    const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.pis.getPIStatusForToday)}?${params}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch PI status for today: ${response.statusText}`);
+    }
+
+    const result: ApiResponse<PIStatusForTodayItem[]> = await response.json();
+    
+    if (result.success && result.data) {
+      // result.data is an array of PIStatusForTodayItem
+      // Wrap it in PIStatusForTodayResponse structure
+      const responseData: PIStatusForTodayResponse = {
+        data: result.data,
+        count: result.data.length,
+        message: result.message || '',
+      };
+      return responseData;
+    }
+    
+    return { data: [], count: 0, message: '' };
   }
 
   // AI Cards API

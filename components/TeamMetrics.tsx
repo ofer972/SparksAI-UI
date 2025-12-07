@@ -165,7 +165,15 @@ const DaysLeftCard = ({ id, daysLeft, daysInSprint, tooltip, className = "", act
       </div>
       
       {/* Tooltip */}
-      <div className={`absolute bottom-full mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10 max-w-xs left-1/2 transform -translate-x-1/2 ${isTooltipVisible ? 'opacity-100' : 'opacity-0'}`}>
+      <div 
+        className={`absolute bottom-full mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded transition-opacity duration-200 pointer-events-none z-[100] max-w-xs left-1/2 transform -translate-x-1/2 ${isTooltipVisible ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+        style={{ 
+          whiteSpace: 'normal',
+          wordBreak: 'break-word',
+          minWidth: '200px',
+          maxWidth: '300px'
+        }}
+      >
         {tooltip}
         <div className={`absolute top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 left-1/2 transform -translate-x-1/2`}></div>
       </div>
@@ -225,7 +233,15 @@ const MetricCard = ({ id, icon, value, label, tooltip, className = "", isLeftmos
         {label}
       </div>
       {/* Tooltip */}
-      <div className={`absolute bottom-full mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10 max-w-xs ${isLeftmost ? 'left-0' : 'left-1/2 transform -translate-x-1/2'} ${isTooltipVisible ? 'opacity-100' : 'opacity-0'}`}>
+      <div 
+        className={`absolute bottom-full mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded transition-opacity duration-200 pointer-events-none z-[100] max-w-xs ${isLeftmost ? 'left-0' : 'left-1/2 transform -translate-x-1/2'} ${isTooltipVisible ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+        style={{ 
+          whiteSpace: 'normal',
+          wordBreak: 'break-word',
+          minWidth: '200px',
+          maxWidth: '300px'
+        }}
+      >
         {tooltip}
         <div className={`absolute top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 ${isLeftmost ? 'left-4' : 'left-1/2 transform -translate-x-1/2'}`}></div>
       </div>
@@ -288,7 +304,7 @@ export default function TeamMetrics({ teamName, isGroup }: TeamMetricsProps) {
   }
 
   return (
-    <div className="overflow-x-hidden">
+    <div className="relative">
       <div className="grid gap-3 w-full" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
         {/* Avg Velocity */}
         <MetricCard

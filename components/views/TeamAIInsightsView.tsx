@@ -61,8 +61,8 @@ export default function TeamAIInsightsView({
         />
       </div>
       {/* Team Metrics on mobile - inline after content */}
-      <div className="md:hidden mt-4 border-t border-gray-200 bg-white" style={{ zoom: 0.90 }}>
-        <div className="px-3 py-2">
+      <div className="md:hidden mt-4 border-t border-gray-200 bg-white" style={{ zoom: 0.90, overflow: 'visible' }}>
+        <div className="px-3 py-2" style={{ overflow: 'visible' }}>
           <TeamMetrics teamName={selectedTeam} isGroup={selectedTreeType === 'group'} />
         </div>
       </div>
