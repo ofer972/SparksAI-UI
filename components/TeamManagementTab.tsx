@@ -35,6 +35,10 @@ export default function TeamManagementTab() {
   const [teamToEdit, setTeamToEdit] = useState<Team | null>(null);
   const [editTeamMembers, setEditTeamMembers] = useState<number>(0);
   const [editTeamAIInsight, setEditTeamAIInsight] = useState<boolean>(false);
+  const [showEditGroupModal, setShowEditGroupModal] = useState(false);
+  const [groupToEdit, setGroupToEdit] = useState<Group | null>(null);
+  const [editGroupName, setEditGroupName] = useState<string>('');
+  const [editGroupAIInsight, setEditGroupAIInsight] = useState<boolean>(false);
   
   // Form states
   const [newGroupName, setNewGroupName] = useState('');
@@ -353,6 +357,46 @@ export default function TeamManagementTab() {
     }
   };
 
+  const handleEditGroup = (group: Group) => {
+    setGroupToEdit(group);
+    setEditGroupName(group.group_name);
+    setEditGroupAIInsight(group.ai_insight || false);
+    setShowEditGroupModal(true);
+  };
+
+  const confirmEditGroup = async () => {
+    if (!groupToEdit) return;
+    
+    try {
+      await apiService.updateGroup(groupToEdit.group_key, {
+        group_name: editGroupName.trim(),
+        ai_insight: editGroupAIInsight,
+      });
+      
+      // Update groups state directly
+      setGroups(prevGroups => 
+        prevGroups.map(g => 
+          g.group_key === groupToEdit.group_key
+            ? { 
+                ...g, 
+                group_name: editGroupName.trim(),
+                ai_insight: editGroupAIInsight
+              }
+            : g
+        )
+      );
+      
+      // Refresh the global context so top bar and other components update
+      await refreshContext();
+      
+      setShowEditGroupModal(false);
+      setGroupToEdit(null);
+      setEditGroupName('');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to update group');
+    }
+  };
+
   const toggleGroupExpansion = (groupId: number) => {
     setExpandedGroups(prev => {
       const newSet = new Set(prev);
@@ -484,6 +528,13 @@ export default function TeamManagementTab() {
               {group.group_name}
             </span>
 
+            {/* AI Scheduling indicator */}
+            {group.ai_insight && (
+              <span className="text-xs text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded" title="Included in group AI scheduling">
+                ✨ AI
+              </span>
+            )}
+
             {/* Team count badge - shows total teams including subgroups */}
             <span className="bg-gradient-to-r from-green-500 to-green-600 text-white text-xs font-bold px-1.5 py-0.5 rounded-full shadow-sm">
               {countAllTeams(node)}
@@ -491,6 +542,18 @@ export default function TeamManagementTab() {
 
             {/* Action buttons */}
             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditGroup(group);
+                }}
+                className="p-1 hover:bg-purple-50 rounded transition-colors"
+                title="Edit group"
+              >
+                <svg className="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </button>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -1356,6 +1419,72 @@ export default function TeamManagementTab() {
               <button
                 onClick={confirmEditTeam}
                 className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm py-1.5 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Group Modal */}
+      {showEditGroupModal && groupToEdit && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="px-4 py-2.5 border-b border-gray-200">
+              <h3 className="text-lg font-bold text-gray-900">Edit Group</h3>
+              <p className="text-xs text-gray-600 mt-0.5">
+                Group: <span className="font-semibold">{groupToEdit.group_name}</span>
+              </p>
+            </div>
+
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-900 mb-1">
+                  Group Name
+                </label>
+                <input
+                  type="text"
+                  value={editGroupName}
+                  onChange={(e) => setEditGroupName(e.target.value)}
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter group name"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editGroupAIInsight}
+                    onChange={(e) => setEditGroupAIInsight(e.target.checked)}
+                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  />
+                  <span className="text-sm font-medium text-gray-900">
+                    Include in Group AI Scheduling
+                  </span>
+                </label>
+                <p className="text-xs text-gray-500 mt-1 ml-6">
+                  When enabled, this group will receive automated AI-powered insights and recommendations
+                </p>
+              </div>
+            </div>
+
+            <div className="px-4 py-2.5 bg-gray-50 rounded-b-xl flex gap-2">
+              <button
+                onClick={() => {
+                  setShowEditGroupModal(false);
+                  setGroupToEdit(null);
+                  setEditGroupName('');
+                }}
+                className="flex-1 bg-white text-gray-700 text-sm border border-gray-300 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmEditGroup}
+                disabled={!editGroupName.trim()}
+                className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm py-1.5 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-md"
               >
                 Save Changes
               </button>

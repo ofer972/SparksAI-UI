@@ -533,6 +533,7 @@ export interface Group {
   group_key: number;
   group_name: string;
   parent_group_key: number | null;
+  ai_insight?: boolean;
 }
 
 export interface Team {

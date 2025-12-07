@@ -1583,6 +1583,7 @@ export class ApiService {
       group_key: g.group_key ?? g.id,
       group_name: g.group_name ?? g.name,
       parent_group_key: g.parent_group_key ?? g.parent_id,
+      ai_insight: g.ai_insight ?? false,
     }));
     
     console.log('[getAllGroups] Normalized groups:', normalizedGroups);
@@ -1624,12 +1625,22 @@ export class ApiService {
     return result.data.group;
   }
 
-  async updateGroup(groupId: number, groupName?: string, parentGroupKey?: number | null): Promise<Group> {
+  async updateGroup(groupId: number, updates: { group_name?: string; parent_group_key?: number | null; ai_insight?: boolean }): Promise<Group> {
     const url = `${buildBackendUrl(API_CONFIG.endpoints.groups.update)}/${groupId}`;
+    const body: { group_name?: string; parent_group_key?: number | null; ai_insight?: boolean } = {};
+    if (updates.group_name !== undefined) {
+      body.group_name = updates.group_name;
+    }
+    if (updates.parent_group_key !== undefined) {
+      body.parent_group_key = updates.parent_group_key;
+    }
+    if (updates.ai_insight !== undefined) {
+      body.ai_insight = updates.ai_insight;
+    }
     const response = await authFetch(url, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ group_name: groupName, parent_group_key: parentGroupKey }),
+      body: JSON.stringify(body),
     });
     if (!response.ok) {
       throw new Error(`Failed to update group: ${response.status} ${response.statusText}`);
