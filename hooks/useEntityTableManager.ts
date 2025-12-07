@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { EntityConfig, EditableEntityConfig } from '@/lib/entityConfig';
 import { buildBackendUrl } from '@/lib/config';
+import { authFetch } from '@/lib/api';
 
 export interface UseEntityTableManagerReturn<T> {
   data: T[];
@@ -72,9 +73,18 @@ function createGenericDeleteItem<T>(
 
   // Create and return the generic delete function
   return async (id: string) => {
-    const url = `${buildBackendUrl(deleteEndpoint!)}/${id}`;
+    // Ensure deleteEndpoint doesn't already include /api/v1/
+    let cleanEndpoint = deleteEndpoint!;
+    if (cleanEndpoint.startsWith('/api/v1/')) {
+      cleanEndpoint = cleanEndpoint.replace('/api/v1/', '/');
+    } else if (cleanEndpoint.startsWith('api/v1/')) {
+      cleanEndpoint = cleanEndpoint.replace('api/v1/', '/');
+    }
     
-    const response = await fetch(url, {
+    const url = `${buildBackendUrl(cleanEndpoint)}/${id}`;
+    console.log(`[useEntityTableManager] Delete URL: ${url} (from endpoint: ${deleteEndpoint})`);
+    
+    const response = await authFetch(url, {
       method: 'DELETE',
       headers: {
         'accept': 'application/json',

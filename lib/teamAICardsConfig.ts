@@ -16,8 +16,8 @@ export interface TeamAICard {
 
 export const teamAICardsConfig: EntityConfig<TeamAICard> = {
   endpoints: {
-    list: '/api/v1/team-ai-cards',
-    detail: '/api/v1/team-ai-cards',
+    list: '/team-ai-cards',
+    detail: '/team-ai-cards',
   },
   
   fetchList: async () => {

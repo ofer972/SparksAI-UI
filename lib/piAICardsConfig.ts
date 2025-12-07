@@ -8,8 +8,8 @@ export type PIAICard = AICard;
 
 export const piAICardsConfig: EntityConfig<PIAICard> = {
   endpoints: {
-    list: '/api/v1/pi-ai-cards',
-    detail: '/api/v1/pi-ai-cards',
+    list: '/pi-ai-cards',
+    detail: '/pi-ai-cards',
   },
 
   fetchList: async () => {
