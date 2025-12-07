@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useRef, useEffect as useEffectReact } from 'react';
+import React, { useState, useRef, useCallback, useEffect as useEffectReact } from 'react';
 import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 import { ViewRecordModal } from '@/components/ViewRecordModal';
 import { EntityConfig } from '@/lib/entityConfig';
 import AIChatModal from '@/components/AIChatModal';
@@ -239,14 +240,149 @@ export default function AICardsInsight({
   
   // State for button positions per recommendation (recId -> {top, left})
   const [buttonPositions, setButtonPositions] = useState<Record<number, {top: number, left: number}>>({});
+  
+  // State for full information tooltip (cardId -> boolean)
+  const [fullInfoTooltipOpen, setFullInfoTooltipOpen] = useState<Record<number, boolean>>({});
+  
+  // State for full information tooltip positions (cardId -> {top, left})
+  const [fullInfoTooltipPositions, setFullInfoTooltipPositions] = useState<Record<number, {top: number, left: number}>>({});
+  
+  // Ref to store button elements for positioning
+  const eyeIconRefs = useRef<Record<number, HTMLElement>>({});
+
+  // Calculate tooltip position for a given card
+  const calculateTooltipPosition = useCallback((cardId: number): { top: number; left: number } | null => {
+    const buttonElement = eyeIconRefs.current[cardId];
+    if (!buttonElement) return null;
+    
+    const tooltipWidth = 500; // Fixed tooltip width
+    const tooltipHeight = 400; // Fixed tooltip height
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const padding = 10; // Padding from screen edges
+    const gap = 10; // Gap between icon and tooltip
+    
+    const rect = buttonElement.getBoundingClientRect();
+    const iconCenterX = rect.left + rect.width / 2;
+    
+    // Calculate horizontal position (centered on icon)
+    let left = iconCenterX - tooltipWidth / 2;
+    
+    // Adjust if tooltip would go off right edge
+    if (left + tooltipWidth > viewportWidth - padding) {
+      left = viewportWidth - tooltipWidth - padding;
+    }
+    
+    // Adjust if tooltip would go off left edge
+    if (left < padding) {
+      left = padding;
+    }
+    
+    // Calculate vertical position - check if there's space below first
+    const spaceBelow = viewportHeight - rect.bottom - gap;
+    const spaceAbove = rect.top - gap;
+    
+    let top: number;
+    
+    // If there's enough space below, position below the icon
+    if (spaceBelow >= tooltipHeight) {
+      top = rect.bottom + gap;
+      // Ensure it doesn't go off bottom
+      if (top + tooltipHeight > viewportHeight - padding) {
+        top = viewportHeight - tooltipHeight - padding;
+      }
+    } 
+    // If not enough space below but enough space above, position above
+    else if (spaceAbove >= tooltipHeight) {
+      top = rect.top - tooltipHeight - gap;
+      // Ensure it doesn't go off top
+      if (top < padding) {
+        top = padding;
+      }
+    }
+    // If neither has enough space, choose the side with more space
+    else {
+      if (spaceBelow >= spaceAbove) {
+        // Position below, but adjust to fit
+        top = rect.bottom + gap;
+        if (top + tooltipHeight > viewportHeight - padding) {
+          top = viewportHeight - tooltipHeight - padding;
+        }
+        if (top < padding) {
+          top = padding;
+        }
+      } else {
+        // Position above, but adjust to fit
+        top = rect.top - tooltipHeight - gap;
+        if (top < padding) {
+          top = padding;
+        }
+        if (top + tooltipHeight > viewportHeight - padding) {
+          top = viewportHeight - tooltipHeight - padding;
+        }
+      }
+    }
+    
+    // Final boundary checks
+    if (top < padding) {
+      top = padding;
+    }
+    if (top + tooltipHeight > viewportHeight - padding) {
+      top = viewportHeight - tooltipHeight - padding;
+    }
+    if (left < padding) {
+      left = padding;
+    }
+    if (left + tooltipWidth > viewportWidth - padding) {
+      left = viewportWidth - tooltipWidth - padding;
+    }
+    
+    return { top, left };
+  }, []);
+
+  // Toggle full information tooltip
+  const toggleFullInfoTooltip = (cardId: number, event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    
+    setFullInfoTooltipOpen(prev => {
+      const isCurrentlyOpen = prev[cardId];
+      const newState = { ...prev };
+      
+      if (isCurrentlyOpen) {
+        delete newState[cardId];
+        delete eyeIconRefs.current[cardId];
+        setFullInfoTooltipPositions(prevPos => {
+          const newPos = { ...prevPos };
+          delete newPos[cardId];
+          return newPos;
+        });
+      } else {
+        newState[cardId] = true;
+        
+        // Calculate position
+        const position = calculateTooltipPosition(cardId);
+        if (position) {
+          setFullInfoTooltipPositions(prevPos => ({
+            ...prevPos,
+            [cardId]: position
+          }));
+        }
+      }
+      
+      return newState;
+    });
+  };
 
   // Handle click outside to close tooltips
   useEffectReact(() => {
     const handleClickOutside = (event: MouseEvent) => {
       // Check if any tooltip is open
       const hasOpenTooltips = Object.values(expandedRecTooltips).some(isOpen => isOpen);
+      const hasOpenFullInfoTooltips = Object.values(fullInfoTooltipOpen).some(isOpen => isOpen);
       
-      if (hasOpenTooltips) {
+      if (hasOpenTooltips || hasOpenFullInfoTooltips) {
         // Check if the click target is not inside any tooltip or "see more" button
         const target = event.target as HTMLElement;
         const isInsideTooltip = target.closest('[data-tooltip-content]');
@@ -256,6 +392,8 @@ export default function AICardsInsight({
           // Close all tooltips
           setExpandedRecTooltips({});
           setButtonPositions({});
+          setFullInfoTooltipOpen({});
+          setFullInfoTooltipPositions({});
         }
       }
     };
@@ -264,7 +402,43 @@ export default function AICardsInsight({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [expandedRecTooltips]);
+  }, [expandedRecTooltips, fullInfoTooltipOpen]);
+
+  // Handle scroll to recalculate tooltip positions
+  useEffectReact(() => {
+    const handleScroll = () => {
+      // Recalculate positions for all open tooltips
+      const openTooltipIds = Object.keys(fullInfoTooltipOpen)
+        .filter(cardId => fullInfoTooltipOpen[Number(cardId)])
+        .map(Number);
+      
+      if (openTooltipIds.length > 0) {
+        const newPositions: Record<number, { top: number; left: number }> = {};
+        
+        openTooltipIds.forEach(cardId => {
+          const position = calculateTooltipPosition(cardId);
+          if (position) {
+            newPositions[cardId] = position;
+          }
+        });
+        
+        if (Object.keys(newPositions).length > 0) {
+          setFullInfoTooltipPositions(prevPos => ({
+            ...prevPos,
+            ...newPositions
+          }));
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, true); // Use capture phase to catch all scrolls
+    window.addEventListener('resize', handleScroll);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [fullInfoTooltipOpen, calculateTooltipPosition]);
 
   const toggleRecommendation = (cardId: number) => {
     setExpandedRecommendations(prev => ({
@@ -439,6 +613,25 @@ export default function AICardsInsight({
                             return `${formattedDate} ${formattedTime}`;
                           })()}
                         </div>
+                      )}
+                      {/* Eye icon for Full Information tooltip */}
+                      {card.full_information && (
+                        <button
+                          ref={(el) => {
+                            if (el) {
+                              eyeIconRefs.current[card.id] = el;
+                            }
+                          }}
+                          onClick={(e) => toggleFullInfoTooltip(card.id, e)}
+                          data-tooltip-button={`full-info-${card.id}`}
+                          className="flex-shrink-0 p-1 text-gray-500 hover:text-blue-600 transition-colors rounded hover:bg-blue-50"
+                          title="View full information"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        </button>
                       )}
                       <button 
                         onClick={() => handleViewCard(card)}
@@ -844,6 +1037,74 @@ export default function AICardsInsight({
           piName={piName}
         />
       )}
+
+      {/* Full Information Tooltips */}
+      {typeof window !== 'undefined' && cards.map((card) => {
+        const isTooltipOpen = fullInfoTooltipOpen[card.id];
+        const tooltipPosition = fullInfoTooltipPositions[card.id];
+        
+        if (!isTooltipOpen || !tooltipPosition || !card.full_information) {
+          return null;
+        }
+        
+        const isMarkdown = config.markdownFields?.includes('full_information');
+        
+        return createPortal(
+          <div
+            data-tooltip-content
+            className="fixed z-[10002]"
+            style={{
+              top: `${tooltipPosition.top}px`,
+              left: `${tooltipPosition.left}px`,
+            }}
+          >
+            <div className="bg-white border-2 border-blue-300 rounded-lg shadow-2xl p-4" style={{ width: '500px', height: '400px', overflowY: 'auto' }}>
+              <div className="flex items-center justify-between mb-3 border-b border-gray-200 pb-2">
+                <h4 className="text-sm font-semibold text-gray-800">Full Information</h4>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFullInfoTooltip(card.id);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="bg-gray-50 p-3 rounded text-sm text-gray-900">
+                {isMarkdown ? (
+                  <div className="prose prose-sm max-w-none">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm, remarkBreaks]}
+                      components={{
+                        p: ({ children }) => <p className="text-sm text-gray-900 mb-2">{children}</p>,
+                        strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                        em: ({ children }) => <em className="italic">{children}</em>,
+                        ul: ({ children }) => <ul className="list-disc list-inside text-sm text-gray-900 mb-2">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal list-inside text-sm text-gray-900 mb-2">{children}</ol>,
+                        li: ({ children }) => <li className="text-sm text-gray-900">{children}</li>,
+                        code: ({ children }) => <code className="bg-gray-100 px-1 rounded text-xs">{children}</code>,
+                        pre: ({ children }) => <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto whitespace-pre-wrap">{children}</pre>,
+                        h1: ({ children }) => <h1 className="text-lg font-bold text-gray-900 mb-2">{children}</h1>,
+                        h2: ({ children }) => <h2 className="text-base font-bold text-gray-900 mb-2">{children}</h2>,
+                        h3: ({ children }) => <h3 className="text-sm font-semibold text-gray-900 mb-2">{children}</h3>,
+                        blockquote: ({ children }) => <blockquote className="border-l-2 border-gray-300 pl-2 italic text-gray-600 mb-2">{children}</blockquote>,
+                      }}
+                    >
+                      {card.full_information}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <div className="whitespace-pre-wrap font-mono text-xs">{card.full_information}</div>
+                )}
+              </div>
+            </div>
+          </div>,
+          document.body
+        );
+      })}
     </div>
   );
 }
