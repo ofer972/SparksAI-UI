@@ -8,73 +8,59 @@ interface PIMetricsProps {
 }
 
 interface MetricCardProps {
-  id: string;
-  icon: string;
-  value: string;
-  label: string;
+  title: string | React.ReactNode;
   tooltip: string;
-  status?: 'red' | 'yellow' | 'green';
-  className?: string;
-  isLeftmost?: boolean;
+  value?: string | number;
+  loading?: boolean;
+  icon?: string;
+  color?: 'red' | 'yellow' | 'green';
+  remainingEpics?: number;
+  idealRemaining?: number;
+  totalEpics?: number;
+  inProgressPercentage?: number;
+  dependencies?: Array<{ team: string; uncompletedIssues: number }>;
   activeTooltip: string | null;
   setActiveTooltip: (id: string | null) => void;
+  cardId: string;
 }
 
-const MetricCard = ({ 
-  id, 
-  icon, 
-  value, 
-  label, 
+function MetricCard({ 
+  title, 
   tooltip, 
-  status, 
-  className = "", 
-  isLeftmost = false, 
-  activeTooltip, 
-  setActiveTooltip
-}: MetricCardProps) => {
-  const getStatusColor = (status?: 'red' | 'yellow' | 'green') => {
-    switch (status) {
-      case 'red':
-        return 'text-red-600';
-      case 'yellow':
-        return 'text-yellow-600';
-      case 'green':
-        return 'text-green-600';
-      default:
-        return 'text-gray-800';
-    }
+  value, 
+  loading, 
+  icon, 
+  color, 
+  remainingEpics, 
+  idealRemaining, 
+  totalEpics, 
+  inProgressPercentage, 
+  dependencies,
+  activeTooltip,
+  setActiveTooltip,
+  cardId
+}: MetricCardProps) {
+  // Get color class based on status
+  const getColorClass = () => {
+    if (color === 'red') return 'text-red-600';
+    if (color === 'yellow') return 'text-yellow-600';
+    if (color === 'green') return 'text-green-600';
+    return 'text-gray-900';
   };
 
-  const isTooltipVisible = activeTooltip === id;
+  const isTooltipVisible = activeTooltip === cardId;
 
   return (
     <div 
-      className={`bg-gradient-to-br from-white to-gray-50 rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 p-4 flex flex-col items-center text-center h-full relative ${className}`}
-      onMouseEnter={() => {
-        setActiveTooltip(id);
-      }}
-      onMouseLeave={() => {
-        setActiveTooltip(null);
-      }}
+      className="relative group flex-1 bg-white rounded-2xl shadow-sm border border-gray-200 p-3 flex flex-col items-center justify-center min-h-[85px] min-w-[175px] max-w-[208px]"
+      onMouseEnter={() => setActiveTooltip(cardId)}
+      onMouseLeave={() => setActiveTooltip(null)}
     >
-      {/* Icon */}
-      <div className="w-8 h-8 mb-2 flex items-center justify-center text-2xl rounded">
-        {icon}
-      </div>
-      
-      {/* Value */}
-      <div className={`text-lg font-bold mb-1.5 ${getStatusColor(status)}`}>
-        {value}
-      </div>
-      
-      {/* Label */}
-      <div className="text-xs text-gray-700 break-words text-center font-semibold">
-        {label}
-      </div>
-      
-      {/* Tooltip */}
+      {/* Tooltip - appears on top */}
       <div 
-        className={`absolute bottom-full mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded transition-opacity duration-200 pointer-events-none z-[100] max-w-xs ${isLeftmost ? 'left-0' : 'left-1/2 transform -translate-x-1/2'} ${isTooltipVisible ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+        className={`absolute bottom-full mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded shadow-xl pointer-events-none z-[100] max-w-xs left-1/2 transform -translate-x-1/2 transition-opacity duration-200 ${
+          isTooltipVisible ? 'opacity-100 visible' : 'opacity-0 invisible'
+        }`}
         style={{ 
           whiteSpace: 'normal',
           wordBreak: 'break-word',
@@ -83,11 +69,84 @@ const MetricCard = ({
         }}
       >
         {tooltip}
-        <div className={`absolute top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 ${isLeftmost ? 'left-4' : 'left-1/2 transform -translate-x-1/2'}`}></div>
+        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+      </div>
+
+      {/* Icon at top or Epic Closure info or In Progress Epics info */}
+      {dependencies && dependencies.length > 0 ? (
+        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-xs font-semibold text-gray-700 text-center whitespace-nowrap">
+          Teams with top 3 Dependencies
+        </div>
+      ) : remainingEpics !== undefined || idealRemaining !== undefined ? (
+        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-700 text-center">
+          <div className="whitespace-nowrap">
+            Remaining: {remainingEpics !== undefined ? remainingEpics : '-'}, Ideal: {idealRemaining !== undefined ? idealRemaining : '-'}
+          </div>
+        </div>
+      ) : totalEpics !== undefined || inProgressPercentage !== undefined ? (
+        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-700 text-center">
+          <div className="whitespace-nowrap">
+            Total Epics: {totalEpics !== undefined ? totalEpics : '-'}, WIP%: {inProgressPercentage !== undefined ? Math.round(inProgressPercentage) : '-'}
+          </div>
+        </div>
+      ) : icon ? (
+        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-lg">
+          {icon}
+        </div>
+      ) : null}
+
+      {/* Metric Value Area */}
+      <div className="flex-1 flex items-center justify-center pt-4">
+        {loading ? (
+          <div className="animate-pulse">
+            <div className="h-8 w-16 bg-gray-200 rounded"></div>
+          </div>
+        ) : dependencies && dependencies.length > 0 ? (
+          <div className="w-full mt-3">
+            <table className="w-full text-xs border border-gray-300 table-fixed">
+              <colgroup>
+                <col className="w-[72%]" />
+                <col className="w-[28%]" />
+              </colgroup>
+              <thead>
+                <tr className="border-b border-gray-300 bg-gray-50">
+                  <th className="text-left py-0.5 px-1 font-semibold text-gray-700 border-r border-gray-300">Team</th>
+                  <th className="text-center py-0.5 px-1 font-semibold text-gray-700" title="Uncompleted Dependencies">
+                    <div className="leading-tight">
+                      <div>Uncom.</div>
+                      <div>Dep.</div>
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {dependencies.map((dep, idx) => (
+                  <tr key={idx} className="border-b border-gray-300 last:border-b-0">
+                    <td className="py-1 px-1.5 text-gray-700 truncate border-r border-gray-300 overflow-hidden" title={dep.team}>
+                      {dep.team}
+                    </td>
+                    <td className="py-1 px-1.5 text-gray-600 text-center">
+                      {dep.uncompletedIssues}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className={`text-xl font-bold ${getColorClass()}`}>
+            {value !== undefined ? value : '-'}
+          </div>
+        )}
+      </div>
+
+      {/* Title at bottom */}
+      <div className="mt-auto pt-1 pb-1 w-full">
+        <h3 className="text-xs font-semibold text-gray-700 text-center">{title}</h3>
       </div>
     </div>
   );
-};
+}
 
 export default function PIMetrics({ piName }: PIMetricsProps) {
   const { metrics, loading, error } = usePIMetrics(piName);
@@ -103,13 +162,13 @@ export default function PIMetrics({ piName }: PIMetricsProps) {
 
   if (loading) {
     return (
-      <div className="overflow-x-hidden">
-        <div className="grid gap-3 w-full" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
+      <div className="overflow-x-auto">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-12 min-w-max">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="bg-gradient-to-br from-white to-gray-50 rounded-lg border border-gray-200 shadow-sm p-4 animate-pulse h-full">
-              <div className="w-8 h-8 bg-transparent rounded mb-2 mx-auto"></div>
-              <div className="h-5 bg-gray-200 rounded mb-1.5"></div>
-              <div className="h-3 bg-gray-200 rounded"></div>
+            <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-3 flex flex-col items-center justify-center min-h-[85px] min-w-[175px] max-w-[208px] animate-pulse">
+              <div className="w-8 h-8 bg-gray-200 rounded mb-2"></div>
+              <div className="h-5 w-16 bg-gray-200 rounded mb-1.5"></div>
+              <div className="h-3 w-20 bg-gray-200 rounded"></div>
             </div>
           ))}
         </div>
@@ -132,7 +191,7 @@ export default function PIMetrics({ piName }: PIMetricsProps) {
     }
     
     return (
-      <div className="overflow-x-hidden">
+      <div className="overflow-x-auto">
         <div className="text-center py-4">
           <div className="text-red-500 text-2xl mb-2">⚠️</div>
           <p className="text-xs text-gray-700 font-semibold">Error loading metrics</p>
@@ -143,78 +202,107 @@ export default function PIMetrics({ piName }: PIMetricsProps) {
 
   const epicClosureValue = metrics?.epicClosure?.value !== undefined && metrics.epicClosure.value !== null
     ? `${metrics.epicClosure.value.toFixed(1)}%`
-    : '-';
+    : undefined;
 
   const inProgressValue = metrics?.inProgressEpics?.count !== undefined && metrics.inProgressEpics.count !== null
-    ? metrics.inProgressEpics.count.toString()
-    : '-';
+    ? metrics.inProgressEpics.count
+    : undefined;
+
+  const cycleTimeValue = metrics?.averageCycleTime?.value !== undefined && metrics.averageCycleTime.value !== null
+    ? `${metrics.averageCycleTime.value.toFixed(1)} days`
+    : undefined;
+
+  const metricsList = [
+    {
+      cardId: 'epicClosure',
+      title: 'Epic Closure',
+      tooltip: metrics?.epicClosure?.totalEpics !== undefined && metrics.epicClosure.remainingEpics !== undefined && metrics.epicClosure.idealRemaining !== undefined
+        ? `Closure gap from the ideal. Total Epics: ${metrics.epicClosure.totalEpics}. Remaining epics: ${metrics.epicClosure.remainingEpics}. Ideal remaining: ${metrics.epicClosure.idealRemaining}`
+        : 'Closure gap from the ideal.',
+      value: epicClosureValue,
+      color: metrics?.epicClosure?.color,
+      icon: '📉',
+      remainingEpics: metrics?.epicClosure?.remainingEpics,
+      idealRemaining: metrics?.epicClosure?.idealRemaining,
+      dependencies: undefined,
+    },
+    {
+      cardId: 'cycleTime',
+      title: 'Average Epic Cycle Time',
+      tooltip: metrics?.averageCycleTime?.value !== undefined && metrics.averageCycleTime.epicCount !== undefined
+        ? `Average cycle time: ${metrics.averageCycleTime.value.toFixed(2)} days (${metrics.averageCycleTime.epicCount} epics completed, last 6 months)`
+        : 'Average cycle time of EPIC in the last 6 months',
+      value: cycleTimeValue,
+      color: metrics?.averageCycleTime?.color,
+      icon: '⏱️',
+      dependencies: undefined,
+    },
+    {
+      cardId: 'outboundDependencies',
+      title: (
+        <>
+          <span className="font-bold">Outbound</span> Dependencies
+        </>
+      ),
+      tooltip: metrics?.dependencies?.outbound && metrics.dependencies.outbound.length > 0
+        ? `Top teams: ${metrics.dependencies.outbound.map(d => `${d.team} (${d.uncompletedIssues} uncompleted)`).join(', ')}`
+        : 'Top three teams with the most outbound dependencies in the PI',
+      value: undefined,
+      icon: '🔗',
+      dependencies: metrics?.dependencies?.outbound,
+    },
+    {
+      cardId: 'inboundDependencies',
+      title: (
+        <>
+          <span className="font-bold">Inbound</span> Dependencies
+        </>
+      ),
+      tooltip: metrics?.dependencies?.inbound && metrics.dependencies.inbound.length > 0
+        ? `Top teams: ${metrics.dependencies.inbound.map(d => `${d.team} (${d.uncompletedIssues} uncompleted)`).join(', ')}`
+        : 'Top three teams with the most inbound dependencies in the PI',
+      value: undefined,
+      icon: '🔗',
+      dependencies: metrics?.dependencies?.inbound,
+    },
+    {
+      cardId: 'inProgress',
+      title: 'In Progress Epics',
+      tooltip: metrics?.inProgressEpics?.totalEpics !== undefined && metrics.inProgressEpics.count !== undefined && metrics.inProgressEpics.percentage !== undefined
+        ? `Total epics: ${metrics.inProgressEpics.totalEpics}. Currently in progress: ${metrics.inProgressEpics.count} (${metrics.inProgressEpics.percentage.toFixed(1)}%)`
+        : 'Number of epics that are in progress in the PI',
+      value: inProgressValue,
+      color: metrics?.inProgressEpics?.status,
+      icon: '🚀',
+      totalEpics: metrics?.inProgressEpics?.totalEpics,
+      inProgressPercentage: metrics?.inProgressEpics?.percentage,
+      dependencies: undefined,
+    },
+  ];
 
   return (
-    <div className="relative">
-      <div className="grid gap-3 w-full" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
-        {/* Epic Closure */}
-        <MetricCard
-          id="epicClosure"
-          icon="📉"
-          value={epicClosureValue}
-          label="Epic Closure"
-          tooltip={metrics?.epicClosure?.totalEpics !== undefined && metrics.epicClosure.remainingEpics !== undefined && metrics.epicClosure.idealRemaining !== undefined
-            ? `Closure gap from the ideal. Total Epics: ${metrics.epicClosure.totalEpics}. Remaining epics: ${metrics.epicClosure.remainingEpics}. Ideal remaining: ${metrics.epicClosure.idealRemaining}`
-            : 'Closure gap from the ideal.'}
-          isLeftmost={true}
-          status={metrics?.epicClosure?.color}
-          activeTooltip={activeTooltip}
-          setActiveTooltip={setActiveTooltip}
-        />
-        
-        {/* Dependencies */}
-        <MetricCard
-          id="dependencies"
-          icon="🔗"
-          value="-"
-          label="Dependencies"
-          tooltip="Top three teams with the most dependencies in the PI"
-          activeTooltip={activeTooltip}
-          setActiveTooltip={setActiveTooltip}
-        />
-        
-        {/* Average Epic Cycle Time */}
-        <MetricCard
-          id="cycleTime"
-          icon="⏱️"
-          value="-"
-          label="Avg Epic Cycle Time"
-          tooltip="Average cycle time of EPIC in the last three PIs"
-          activeTooltip={activeTooltip}
-          setActiveTooltip={setActiveTooltip}
-        />
-        
-        {/* PI Predictability */}
-        <MetricCard
-          id="predictability"
-          icon="📊"
-          value="-"
-          label="PI Predictability"
-          tooltip="Average PI predictability in the last three PIs"
-          activeTooltip={activeTooltip}
-          setActiveTooltip={setActiveTooltip}
-        />
-        
-        {/* In Progress Epics */}
-        <MetricCard
-          id="inProgress"
-          icon="🚀"
-          value={inProgressValue}
-          label="In Progress Epics"
-          tooltip={metrics?.inProgressEpics?.totalEpics !== undefined && metrics.inProgressEpics.count !== undefined && metrics.inProgressEpics.percentage !== undefined
-            ? `Total epics: ${metrics.inProgressEpics.totalEpics}. Currently in progress: ${metrics.inProgressEpics.count} (${metrics.inProgressEpics.percentage.toFixed(1)}%)`
-            : 'Number of epics that are in progress in the PI'}
-          status={metrics?.inProgressEpics?.status}
-          activeTooltip={activeTooltip}
-          setActiveTooltip={setActiveTooltip}
-        />
+    <div className="relative" style={{ overflow: 'visible' }}>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-12 overflow-x-auto" style={{ overflow: 'visible' }}>
+        {metricsList.map((metric) => (
+          <MetricCard
+            key={metric.cardId}
+            cardId={metric.cardId}
+            title={metric.title}
+            tooltip={metric.tooltip}
+            value={metric.value}
+            loading={loading && metric.cardId === 'epicClosure'}
+            icon={metric.icon}
+            color={metric.color}
+            remainingEpics={metric.remainingEpics}
+            idealRemaining={metric.idealRemaining}
+            totalEpics={metric.totalEpics}
+            inProgressPercentage={metric.inProgressPercentage}
+            dependencies={metric.dependencies}
+            activeTooltip={activeTooltip}
+            setActiveTooltip={setActiveTooltip}
+          />
+        ))}
       </div>
     </div>
   );
 }
-

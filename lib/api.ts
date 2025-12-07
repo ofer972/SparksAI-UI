@@ -28,7 +28,9 @@ import {
   Group,
   Team,
   PIStatusForTodayResponse,
-  PIStatusForTodayItem
+  PIStatusForTodayItem,
+  TopDependenciesSummaryResponse,
+  AverageEpicCycleTimeResponse
 } from './config';
 import { getAuthHeaders, refreshAccessToken, clearTokens, getCurrentUser } from './auth';
 
@@ -397,6 +399,42 @@ export class ApiService {
     }
     
     return { data: [], count: 0, message: '' };
+  }
+
+  // Top Dependencies Summary API
+  async getTopDependenciesSummary(pi: string, teamName?: string, isGroup: boolean = false): Promise<TopDependenciesSummaryResponse> {
+    const params = new URLSearchParams();
+    params.append('pi', pi);
+    
+    if (teamName) {
+      params.append('team_name', teamName);
+    }
+    
+    params.append('isGroup', isGroup.toString());
+    
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.pis.getTopDependenciesSummary)}?${params}`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch top dependencies summary: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  // Average Epic Cycle Time API
+  async getAverageEpicCycleTime(months: number = 6): Promise<AverageEpicCycleTimeResponse> {
+    const params = new URLSearchParams();
+    params.append('months', months.toString());
+    
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.pis.getAverageEpicCycleTime)}?${params}`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch average epic cycle time: ${response.statusText}`);
+    }
+
+    return response.json();
   }
 
   // AI Cards API

@@ -47,7 +47,7 @@ export default function PIAIInsightsView({
   }
   
   return (
-    <>
+    <div className="h-full overflow-auto relative" style={{ overflow: 'visible' }}>
       <div className="pt-2 pb-2 pr-2 pl-[7px]" style={{ zoom: 0.90 }}>
         <PIAICards piName={selectedPI} />
       </div>
@@ -57,7 +57,7 @@ export default function PIAIInsightsView({
           <PIMetrics piName={selectedPI} />
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
