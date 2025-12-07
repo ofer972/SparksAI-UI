@@ -111,6 +111,7 @@ function DataTable<T extends Record<string, any>>({
         label: 'Actions',
         align: 'right' as const,
         sortable: false,
+        width: '120px',
       }];
     }
     return columns;
@@ -377,13 +378,13 @@ function DataTable<T extends Record<string, any>>({
                       return (
                         <td
                           key={column.key}
-                          className={`px-2 py-2 text-sm text-gray-900 text-right ${colIndex < finalColumns.length - 1 ? 'border-r border-gray-200' : ''}`}
+                          className={`px-3 py-2 text-sm text-gray-900 text-right ${colIndex < finalColumns.length - 1 ? 'border-r border-gray-200' : ''}`}
                         >
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-end gap-1">
                             {onViewItem && (
                               <button
                                 onClick={() => onViewItem(row)}
-                                className="p-1.5 rounded hover:bg-blue-50 text-blue-600 transition-colors"
+                                className="p-1.5 rounded-md hover:bg-blue-50 text-blue-600 transition-all duration-150 border border-transparent hover:border-blue-200"
                                 title="View"
                                 aria-label="View"
                               >
@@ -396,19 +397,19 @@ function DataTable<T extends Record<string, any>>({
                             {onEditItem && (
                               <button
                                 onClick={() => onEditItem(row)}
-                                className="p-1.5 rounded hover:bg-green-50 text-green-600 transition-colors"
+                                className="p-1.5 rounded-md hover:bg-green-50 text-green-600 transition-all duration-150 border border-transparent hover:border-green-200"
                                 title="Edit"
                                 aria-label="Edit"
                               >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5h2m2 0h2m-6 0H9m10 6l-6 6H9v-4l6-6m4-2a2.121 2.121 0 00-3 0l-1 1 3 3 1-1a2.121 2.121 0 000-3z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
                               </button>
                             )}
                             {onDeleteItem && (
                               <button
                                 onClick={() => onDeleteItem(row)}
-                                className="p-1.5 rounded hover:bg-red-50 text-red-600 transition-colors"
+                                className="p-1.5 rounded-md hover:bg-red-50 text-red-600 transition-all duration-150 border border-transparent hover:border-red-200"
                                 title="Delete"
                                 aria-label="Delete"
                               >
