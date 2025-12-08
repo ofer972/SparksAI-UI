@@ -81,7 +81,7 @@ export default function StackedGroupedBarChart({
     if (!data.length) return null;
 
     // Get unique quarters and stack groups
-    const quarters = Array.from(new Set(data.map(d => d.quarter))).sort();
+    const quarters = Array.from(new Set(data.map(d => d.quarter)));
     const stackGroups = Array.from(new Set(data.map(d => d.stackGroup))).sort();
     
     // Define metric order for proper stacking
