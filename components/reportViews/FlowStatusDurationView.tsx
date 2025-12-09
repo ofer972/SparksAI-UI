@@ -130,6 +130,7 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
   const [detailYearMonth, setDetailYearMonth] = useState<string | undefined>();
   const [mounted, setMounted] = useState(false);
   const [fetchingDetailOnly, setFetchingDetailOnly] = useState(false);
+  const [shouldOpenModal, setShouldOpenModal] = useState(false); // Track if we intentionally want to open modal
   
   // Track previous main filters to detect if only detail filters changed
   const prevMainFiltersRef = React.useRef<string>('');
@@ -229,9 +230,12 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
       setDetailStatus(statusName);
       setDetailYearMonth(yearMonth);
       setFetchingDetailOnly(true);
+      setShouldOpenModal(true); // Mark that we want to open modal when data arrives
       
-      // Only update filters to fetch detail data, don't open modal yet
-      // The modal will open when data arrives via the useEffect below
+      // Open modal immediately to show spinner while loading
+      setDetailOpen(true);
+      
+      // Only update filters to fetch detail data
       setFilters((prev) => ({
         ...prev,
         detail_status: statusName,
@@ -245,29 +249,48 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
   const closeDetail = () => {
     setDetailOpen(false);
     setFetchingDetailOnly(false);
-    // Keep detailStatus and detailYearMonth so we can detect if user clicks the same bar again
+    setShouldOpenModal(false);
     // Don't remove detail filters from state to avoid triggering a re-fetch
-    // Just hide the modal - the detail data will be ignored when modal is closed
+    // The shouldOpenModal flag prevents the modal from reopening automatically
   };
 
-  const detailIssues = data?.detail?.issues ?? [];
+  // Check if detail data matches what was requested
+  const detailDataMatches = useMemo(() => {
+    if (!data?.detail) return false;
+    const detailStatusMatch = data.detail.status_name === detailStatus;
+    const detailMonthMatch = (data.detail.year_month ?? null) === (detailYearMonth ?? null);
+    return detailStatusMatch && detailMonthMatch;
+  }, [data?.detail?.status_name, data?.detail?.year_month, detailStatus, detailYearMonth]);
 
-  // Open modal when detail data arrives
+  const detailIssues = detailDataMatches ? (data?.detail?.issues ?? []) : [];
+
+  // Update modal state when correct detail data arrives
   useEffect(() => {
-    if (data?.detail?.issues && data.detail.issues.length > 0) {
-      setDetailOpen(true);
+    if (shouldOpenModal && detailDataMatches && data?.detail?.issues) {
+      // Data matches what was requested - stop showing spinner
       setFetchingDetailOnly(false);
+      setShouldOpenModal(false); // Reset flag after data arrives
     }
-  }, [data?.detail?.issues]);
+  }, [data?.detail?.issues, shouldOpenModal, detailDataMatches]);
   
   // Track if only detail filters changed (to prevent chart reload)
+  // Also close modal and clear detail filters when main filters change
   useEffect(() => {
     if (prevMainFiltersRef.current && prevMainFiltersRef.current !== currentMainFilters) {
-      // Main filters changed, allow full reload
+      // Main filters changed - close modal and clear detail filters
+      setDetailOpen(false);
       setFetchingDetailOnly(false);
+      setShouldOpenModal(false);
+      setDetailStatus('');
+      setDetailYearMonth(undefined);
+      // Clear detail filters
+      setFilters((prev) => {
+        const { detail_status, detail_year_month, detail_months, ...rest } = prev;
+        return rest;
+      });
     }
     prevMainFiltersRef.current = currentMainFilters;
-  }, [currentMainFilters]);
+  }, [currentMainFilters, setFilters]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -589,7 +612,7 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
       </ReportCard>
 
       {/* Modal for detail issues - rendered outside ReportCard using Portal */}
-      {mounted && detailOpen && detailIssues.length > 0 && createPortal(
+      {mounted && detailOpen && createPortal(
         <div
           style={{
             position: 'fixed',
@@ -679,14 +702,28 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
                 flexDirection: 'column',
               }}
             >
-              <DataTable<IssueStatusDurationIssue>
-                data={detailIssues}
-                columns={detailColumns}
-                loading={false}
-                emptyMessage="No issues found for this status."
-                rowKey={(row, index) => `${row.issue_key || 'issue'}-${index}`}
-                maxHeight="calc(85vh - 260px)"
-              />
+              {fetchingDetailOnly || !detailDataMatches ? (
+                <div style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexDirection: 'column',
+                  gap: '1rem',
+                }}>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Loading issues...</div>
+                </div>
+              ) : (
+                <DataTable<IssueStatusDurationIssue>
+                  data={detailIssues}
+                  columns={detailColumns}
+                  loading={false}
+                  emptyMessage="No issues found for this status."
+                  rowKey={(row, index) => `${row.issue_key || 'issue'}-${index}`}
+                  maxHeight="calc(85vh - 260px)"
+                />
+              )}
             </div>
 
             {/* Modal Footer */}
