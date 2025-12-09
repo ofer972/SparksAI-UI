@@ -486,7 +486,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   }), [selectedPI, selectedTeam, selectedTreeType]);
   const controlledFiltersDefault = useMemo(() => ({
     ...(selectedPI ? { pi: selectedPI } : {}),
-    ...(selectedTeam ? { team_name: selectedTeam, team: selectedTeam } : {}),
+    ...(selectedTeam ? { team_name: selectedTeam } : {}),
     isGroup: selectedTreeType === 'group',
   }), [selectedPI, selectedTeam, selectedTreeType]);
 
@@ -634,7 +634,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             reportId={reportId}
             initialFilters={{
               ...(selectedPI ? { pi: selectedPI } : {}),
-              ...(selectedTeam ? { team_name: selectedTeam, team: selectedTeam } : {}),
+              ...(selectedTeam ? { team_name: selectedTeam } : {}),
               isGroup: selectedTreeType === 'group',
               ...savedReportFilters
             }}

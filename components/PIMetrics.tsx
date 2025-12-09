@@ -98,7 +98,7 @@ function MetricCard({
             <div className="h-8 w-16 bg-gray-200 rounded"></div>
           </div>
         ) : dependencies && dependencies.length > 0 ? (
-          <div className="w-full space-y-1.5 px-1" style={{ paddingBottom: '10px' }}>
+          <div className="w-full space-y-1.5 px-1" style={{ paddingBottom: '20px' }}>
             {dependencies.map((dep, idx) => {
               // Calculate max value for relative sizing (use the highest value in the list)
               const maxIssues = Math.max(...dependencies.map(d => d.uncompletedIssues), 1);
@@ -111,20 +111,20 @@ function MetricCard({
                 return 'bg-orange-400';
               };
               
-              return (
-                <div key={idx} className="space-y-0.5">
-                  {/* Team name and count */}
-                  <div className="flex items-center justify-between gap-1.5 flex-wrap">
-                    <span 
-                      className="text-xs font-semibold text-gray-700 flex-1 min-w-0 break-words leading-tight" 
-                      title={dep.team}
-                    >
-                      {dep.team}
-                    </span>
-                    <span className="text-xs font-bold text-gray-800 bg-gray-100 px-1 py-0.5 rounded whitespace-nowrap flex-shrink-0">
-                      {dep.uncompletedIssues}
-                    </span>
-                  </div>
+                return (
+                 <div key={idx} className="space-y-0.5">
+                   {/* Team name and count */}
+                   <div className="flex items-center justify-start gap-1.5 flex-wrap">
+                     <span 
+                       className="text-xs font-semibold text-gray-700 text-left leading-tight" 
+                       title={dep.team}
+                     >
+                       {dep.team}
+                     </span>
+                     <span className="text-xs font-bold text-gray-800 bg-gray-100 px-1 py-0.5 rounded whitespace-nowrap flex-shrink-0 ml-auto">
+                       {dep.uncompletedIssues}
+                     </span>
+                   </div>
                   
                   {/* Progress bar visualization */}
                   <div className="w-full bg-gray-200 rounded-full h-1 overflow-hidden">
@@ -146,7 +146,7 @@ function MetricCard({
 
       {/* Title at bottom */}
       <div className="mt-auto w-full">
-        <h3 className="text-xs text-gray-700 break-words text-center font-semibold">{title}</h3>
+        <h3 className="text-xs text-gray-900 break-words text-center font-bold">{title}</h3>
       </div>
     </div>
   );
@@ -209,7 +209,7 @@ export default function PIMetrics({ piName }: PIMetricsProps) {
     : undefined;
 
   const inProgressValue = metrics?.inProgressEpics?.count !== undefined && metrics.inProgressEpics.count !== null
-    ? metrics.inProgressEpics.count
+    ? String(metrics.inProgressEpics.count)
     : undefined;
 
   const cycleTimeValue = metrics?.averageCycleTime?.value !== undefined && metrics.averageCycleTime.value !== null
