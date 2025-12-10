@@ -52,6 +52,39 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
     });
   }, []);
 
+  const filteredData = useMemo(() => {
+    const rows = Array.isArray(data) ? data : [];
+    const query = filterText.trim().toLowerCase();
+    if (!query) {
+      return rows;
+    }
+    return rows.filter((row) =>
+      Object.values(row).some((value) =>
+        value !== null &&
+        value !== undefined &&
+        String(value).toLowerCase().includes(query)
+      )
+    );
+  }, [data, filterText]);
+
+  // Pre-process data to add metadata for team name hiding
+  // Note: This only works if data is sorted by team_name first
+  // If user sorts by other columns, team name hiding won't work correctly
+  const processedData = useMemo(() => {
+    if (!filteredData || filteredData.length === 0) {
+      return filteredData;
+    }
+    
+    // Add a flag to indicate if team name should be shown
+    return filteredData.map((row, index) => {
+      const shouldShowTeamName = index === 0 || filteredData[index - 1].team_name !== row.team_name;
+      return {
+        ...row,
+        _showTeamName: shouldShowTeamName,
+      };
+    });
+  }, [filteredData]);
+
   const columns: Column<PIPredictabilityData>[] = useMemo(() => {
     if (!data || !Array.isArray(data) || data.length === 0) {
       return [];
@@ -64,8 +97,8 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
     }
 
     const preferredOrder = [
-      'pi_name',
       'team_name',
+      'pi_name',
       'pi_predictability_percentage',
       'avg_cycle_time_completed_epics_days',
       'total_issues_in_scope',
@@ -86,15 +119,37 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
       let label = key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 
       if (label === 'Pi Predictability Percentage') {
-        label = 'PI Predictability (%)';
+        label = 'PI\nPredictability\nPercent';
       }
 
       if (label === 'Avg Cycle Time Completed Epics Days') {
-        label = 'Avg Cycle Time Completed Epics (Days)';
+        label = 'Average\ncycle time\n(days)';
+      }
+
+      if (label === 'Total Issues In Scope') {
+        label = 'Total\nepics\nin scope';
+      }
+
+      if (label === 'Issues Completed Within Pi Dates') {
+        label = 'Epics\nCompleted\nduring PI';
       }
 
       const order = preferredOrder.indexOf(key);
       const isLeftAlign = key === 'pi_name' || key === 'team_name';
+
+      // Set minimal widths for columns
+      let columnWidth = 'auto';
+      if (key === 'team_name') {
+        columnWidth = '120px';
+      } else if (key === 'pi_name') {
+        columnWidth = '90px'; // 25% smaller than 120px (120 * 0.75 = 90)
+      } else if (key === 'pi_predictability_percentage') {
+        columnWidth = '100px';
+      } else if (key === 'avg_cycle_time_completed_epics_days') {
+        columnWidth = '110px';
+      } else if (key === 'total_issues_in_scope' || key === 'issues_completed_within_pi_dates') {
+        columnWidth = '100px';
+      }
 
       return {
         key,
@@ -102,7 +157,20 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
         align: (isLeftAlign ? 'left' : 'center') as 'left' | 'center' | 'right',
         sortable: true,
         order,
-        render: (value: any) => {
+        width: columnWidth,
+        render: (value: any, row: any, index: number) => {
+          // Special handling for team_name: hide if same as previous row
+          // LIMITATION: This only works if data is sorted by team_name
+          // If user sorts by other columns, team name hiding won't work correctly
+          // This requires DataTable modification to work reliably
+          if (key === 'team_name') {
+            // Check the _showTeamName flag if it exists
+            if ((row as any)._showTeamName === false) {
+              return ''; // Hide team name
+            }
+            return value || '-';
+          }
+
           if (value === null || value === undefined) return '-';
 
           if (key.includes('date') && typeof value === 'string') {
@@ -209,20 +277,6 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
     [setFilters]
   );
 
-  const filteredData = useMemo(() => {
-    const rows = Array.isArray(data) ? data : [];
-    const query = filterText.trim().toLowerCase();
-    if (!query) {
-      return rows;
-    }
-    return rows.filter((row) =>
-      Object.values(row).some((value) =>
-        value !== null &&
-        value !== undefined &&
-        String(value).toLowerCase().includes(query)
-      )
-    );
-  }, [data, filterText]);
 
   const piNames = Array.isArray(filters.pi_names) ? filters.pi_names : [];
   const { groups, teams } = useTeamsGroups();
@@ -370,18 +424,18 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
       )}
 
       {!loading && !error && (
-      <DataTable<PIPredictabilityData>
-        data={filteredData}
-        columns={columns}
-        sortConfig={sortConfig}
-        onSort={handleSort}
+        <DataTable<PIPredictabilityData>
+          data={processedData as PIPredictabilityData[]}
+          columns={columns}
+          sortConfig={sortConfig}
+          onSort={handleSort}
           loading={false}
           error={undefined}
           emptyMessage="No data found matching the filter criteria."
-        rowKey={(row, index) => `${row.pi_name || 'pi'}-${row.team_name || 'team'}-${index}`}
-        striped
-        hoverable
-      />
+          rowKey={(row, index) => `${row.pi_name || 'pi'}-${row.team_name || 'team'}-${index}`}
+          striped={true}
+          hoverable
+        />
       )}
     </ReportCard>
   );
