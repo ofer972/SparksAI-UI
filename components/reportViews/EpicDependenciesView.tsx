@@ -30,32 +30,143 @@ interface EpicDependenciesViewProps {
   pinnedFilters?: string[];
 }
 
-const buildColumns = (rows: EpicDependencyItem[] = []): Column<EpicDependencyItem>[] => {
+// Column label mappings for outbound
+const outboundLabelMap: Record<string, string> = {
+  'quarter_pi_of_epic': 'PI',
+  'owned_team': 'Owning\nTeam',
+  'number_of_epics_owned': '# Epics\nOwned',
+  'number_of_dependent_teams': '# Dependent\nTeams',
+  'number_of_dependent_issues': '# Dependent\nIssues',
+  'completed_dependent_issues_count': '# Completed\nDependent\nIssues',
+  'relying_on_teams_array': 'Relying On\nTeams',
+};
+
+// Column label mappings for inbound
+const inboundLabelMap: Record<string, string> = {
+  'quarter_pi_of_epic': 'PI',
+  'assignee_team': 'Assignee\nTeam',
+  'number_of_relying_teams': '# Relying\nTeams',
+  'volume_of_work_relied_upon': '# Volume Of\nWork',
+  'completed_issues_dependent_count': '# Completed\nIssues',
+  'relying_teams_array': 'Relying\nTeams',
+};
+
+// Numeric columns that should have minimal width
+const numericColumns = [
+  'number_of_epics_owned',
+  'number_of_dependent_teams',
+  'number_of_dependent_issues',
+  'completed_dependent_issues_count',
+  'number_of_relying_teams',
+  'volume_of_work_relied_upon',
+  'completed_issues_dependent_count',
+];
+
+const buildOutboundColumns = (rows: EpicDependencyItem[] = []): Column<EpicDependencyItem>[] => {
   if (rows.length === 0) {
     return [];
   }
 
-  return Object.keys(rows[0]).map((key) => ({
-    key,
-    label: key
+  return Object.keys(rows[0]).map((key) => {
+    const isNumeric = numericColumns.includes(key);
+    const isPI = key === 'quarter_pi_of_epic';
+    const label = outboundLabelMap[key] || key
       .replace(/_/g, ' ')
-      .replace(/\b\w/g, (char) => char.toUpperCase()),
-    align: 'left' as const,
-    sortable: true,
-    render: (value: any) => {
-      if (value === null || value === undefined || value === '') {
-        return <span className="text-xs text-gray-500">-</span>;
-      }
-      if (typeof value === 'number') {
-        return (
-          <span className="text-xs text-gray-800">
-            {Number.isInteger(value) ? value : value.toFixed(2)}
-          </span>
-        );
-      }
-      return <span className="text-xs text-gray-800">{String(value)}</span>;
-    },
-  }));
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+    
+    return {
+      key,
+      label,
+      align: (isNumeric || isPI) ? 'center' as const : 'left' as const,
+      sortable: true,
+      width: isNumeric ? '80px' : undefined,
+      render: (value: any) => {
+        if (value === null || value === undefined || value === '') {
+          return <span className="text-xs text-gray-500">-</span>;
+        }
+        if (typeof value === 'number') {
+          let colorClass = 'text-gray-800';
+          let fontWeight = 'font-normal';
+          
+          // Color coding for outbound columns
+          if (key === 'number_of_dependent_teams') {
+            if (value === 4 || value === 5) {
+              colorClass = 'text-yellow-600';
+              fontWeight = 'font-bold';
+            } else if (value > 5) {
+              colorClass = 'text-red-600';
+              fontWeight = 'font-bold';
+            }
+          } else if (key === 'number_of_dependent_issues') {
+            if (value > 10 && value < 15) {
+              colorClass = 'text-yellow-600';
+              fontWeight = 'font-bold';
+            } else if (value >= 15) {
+              colorClass = 'text-red-600';
+              fontWeight = 'font-bold';
+            }
+          }
+          
+          return (
+            <span className={`text-xs ${fontWeight} ${colorClass}`}>
+              {Number.isInteger(value) ? value : value.toFixed(2)}
+            </span>
+          );
+        }
+        return <span className="text-xs text-gray-800">{String(value)}</span>;
+      },
+    };
+  });
+};
+
+const buildInboundColumns = (rows: EpicDependencyItem[] = []): Column<EpicDependencyItem>[] => {
+  if (rows.length === 0) {
+    return [];
+  }
+
+  return Object.keys(rows[0]).map((key) => {
+    const isNumeric = numericColumns.includes(key);
+    const isPI = key === 'quarter_pi_of_epic';
+    const label = inboundLabelMap[key] || key
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+    
+    return {
+      key,
+      label,
+      align: (isNumeric || isPI) ? 'center' as const : 'left' as const,
+      sortable: true,
+      width: isNumeric ? '80px' : undefined,
+      render: (value: any) => {
+        if (value === null || value === undefined || value === '') {
+          return <span className="text-xs text-gray-500">-</span>;
+        }
+        if (typeof value === 'number') {
+          let colorClass = 'text-gray-800';
+          let fontWeight = 'font-normal';
+          
+          // Color coding for inbound columns
+          if (key === 'volume_of_work_relied_upon') {
+            if (value >= 20 && value <= 40) {
+              colorClass = 'text-yellow-600';
+              fontWeight = 'font-bold';
+            } else if (value > 40) {
+              colorClass = 'text-red-600';
+              fontWeight = 'font-bold';
+            }
+          }
+          // Number of relying teams - no color coding (leave it)
+          
+          return (
+            <span className={`text-xs ${fontWeight} ${colorClass}`}>
+              {Number.isInteger(value) ? value : value.toFixed(2)}
+            </span>
+          );
+        }
+        return <span className="text-xs text-gray-800">{String(value)}</span>;
+      },
+    };
+  });
 };
 
 const EpicDependenciesView: React.FC<EpicDependenciesViewProps> = ({
@@ -98,8 +209,8 @@ const EpicDependenciesView: React.FC<EpicDependenciesViewProps> = ({
   const outbound = Array.isArray(data?.outbound) ? data!.outbound : [];
   const inbound = Array.isArray(data?.inbound) ? data!.inbound : [];
 
-  const outboundColumns = useMemo(() => buildColumns(outbound), [outbound]);
-  const inboundColumns = useMemo(() => buildColumns(inbound), [inbound]);
+  const outboundColumns = useMemo(() => buildOutboundColumns(outbound), [outbound]);
+  const inboundColumns = useMemo(() => buildInboundColumns(inbound), [inbound]);
 
   const filtersContent = (
     <ReportFiltersRow>
