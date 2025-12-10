@@ -233,7 +233,7 @@ export default function PIMetrics({ piName }: PIMetricsProps) {
     {
       cardId: 'cycleTime',
       title: 'Average Epic Cycle Time',
-      tooltip: metrics?.averageCycleTime?.value !== undefined && metrics.averageCycleTime.epicCount !== undefined
+      tooltip: metrics?.averageCycleTime?.value !== undefined && metrics.averageCycleTime.value !== null && metrics.averageCycleTime.epicCount !== undefined
         ? `Average cycle time: ${metrics.averageCycleTime.value.toFixed(2)} days (${metrics.averageCycleTime.epicCount} epics completed, last 6 months)`
         : 'Average cycle time of EPIC in the last 6 months',
       value: cycleTimeValue,
@@ -272,7 +272,7 @@ export default function PIMetrics({ piName }: PIMetricsProps) {
     {
       cardId: 'inProgress',
       title: 'In Progress Epics',
-      tooltip: metrics?.inProgressEpics?.totalEpics !== undefined && metrics.inProgressEpics.count !== undefined && metrics.inProgressEpics.percentage !== undefined
+      tooltip: metrics?.inProgressEpics?.totalEpics !== undefined && metrics.inProgressEpics.count !== undefined && metrics.inProgressEpics.percentage !== undefined && metrics.inProgressEpics.percentage !== null
         ? `Total epics: ${metrics.inProgressEpics.totalEpics}. Currently in progress: ${metrics.inProgressEpics.count} (${metrics.inProgressEpics.percentage.toFixed(1)}%)`
         : 'Number of epics that are in progress in the PI',
       value: inProgressValue,
