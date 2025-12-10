@@ -302,12 +302,12 @@ function DataTable<T extends Record<string, any>>({
               {finalColumns.map((column, colIndex) => (
                 <th
                   key={column.key}
-                  className={`px-2 text-xs font-semibold text-gray-700 uppercase tracking-tight ${
+                  className={`px-1 text-xs font-semibold text-gray-700 uppercase tracking-tight ${
                     column.align === 'left' ? 'text-left' : 
                     column.align === 'right' ? 'text-right' : 
                     'text-center'
                   } ${colIndex < finalColumns.length - 1 ? 'border-r border-gray-200' : ''} ${column.sortable !== false && onSort ? 'cursor-pointer hover:bg-gray-100 transition-colors group' : ''}`}
-                  style={{ width: column.width, minHeight: '48px', paddingTop: '0.75rem', paddingBottom: '0.75rem' }}
+                  style={{ width: column.width, minHeight: '48px', paddingTop: '0.5rem', paddingBottom: '0.5rem' }}
                   onClick={() => {
                     if (column.sortable !== false && onSort && column.key !== '__actions__') {
                       // Call onSort - it accepts both string and keyof T
@@ -320,12 +320,15 @@ function DataTable<T extends Record<string, any>>({
                     column.align === 'left' ? 'justify-start' :
                     'justify-center'
                   }`}>
-                    <span className="leading-tight whitespace-nowrap">
-                      {typeof column.label === 'string' && column.label.includes('\n') 
-                        ? column.label.replace(/\n/g, ' ')
-                        : column.label
-                      }
-                    </span>
+                    {typeof column.label === 'string' && column.label.includes('\n') ? (
+                      <span className="leading-tight text-center" style={{ whiteSpace: 'pre-line', lineHeight: '1.2' }}>
+                        {column.label}
+                      </span>
+                    ) : (
+                      <span className="leading-tight whitespace-nowrap">
+                        {column.label}
+                      </span>
+                    )}
                     {column.sortable !== false && onSort && column.key !== '__actions__' && (
                       <SortIcon columnKey={column.key} />
                     )}
