@@ -34,6 +34,58 @@ interface Message {
   content: string;
 }
 
+// TypeScript interface for Web Speech API
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: SpeechRecognitionErrorEvent) => void;
+  onend: () => void;
+}
+
+interface SpeechRecognitionEvent {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionErrorEvent {
+  error: string;
+  message: string;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+  isFinal: boolean;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: {
+      new (): SpeechRecognition;
+    };
+    webkitSpeechRecognition: {
+      new (): SpeechRecognition;
+    };
+  }
+}
+
 export default function AIChatModal({
   isOpen,
   onClose,
@@ -63,6 +115,12 @@ export default function AIChatModal({
   const lastInitialSentAtRef = useRef<number>(0);
   // Timer ref for typewriter effect
   const typingTimerRef = useRef<number | null>(null);
+  // Speech recognition state
+  const [isListening, setIsListening] = useState(false);
+  const [speechError, setSpeechError] = useState<string | null>(null);
+  const [isSupported, setIsSupported] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const finalTranscriptRef = useRef<string>(''); // Track final transcript to avoid duplication
 
   const onHeaderMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     // Enable drag only on non-touch large screens
@@ -195,15 +253,146 @@ export default function AIChatModal({
     }
   }, [chatType, insightsId, recommendationId, teamName, piName, promptName, dashboardData, user]);
 
+  // Check browser support for Web Speech API
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    setIsSupported(!!SpeechRecognition);
+  }, []);
+
+  // Initialize speech recognition
+  const initializeSpeechRecognition = () => {
+    if (recognitionRef.current) {
+      return recognitionRef.current;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      return null;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let interimTranscript = '';
+      let finalTranscript = '';
+
+      // Process all results from resultIndex onwards
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript + ' ';
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+
+      // Update final transcript ref
+      if (finalTranscript) {
+        finalTranscriptRef.current += finalTranscript;
+      }
+
+      // Update input value: final transcript + current interim (direct update, no debounce)
+      setInputValue(finalTranscriptRef.current + interimTranscript);
+    };
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      console.error('Speech recognition error:', event.error);
+      let errorMessage = 'Speech recognition error occurred.';
+      
+      switch (event.error) {
+        case 'not-allowed':
+          errorMessage = 'Microphone permission denied. Please allow microphone access.';
+          break;
+        case 'network':
+          errorMessage = 'Network error. Please check your connection.';
+          break;
+        case 'no-speech':
+          errorMessage = 'No speech detected. Please try again.';
+          break;
+        case 'aborted':
+          errorMessage = 'Speech recognition was aborted.';
+          break;
+        default:
+          errorMessage = `Speech recognition error: ${event.error}`;
+      }
+      
+      setSpeechError(errorMessage);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      // Finalize the transcript (remove any trailing interim text)
+      setInputValue(finalTranscriptRef.current.trim());
+    };
+
+    recognitionRef.current = recognition;
+    return recognition;
+  };
+
+  // Start listening
+  const startListening = () => {
+    if (!isSupported) {
+      setSpeechError('Speech recognition is not supported in this browser. Please use Chrome or Edge.');
+      return;
+    }
+
+    if (isListening) {
+      stopListening();
+      return;
+    }
+
+    const recognition = initializeSpeechRecognition();
+    if (!recognition) {
+      setSpeechError('Failed to initialize speech recognition.');
+      return;
+    }
+
+    try {
+      setSpeechError(null);
+      // Preserve existing input value when starting new session
+      finalTranscriptRef.current = inputValue.trim() + (inputValue.trim() ? ' ' : '');
+      setIsListening(true);
+      recognition.start();
+    } catch (err) {
+      console.error('Error starting speech recognition:', err);
+      setSpeechError('Failed to start speech recognition. Please try again.');
+      setIsListening(false);
+    }
+  };
+
+  // Stop listening
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (err) {
+        console.error('Error stopping speech recognition:', err);
+      }
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+    // Ensure final transcript is set
+    setInputValue(finalTranscriptRef.current.trim());
+  };
+
   // Reset state when modal closes
   useEffect(() => {
     if (!isOpen) {
+      if (isListening) {
+        stopListening();
+      }
       setMessages([]);
       setInputValue('');
       setLoading(false);
       setError(null);
       setConversationId('');
       setHasInitialMessage(false);
+      setSpeechError(null);
+      finalTranscriptRef.current = ''; // Reset transcript ref
     }
   }, [isOpen]);
 
@@ -221,12 +410,20 @@ export default function AIChatModal({
     }
   }, [messages, loading]);
 
-  // Cleanup typing timer on unmount
+  // Cleanup typing timer and speech recognition on unmount
   useEffect(() => {
     return () => {
       if (typingTimerRef.current) {
         window.clearInterval(typingTimerRef.current);
         typingTimerRef.current = null;
+      }
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (error) {
+          // Ignore errors during cleanup
+        }
+        recognitionRef.current = null;
       }
     };
   }, []);
@@ -271,10 +468,16 @@ export default function AIChatModal({
     const question = inputValue.trim();
     if (!question || loading) return;
 
+    // Stop listening if active
+    if (isListening) {
+      stopListening();
+    }
+
     // Add user message to chat
     const userMessage: Message = { role: 'user', content: question };
     setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
+    finalTranscriptRef.current = ''; // Reset transcript ref
     setLoading(true);
     setError(null);
 
@@ -386,6 +589,16 @@ export default function AIChatModal({
                       blockquote: ({ children }) => (
                         <blockquote className="border-l-2 border-gray-300 pl-2 italic text-sm mb-2">{children}</blockquote>
                       ),
+                      a: ({ href, children }) => (
+                        <a 
+                          href={href} 
+                          className="text-blue-600 underline hover:text-blue-800" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                        >
+                          {children}
+                        </a>
+                      ),
                     }}
                   >
                     {message.content}
@@ -411,15 +624,46 @@ export default function AIChatModal({
         {/* Input Area */}
         <div className="p-4 border-t border-gray-200">
           <div className="flex items-end space-x-2">
-            <textarea
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Type your question here... (Press Enter to send, Shift+Enter for new line)"
-              rows={3}
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              disabled={loading}
-            />
+            <div className="flex-1 relative">
+              <textarea
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type your question here... (Press Enter to send, Shift+Enter for new line)"
+                rows={3}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={loading || isListening}
+              />
+              {/* Microphone Button */}
+              {isSupported && (
+                <button
+                  type="button"
+                  onClick={startListening}
+                  disabled={loading}
+                  className={`absolute bottom-2 right-2 p-1.5 rounded-full transition-colors ${
+                    isListening
+                      ? 'bg-red-500 text-white animate-pulse'
+                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  title={isListening ? 'Stop listening' : 'Start voice input'}
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                    />
+                  </svg>
+                </button>
+              )}
+            </div>
             <button
               onClick={handleSend}
               disabled={!inputValue.trim() || loading}
@@ -428,6 +672,19 @@ export default function AIChatModal({
               Send
             </button>
           </div>
+          {/* Speech Error Message */}
+          {speechError && (
+            <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1">
+              {speechError}
+              <button
+                onClick={() => setSpeechError(null)}
+                className="ml-2 text-red-800 hover:text-red-900 font-semibold"
+                aria-label="Dismiss error"
+              >
+                ×
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
