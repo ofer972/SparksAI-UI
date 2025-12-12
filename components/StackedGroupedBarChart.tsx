@@ -46,6 +46,7 @@ export interface StackedGroupedBarChartProps {
   height?: string;
   loading?: boolean;
   error?: string | null;
+  averageVelocity?: number | null;
 }
 
 export default function StackedGroupedBarChart({
@@ -57,7 +58,8 @@ export default function StackedGroupedBarChart({
   defaultColors = ['#0066cc', '#800080', '#00ff00', '#ff8c00', '#00ffff', '#ff0000', '#ffc0cb', '#808080'],
   height = '100%',
   loading = false,
-  error = null
+  error = null,
+  averageVelocity = null
 }: StackedGroupedBarChartProps) {
   
   const chartRef = useRef<ChartJS>(null);

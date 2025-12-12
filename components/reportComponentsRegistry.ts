@@ -13,6 +13,7 @@ import ReleasePredictabilityView from './reportViews/ReleasePredictabilityView';
 import SprintPredictabilityView from './reportViews/SprintPredictabilityView';
 import PIMetricsSummaryView from './reportViews/PIMetricsSummaryView';
 import CurrentSprintProgressView from './reportViews/CurrentSprintProgressView';
+import TeamVelocityView from './reportViews/TeamVelocityView';
 import type { ReportDefinition } from '@/lib/config';
 
 export interface ReportRenderContext {
@@ -211,6 +212,16 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
       error,
       filters,
       refresh,
+    }),
+  },
+  'sprint-velocity-advanced': {
+    component: TeamVelocityView,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, meta }) => ({
+      data: Array.isArray(result) ? result : [],
+      loading,
+      error,
+      meta,
     }),
   },
 };

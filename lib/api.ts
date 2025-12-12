@@ -592,6 +592,22 @@ export class ApiService {
     };
   }
 
+  async getSprintVelocityAdvanced(teamName: string, months: number = 2, isGroup: boolean = false): Promise<{ data: ClosedSprint[]; meta: { average_velocity: number | null } }> {
+    const payload = await this.getReport<ClosedSprint[]>('team-closed-sprints', {
+      team_name: teamName,
+      months,
+      isGroup,
+    });
+
+    const rows = Array.isArray(payload.result) ? payload.result : [];
+    const averageVelocity = payload.meta?.average_velocity ?? null;
+
+    return {
+      data: rows,
+      meta: { average_velocity: averageVelocity },
+    };
+  }
+
   async getIssuesTrend(
     teamName: string,
     issueType: string = 'Bug',
