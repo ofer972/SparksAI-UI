@@ -20,6 +20,7 @@ import SystemSettingsView from '@/components/views/SystemSettingsView';
 import CreateAgentJobView from '@/components/views/CreateAgentJobView';
 import UploadTranscriptsView from '@/components/views/UploadTranscriptsView';
 import UsersAdminView from '@/components/views/UsersAdminView';
+import TeamsAndMeetingsView from '@/components/views/TeamsAndMeetingsView';
 import UnsavedChangesModal from '@/components/UnsavedChangesModal';
 
 export default function Home() {
@@ -124,7 +125,7 @@ export default function Home() {
     }
   };
 
-  type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-quarter' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin';
+  type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-quarter' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings';
   const [activeNavItem, setActiveNavItem] = useState<NavItemId>('team-ai-insights');
   const prevActiveNavItemRef = useRef<NavItemId>(activeNavItem);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -754,6 +755,7 @@ export default function Home() {
               { id: 'settings', label: 'System Settings', icon: <IconCog /> },
               { id: 'create-agent-job', label: 'Create Agent Job', icon: <IconPlus /> },
               { id: 'users-admin', label: 'Users', icon: <IconUsers /> },
+              { id: 'teams-and-meetings', label: 'Teams & Meetings', icon: <IconUsers /> },
             ],
           },
         ]
@@ -783,6 +785,7 @@ export default function Home() {
     'create-agent-job': 'SparksAI-Create Agent Job',
     'upload-transcripts': 'SparksAI-Upload Transcripts',
     'users-admin': 'SparksAI-Users',
+    'teams-and-meetings': 'SparksAI-Teams & Meetings',
   };
 
   useEffect(() => {
@@ -881,6 +884,8 @@ export default function Home() {
         );
       case 'users-admin':
         return <UsersAdminView />;
+      case 'teams-and-meetings':
+        return <TeamsAndMeetingsView />;
       default:
         return (
           <div className="bg-white rounded-lg shadow-sm p-6 text-center">

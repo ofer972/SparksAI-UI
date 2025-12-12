@@ -177,6 +177,7 @@ export default function TreeSelect({ selectedValue, onSelect, placeholder = 'Sel
             style={{ paddingLeft: `${depth * 16 + 12}px` }}
           >
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 if (hasChildren) {
@@ -330,6 +331,7 @@ export default function TreeSelect({ selectedValue, onSelect, placeholder = 'Sel
   return (
     <div className="relative">
       <button
+        type="button"
         ref={buttonRef}
         onClick={handleToggleOpen}
         className="w-full px-4 py-1 bg-white border border-gray-300 rounded-lg text-left focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center justify-between hover:border-gray-400 transition-colors"

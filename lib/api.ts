@@ -1984,6 +1984,93 @@ export async function resetUserSettings(userId: string): Promise<void> {
   if (!res.ok) throw new Error(await res.text() || 'Failed to reset user settings');
 }
 
+// Meeting Names API
+export interface MeetingName {
+  id: number;
+  name: string;
+  team_name?: string;
+  is_group: boolean;
+  type?: string;
+  organizer_email?: string;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MeetingNamesResponse {
+  success: boolean;
+  data: MeetingName[];
+  count: number;
+  message?: string;
+}
+
+export interface MeetingNameResponse {
+  success: boolean;
+  data?: MeetingName;
+  message?: string;
+}
+
+export async function getMeetingNames(includeInactive: boolean = false): Promise<MeetingName[]> {
+  const url = buildUserServiceUrl(`/v1/meeting-names${includeInactive ? '?includeInactive=true' : ''}`);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(await res.text() || 'Failed to fetch meeting names');
+  const data: MeetingNamesResponse = await res.json();
+  return data.data || [];
+}
+
+export async function getMeetingName(id: number): Promise<MeetingName> {
+  const res = await fetch(buildUserServiceUrl(`/v1/meeting-names/${id}`));
+  if (!res.ok) throw new Error(await res.text() || 'Failed to fetch meeting name');
+  const data: MeetingNameResponse = await res.json();
+  if (!data.data) throw new Error('Meeting name not found');
+  return data.data;
+}
+
+export async function createMeetingName(meetingName: {
+  name: string;
+  team_name?: string;
+  is_group?: boolean;
+  type?: string;
+  organizer_email?: string;
+  active?: boolean;
+}): Promise<MeetingName> {
+  const res = await fetch(buildUserServiceUrl('/v1/meeting-names'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(meetingName),
+  });
+  if (!res.ok) throw new Error(await res.text() || 'Failed to create meeting name');
+  const data: MeetingNameResponse = await res.json();
+  if (!data.data) throw new Error('Failed to create meeting name');
+  return data.data;
+}
+
+export async function updateMeetingName(id: number, meetingName: {
+  name?: string;
+  team_name?: string;
+  is_group?: boolean;
+  type?: string;
+  organizer_email?: string;
+  active?: boolean;
+}): Promise<MeetingName> {
+  const res = await fetch(buildUserServiceUrl(`/v1/meeting-names/${id}`), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(meetingName),
+  });
+  if (!res.ok) throw new Error(await res.text() || 'Failed to update meeting name');
+  const data: MeetingNameResponse = await res.json();
+  if (!data.data) throw new Error('Failed to update meeting name');
+  return data.data;
+}
+
+export async function deleteMeetingName(id: number): Promise<void> {
+  const res = await fetch(buildUserServiceUrl(`/v1/meeting-names/${id}`), {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error(await res.text() || 'Failed to delete meeting name');
+}
+
 // Legacy class for backward compatibility
 export class BurndownApiService {
   private apiService: ApiService;
