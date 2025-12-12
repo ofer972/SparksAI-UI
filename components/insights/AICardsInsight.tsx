@@ -556,14 +556,40 @@ export default function AICardsInsight({
 
   const visibleCards = Array.isArray(cards) ? cards.filter(hasContent) : [];
   
+  // Sort cards by estimated content height (from shortest to tallest)
+  const getCardContentLength = (card: AICard): number => {
+    let length = 0;
+    
+    // Description length
+    if (card.description) {
+      length += card.description.length;
+    }
+    
+    // Information JSON length
+    if (card.information_json) {
+      length += card.information_json.length;
+    }
+    
+    // Recommendations count
+    if (card.recommendations && card.recommendations.length > 0) {
+      length += card.recommendations.length * 100; // Estimate 100 chars per recommendation
+    }
+    
+    return length;
+  };
+  
+  const sortedCards = [...visibleCards].sort((a, b) => {
+    return getCardContentLength(a) - getCardContentLength(b);
+  });
+  
   // Always show 4 card positions (2x2 grid), even if we have fewer cards
   const maxCardsToShow = 4;
-  const cardsToDisplay = visibleCards.slice(0, maxCardsToShow);
+  const cardsToDisplay = sortedCards.slice(0, maxCardsToShow);
   const emptySlots = Math.max(0, maxCardsToShow - cardsToDisplay.length);
 
   return (
     <div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full auto-rows-fr">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full auto-rows-auto">
         {cardsToDisplay.map((card) => {
             const colors = getPriorityColor(card.priority);
             const priorityIcon = getPriorityIcon(card.priority);
@@ -877,7 +903,7 @@ export default function AICardsInsight({
                   const recommendationsToShow = card.recommendations;
                   
                   return (
-                    <div className="mt-6 pt-0.5 flex-shrink-0">
+                    <div className="mt-2 pt-0.5 flex-shrink-0">
                       <div className="flex items-center mb-1">
                         <h4 className="text-xs font-bold text-gray-700">Recommendations</h4>
                       </div>
@@ -1047,8 +1073,6 @@ export default function AICardsInsight({
           return null;
         }
         
-        const isMarkdown = config.markdownFields?.includes('full_information');
-        
         return createPortal(
           <div
             data-tooltip-content
@@ -1074,31 +1098,27 @@ export default function AICardsInsight({
                 </button>
               </div>
               <div className="bg-gray-50 p-3 rounded text-sm text-gray-900">
-                {isMarkdown ? (
-                  <div className="prose prose-sm max-w-none">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm, remarkBreaks]}
-                      components={{
-                        p: ({ children }) => <p className="text-sm text-gray-900 mb-2">{children}</p>,
-                        strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                        em: ({ children }) => <em className="italic">{children}</em>,
-                        ul: ({ children }) => <ul className="list-disc list-inside text-sm text-gray-900 mb-2">{children}</ul>,
-                        ol: ({ children }) => <ol className="list-decimal list-inside text-sm text-gray-900 mb-2">{children}</ol>,
-                        li: ({ children }) => <li className="text-sm text-gray-900">{children}</li>,
-                        code: ({ children }) => <code className="bg-gray-100 px-1 rounded text-xs">{children}</code>,
-                        pre: ({ children }) => <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto whitespace-pre-wrap">{children}</pre>,
-                        h1: ({ children }) => <h1 className="text-lg font-bold text-gray-900 mb-2">{children}</h1>,
-                        h2: ({ children }) => <h2 className="text-base font-bold text-gray-900 mb-2">{children}</h2>,
-                        h3: ({ children }) => <h3 className="text-sm font-semibold text-gray-900 mb-2">{children}</h3>,
-                        blockquote: ({ children }) => <blockquote className="border-l-2 border-gray-300 pl-2 italic text-gray-600 mb-2">{children}</blockquote>,
-                      }}
-                    >
-                      {card.full_information}
-                    </ReactMarkdown>
-                  </div>
-                ) : (
-                  <div className="whitespace-pre-wrap font-mono text-xs">{card.full_information}</div>
-                )}
+                <div className="prose prose-sm max-w-none">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm, remarkBreaks]}
+                    components={{
+                      p: ({ children }) => <p className="text-sm text-gray-900 mb-2">{children}</p>,
+                      strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                      em: ({ children }) => <em className="italic">{children}</em>,
+                      ul: ({ children }) => <ul className="list-disc list-inside text-sm text-gray-900 mb-2">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal list-inside text-sm text-gray-900 mb-2">{children}</ol>,
+                      li: ({ children }) => <li className="text-sm text-gray-900">{children}</li>,
+                      code: ({ children }) => <code className="bg-gray-100 px-1 rounded text-xs">{children}</code>,
+                      pre: ({ children }) => <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto whitespace-pre-wrap">{children}</pre>,
+                      h1: ({ children }) => <h1 className="text-lg font-bold text-gray-900 mb-2">{children}</h1>,
+                      h2: ({ children }) => <h2 className="text-base font-bold text-gray-900 mb-2">{children}</h2>,
+                      h3: ({ children }) => <h3 className="text-sm font-semibold text-gray-900 mb-2">{children}</h3>,
+                      blockquote: ({ children }) => <blockquote className="border-l-2 border-gray-300 pl-2 italic text-gray-600 mb-2">{children}</blockquote>,
+                    }}
+                  >
+                    {card.full_information}
+                  </ReactMarkdown>
+                </div>
               </div>
             </div>
           </div>,

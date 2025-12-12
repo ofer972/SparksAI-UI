@@ -724,6 +724,14 @@ export default function Home() {
     </SidebarIcon>
   );
 
+  const IconTeamsMeetings = () => (
+    <SidebarIcon>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    </SidebarIcon>
+  );
+
   // Accordion navigation groups for the sidebar UI (beautified)
   const navigationGroups: Array<{ title: string; items: { id: string; label: string; icon: React.ReactNode }[] }> = [
     {
@@ -755,7 +763,7 @@ export default function Home() {
               { id: 'settings', label: 'System Settings', icon: <IconCog /> },
               { id: 'create-agent-job', label: 'Create Agent Job', icon: <IconPlus /> },
               { id: 'users-admin', label: 'Users', icon: <IconUsers /> },
-              { id: 'teams-and-meetings', label: 'Teams & Meetings', icon: <IconUsers /> },
+              { id: 'teams-and-meetings', label: 'Teams & Meetings', icon: <IconTeamsMeetings /> },
             ],
           },
         ]
