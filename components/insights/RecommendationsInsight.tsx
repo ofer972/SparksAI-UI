@@ -296,16 +296,7 @@ export default function RecommendationsInsight({
                     >
                       ID: {recommendation.id}
                     </button>
-                    <div className="relative group">
-                      <span className="text-sm cursor-pointer">
-                        {priorityIcon}
-                      </span>
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                        {recommendation.priority}
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
-                      </div>
-                    </div>
-                    {/* Reason Button - positioned on same row as date, after priority icon */}
+                    {/* Reason Button - positioned on same row as date */}
                     <button 
                       onClick={() => handleReason(recommendation)}
                       className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-full text-xs font-medium transition-colors shadow-sm hover:shadow-md"

@@ -950,9 +950,6 @@ export default function AICardsInsight({
                               
                               return (
                                 <div key={rec.id} className={`flex items-center gap-2 border-b border-gray-200 py-1 last:border-b-0`}>
-                                  <div className="flex-shrink-0 w-4 flex items-center justify-center">
-                                    <span className="text-xs">{recPriorityIcon}</span>
-                                  </div>
                                   <div className="flex-1 min-w-0 overflow-hidden">
                                     <div className={`${dynamicTextSize} text-gray-600 whitespace-nowrap overflow-hidden text-ellipsis`}>
                                       {rec.rational && (
