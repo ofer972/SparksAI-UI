@@ -1238,6 +1238,7 @@ export default function Home() {
                       selectedTreeType: type,
                     }));
                     setSelectedTeam(value ? label : ''); // Update legacy state for views that need it
+                    setSelectedTreeType(type); // Update legacy selectedTreeType state
                     break;
                   case 'upload-transcripts':
                     setUploadTranscriptsFilters(prev => ({
@@ -1362,17 +1363,18 @@ export default function Home() {
                         selectedTreeType: type,
                       }));
                       break;
-                    case 'team-ai-insights':
-                      setTeamInsightsFilters(prev => ({
-                        ...prev,
-                        selectedTeam: value ? label : '',
-                        selectedTreeValue: value,
-                        selectedTreeLabel: value ? label : '',
-                        selectedTreeType: type,
-                      }));
-                      setSelectedTeam(value ? label : '');
-                      break;
-                    case 'upload-transcripts':
+                  case 'team-ai-insights':
+                    setTeamInsightsFilters(prev => ({
+                      ...prev,
+                      selectedTeam: value ? label : '',
+                      selectedTreeValue: value,
+                      selectedTreeLabel: value ? label : '',
+                      selectedTreeType: type,
+                    }));
+                    setSelectedTeam(value ? label : '');
+                    setSelectedTreeType(type); // Update legacy state for views that need it
+                    break;
+                  case 'upload-transcripts':
                       setUploadTranscriptsFilters(prev => ({
                         ...prev,
                         selectedTeam: value ? label : '',
@@ -1423,7 +1425,7 @@ export default function Home() {
         {activeNavItem === 'team-ai-insights' && (
           <div className="hidden md:flex flex-shrink-0 border-t border-gray-200 bg-white relative z-30" style={{ zoom: 0.90, overflow: 'visible' }}>
             <div className="px-3 md:px-4 py-2 md:py-2.5 w-full" style={{ overflow: 'visible' }}>
-              <TeamMetrics teamName={selectedTeam} isGroup={selectedTreeType === 'group'} />
+              <TeamMetrics teamName={teamInsightsFilters.selectedTeam} isGroup={teamInsightsFilters.selectedTreeType === 'group'} />
             </div>
           </div>
         )}
@@ -1432,7 +1434,7 @@ export default function Home() {
         {activeNavItem === 'pi-quarter' && (
           <div className="hidden md:flex flex-shrink-0 border-t border-gray-200 bg-white relative z-30" style={{ zoom: 0.90, overflow: 'visible' }}>
             <div className="px-3 md:px-4 py-2 md:py-2.5 w-full" style={{ overflow: 'visible' }}>
-              <PIMetrics piName={selectedPI} />
+              <PIMetrics piName={piQuarterFilters.selectedPI} />
             </div>
           </div>
         )}
