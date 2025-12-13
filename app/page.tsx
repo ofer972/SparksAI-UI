@@ -221,7 +221,7 @@ export default function Home() {
     prevActiveNavItemRef.current = currentNav;
   }, [activeNavItem]);
   
-  // Separate filter state for each dashboard
+  // Separate filter state for each view
   const [teamDashboardFilters, setTeamDashboardFilters] = useState({
     selectedTeam: '',
     selectedTreeValue: null as string | null,
@@ -237,7 +237,27 @@ export default function Home() {
     selectedTreeType: 'team' as 'group' | 'team',
   });
   
-  // Legacy state for backward compatibility (team AI insights, etc.)
+  const [teamInsightsFilters, setTeamInsightsFilters] = useState({
+    selectedTeam: '',
+    selectedTreeValue: null as string | null,
+    selectedTreeLabel: '',
+    selectedTreeType: 'team' as 'group' | 'team',
+    selectedCategories: [] as string[],
+  });
+  
+  const [piQuarterFilters, setPiQuarterFilters] = useState({
+    selectedPI: 'Q32025',
+  });
+  
+  const [uploadTranscriptsFilters, setUploadTranscriptsFilters] = useState({
+    selectedPI: 'Q32025',
+    selectedTeam: '',
+    selectedTreeValue: null as string | null,
+    selectedTreeLabel: '',
+    selectedTreeType: 'team' as 'group' | 'team',
+  });
+  
+  // Legacy state for backward compatibility (used by old code)
   const [selectedTeam, setSelectedTeam] = useState('');
   const [selectedTreeValue, setSelectedTreeValue] = useState<string | null>(null);
   const [selectedTreeLabel, setSelectedTreeLabel] = useState<string>('');
@@ -837,9 +857,9 @@ export default function Home() {
       case 'team-ai-insights':
         return (
           <TeamAIInsightsView
-            selectedTeam={selectedTeam}
-            selectedTreeType={selectedTreeType}
-            selectedCategories={selectedCategories}
+            selectedTeam={teamInsightsFilters.selectedTeam}
+            selectedTreeType={teamInsightsFilters.selectedTreeType}
+            selectedCategories={teamInsightsFilters.selectedCategories}
             isLoading={teamInsightSettings.isLoading}
             isReady={teamInsightsReadyRef.current && teamInsightsReady}
           />
@@ -847,15 +867,15 @@ export default function Home() {
       case 'team-dashboard':
         return (
           <TeamDashboardView
-            selectedTeam={selectedTeam}
-            selectedTreeType={selectedTreeType}
-            selectedTreeValue={selectedTreeValue}
+            selectedTeam={teamDashboardFilters.selectedTeam}
+            selectedTreeType={teamDashboardFilters.selectedTreeType}
+            selectedTreeValue={teamDashboardFilters.selectedTreeValue}
           />
         );
       case 'pi-quarter':
         return (
           <PIAIInsightsView
-            selectedPI={selectedPI}
+            selectedPI={piQuarterFilters.selectedPI}
             isLoading={piInsightSettings.isLoading}
             isReady={piInsightsReadyRef.current && piInsightsReady}
           />
@@ -863,10 +883,10 @@ export default function Home() {
       case 'pi-dashboard':
         return (
           <PIDashboardView 
-            selectedPI={selectedPI} 
-            selectedTeam={selectedTeam}
-            selectedTreeType={selectedTreeType}
-            selectedTreeValue={selectedTreeValue}
+            selectedPI={piDashboardFilters.selectedPI} 
+            selectedTeam={piDashboardFilters.selectedTeam}
+            selectedTreeType={piDashboardFilters.selectedTreeType}
+            selectedTreeValue={piDashboardFilters.selectedTreeValue}
           />
         );
       case 'settings':
@@ -884,10 +904,10 @@ export default function Home() {
       case 'upload-transcripts':
         return (
           <UploadTranscriptsView
-            selectedTeam={selectedTeam}
-            selectedPI={selectedPI}
-            onTeamChange={setSelectedTeam}
-            onPIChange={setSelectedPI}
+            selectedTeam={uploadTranscriptsFilters.selectedTeam}
+            selectedPI={uploadTranscriptsFilters.selectedPI}
+            onTeamChange={(team) => setUploadTranscriptsFilters(prev => ({ ...prev, selectedTeam: team }))}
+            onPIChange={(pi) => setUploadTranscriptsFilters(prev => ({ ...prev, selectedPI: pi }))}
           />
         );
       case 'users-admin':
@@ -971,141 +991,59 @@ export default function Home() {
         </div>
       )}
 
-      {/* Top Row: Logo + TopBar in same container */}
-      <div className="hidden md:flex flex-shrink-0 items-center bg-gradient-to-r from-white to-gray-50 py-1">
-        {/* Spacer matching sidebar width */}
+      {/* Desktop Layout: Sidebar Column + Main Column */}
+      <div className="hidden md:flex flex-1 overflow-hidden">
+        {/* Left Column: Logo + Sidebar */}
         <div className={`flex-shrink-0 ml-[5px] transition-all duration-300 ${
           sidebarCollapsed ? 'w-16' : 'w-56'
-        }`}>
-          {!sidebarCollapsed && (
-            <div className="flex justify-center">
+        } flex flex-col bg-white shadow-sm`}>
+          {/* Logo Area - Fixed height to match TopBar */}
+          <div className="h-[57px] flex items-center justify-center bg-white">
+            {!sidebarCollapsed && (
               <SparksAILogo collapsed={sidebarCollapsed} size="medium" />
-            </div>
-          )}
-        </div>
-
-        {/* TopBar Content - will render inline due to contents class */}
-        <div className="flex-1 px-4">
-          <TopBar
-            activeNavItem={activeNavItem}
-            navigationItems={navigationItems}
-            onToggleMobileSidebar={() => setMobileSidebarOpen(true)}
-            dashboardSettings={(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') ? {
-              hasChanges: dashboardSettingsState.hasChanges,
-              isSaving: dashboardSettingsState.isSaving,
-              onSave: handleSaveDashboardSettings,
-              onReset: () => setShowResetConfirm(true),
-            } : undefined}
-            insightSettings={(['team-ai-insights', 'pi-quarter'].includes(activeNavItem)) ? {
-              hasChanges: insightSettingsState.hasChanges,
-              isSaving: insightSettingsState.isSaving,
-              onSave: handleSaveInsightSettings,
-            } : undefined}
-            filters={{
-              selectedPI: activeNavItem === 'pi-dashboard' ? piDashboardFilters.selectedPI : selectedPI,
-              onPIChange: (pi: string) => {
-                if (activeNavItem === 'pi-dashboard') {
-                  setSelectedPI(pi);
-                  setPiDashboardFilters(prev => ({ ...prev, selectedPI: pi }));
-                } else {
-                  setSelectedPI(pi);
-                }
-              },
-              selectedTreeValue: activeNavItem === 'team-dashboard' ? teamDashboardFilters.selectedTreeValue : 
-                                 activeNavItem === 'pi-dashboard' ? piDashboardFilters.selectedTreeValue : 
-                                 selectedTreeValue,
-              onTreeSelect: (value: string | null, label: string, type: 'team' | 'group') => {
-                setSelectedTreeValue(value);
-                setSelectedTreeLabel(value ? label : '');
-                setSelectedTreeType(type);
-                setSelectedTeam(value ? label : '');
-                
-                if (activeNavItem === 'team-dashboard') {
-                  setTeamDashboardFilters(prev => ({
-                    ...prev,
-                    selectedTeam: value ? label : '',
-                    selectedTreeValue: value,
-                    selectedTreeLabel: value ? label : '',
-                    selectedTreeType: type,
-                  }));
-                } else if (activeNavItem === 'pi-dashboard') {
-                  setPiDashboardFilters(prev => ({
-                    ...prev,
-                    selectedTeam: value ? label : '',
-                    selectedTreeValue: value,
-                    selectedTreeLabel: value ? label : '',
-                    selectedTreeType: type,
-                  }));
-                }
-              },
-              selectedCategories,
-              onCategoriesChange: setSelectedCategories,
-              settingsLoading: teamInsightSettings.isLoading,
-              hasSavedSettings: !!teamInsightSettings.savedState,
-            }}
-            aiChat={(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') ? {
-              onOpenChat: (dashboardData?: any) => {
-                console.log('[AI Menu] Opening chat modal with dashboard data:', dashboardData);
-                setCollectedDashboardData(dashboardData || null);
-                setIsDashboardChatModalOpen(true);
-              },
-              prompts,
-              selectedPrompt,
-              onPromptChange: setSelectedPrompt,
-              loadingPrompts,
-            } : undefined}
-            currentUser={getCurrentUser()}
-            onLogout={() => { logout(); try { location.assign('/login'); } catch {} }}
-          />
-        </div>
-      </div>
-
-      {/* Bottom Row: Sidebar + Content */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar Navigation (desktop) */}
-        <div className={`hidden md:block bg-white shadow-sm ml-[5px] flex-shrink-0 transition-all duration-300 ${
-          sidebarCollapsed ? 'w-16' : 'w-56'
-        }`}>
-          <div className="h-full flex flex-col">
+            )}
+          </div>
           
-          <nav className={`flex-1 overflow-y-auto px-3 bg-gradient-to-b from-white to-gray-50 border border-gray-200 rounded-tl-2xl ${
-            sidebarCollapsed ? 'pt-3 pb-0' : 'pt-3 pb-3'
-          }`}>
-            {sidebarCollapsed ? (
-              <div className="space-y-1">
-                {navigationGroups.flatMap((g) => g.items).map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => handleNavigation(item.id as NavItemId)}
-                    className={`w-full flex items-center justify-center px-2 py-2.5 rounded-lg transition-all duration-200 ${
-                      activeNavItem === item.id
-                        ? 'bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 text-indigo-700 shadow-md border border-indigo-200/60'
-                        : 'text-gray-600 hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
-                    }`}
-                    title={item.label}
-                  >
-                    <span className="flex items-center justify-center">{item.icon}</span>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {navigationGroups.map((group) => (
-                  <div key={group.title}>
+          {/* Sidebar Navigation */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <nav className={`flex-1 overflow-y-auto px-3 bg-gradient-to-b from-white to-gray-50 border border-gray-200 rounded-tl-2xl ${
+              sidebarCollapsed ? 'pt-3 pb-0' : 'pt-3 pb-3'
+            }`}>
+              {sidebarCollapsed ? (
+                <div className="space-y-1">
+                  {navigationGroups.flatMap((g) => g.items).map((item) => (
                     <button
-                      onClick={() => toggleGroup(group.title)}
-                      className="w-full flex items-center justify-between px-2 py-2 text-[10px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-800 transition-colors"
+                      key={item.id}
+                      onClick={() => handleNavigation(item.id as NavItemId)}
+                      className={`w-full flex items-center justify-center px-2 py-2.5 rounded-lg transition-all duration-200 ${
+                        activeNavItem === item.id
+                          ? 'bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 text-indigo-700 shadow-md border border-indigo-200/60'
+                          : 'text-gray-600 hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
+                      }`}
+                      title={item.label}
                     >
-                      <span>{group.title}</span>
-                      <svg 
-                        className={`w-3 h-3 transition-transform duration-200 ${expandedGroups[group.title] ? 'rotate-180' : ''}`}
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
+                      <span className="flex items-center justify-center">{item.icon}</span>
                     </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {navigationGroups.map((group) => (
+                    <div key={group.title}>
+                      <button
+                        onClick={() => toggleGroup(group.title)}
+                        className="w-full flex items-center justify-between px-2 py-2 text-[10px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-800 transition-colors"
+                      >
+                        <span>{group.title}</span>
+                        <svg 
+                          className={`w-3 h-3 transition-transform duration-200 ${expandedGroups[group.title] ? 'rotate-180' : ''}`}
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
                       {expandedGroups[group.title] && (
                         <div className="mt-1 space-y-1">
                           {group.items.map((item) => (
@@ -1125,34 +1063,168 @@ export default function Home() {
                           ))}
                         </div>
                       )}
-                    <div className="mx-2 my-2 border-t border-gray-100"></div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </nav>
+                      <div className="mx-2 my-2 border-t border-gray-100"></div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </nav>
 
-          <div className={`mt-auto ${
-            sidebarCollapsed ? 'bg-gradient-to-b from-white to-gray-50 border-t-0' : 'bg-gradient-to-b from-white to-gray-50 border-t border-gray-200'
-          }`}>
-            <button 
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="w-full text-gray-600 hover:text-gray-800 py-3 px-3 hover:bg-gray-100 flex items-center justify-center transition-colors"
-              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={
-                  sidebarCollapsed ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"
-                } />
-              </svg>
-              {!sidebarCollapsed && <span className="ml-2 text-xs font-medium">Collapse</span>}
-            </button>
+            {/* Collapse Button */}
+            <div className={`mt-auto ${
+              sidebarCollapsed ? 'bg-gradient-to-b from-white to-gray-50 border-t-0' : 'bg-gradient-to-b from-white to-gray-50 border-t border-gray-200'
+            }`}>
+              <button 
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="w-full text-gray-600 hover:text-gray-800 py-3 px-3 hover:bg-gray-100 flex items-center justify-center transition-colors"
+                title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={
+                    sidebarCollapsed ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"
+                  } />
+                </svg>
+                {!sidebarCollapsed && <span className="ml-2 text-xs font-medium">Collapse</span>}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0 border-t border-gray-200">
+        {/* Right Column: TopBar + Content */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* TopBar Wrapper - Contains main bar (57px) and optional filter panel */}
+          <div className="flex-shrink-0">
+            <TopBar
+            activeNavItem={activeNavItem}
+            navigationItems={navigationItems}
+            onToggleMobileSidebar={() => setMobileSidebarOpen(true)}
+            dashboardSettings={(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') ? {
+              hasChanges: dashboardSettingsState.hasChanges,
+              isSaving: dashboardSettingsState.isSaving,
+              onSave: handleSaveDashboardSettings,
+              onReset: () => setShowResetConfirm(true),
+            } : undefined}
+            insightSettings={(['team-ai-insights', 'pi-quarter'].includes(activeNavItem)) ? {
+              hasChanges: insightSettingsState.hasChanges,
+              isSaving: insightSettingsState.isSaving,
+              onSave: handleSaveInsightSettings,
+            } : undefined}
+            filters={{
+              selectedPI: (() => {
+                switch (activeNavItem) {
+                  case 'pi-dashboard': return piDashboardFilters.selectedPI;
+                  case 'pi-quarter': return piQuarterFilters.selectedPI;
+                  case 'upload-transcripts': return uploadTranscriptsFilters.selectedPI;
+                  default: return selectedPI;
+                }
+              })(),
+              onPIChange: (pi: string) => {
+                switch (activeNavItem) {
+                  case 'pi-dashboard':
+                    setPiDashboardFilters(prev => ({ ...prev, selectedPI: pi }));
+                    break;
+                  case 'pi-quarter':
+                    setPiQuarterFilters({ selectedPI: pi });
+                    setSelectedPI(pi); // Update legacy state for views that need it
+                    break;
+                  case 'upload-transcripts':
+                    setUploadTranscriptsFilters(prev => ({ ...prev, selectedPI: pi }));
+                    break;
+                  default:
+                    setSelectedPI(pi);
+                }
+              },
+              selectedTreeValue: (() => {
+                switch (activeNavItem) {
+                  case 'team-dashboard': return teamDashboardFilters.selectedTreeValue;
+                  case 'pi-dashboard': return piDashboardFilters.selectedTreeValue;
+                  case 'team-ai-insights': return teamInsightsFilters.selectedTreeValue;
+                  case 'upload-transcripts': return uploadTranscriptsFilters.selectedTreeValue;
+                  default: return selectedTreeValue;
+                }
+              })(),
+              selectedTreeLabel: (() => {
+                switch (activeNavItem) {
+                  case 'team-dashboard': return teamDashboardFilters.selectedTreeLabel;
+                  case 'pi-dashboard': return piDashboardFilters.selectedTreeLabel;
+                  case 'team-ai-insights': return teamInsightsFilters.selectedTreeLabel;
+                  case 'upload-transcripts': return uploadTranscriptsFilters.selectedTreeLabel;
+                  default: return selectedTreeLabel;
+                }
+              })(),
+              onTreeSelect: (value: string | null, label: string, type: 'team' | 'group') => {
+                switch (activeNavItem) {
+                  case 'team-dashboard':
+                    setTeamDashboardFilters({
+                      selectedTeam: value ? label : '',
+                      selectedTreeValue: value,
+                      selectedTreeLabel: value ? label : '',
+                      selectedTreeType: type,
+                    });
+                    break;
+                  case 'pi-dashboard':
+                    setPiDashboardFilters(prev => ({
+                      ...prev,
+                      selectedTeam: value ? label : '',
+                      selectedTreeValue: value,
+                      selectedTreeLabel: value ? label : '',
+                      selectedTreeType: type,
+                    }));
+                    break;
+                  case 'team-ai-insights':
+                    setTeamInsightsFilters(prev => ({
+                      ...prev,
+                      selectedTeam: value ? label : '',
+                      selectedTreeValue: value,
+                      selectedTreeLabel: value ? label : '',
+                      selectedTreeType: type,
+                    }));
+                    setSelectedTeam(value ? label : ''); // Update legacy state for views that need it
+                    break;
+                  case 'upload-transcripts':
+                    setUploadTranscriptsFilters(prev => ({
+                      ...prev,
+                      selectedTeam: value ? label : '',
+                      selectedTreeValue: value,
+                      selectedTreeLabel: value ? label : '',
+                      selectedTreeType: type,
+                    }));
+                    break;
+                  default:
+                    setSelectedTreeValue(value);
+                    setSelectedTreeLabel(value ? label : '');
+                    setSelectedTreeType(type);
+                    setSelectedTeam(value ? label : '');
+                }
+              },
+              selectedCategories: activeNavItem === 'team-ai-insights' ? teamInsightsFilters.selectedCategories : selectedCategories,
+              onCategoriesChange: (categories: string[]) => {
+                if (activeNavItem === 'team-ai-insights') {
+                  setTeamInsightsFilters(prev => ({ ...prev, selectedCategories: categories }));
+                }
+                setSelectedCategories(categories);
+              },
+              settingsLoading: teamInsightSettings.isLoading,
+              hasSavedSettings: !!teamInsightSettings.savedState,
+            }}
+            aiChat={(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') ? {
+              onOpenChat: (dashboardData?: any) => {
+                console.log('[AI Menu] Opening chat modal with dashboard data:', dashboardData);
+                setCollectedDashboardData(dashboardData || null);
+                setIsDashboardChatModalOpen(true);
+              },
+              prompts,
+              selectedPrompt,
+              onPromptChange: setSelectedPrompt,
+              loadingPrompts,
+            } : undefined}
+            currentUser={getCurrentUser()}
+            onLogout={() => { logout(); try { location.assign('/login'); } catch {} }}
+            />
+          </div>
+
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Mobile TopBar */}
           <div className="md:hidden">
             <TopBar
@@ -1171,44 +1243,100 @@ export default function Home() {
                 onSave: handleSaveInsightSettings,
               } : undefined}
               filters={{
-                selectedPI: activeNavItem === 'pi-dashboard' ? piDashboardFilters.selectedPI : selectedPI,
+                selectedPI: (() => {
+                  switch (activeNavItem) {
+                    case 'pi-dashboard': return piDashboardFilters.selectedPI;
+                    case 'pi-quarter': return piQuarterFilters.selectedPI;
+                    case 'upload-transcripts': return uploadTranscriptsFilters.selectedPI;
+                    default: return selectedPI;
+                  }
+                })(),
                 onPIChange: (pi: string) => {
-                  if (activeNavItem === 'pi-dashboard') {
-                    setSelectedPI(pi);
-                    setPiDashboardFilters(prev => ({ ...prev, selectedPI: pi }));
-                  } else {
-                    setSelectedPI(pi);
+                  switch (activeNavItem) {
+                    case 'pi-dashboard':
+                      setPiDashboardFilters(prev => ({ ...prev, selectedPI: pi }));
+                      break;
+                    case 'pi-quarter':
+                      setPiQuarterFilters({ selectedPI: pi });
+                      setSelectedPI(pi);
+                      break;
+                    case 'upload-transcripts':
+                      setUploadTranscriptsFilters(prev => ({ ...prev, selectedPI: pi }));
+                      break;
+                    default:
+                      setSelectedPI(pi);
                   }
                 },
-                selectedTreeValue: activeNavItem === 'team-dashboard' ? teamDashboardFilters.selectedTreeValue : 
-                                   activeNavItem === 'pi-dashboard' ? piDashboardFilters.selectedTreeValue : 
-                                   selectedTreeValue,
+                selectedTreeValue: (() => {
+                  switch (activeNavItem) {
+                    case 'team-dashboard': return teamDashboardFilters.selectedTreeValue;
+                    case 'pi-dashboard': return piDashboardFilters.selectedTreeValue;
+                    case 'team-ai-insights': return teamInsightsFilters.selectedTreeValue;
+                    case 'upload-transcripts': return uploadTranscriptsFilters.selectedTreeValue;
+                    default: return selectedTreeValue;
+                  }
+                })(),
+                selectedTreeLabel: (() => {
+                  switch (activeNavItem) {
+                    case 'team-dashboard': return teamDashboardFilters.selectedTreeLabel;
+                    case 'pi-dashboard': return piDashboardFilters.selectedTreeLabel;
+                    case 'team-ai-insights': return teamInsightsFilters.selectedTreeLabel;
+                    case 'upload-transcripts': return uploadTranscriptsFilters.selectedTreeLabel;
+                    default: return selectedTreeLabel;
+                  }
+                })(),
                 onTreeSelect: (value: string | null, label: string, type: 'team' | 'group') => {
-                  setSelectedTreeValue(value);
-                  setSelectedTreeLabel(value ? label : '');
-                  setSelectedTreeType(type);
-                  setSelectedTeam(value ? label : '');
-                  
-                  if (activeNavItem === 'team-dashboard') {
-                    setTeamDashboardFilters(prev => ({
-                      ...prev,
-                      selectedTeam: value ? label : '',
-                      selectedTreeValue: value,
-                      selectedTreeLabel: value ? label : '',
-                      selectedTreeType: type,
-                    }));
-                  } else if (activeNavItem === 'pi-dashboard') {
-                    setPiDashboardFilters(prev => ({
-                      ...prev,
-                      selectedTeam: value ? label : '',
-                      selectedTreeValue: value,
-                      selectedTreeLabel: value ? label : '',
-                      selectedTreeType: type,
-                    }));
+                  switch (activeNavItem) {
+                    case 'team-dashboard':
+                      setTeamDashboardFilters({
+                        selectedTeam: value ? label : '',
+                        selectedTreeValue: value,
+                        selectedTreeLabel: value ? label : '',
+                        selectedTreeType: type,
+                      });
+                      break;
+                    case 'pi-dashboard':
+                      setPiDashboardFilters(prev => ({
+                        ...prev,
+                        selectedTeam: value ? label : '',
+                        selectedTreeValue: value,
+                        selectedTreeLabel: value ? label : '',
+                        selectedTreeType: type,
+                      }));
+                      break;
+                    case 'team-ai-insights':
+                      setTeamInsightsFilters(prev => ({
+                        ...prev,
+                        selectedTeam: value ? label : '',
+                        selectedTreeValue: value,
+                        selectedTreeLabel: value ? label : '',
+                        selectedTreeType: type,
+                      }));
+                      setSelectedTeam(value ? label : '');
+                      break;
+                    case 'upload-transcripts':
+                      setUploadTranscriptsFilters(prev => ({
+                        ...prev,
+                        selectedTeam: value ? label : '',
+                        selectedTreeValue: value,
+                        selectedTreeLabel: value ? label : '',
+                        selectedTreeType: type,
+                      }));
+                      break;
+                    default:
+                      setSelectedTreeValue(value);
+                      setSelectedTreeLabel(value ? label : '');
+                      setSelectedTreeType(type);
+                      setSelectedTeam(value ? label : '');
                   }
                 },
-                selectedCategories,
-                onCategoriesChange: setSelectedCategories,
+                selectedCategories: activeNavItem === 'team-ai-insights' ? teamInsightsFilters.selectedCategories : selectedCategories,
+                onCategoriesChange: (categories: string[]) => {
+                  if (activeNavItem === 'team-ai-insights') {
+                    setTeamInsightsFilters(prev => ({ ...prev, selectedCategories: categories }));
+                  }
+                  setSelectedCategories(categories);
+                },
                 settingsLoading: teamInsightSettings.isLoading,
                 hasSavedSettings: !!teamInsightSettings.savedState,
               }}
@@ -1250,6 +1378,7 @@ export default function Home() {
             </div>
           </div>
         )}
+          </div>
         </div>
       </div>
 
