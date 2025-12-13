@@ -446,26 +446,26 @@ export default function Home() {
     if (!teamInsightSettings.isLoading && activeNavItem === 'team-ai-insights') {
       teamInsightSettings.updateCurrentState({
         topBarFilters: {
-          selectedTeam,
-          selectedTreeType,
+          selectedTeam: teamInsightsFilters.selectedTeam,
+          selectedTreeType: teamInsightsFilters.selectedTreeType,
         },
-        selectedCategories,
+        selectedCategories: teamInsightsFilters.selectedCategories,
       });
     }
-  }, [selectedTeam, selectedTreeType, selectedCategories, activeNavItem, teamInsightSettings.isLoading]);
+  }, [teamInsightsFilters.selectedTeam, teamInsightsFilters.selectedTreeType, teamInsightsFilters.selectedCategories, activeNavItem, teamInsightSettings.isLoading]);
 
   // Track PI insight settings changes
   useEffect(() => {
     if (!piInsightSettings.isLoading && activeNavItem === 'pi-quarter') {
       piInsightSettings.updateCurrentState({
         topBarFilters: {
-          selectedPI,
+          selectedPI: piQuarterFilters.selectedPI,
           selectedTeam,
           selectedTreeType,
         },
       });
     }
-  }, [selectedPI, selectedTeam, selectedTreeType, activeNavItem, piInsightSettings.isLoading]);
+  }, [piQuarterFilters.selectedPI, selectedTeam, selectedTreeType, activeNavItem, piInsightSettings.isLoading]);
 
   // Update insight settings state based on active page
   useEffect(() => {
@@ -525,12 +525,21 @@ export default function Home() {
       teamInsightsReadyRef.current = false;
       setTeamInsightsReady(false);
       
-      // Clear state immediately when navigating to team-ai-insights
+      // Clear legacy state immediately when navigating to team-ai-insights
       setSelectedTeam('');
       setSelectedTreeValue(null);
       setSelectedTreeLabel('');
       setSelectedTreeType('team');
       setSelectedCategories([]);
+      
+      // Clear teamInsightsFilters state
+      setTeamInsightsFilters({
+        selectedTeam: '',
+        selectedTreeValue: null,
+        selectedTreeLabel: '',
+        selectedTreeType: 'team',
+        selectedCategories: [],
+      });
     } else {
       // Reset when leaving team-ai-insights
       teamInsightsReadyRef.current = false;
@@ -540,39 +549,77 @@ export default function Home() {
 
   // Load saved team insight settings after clearing
   useEffect(() => {
-    if (activeNavItem === 'team-ai-insights' && !teamInsightSettings.isLoading && teamInsightSettings.savedState) {
-      console.log('[App] Loading saved team insight settings:', teamInsightSettings.savedState);
-      const saved = teamInsightSettings.savedState;
+    if (activeNavItem === 'team-ai-insights' && !teamInsightSettings.isLoading) {
+      // Check if groups and teams are loaded
+      if (groups.length === 0 && teams.length === 0) {
+        console.log('[App] Groups and teams not loaded yet, waiting...');
+        return;
+      }
       
-      if (saved.topBarFilters) {
-        const teamName = saved.topBarFilters.selectedTeam;
-        const treeType = saved.topBarFilters.selectedTreeType;
+      if (teamInsightSettings.savedState) {
+        console.log('[App] Loading saved team insight settings:', teamInsightSettings.savedState);
+        const saved = teamInsightSettings.savedState;
         
-        if (teamName) {
-          console.log('[App] Team Insight: Setting selectedTeam to:', teamName);
-          setSelectedTeam(teamName);
-          setSelectedTreeLabel(teamName);
+        if (saved.topBarFilters) {
+          const teamName = saved.topBarFilters.selectedTeam;
+          const treeType = saved.topBarFilters.selectedTreeType;
           
-          // Find and set the tree value from the team/group name
-          if (treeType === 'group') {
-            const group = groups.find(g => g.group_name === teamName);
-            if (group) setSelectedTreeValue(`group:${group.group_key}`);
-          } else {
-            const team = teams.find(t => t.team_name === teamName);
-            if (team) setSelectedTreeValue(`team:${team.team_key}`);
+          if (teamName) {
+            console.log('[App] Team Insight: Setting selectedTeam to:', teamName);
+            setSelectedTeam(teamName);
+            setSelectedTreeLabel(teamName);
+            
+            // Find and set the tree value from the team/group name
+            let treeValue = null;
+            if (treeType === 'group') {
+              const group = groups.find(g => g.group_name === teamName);
+              if (group) {
+                treeValue = `group:${group.group_key}`;
+                setSelectedTreeValue(treeValue);
+                console.log('[App] Found group, setting tree value:', treeValue);
+              } else {
+                console.warn('[App] Group not found:', teamName);
+              }
+            } else {
+              const team = teams.find(t => t.team_name === teamName);
+              if (team) {
+                treeValue = `team:${team.team_key}`;
+                setSelectedTreeValue(treeValue);
+                console.log('[App] Found team, setting tree value:', treeValue);
+              } else {
+                console.warn('[App] Team not found:', teamName);
+              }
+            }
+            
+            // Update teamInsightsFilters state
+            setTeamInsightsFilters({
+              selectedTeam: teamName,
+              selectedTreeValue: treeValue,
+              selectedTreeLabel: teamName,
+              selectedTreeType: treeType || 'team',
+              selectedCategories: saved.selectedCategories || [],
+            });
+            console.log('[App] Updated teamInsightsFilters:', { teamName, treeValue, treeType });
           }
+          
+          if (treeType) setSelectedTreeType(treeType);
         }
         
-        if (treeType) setSelectedTreeType(treeType);
+        // Restore saved categories if they exist
+        if (saved.selectedCategories !== undefined && !saved.topBarFilters?.selectedTeam) {
+          // Only update categories if we didn't already do it above
+          console.log('[App] Restoring saved categories:', saved.selectedCategories);
+          setSelectedCategories(saved.selectedCategories);
+          setTeamInsightsFilters(prev => ({
+            ...prev,
+            selectedCategories: saved.selectedCategories,
+          }));
+        }
+      } else {
+        console.log('[App] No saved team insight settings found');
       }
       
-      // Restore saved categories if they exist
-      if (saved.selectedCategories !== undefined) {
-        console.log('[App] Restoring saved categories:', saved.selectedCategories);
-        setSelectedCategories(saved.selectedCategories);
-      }
-      
-      // Mark as ready after settings are loaded (both ref and state)
+      // Mark as ready after settings are loaded (or if no settings exist)
       teamInsightsReadyRef.current = true;
       setTeamInsightsReady(true);
       console.log('[App] Team insights ready!');
@@ -588,13 +635,18 @@ export default function Home() {
       piInsightsReadyRef.current = false;
       setPiInsightsReady(false);
       
-      // Clear state immediately when navigating to pi-quarter
+      // Clear legacy state immediately when navigating to pi-quarter
       setSelectedPI('');
       setSelectedTeam('');
       setSelectedTreeValue(null);
       setSelectedTreeLabel('');
       setSelectedTreeType('team');
       setSelectedCategories([]);
+      
+      // Clear piQuarterFilters state
+      setPiQuarterFilters({
+        selectedPI: '',
+      });
     } else {
       // Reset when leaving pi-quarter
       piInsightsReadyRef.current = false;
@@ -604,44 +656,50 @@ export default function Home() {
 
   // Load saved PI insight settings after clearing
   useEffect(() => {
-    if (activeNavItem === 'pi-quarter' && !piInsightSettings.isLoading && piInsightSettings.savedState) {
-      console.log('[App] Loading saved PI insight settings:', piInsightSettings.savedState);
-      const saved = piInsightSettings.savedState;
-      
-      if (saved.topBarFilters) {
-        if (saved.topBarFilters.selectedPI) {
-          console.log('[App] PI Insight: Setting selectedPI to:', saved.topBarFilters.selectedPI);
-          setSelectedPI(saved.topBarFilters.selectedPI);
-        }
+    if (activeNavItem === 'pi-quarter' && !piInsightSettings.isLoading) {
+      if (piInsightSettings.savedState) {
+        console.log('[App] Loading saved PI insight settings:', piInsightSettings.savedState);
+        const saved = piInsightSettings.savedState;
         
-        const teamName = saved.topBarFilters.selectedTeam;
-        const treeType = saved.topBarFilters.selectedTreeType;
-        
-        if (teamName) {
-          console.log('[App] PI Insight: Setting selectedTeam to:', teamName);
-          setSelectedTeam(teamName);
-          setSelectedTreeLabel(teamName);
-          
-          // Find and set the tree value from the team/group name
-          if (treeType === 'group') {
-            const group = groups.find(g => g.group_name === teamName);
-            if (group) setSelectedTreeValue(`group:${group.group_key}`);
-          } else {
-            const team = teams.find(t => t.team_name === teamName);
-            if (team) setSelectedTreeValue(`team:${team.team_key}`);
+        if (saved.topBarFilters) {
+          if (saved.topBarFilters.selectedPI) {
+            console.log('[App] PI Insight: Setting selectedPI to:', saved.topBarFilters.selectedPI);
+            setSelectedPI(saved.topBarFilters.selectedPI);
+            // Update piQuarterFilters state
+            setPiQuarterFilters({ selectedPI: saved.topBarFilters.selectedPI });
           }
+          
+          const teamName = saved.topBarFilters.selectedTeam;
+          const treeType = saved.topBarFilters.selectedTreeType;
+          
+          if (teamName && (groups.length > 0 || teams.length > 0)) {
+            console.log('[App] PI Insight: Setting selectedTeam to:', teamName);
+            setSelectedTeam(teamName);
+            setSelectedTreeLabel(teamName);
+            
+            // Find and set the tree value from the team/group name
+            if (treeType === 'group') {
+              const group = groups.find(g => g.group_name === teamName);
+              if (group) setSelectedTreeValue(`group:${group.group_key}`);
+            } else {
+              const team = teams.find(t => t.team_name === teamName);
+              if (team) setSelectedTreeValue(`team:${team.team_key}`);
+            }
+          }
+          
+          if (treeType) setSelectedTreeType(treeType);
         }
         
-        if (treeType) setSelectedTreeType(treeType);
+        // Restore saved categories if they exist
+        if (saved.selectedCategories !== undefined) {
+          console.log('[App] Restoring saved PI categories:', saved.selectedCategories);
+          setSelectedCategories(saved.selectedCategories);
+        }
+      } else {
+        console.log('[App] No saved PI insight settings found');
       }
       
-      // Restore saved categories if they exist
-      if (saved.selectedCategories !== undefined) {
-        console.log('[App] Restoring saved PI categories:', saved.selectedCategories);
-        setSelectedCategories(saved.selectedCategories);
-      }
-      
-      // Mark as ready after settings are loaded (both ref and state)
+      // Mark as ready after settings are loaded (or if no settings exist)
       piInsightsReadyRef.current = true;
       setPiInsightsReady(true);
       console.log('[App] PI insights ready!');
