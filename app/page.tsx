@@ -612,7 +612,7 @@ export default function Home() {
           setSelectedCategories(saved.selectedCategories);
           setTeamInsightsFilters(prev => ({
             ...prev,
-            selectedCategories: saved.selectedCategories,
+            selectedCategories: saved.selectedCategories || [],
           }));
         }
       } else {
