@@ -16,7 +16,7 @@ import {
 } from 'chart.js';
 import { Chart, getElementAtEvent } from 'react-chartjs-2';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { API_CONFIG } from '@/lib/config';
+import { getCleanJiraUrl } from '@/lib/config';
 
 // Register Chart.js components
 ChartJS.register(
@@ -178,10 +178,8 @@ export default function StackedGroupedBarChart({
   const buildJiraUrl = (issueKeys: string[]): string => {
     if (!issueKeys || issueKeys.length === 0) return '';
     
-    // Check if Jira URL is configured in config.ts
-    // Check if the property exists (will be added later to config.ts)
-    const config = API_CONFIG as any;
-    const jiraUrl = 'jiraUrl' in config ? (typeof config.jiraUrl === 'function' ? config.jiraUrl() : config.jiraUrl) : undefined;
+    // Get clean Jira URL (without trailing slash)
+    const jiraUrl = getCleanJiraUrl();
     
     if (!jiraUrl) {
       alert('Jira URL is not configured. Contact admin.');
