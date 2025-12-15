@@ -46,11 +46,11 @@ export default function TopBarFilterPanel({
       <div className="flex flex-wrap items-center gap-4 px-4">
         {/* PI Filter */}
         {showPIFilter && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 w-full md:w-auto">
             <label className="text-sm font-semibold text-gray-700 whitespace-nowrap">
               PI:
             </label>
-            <div style={{ minWidth: '200px', maxWidth: '300px' }}>
+            <div className="w-full md:min-w-[200px] md:max-w-[300px]">
               <PIFilter 
                 selectedPI={filters.selectedPI}
                 onPIChange={filters.onPIChange}
@@ -61,11 +61,11 @@ export default function TopBarFilterPanel({
         
         {/* Team/Group Filter */}
         {showTeamGroupFilter && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 w-full md:w-auto">
             <label className="text-sm font-semibold text-gray-700 whitespace-nowrap">
               Team/Group:
             </label>
-            <div style={{ minWidth: '200px', maxWidth: '300px' }}>
+            <div className="w-full md:min-w-[200px] md:max-w-[300px]">
               <TreeSelect 
                 selectedValue={filters.selectedTreeValue}
                 onSelect={filters.onTreeSelect}
@@ -77,11 +77,8 @@ export default function TopBarFilterPanel({
 
         {/* Category Filter - for team-ai-insights view */}
         {showCategoryFilter && (
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-semibold text-gray-700 whitespace-nowrap">
-              Categories:
-            </label>
-            <div>
+          <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 w-full md:w-auto">
+            <div className="w-full md:w-auto">
               <InsightCategoryFilter
                 selectedCategories={filters.selectedCategories || []}
                 onCategoriesChange={filters.onCategoriesChange || (() => {})}

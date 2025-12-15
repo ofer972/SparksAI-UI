@@ -3,7 +3,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import DashboardTopBarContent from './topbar/DashboardTopBarContent';
 import InsightsTopBarContent from './topbar/InsightsTopBarContent';
-import MobileControlsPanel from './topbar/MobileControlsPanel';
 import TopBarFilterPanel from './topbar/TopBarFilterPanel';
 
 type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-quarter' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings';
@@ -125,11 +124,11 @@ export default function TopBar({
       <div className="w-full">
         {/* Main TopBar Content - Fixed height with bottom border */}
         <div className="bg-gradient-to-r from-white to-gray-50 border-b border-gray-200">
-          <div className="flex flex-wrap md:flex-nowrap items-center gap-0 md:gap-4 h-[40px] md:h-[57px] pl-3 md:pl-0 md:flex-1">
+          <div className="flex flex-wrap md:flex-nowrap items-start md:items-center gap-0 md:gap-4 min-h-[40px] md:h-[57px] pl-3 md:pl-0 md:flex-1">
             {/* Mobile hamburger */}
             <button
               onClick={onToggleMobileSidebar}
-              className="md:hidden p-2 rounded hover:bg-gray-100 text-gray-600"
+              className="md:hidden p-2 rounded hover:bg-gray-100 text-gray-600 mt-0.5"
               aria-label="Open sidebar"
             >
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,20 +165,14 @@ export default function TopBar({
             )}
           </div>
 
-          {/* Mobile controls panel */}
-          <MobileControlsPanel
-            activeNavItem={activeNavItem}
-            filters={filters}
-          />
+          {/* Filter Panel Cell - Separate cell below main TopBar */}
+          {!filtersCollapsed && (
+            <TopBarFilterPanel
+              activeNavItem={activeNavItem}
+              filters={filters}
+            />
+          )}
         </div>
-
-        {/* Filter Panel Cell - Separate cell below main TopBar */}
-        {!filtersCollapsed && (
-          <TopBarFilterPanel
-            activeNavItem={activeNavItem}
-            filters={filters}
-          />
-        )}
       </div>
     </div>
   );

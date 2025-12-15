@@ -194,14 +194,14 @@ export default function InsightCategoryFilter({
   }
 
   return (
-    <div className={`relative z-[100] ${className}`} ref={dropdownRef}>
-      <div className="flex items-center space-x-1">
-        <span className="text-sm font-medium text-gray-700">Today:</span>
-        <div className="relative">
+    <div className={`relative z-40 ${className}`} ref={dropdownRef}>
+      <div className="flex flex-col md:flex-row md:items-center gap-1">
+        <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Today:</span>
+        <div className="relative w-full md:w-auto">
           <button
             ref={buttonRef}
             onClick={handleToggleDropdown}
-            className="border border-gray-300 rounded-lg px-4 py-1 text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400 hover:border-gray-400 transition-colors flex items-center space-x-1 min-w-[300px] justify-between"
+            className="border border-gray-300 rounded-lg px-4 py-1 text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400 hover:border-gray-400 transition-colors flex items-center space-x-1 w-full md:min-w-[200px] md:max-w-[300px] justify-between"
           >
             <span className="truncate">
               {selectedCategories.length === 0 
@@ -223,10 +223,11 @@ export default function InsightCategoryFilter({
           {isOpen && (
             <>
               <div 
-                className="fixed bg-white border border-gray-300 rounded-lg shadow-lg z-[9999] min-w-[300px] max-h-60 overflow-y-auto"
+                className="fixed bg-white border border-gray-300 rounded-lg shadow-lg z-40 w-[90vw] md:w-auto md:min-w-[250px] max-h-60 overflow-y-auto"
                 style={{
                   top: `${dropdownPosition.top}px`,
                   left: `${dropdownPosition.left}px`,
+                  maxWidth: 'calc(100vw - 32px)' // Ensure it fits on mobile screen with padding
                 }}
               >
           <div className="p-2">

@@ -47,21 +47,56 @@ export default function InsightsTopBarContent({
 }: InsightsTopBarContentProps) {
   return (
     <div className="flex flex-col md:flex-row md:items-center gap-0 md:gap-4 flex-1 min-w-0 pr-3 md:px-0 md:py-2 w-full">
-      {/* Mobile: Title and Logout Row */}
-      <div className="flex md:hidden items-center justify-between w-full gap-0 h-full">
-        {/* View title */}
-        <h1 className="text-lg font-semibold text-gray-900 whitespace-nowrap truncate">
-          {viewTitle}
-        </h1>
-        
-        {/* Mobile Logout Button */}
-        <button
-          onClick={onLogout}
-          className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 text-gray-700"
-          title="Logout"
-        >
-          Logout
-        </button>
+      {/* Mobile: Title, Actions, and Badges */}
+      <div className="flex md:hidden flex-col w-full py-1">
+        <div className="flex items-center justify-between w-full">
+          {/* View title */}
+          <h1 className="text-lg font-semibold text-gray-900 whitespace-nowrap truncate mr-2">
+            {viewTitle}
+          </h1>
+          
+          {/* Mobile Actions */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* Filter Toggle Button (Mobile) */}
+            <button
+              onClick={onToggleFilters}
+              className={`inline-flex items-center justify-center h-7 w-7 rounded-lg border transition-all ${
+                !filtersCollapsed 
+                  ? 'border-blue-400 text-blue-600 bg-blue-50' 
+                  : 'border-gray-300 text-gray-500 active:bg-gray-100'
+              }`}
+              title={filtersCollapsed ? 'Show filters' : 'Hide filters'}
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+            </button>
+
+            {/* Mobile Logout Button */}
+            <button
+              onClick={onLogout}
+              className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 text-gray-700"
+              title="Logout"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+
+        {/* Filter Badges (Mobile) - Second Line */}
+        {filterBadges.length > 0 && (
+          <div className="flex overflow-x-auto no-scrollbar gap-1 mt-1 pb-1 w-full">
+            {filterBadges.map((badge, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center flex-shrink-0 gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-800 border border-blue-200 whitespace-nowrap"
+              >
+                <span>{badge.label}:</span>
+                <span className="truncate max-w-[100px]">{badge.value}</span>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
       
       {/* Desktop: View title */}
