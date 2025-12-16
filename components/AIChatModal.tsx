@@ -49,6 +49,12 @@ interface ChatInputProps {
   onSpeechLanguageChange: (lang: SpeechLanguage) => void;
 }
 
+// Helper function to detect Hebrew text
+const hasHebrewText = (text: string): boolean => {
+  if (!text) return false;
+  return /[\u0590-\u05FF]/.test(text);
+};
+
 const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose, onMouseDown }) => (
   <div
     className="flex items-center justify-between p-3 border-b border-gray-200 select-none md:cursor-move bg-gray-100 text-gray-900 rounded-t-lg"
@@ -72,78 +78,131 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
   loading,
   hasInitialMessage,
   messagesEndRef,
-}) => (
-  <div className="flex-1 overflow-y-auto p-4 min-h-[400px] space-y-4">
-    {messages.length === 0 && !loading && !hasInitialMessage && (
-      <div className="text-center text-gray-500 text-sm mt-8">
-        Loading...
-      </div>
-    )}
-
-    {messages.map((message, index) => (
-      <div
-        key={index}
-        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-      >
-        <div
-          className={`max-w-[75%] rounded-lg px-4 py-2 ${
-            message.role === 'user'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-800'
-          }`}
-        >
-          {message.role === 'assistant' ? (
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                p: ({ children }) => <p className="text-sm mb-2 last:mb-0">{children}</p>,
-                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                em: ({ children }) => <em className="italic">{children}</em>,
-                ul: ({ children }) => <ul className="list-disc list-inside text-sm mb-2 space-y-1">{children}</ul>,
-                ol: ({ children }) => <ol className="list-decimal list-inside text-sm mb-2 space-y-1">{children}</ol>,
-                li: ({ children }) => <li className="text-sm">{children}</li>,
-                code: ({ children }) => (
-                  <code className="bg-gray-200 px-1 rounded text-sm font-mono">{children}</code>
-                ),
-                pre: ({ children }) => (
-                  <pre className="bg-gray-200 p-2 rounded text-sm overflow-x-auto mb-2">{children}</pre>
-                ),
-                h1: ({ children }) => <h1 className="text-base font-bold mb-2">{children}</h1>,
-                h2: ({ children }) => <h2 className="text-sm font-bold mb-2">{children}</h2>,
-                h3: ({ children }) => <h3 className="text-sm font-semibold mb-1">{children}</h3>,
-                blockquote: ({ children }) => (
-                  <blockquote className="border-l-2 border-gray-300 pl-2 italic text-sm mb-2">{children}</blockquote>
-                ),
-                a: ({ href, children }) => (
-                  <a 
-                    href={href} 
-                    className="text-blue-600 underline hover:text-blue-800" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                  >
-                    {children}
-                  </a>
-                ),
-              }}
-            >
-              {message.content}
-            </ReactMarkdown>
-          ) : (
-            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-          )}
+}) => {
+  return (
+    <div className="flex-1 overflow-y-auto p-4 min-h-[400px] space-y-4">
+      {messages.length === 0 && !loading && !hasInitialMessage && (
+        <div className="text-center text-gray-500 text-sm mt-8">
+          Loading...
         </div>
-      </div>
-    ))}
+      )}
 
-    {loading && (
-      <div className="flex justify-center text-gray-500 text-sm italic">
-        Sending your request to the LLM
-      </div>
-    )}
+      {messages.map((message, index) => {
+        const isRTL = hasHebrewText(message.content);
+        
+        return (
+          <div
+            key={index}
+            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
+            <div
+              className={`max-w-[75%] rounded-lg px-4 py-2 ${
+                message.role === 'user'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-800'
+              }`}
+              dir={isRTL ? 'rtl' : 'ltr'}
+            >
+              {message.role === 'assistant' ? (
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    p: ({ children }) => (
+                      <p className={`text-sm mb-2 last:mb-0 ${isRTL ? 'text-right' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
+                        {children}
+                      </p>
+                    ),
+                    strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                    em: ({ children }) => <em className="italic">{children}</em>,
+                    ul: ({ children }) => (
+                      <ul 
+                        className={`list-disc list-inside text-sm mb-2 space-y-1 ${isRTL ? 'text-right' : ''}`}
+                        dir={isRTL ? 'rtl' : 'ltr'}
+                      >
+                        {children}
+                      </ul>
+                    ),
+                    ol: ({ children }) => (
+                      <ol 
+                        className={`list-decimal list-inside text-sm mb-2 space-y-1 ${isRTL ? 'text-right' : ''}`}
+                        dir={isRTL ? 'rtl' : 'ltr'}
+                      >
+                        {children}
+                      </ol>
+                    ),
+                    li: ({ children }) => (
+                      <li className="text-sm" dir={isRTL ? 'rtl' : 'ltr'}>
+                        {children}
+                      </li>
+                    ),
+                    code: ({ children }) => (
+                      <code className="bg-gray-200 px-1 rounded text-sm font-mono" dir="ltr">
+                        {children}
+                      </code>
+                    ),
+                    pre: ({ children }) => (
+                      <pre className="bg-gray-200 p-2 rounded text-sm overflow-x-auto mb-2" dir="ltr">
+                        {children}
+                      </pre>
+                    ),
+                    h1: ({ children }) => (
+                      <h1 className={`text-base font-bold mb-2 ${isRTL ? 'text-right' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
+                        {children}
+                      </h1>
+                    ),
+                    h2: ({ children }) => (
+                      <h2 className={`text-sm font-bold mb-2 ${isRTL ? 'text-right' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
+                        {children}
+                      </h2>
+                    ),
+                    h3: ({ children }) => (
+                      <h3 className={`text-sm font-semibold mb-1 ${isRTL ? 'text-right' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
+                        {children}
+                      </h3>
+                    ),
+                    blockquote: ({ children }) => (
+                      <blockquote 
+                        className={`${isRTL ? 'border-r-2 pr-2' : 'border-l-2 pl-2'} border-gray-300 italic text-sm mb-2`}
+                        dir={isRTL ? 'rtl' : 'ltr'}
+                      >
+                        {children}
+                      </blockquote>
+                    ),
+                    a: ({ href, children }) => (
+                      <a 
+                        href={href} 
+                        className="text-blue-600 underline hover:text-blue-800" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        dir={isRTL ? 'rtl' : 'ltr'}
+                      >
+                        {children}
+                      </a>
+                    ),
+                  }}
+                >
+                  {message.content}
+                </ReactMarkdown>
+              ) : (
+                <p className={`text-sm whitespace-pre-wrap ${isRTL ? 'text-right' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
+                  {message.content}
+                </p>
+              )}
+            </div>
+          </div>
+        );
+      })}
 
-    <div ref={messagesEndRef} />
-  </div>
-);
+      {loading && (
+        <div className="flex justify-center text-gray-500 text-sm italic">
+          Sending your request to the LLM
+        </div>
+      )}
+
+      <div ref={messagesEndRef} />
+    </div>
+  );
+};
 
 const ChatInput: React.FC<ChatInputProps> = ({
   inputValue,
@@ -228,7 +287,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
       </div>
       <button
         onClick={onSend}
-        disabled={!inputValue.trim() || loading || isListening}
+        disabled={!inputValue.trim() || loading}
         className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
       >
         Send
@@ -346,12 +405,16 @@ export default function AIChatModal({
     const question = inputValue.trim();
     if (!question || loading) return;
 
-    if (speech.isListening) {
-      speech.stopListening();
-    }
-
+    // Clear input immediately (before stopping mic to prevent any race conditions)
     setInputValue('');
     finalTranscriptRef.current = '';
+
+    // Stop microphone if listening and clear transcript
+    if (speech.isListening) {
+      speech.clearTranscript(); // This sets skipEndUpdateRef to true, preventing onresult/onend from updating
+      speech.stopListening(true); // Skip the update in stopListening too
+    }
+
     await sendMessage(question);
   };
 
@@ -368,7 +431,7 @@ export default function AIChatModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div
         ref={panelRef}
-        className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] flex flex-col"
+        className="bg-white rounded-lg shadow-xl max-w-[900px] w-full mx-4 max-h-[98vh] flex flex-col"
         style={{ transform: `translate(${dragPos.x}px, ${dragPos.y}px)` }}
       >
         <ChatHeader onClose={onClose} onMouseDown={onHeaderMouseDown} />

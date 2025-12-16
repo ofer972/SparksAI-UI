@@ -19,8 +19,9 @@ interface UseSpeechRecognitionResult {
   setError: (err: string | null) => void;
   setLanguage: (lang: SpeechLanguage) => void;
   startListening: () => void;
-  stopListening: () => void;
+  stopListening: (skipUpdate?: boolean) => void;
   toggleListening: () => void;
+  clearTranscript: () => void;
   reset: () => void;
 }
 
@@ -38,6 +39,7 @@ export function useSpeechRecognition(
   const [detectedLanguage, setDetectedLanguage] = useState<'en-US' | 'he-IL' | null>(null); // For UI updates
   const autoModeTrialRef = useRef<'he-IL' | 'en-US' | null>(null); // Track which language we're trying in auto mode
   const autoModeSwitchTimerRef = useRef<number | null>(null); // Timer for language switching in auto mode
+  const skipEndUpdateRef = useRef<boolean>(false); // Flag to skip onend update when clearing
 
   const isSpeechRecognitionSupported = useCallback(() => {
     return (
@@ -207,7 +209,10 @@ export function useSpeechRecognition(
         finalTranscriptRef.current += finalTranscript;
       }
 
-      onTextChange(finalTranscriptRef.current + interimTranscript);
+      // Don't update if we're in the process of clearing (e.g., after sending)
+      if (!skipEndUpdateRef.current) {
+        onTextChange(finalTranscriptRef.current + interimTranscript);
+      }
     };
 
     recognition.onerror = (event: any) => {
@@ -238,7 +243,10 @@ export function useSpeechRecognition(
 
     recognition.onend = () => {
       setIsListening(false);
-      onTextChange(finalTranscriptRef.current.trim());
+      if (!skipEndUpdateRef.current) {
+        onTextChange(finalTranscriptRef.current.trim());
+      }
+      skipEndUpdateRef.current = false;
     };
 
     return recognition;
@@ -281,7 +289,7 @@ export function useSpeechRecognition(
     }
   }, [getInitialText, initializeSpeechRecognition, loading, speechLanguage]);
 
-  const stopListening = useCallback(() => {
+  const stopListening = useCallback((skipUpdate: boolean = false) => {
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
@@ -291,7 +299,12 @@ export function useSpeechRecognition(
       recognitionRef.current = null;
     }
     setIsListening(false);
-    onTextChange(finalTranscriptRef.current.trim());
+    if (skipUpdate) {
+      skipEndUpdateRef.current = true; // Also prevent onend from updating
+    }
+    if (!skipUpdate) {
+      onTextChange(finalTranscriptRef.current.trim());
+    }
   }, [onTextChange]);
 
   const toggleListening = useCallback(() => {
@@ -301,6 +314,12 @@ export function useSpeechRecognition(
       startListening();
     }
   }, [isListening, startListening, stopListening]);
+
+  const clearTranscript = useCallback(() => {
+    finalTranscriptRef.current = '';
+    skipEndUpdateRef.current = true; // Prevent onend from restoring text
+    onTextChange('');
+  }, [onTextChange]);
 
   const reset = useCallback(() => {
     finalTranscriptRef.current = '';
@@ -354,6 +373,7 @@ export function useSpeechRecognition(
     startListening,
     stopListening,
     toggleListening,
+    clearTranscript,
     reset,
   };
 }
