@@ -3,23 +3,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { ApiService } from '@/lib/api';
-import { useUser } from '@/hooks';
-
-export interface DashboardData {
-  layoutConfig: any;
-  topBarFilters: Record<string, any>;
-  reportFilters: Record<string, any>;
-  pinnedFilters: Record<string, any>;
-}
+import { useSpeechRecognition, SpeechLanguage } from '@/hooks/useSpeechRecognition';
+import { useAIChat, Message, DashboardData } from '@/hooks/useAIChat';
 
 interface AIChatModalProps {
   isOpen: boolean;
   onClose: () => void;
-  
+
   // Required - identifies what we're chatting about
   chatType: string;
-  
+
   // Context parameters - each parent passes what it has
   insightsId?: number | string;
   recommendationId?: number | string;
@@ -29,62 +22,223 @@ interface AIChatModalProps {
   dashboardData?: DashboardData | null;
 }
 
-interface Message {
-  role: 'user' | 'assistant';
-  content: string;
+interface ChatHeaderProps {
+  onClose: () => void;
+  onMouseDown: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
-// TypeScript interface for Web Speech API
-interface SpeechRecognition extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  start: () => void;
-  stop: () => void;
-  abort: () => void;
-  onresult: (event: SpeechRecognitionEvent) => void;
-  onerror: (event: SpeechRecognitionErrorEvent) => void;
-  onend: () => void;
+interface ChatMessagesProps {
+  messages: Message[];
+  loading: boolean;
+  hasInitialMessage: boolean;
+  messagesEndRef: React.RefObject<HTMLDivElement>;
 }
 
-interface SpeechRecognitionEvent {
-  resultIndex: number;
-  results: SpeechRecognitionResultList;
+interface ChatInputProps {
+  inputValue: string;
+  loading: boolean;
+  isListening: boolean;
+  speechError: string | null;
+  speechLanguage: SpeechLanguage;
+  isSpeechRecognitionSupported: boolean;
+  onInputChange: (value: string) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  onSend: () => void;
+  onToggleListening: () => void;
+  onSpeechErrorDismiss: () => void;
+  onSpeechLanguageChange: (lang: SpeechLanguage) => void;
 }
 
-interface SpeechRecognitionErrorEvent {
-  error: string;
-  message: string;
-}
+const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose, onMouseDown }) => (
+  <div
+    className="flex items-center justify-between p-3 border-b border-gray-200 select-none md:cursor-move bg-gray-100 text-gray-900 rounded-t-lg"
+    onMouseDown={onMouseDown}
+  >
+    <h3 className="text-sm font-semibold">AI Chat</h3>
+    <button
+      onClick={onClose}
+      className="text-gray-600 hover:text-gray-800 transition-colors"
+      aria-label="Close"
+    >
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+);
 
-interface SpeechRecognitionResultList {
-  length: number;
-  item(index: number): SpeechRecognitionResult;
-  [index: number]: SpeechRecognitionResult;
-}
+const ChatMessages: React.FC<ChatMessagesProps> = ({
+  messages,
+  loading,
+  hasInitialMessage,
+  messagesEndRef,
+}) => (
+  <div className="flex-1 overflow-y-auto p-4 min-h-[400px] space-y-4">
+    {messages.length === 0 && !loading && !hasInitialMessage && (
+      <div className="text-center text-gray-500 text-sm mt-8">
+        Loading...
+      </div>
+    )}
 
-interface SpeechRecognitionResult {
-  length: number;
-  item(index: number): SpeechRecognitionAlternative;
-  [index: number]: SpeechRecognitionAlternative;
-  isFinal: boolean;
-}
+    {messages.map((message, index) => (
+      <div
+        key={index}
+        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+      >
+        <div
+          className={`max-w-[75%] rounded-lg px-4 py-2 ${
+            message.role === 'user'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 text-gray-800'
+          }`}
+        >
+          {message.role === 'assistant' ? (
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                p: ({ children }) => <p className="text-sm mb-2 last:mb-0">{children}</p>,
+                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                em: ({ children }) => <em className="italic">{children}</em>,
+                ul: ({ children }) => <ul className="list-disc list-inside text-sm mb-2 space-y-1">{children}</ul>,
+                ol: ({ children }) => <ol className="list-decimal list-inside text-sm mb-2 space-y-1">{children}</ol>,
+                li: ({ children }) => <li className="text-sm">{children}</li>,
+                code: ({ children }) => (
+                  <code className="bg-gray-200 px-1 rounded text-sm font-mono">{children}</code>
+                ),
+                pre: ({ children }) => (
+                  <pre className="bg-gray-200 p-2 rounded text-sm overflow-x-auto mb-2">{children}</pre>
+                ),
+                h1: ({ children }) => <h1 className="text-base font-bold mb-2">{children}</h1>,
+                h2: ({ children }) => <h2 className="text-sm font-bold mb-2">{children}</h2>,
+                h3: ({ children }) => <h3 className="text-sm font-semibold mb-1">{children}</h3>,
+                blockquote: ({ children }) => (
+                  <blockquote className="border-l-2 border-gray-300 pl-2 italic text-sm mb-2">{children}</blockquote>
+                ),
+                a: ({ href, children }) => (
+                  <a 
+                    href={href} 
+                    className="text-blue-600 underline hover:text-blue-800" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                  >
+                    {children}
+                  </a>
+                ),
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+          ) : (
+            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+          )}
+        </div>
+      </div>
+    ))}
 
-interface SpeechRecognitionAlternative {
-  transcript: string;
-  confidence: number;
-}
+    {loading && (
+      <div className="flex justify-center text-gray-500 text-sm italic">
+        Sending your request to the LLM
+      </div>
+    )}
 
-declare global {
-  interface Window {
-    SpeechRecognition: {
-      new (): SpeechRecognition;
-    };
-    webkitSpeechRecognition: {
-      new (): SpeechRecognition;
-    };
-  }
-}
+    <div ref={messagesEndRef} />
+  </div>
+);
+
+const ChatInput: React.FC<ChatInputProps> = ({
+  inputValue,
+  loading,
+  isListening,
+  speechError,
+  speechLanguage,
+  isSpeechRecognitionSupported,
+  onInputChange,
+  onKeyDown,
+  onSend,
+  onToggleListening,
+  onSpeechErrorDismiss,
+  onSpeechLanguageChange,
+}) => (
+  <div className="p-4 border-t border-gray-200">
+    {speechError && (
+      <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+        {speechError}
+        <button
+          onClick={onSpeechErrorDismiss}
+          className="ml-2 text-red-500 hover:text-red-700"
+          aria-label="Dismiss error"
+        >
+          ×
+        </button>
+      </div>
+    )}
+
+    <div className="flex items-end space-x-2">
+      <div className="flex-1 relative">
+        <textarea
+          value={inputValue}
+          onChange={(e) => onInputChange(e.target.value)}
+          onKeyDown={onKeyDown}
+          placeholder="Type your question here... (Press Enter to send, Shift+Enter for new line)"
+          rows={3}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          disabled={loading || isListening}
+        />
+        {isSpeechRecognitionSupported && (
+          <div className="absolute right-2 bottom-2 flex items-center gap-1">
+            <select
+              value={speechLanguage}
+              onChange={(e) => onSpeechLanguageChange(e.target.value as SpeechLanguage)}
+              disabled={loading || isListening}
+              className="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-blue-500"
+              title="Select speech recognition language"
+            >
+              <option value="auto">Auto (EN/HE)</option>
+              <option value="en-US">English</option>
+              <option value="he-IL">עברית (Hebrew)</option>
+            </select>
+            <button
+              onClick={onToggleListening}
+              disabled={loading}
+              className={`p-2 rounded-full transition-all ${
+                isListening
+                  ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse'
+                  : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+              aria-label={isListening ? 'Stop recording' : 'Start voice input'}
+              title={isListening ? 'Stop recording' : 'Start voice input'}
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                />
+              </svg>
+            </button>
+          </div>
+        )}
+      </div>
+      <button
+        onClick={onSend}
+        disabled={!inputValue.trim() || loading || isListening}
+        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+      >
+        Send
+      </button>
+    </div>
+  </div>
+);
+
+// Re-export DashboardData for backward compatibility
+export type { DashboardData };
 
 export default function AIChatModal({
   isOpen,
@@ -97,37 +251,43 @@ export default function AIChatModal({
   promptName,
   dashboardData,
 }: AIChatModalProps) {
-  const { user } = useUser();
-  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [conversationId, setConversationId] = useState<string>('');
-  const [hasInitialMessage, setHasInitialMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const apiService = useRef(new ApiService());
-  // Drag state (desktop only)
   const panelRef = useRef<HTMLDivElement>(null);
   const [dragPos, setDragPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
-  // Guard to prevent double initial call in React Strict Mode (dev only)
-  const lastInitialSentAtRef = useRef<number>(0);
-  // Timer ref for typewriter effect
-  const typingTimerRef = useRef<number | null>(null);
-  // Speech recognition state
-  const [isListening, setIsListening] = useState(false);
-  const [speechError, setSpeechError] = useState<string | null>(null);
-  const [isSupported, setIsSupported] = useState(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const finalTranscriptRef = useRef<string>(''); // Track final transcript to avoid duplication
+  const finalTranscriptRef = useRef<string>('');
+
+  const {
+    messages,
+    loading,
+    hasInitialMessage,
+    sendMessage,
+  } = useAIChat({
+    isOpen,
+    chatType,
+    insightsId,
+    recommendationId,
+    teamName,
+    piName,
+    promptName,
+    dashboardData,
+  });
+
+  const speech = useSpeechRecognition({
+    loading,
+    getInitialText: () => inputValue,
+    onTextChange: (text) => {
+      setInputValue(text);
+      finalTranscriptRef.current = text;
+    },
+  });
 
   const onHeaderMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Enable drag only on non-touch large screens
     if (window.innerWidth < 768) return;
     if (!panelRef.current) return;
     isDraggingRef.current = true;
-    // Record offset between pointer and current position
     dragOffsetRef.current = {
       x: e.clientX - dragPos.x,
       y: e.clientY - dragPos.y,
@@ -148,7 +308,6 @@ export default function AIChatModal({
     let nextX = e.clientX - dragOffsetRef.current.x;
     let nextY = e.clientY - dragOffsetRef.current.y;
 
-    // Clamp within viewport (relative to centered origin via transform)
     const maxX = viewportWidth - panelWidth / 2;
     const minX = -maxX;
     const maxY = viewportHeight - panelHeight / 2;
@@ -167,353 +326,35 @@ export default function AIChatModal({
     window.removeEventListener('mousemove', onMouseMove);
   };
 
-  // Build chat request payload
-  const buildChatRequest = (
-    question: string,
-    convId: string | null
-  ) => {
-    console.log('[AIChatModal] buildChatRequest - dashboardData:', dashboardData);
-    const request: any = {
-      question: question,
-      user_id: user?.user_id || '',
-      selected_team: teamName || '',
-      selected_pi: piName || '',
-      chat_type: chatType,
-      recommendation_id: recommendationId !== undefined && recommendationId !== null ? String(recommendationId) : '',
-      insights_id: insightsId !== undefined && insightsId !== null ? String(insightsId) : '',
-    };
-    
-    // Only include prompt_name if provided (for dashboard chat with selected prompt)
-    if (promptName && promptName.trim() !== '' && promptName !== '[use default]') {
-      request.prompt_name = promptName;
-    }
-    
-    // Only include conversation_id if it exists (for follow-up questions)
-    if (convId && convId.trim() !== '') {
-      request.conversation_id = convId;
-    }
-    
-    // Include dashboard_data if provided (for dashboard chat types)
-    if (dashboardData) {
-      console.log('[AIChatModal] Adding dashboard_data to request');
-      request.dashboard_data = dashboardData;
-    } else {
-      console.log('[AIChatModal] No dashboard_data to add');
-    }
-    
-    console.log('[AIChatModal] Final request:', request);
-    return request;
-  };
-
-  // Send initial message automatically when modal opens
-  const sendInitialMessage = React.useCallback(async () => {
-    // Dev-mode Strict Mode can remount and re-run effects quickly; guard duplicates
-    const now = Date.now();
-    if (now - lastInitialSentAtRef.current < 500) {
-      return;
-    }
-    lastInitialSentAtRef.current = now;
-
-    setHasInitialMessage(true);
-    setLoading(true);
-    setError(null);
-    setConversationId(''); // Ensure conversation ID is empty on first message
-
-    try {
-      // Send an empty initial question
-      const initialQuestion = "";
-      const requestPayload = buildChatRequest(initialQuestion, null); // null for first request
-      const response = await apiService.current.chatWithInsight(requestPayload);
-
-      if (response.success && response.data) {
-        // Extract conversation ID from typed canonical path
-        const convId = response.data.input_parameters?.conversation_id || '';
-        if (convId) {
-          setConversationId(convId);
-        }
-
-        // Typewriter effect for assistant response
-        startTypewriter(response.data.response || '', false);
-      } else {
-        throw new Error(response.message || 'Failed to get AI response');
-      }
-    } catch (err) {
-      console.error('Error sending initial chat message:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to send message. Please try again.';
-      setError(errorMessage);
-      
-      // Add error message to chat
-      const errorMsg: Message = {
-        role: 'assistant',
-        content: `Error: ${errorMessage}`,
-      };
-      setMessages([errorMsg]);
-    } finally {
-      setLoading(false);
-    }
-  }, [chatType, insightsId, recommendationId, teamName, piName, promptName, dashboardData, user]);
-
-  // Check browser support for Web Speech API
-  useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    setIsSupported(!!SpeechRecognition);
-  }, []);
-
-  // Initialize speech recognition
-  const initializeSpeechRecognition = () => {
-    if (recognitionRef.current) {
-      return recognitionRef.current;
-    }
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      return null;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let interimTranscript = '';
-      let finalTranscript = '';
-
-      // Process all results from resultIndex onwards
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript + ' ';
-        } else {
-          interimTranscript += transcript;
-        }
-      }
-
-      // Update final transcript ref
-      if (finalTranscript) {
-        finalTranscriptRef.current += finalTranscript;
-      }
-
-      // Update input value: final transcript + current interim (direct update, no debounce)
-      setInputValue(finalTranscriptRef.current + interimTranscript);
-    };
-
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      console.error('Speech recognition error:', event.error);
-      let errorMessage = 'Speech recognition error occurred.';
-      
-      switch (event.error) {
-        case 'not-allowed':
-          errorMessage = 'Microphone permission denied. Please allow microphone access.';
-          break;
-        case 'network':
-          errorMessage = 'Network error. Please check your connection.';
-          break;
-        case 'no-speech':
-          errorMessage = 'No speech detected. Please try again.';
-          break;
-        case 'aborted':
-          errorMessage = 'Speech recognition was aborted.';
-          break;
-        default:
-          errorMessage = `Speech recognition error: ${event.error}`;
-      }
-      
-      setSpeechError(errorMessage);
-      setIsListening(false);
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-      // Finalize the transcript (remove any trailing interim text)
-      setInputValue(finalTranscriptRef.current.trim());
-    };
-
-    recognitionRef.current = recognition;
-    return recognition;
-  };
-
-  // Start listening
-  const startListening = () => {
-    if (!isSupported) {
-      setSpeechError('Speech recognition is not supported in this browser. Please use Chrome or Edge.');
-      return;
-    }
-
-    if (isListening) {
-      stopListening();
-      return;
-    }
-
-    const recognition = initializeSpeechRecognition();
-    if (!recognition) {
-      setSpeechError('Failed to initialize speech recognition.');
-      return;
-    }
-
-    try {
-      setSpeechError(null);
-      // Preserve existing input value when starting new session
-      finalTranscriptRef.current = inputValue.trim() + (inputValue.trim() ? ' ' : '');
-      setIsListening(true);
-      recognition.start();
-    } catch (err) {
-      console.error('Error starting speech recognition:', err);
-      setSpeechError('Failed to start speech recognition. Please try again.');
-      setIsListening(false);
-    }
-  };
-
-  // Stop listening
-  const stopListening = () => {
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch (err) {
-        console.error('Error stopping speech recognition:', err);
-      }
-      recognitionRef.current = null;
-    }
-    setIsListening(false);
-    // Ensure final transcript is set
-    setInputValue(finalTranscriptRef.current.trim());
-  };
-
-  // Reset state when modal closes
+  // Reset local input + speech when modal closes
   useEffect(() => {
     if (!isOpen) {
-      if (isListening) {
-        stopListening();
-      }
-      setMessages([]);
       setInputValue('');
-      setLoading(false);
-      setError(null);
-      setConversationId('');
-      setHasInitialMessage(false);
-      setSpeechError(null);
-      finalTranscriptRef.current = ''; // Reset transcript ref
+      finalTranscriptRef.current = '';
+      speech.reset();
     }
-  }, [isOpen]);
+  }, [isOpen, speech]);
 
-  // Send initial message when modal opens
-  useEffect(() => {
-    if (isOpen && !hasInitialMessage) {
-      sendInitialMessage();
-    }
-  }, [isOpen, hasInitialMessage, sendInitialMessage]);
-
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll on new messages
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, loading]);
 
-  // Cleanup typing timer and speech recognition on unmount
-  useEffect(() => {
-    return () => {
-      if (typingTimerRef.current) {
-        window.clearInterval(typingTimerRef.current);
-        typingTimerRef.current = null;
-      }
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch (error) {
-          // Ignore errors during cleanup
-        }
-        recognitionRef.current = null;
-      }
-    };
-  }, []);
-
-  const startTypewriter = (fullText: string, append: boolean = false) => {
-    if (typingTimerRef.current) {
-      window.clearInterval(typingTimerRef.current);
-      typingTimerRef.current = null;
-    }
-
-    const words = (fullText || '').split(/(\s+)/); // keep spaces as tokens
-
-    if (append) {
-      setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
-    } else {
-      setMessages([{ role: 'assistant', content: '' }]);
-    }
-
-    let index = 0;
-    typingTimerRef.current = window.setInterval(() => {
-      index += 1;
-      setMessages((prev) => {
-        const updated = [...prev];
-        const lastIdx = updated.length - 1;
-        const current = updated[lastIdx];
-        if (!current || current.role !== 'assistant') return updated;
-        const nextContent = words.slice(0, index).join('');
-        updated[lastIdx] = { ...current, content: nextContent };
-        return updated;
-      });
-      if (index >= words.length) {
-        if (typingTimerRef.current) {
-          window.clearInterval(typingTimerRef.current);
-          typingTimerRef.current = null;
-        }
-      }
-    }, 30);
-  };
-
-  // Handle sending a message
   const handleSend = async () => {
     const question = inputValue.trim();
     if (!question || loading) return;
 
-    // Stop listening if active
-    if (isListening) {
-      stopListening();
+    if (speech.isListening) {
+      speech.stopListening();
     }
 
-    // Add user message to chat
-    const userMessage: Message = { role: 'user', content: question };
-    setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
-    finalTranscriptRef.current = ''; // Reset transcript ref
-    setLoading(true);
-    setError(null);
-
-    try {
-      const requestPayload = buildChatRequest(question, conversationId);
-      const response = await apiService.current.chatWithInsight(requestPayload);
-
-      if (response.success && response.data) {
-        // Extract conversation ID from typed canonical path
-        const convId = response.data.input_parameters?.conversation_id || '';
-        if (convId) {
-          setConversationId(convId);
-        }
-
-        // Typewriter effect for assistant response (append)
-        startTypewriter(response.data.response || '', true);
-      } else {
-        throw new Error(response.message || 'Failed to get AI response');
-      }
-    } catch (err) {
-      console.error('Error sending chat message:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to send message. Please try again.';
-      setError(errorMessage);
-      
-      // Add error message to chat
-      const errorMsg: Message = {
-        role: 'assistant',
-        content: `Error: ${errorMessage}`,
-      };
-      setMessages((prev) => [...prev, errorMsg]);
-    } finally {
-      setLoading(false);
-    }
+    finalTranscriptRef.current = '';
+    await sendMessage(question);
   };
 
-  // Handle Enter key (Shift+Enter for new line, Enter to send)
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -530,162 +371,35 @@ export default function AIChatModal({
         className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] flex flex-col"
         style={{ transform: `translate(${dragPos.x}px, ${dragPos.y}px)` }}
       >
-        {/* Header */}
-        <div
-          className="flex items-center justify-between p-3 border-b border-gray-200 select-none md:cursor-move bg-gray-100 text-gray-900 rounded-t-lg"
-          onMouseDown={onHeaderMouseDown}
-        >
-          <h3 className="text-sm font-semibold">AI Chat</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-600 hover:text-gray-800 transition-colors"
-            aria-label="Close"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+        <ChatHeader onClose={onClose} onMouseDown={onHeaderMouseDown} />
 
-        {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-4 min-h-[400px] space-y-4">
-          {messages.length === 0 && !loading && !hasInitialMessage && (
-            <div className="text-center text-gray-500 text-sm mt-8">
-              Loading...
-            </div>
-          )}
+        <ChatMessages
+          messages={messages}
+          loading={loading}
+          hasInitialMessage={hasInitialMessage}
+          messagesEndRef={messagesEndRef}
+        />
 
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[75%] rounded-lg px-4 py-2 ${
-                  message.role === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-800'
-                }`}
-              >
-                {message.role === 'assistant' ? (
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      p: ({ children }) => <p className="text-sm mb-2 last:mb-0">{children}</p>,
-                      strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                      em: ({ children }) => <em className="italic">{children}</em>,
-                      ul: ({ children }) => <ul className="list-disc list-inside text-sm mb-2 space-y-1">{children}</ul>,
-                      ol: ({ children }) => <ol className="list-decimal list-inside text-sm mb-2 space-y-1">{children}</ol>,
-                      li: ({ children }) => <li className="text-sm">{children}</li>,
-                      code: ({ children }) => (
-                        <code className="bg-gray-200 px-1 rounded text-sm font-mono">{children}</code>
-                      ),
-                      pre: ({ children }) => (
-                        <pre className="bg-gray-200 p-2 rounded text-sm overflow-x-auto mb-2">{children}</pre>
-                      ),
-                      h1: ({ children }) => <h1 className="text-base font-bold mb-2">{children}</h1>,
-                      h2: ({ children }) => <h2 className="text-sm font-bold mb-2">{children}</h2>,
-                      h3: ({ children }) => <h3 className="text-sm font-semibold mb-1">{children}</h3>,
-                      blockquote: ({ children }) => (
-                        <blockquote className="border-l-2 border-gray-300 pl-2 italic text-sm mb-2">{children}</blockquote>
-                      ),
-                      a: ({ href, children }) => (
-                        <a 
-                          href={href} 
-                          className="text-blue-600 underline hover:text-blue-800" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                        >
-                          {children}
-                        </a>
-                      ),
-                    }}
-                  >
-                    {message.content}
-                  </ReactMarkdown>
-                ) : (
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                )}
-              </div>
-            </div>
-          ))}
-
-          {/* Loading indicator */}
-          {loading && (
-            <div className="flex justify-center text-gray-500 text-sm italic">
-              Sending your request to the LLM
-            </div>
-          )}
-
-          {/* Scroll anchor */}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input Area */}
-        <div className="p-4 border-t border-gray-200">
-          <div className="flex items-end space-x-2">
-            <div className="flex-1 relative">
-              <textarea
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Type your question here... (Press Enter to send, Shift+Enter for new line)"
-                rows={3}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                disabled={loading || isListening}
-              />
-              {/* Microphone Button */}
-              {isSupported && (
-                <button
-                  type="button"
-                  onClick={startListening}
-                  disabled={loading}
-                  className={`absolute bottom-2 right-2 p-1.5 rounded-full transition-colors ${
-                    isListening
-                      ? 'bg-red-500 text-white animate-pulse'
-                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  title={isListening ? 'Stop listening' : 'Start voice input'}
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-                    />
-                  </svg>
-                </button>
-              )}
-            </div>
-            <button
-              onClick={handleSend}
-              disabled={!inputValue.trim() || loading}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
-            >
-              Send
-            </button>
-          </div>
-          {/* Speech Error Message */}
-          {speechError && (
-            <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1">
-              {speechError}
-              <button
-                onClick={() => setSpeechError(null)}
-                className="ml-2 text-red-800 hover:text-red-900 font-semibold"
-                aria-label="Dismiss error"
-              >
-                ×
-              </button>
-            </div>
-          )}
-        </div>
+        <ChatInput
+          inputValue={inputValue}
+          loading={loading}
+          isListening={speech.isListening}
+          speechError={speech.error}
+          speechLanguage={speech.language}
+          isSpeechRecognitionSupported={speech.isSupported}
+          onInputChange={setInputValue}
+          onKeyDown={handleKeyDown}
+          onSend={handleSend}
+          onToggleListening={speech.toggleListening}
+          onSpeechErrorDismiss={() => speech.setError(null)}
+          onSpeechLanguageChange={(newLang) => {
+            speech.setLanguage(newLang);
+            if (speech.isListening) {
+              speech.stopListening();
+              setTimeout(() => speech.startListening(), 100);
+            }
+          }}
+        />
       </div>
     </div>
   );
