@@ -19,6 +19,11 @@ export interface ColumnConfig {
   cell?: (props: { getValue: () => any; row: any; column: any }) => ReactNode;
   minWidth?: number;
   maxWidth?: number;
+  /**
+   * Initial/default width for the column.
+   * This works with TanStack Table's column sizing and prevents columns from defaulting to maxWidth.
+   */
+  size?: number;
 }
 
 export interface HierarchyTableProps {

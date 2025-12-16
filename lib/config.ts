@@ -405,6 +405,18 @@ export interface HierarchyItem {
   [key: string]: any;
 }
 
+export interface IssueTypesHierarchyResponse {
+  success: boolean;
+  data: {
+    levels: Array<{
+      hierarchyLevel: number;
+      issue_types: string[];
+    }>;
+    count: number;
+  };
+  message: string;
+}
+
 export interface PIMetricsSummaryData {
   pi_name?: string;
   progress_delta_pct?: number;

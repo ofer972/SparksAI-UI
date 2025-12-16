@@ -11,6 +11,7 @@ import ReportFilterField from '../reporting/ReportFilterField';
 import TeamGroupFilter from '../TeamGroupFilter';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 import MultiPIFilter from '../MultiPIFilter';
+import IssueTypesHierarchyFilter from '../IssueTypesHierarchyFilter';
 
 interface EpicsHierarchyResult {
   issues?: HierarchyItem[];
@@ -69,7 +70,7 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
     return issues.map((issue: any) => ({
       ...issue,
       key: issue.Key || issue.key,
-      parent: issue['Parent Key'] || issue.parent || null,
+      parent: issue['Parent Key'] || issue['Parent'] || issue.parent || null,
     }));
   }, [issues]);
 
@@ -123,7 +124,18 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
     }
     return [];
   }, [filters.pi]);
-  const limitInput = Math.min(Number(filters.limit ?? DEFAULT_LIMIT), 1000);
+  
+  const hierarchyLevel = useMemo(() => {
+    const level = filters.hierarchy_level;
+    if (typeof level === 'number') {
+      return level;
+    }
+    if (typeof level === 'string') {
+      const parsed = parseInt(level, 10);
+      return isNaN(parsed) ? undefined : parsed;
+    }
+    return undefined;
+  }, [filters.hierarchy_level]);
 
   const handlePIsChange = useCallback((selectedPIs: string[]) => {
     setFilters((prev) => ({
@@ -132,48 +144,29 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
     }));
   }, [setFilters]);
 
-  const handleTeamNameChange = useCallback((value: string) => {
+  const handleTeamNameChange = useCallback((value: string | null, type: 'group' | 'team', name: string) => {
+    if (value === null) {
+      setFilters((prev) => ({
+        ...prev,
+        team_name: null,
+        isGroup: false,
+      }));
+    } else {
+      setFilters((prev) => ({
+        ...prev,
+        team_name: name,
+        isGroup: type === 'group',
+      }));
+    }
+  }, [setFilters]);
+
+  const handleHierarchyLevelChange = useCallback((level: number | undefined) => {
     setFilters((prev) => ({
       ...prev,
-      team_name: value || null,
+      hierarchy_level: level ?? null,
     }));
   }, [setFilters]);
 
-  // Build tree to get all parent keys for expand/collapse all
-  const allParentKeys = useMemo(() => {
-    const keys: string[] = [];
-    const hasChildren = new Set<string>();
-    
-    normalizedIssues.forEach((issue) => {
-      if (issue.parent) {
-        hasChildren.add(issue.parent);
-      }
-    });
-    
-    normalizedIssues.forEach((issue) => {
-      if (issue.key && hasChildren.has(issue.key)) {
-        keys.push(issue.key);
-      }
-    });
-    
-    return keys;
-  }, [normalizedIssues]);
-
-  const toggleAllExpanded = useCallback(() => {
-    const hasExpanded = Object.keys(expanded).length > 0 && Object.values(expanded).some((v) => v);
-    
-    if (hasExpanded) {
-      // Collapse all
-      setExpanded({});
-    } else {
-      // Expand all
-      const newExpanded: Record<string, boolean> = {};
-      allParentKeys.forEach((key) => {
-        newExpanded[key] = true;
-      });
-      setExpanded(newExpanded);
-    }
-  }, [expanded, allParentKeys]);
 
   const filterRow = (
     <ReportFiltersRow>
@@ -187,43 +180,40 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
           />
       </ReportFilterField>
 
-      <ReportFilterField label="Team/Group">
-        <TeamGroupFilter
-          value={teamValue}
-          onChange={(value, type, name) => {
-            if (value === null) {
-              setFilters((prev) => ({
-                ...prev,
-                team_name: null,
-                isGroup: false,
-              }));
-            } else {
-              setFilters((prev) => ({
-                ...prev,
-                team_name: name,
-                isGroup: type === 'group',
-              }));
-            }
-          }}
-          placeholder="Select team or group"
-          allowClear={true}
-        />
+      <ReportFilterField label="Team Name">
+        <div className="flex items-center gap-2">
+          <TeamGroupFilter
+            value={teamValue}
+            onChange={handleTeamNameChange}
+            placeholder="Select team"
+            allowClear={true}
+          />
+          {teamName && (
+            <label className="flex items-center gap-1 text-xs text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isGroup}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    isGroup: e.target.checked,
+                  }))
+                }
+                className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span>Group</span>
+            </label>
+          )}
+        </div>
       </ReportFilterField>
 
-      <ReportFilterField label="Limit">
-          <input
-            type="number"
-          min={100}
-            max={1000}
-          value={limitInput}
-          onChange={(event) =>
-            setFilters((prev) => ({
-              ...prev,
-              limit: Math.min(Math.max(Number(event.target.value) || DEFAULT_LIMIT, 100), 1000),
-            }))
-          }
-          className="w-24 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
+      <ReportFilterField label="Issue Type Hierarchy Level">
+        <IssueTypesHierarchyFilter
+          value={hierarchyLevel}
+          onChange={handleHierarchyLevelChange}
+          placeholder="All issue types"
+          allowClear={true}
+        />
       </ReportFilterField>
 
       <ReportFilterField label="Search">
@@ -235,16 +225,6 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
           className="w-48 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
       </ReportFilterField>
-
-      <ReportFilterField label="Hierarchy">
-        <button
-          type="button"
-          onClick={toggleAllExpanded}
-          className="px-3 py-1 border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
-        >
-          {Object.keys(expanded).length > 0 && Object.values(expanded).some((v) => v) ? 'Collapse All' : 'Expand All'}
-        </button>
-      </ReportFilterField>
     </ReportFiltersRow>
   );
 
@@ -252,44 +232,69 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
     if (!normalizedIssues.length) {
       return [];
     }
-    const firstRow = normalizedIssues[0];
-    const allKeys = Object.keys(firstRow);
 
-    // Define only the columns to show (in order)
-    const columnsToShow = [
-      { key: 'Key', header: 'Key', renderer: 'link' as const, minWidth: 120 },
-      { key: 'Type', header: 'Type', minWidth: 100 },
-      { key: 'Issue Summary', header: 'Summary', minWidth: 250 },
-      { key: 'Status', header: 'Status', minWidth: 120 },
-      { key: 'Status of Epic', header: 'Status of Epic', minWidth: 140 },
-      { key: 'Epic Progress %', header: 'Epic Progress', minWidth: 120 },
-      { key: 'Dependency', header: 'Dependency', minWidth: 80 },
-      { key: 'Team Name', header: 'Team Name', minWidth: 150 },
-      { key: 'quarter_pi', header: 'Quarter PI', minWidth: 100 },
-      { key: '# Flagged Issues', header: 'Flagged Issues', minWidth: 100 },
+    const firstRow = normalizedIssues[0];
+
+    const columnsToShow: Array<{
+      key: string;
+      header: string;
+      renderer?: 'link' | 'badge' | 'text';
+      minWidth?: number;
+      maxWidth?: number;
+      size?: number;
+    }> = [
+      // Key (link)
+      { key: 'Key', header: 'Key', renderer: 'link', minWidth: 60, maxWidth: 120, size: 80 },
+      { key: 'key', header: 'Key', renderer: 'link', minWidth: 60, maxWidth: 120, size: 80 },
+      // Type (badge)
+      { key: 'Type', header: 'Type', renderer: 'badge', minWidth: 60, maxWidth: 120, size: 80 },
+      { key: 'type', header: 'Type', renderer: 'badge', minWidth: 60, maxWidth: 120, size: 80 },
+      // Quarter PI
+      { key: 'quarter_pi', header: 'PI', minWidth: 60, maxWidth: 120, size: 80 },
+      // Team Name
+      { key: 'Team Name', header: 'Team Name', minWidth: 60, maxWidth: 120, size: 80 },
+      { key: 'team_name', header: 'Team Name', minWidth: 60, maxWidth: 120, size: 80 },
+      // Summary (flexible width, no max)
+      { key: 'Issue Summary', header: 'Summary', renderer: 'text', minWidth: 200, size: 250 },
+      { key: 'summary', header: 'Summary', renderer: 'text', minWidth: 200, size: 250 },
+      // Status (badge)
+      { key: 'Status', header: 'Status', renderer: 'badge', minWidth: 60, maxWidth: 120, size: 80 },
+      { key: 'status', header: 'Status', renderer: 'badge', minWidth: 60, maxWidth: 120, size: 80 },
+      // Progress% field
+      { key: 'Progress%', header: 'Progress %', renderer: 'text', minWidth: 100, maxWidth: 120, size: 105 },
+      { key: 'Progress (%)', header: 'Progress %', renderer: 'text', minWidth: 100, maxWidth: 120, size: 105 },
+      { key: 'Epic Progress %', header: 'Progress %', renderer: 'text', minWidth: 100, maxWidth: 120, size: 105 },
+      // Dependency
+      { key: 'Dependency', header: 'Dependency', renderer: 'badge', minWidth: 60, maxWidth: 80, size: 65 },
+      // Flagged Issues
+      { key: '# Flagged Issues', header: 'Flagged Issues', renderer: 'text', minWidth: 80, maxWidth: 100, size: 85 },
     ];
 
-    // Create columns only for the specified fields that exist in the data
-    const orderedColumns: ColumnConfig[] = [];
-    
+    const addedHeaders = new Set<string>();
+    const builtColumns: ColumnConfig[] = [];
+
     columnsToShow.forEach((colDef) => {
-      if (allKeys.includes(colDef.key)) {
-        const config: ColumnConfig = {
+      if (addedHeaders.has(colDef.header)) {
+        return;
+      }
+
+      const fieldKey = Object.prototype.hasOwnProperty.call(firstRow, colDef.key) ? colDef.key : undefined;
+
+      if (fieldKey) {
+        addedHeaders.add(colDef.header);
+        builtColumns.push({
           id: colDef.key,
           header: colDef.header,
-          accessorKey: colDef.key,
+          accessorKey: fieldKey,
+          renderer: colDef.renderer,
           minWidth: colDef.minWidth,
-        };
-
-        if (colDef.renderer) {
-          config.renderer = colDef.renderer;
-        }
-
-        orderedColumns.push(config);
+          maxWidth: colDef.maxWidth,
+          size: colDef.size,
+        });
       }
     });
 
-    return orderedColumns;
+    return builtColumns;
   }, [normalizedIssues]);
 
   // Generate filter badges for active filters
@@ -298,8 +303,8 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
     
     if (piNames.length > 0) {
       badges.push({
-        label: 'PIs',
-        value: `${piNames.length} selected`,
+        label: 'PI',
+        value: piNames.join(', '),
         filterKey: 'pi',
         isPinned: pinnedFilters.includes('pi'),
       });
@@ -314,17 +319,26 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
       });
     }
     
-    if (limitInput && limitInput !== DEFAULT_LIMIT) {
+    if (hierarchyLevel !== undefined && hierarchyLevel !== null) {
       badges.push({
-        label: 'Limit',
-        value: `${limitInput} rows`,
-        filterKey: 'limit',
-        isPinned: pinnedFilters.includes('limit'),
+        label: 'Issue Type',
+        value: `Level ${hierarchyLevel}`,
+        filterKey: 'hierarchy_level',
+        isPinned: pinnedFilters.includes('hierarchy_level'),
+      });
+    }
+    
+    if (isGroup) {
+      badges.push({
+        label: 'Team Type',
+        value: 'Group',
+        filterKey: 'isGroup',
+        isPinned: pinnedFilters.includes('isGroup'),
       });
     }
     
     return badges;
-  }, [piNames, teamName, isGroup, limitInput, pinnedFilters]);
+  }, [piNames, teamName, hierarchyLevel, isGroup, pinnedFilters]);
 
   return (
     <ReportCard
@@ -337,38 +351,45 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
       onClose={componentProps?.onClose}
       onAIChat={componentProps?.onAIChat}
     >
-      {loading && (
-        <div className="flex-1 flex items-center justify-center h-64">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-            <div className="text-sm text-gray-600">Loading epics hierarchy...</div>
+      {/* Error Message */}
+      {error && (
+        <div className="mb-3 bg-red-50 border border-red-200 rounded-lg p-3">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-4 w-4 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <div className="ml-2">
+              <h3 className="text-xs font-medium text-red-800">Error loading data</h3>
+              <p className="mt-0.5 text-xs text-red-700">{error}</p>
+            </div>
           </div>
         </div>
       )}
 
-      {!loading && error && (
-        <div className="flex items-center justify-center bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 h-64">
-          {error}
+      {/* Loading State */}
+      {loading && (
+        <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+          <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
+          <p className="mt-3 text-gray-600 text-sm">Loading hierarchy data...</p>
         </div>
       )}
 
-      {!loading && !error && columns.length > 0 && (
-        <div className="h-full px-4 py-3">
-          <HierarchyTable
+      {/* Table */}
+      {!loading && !error && (
+        <HierarchyTable
           data={filteredIssues}
-            columns={columns}
-            defaultExpanded={false}
-            expanded={expanded}
-            onExpandedChange={setExpanded}
-            showControls={false}
-          />
-        </div>
-      )}
-
-      {!loading && !error && normalizedIssues.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          No epics found for the selected filters.
-        </div>
+          columns={columns}
+          defaultExpanded={false}
+          expanded={expanded}
+          onExpandedChange={setExpanded}
+          showControls={false}
+        />
       )}
     </ReportCard>
   );

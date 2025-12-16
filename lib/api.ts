@@ -30,7 +30,8 @@ import {
   PIStatusForTodayResponse,
   PIStatusForTodayItem,
   TopDependenciesSummaryResponse,
-  AverageEpicCycleTimeResponse
+  AverageEpicCycleTimeResponse,
+  IssueTypesHierarchyResponse
 } from './config';
 import { getAuthHeaders, refreshAccessToken, clearTokens, getCurrentUser } from './auth';
 
@@ -1761,6 +1762,20 @@ export class ApiService {
     }
     const result = await response.json();
     return result.data.team;
+  }
+
+  // Issue Types Hierarchy API
+  async getIssueTypesHierarchy(): Promise<IssueTypesHierarchyResponse> {
+    // Hardcoded endpoint since we're not modifying config.ts
+    const url = buildBackendUrl('/issues/issue-types-hierarchy');
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch issue types hierarchy: ${response.statusText}`);
+    }
+
+    const result: IssueTypesHierarchyResponse = await response.json();
+    return result;
   }
 }
 

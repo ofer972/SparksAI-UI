@@ -167,7 +167,8 @@ export function getTypeColor(type: string): string {
   const colorMap: Record<string, string> = {
     epic: 'bg-purple-100 text-purple-800 border-purple-200',
     story: 'bg-blue-100 text-blue-800 border-blue-200',
-    task: 'bg-green-100 text-green-800 border-green-200',
+    // Task should be gray (not green) per new implementation
+    task: 'bg-gray-100 text-gray-800 border-gray-200',
     bug: 'bg-red-100 text-red-800 border-red-200',
   };
 
