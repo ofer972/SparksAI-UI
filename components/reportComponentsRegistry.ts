@@ -14,6 +14,7 @@ import SprintPredictabilityView from './reportViews/SprintPredictabilityView';
 import PIMetricsSummaryView from './reportViews/PIMetricsSummaryView';
 import CurrentSprintProgressView from './reportViews/CurrentSprintProgressView';
 import TeamVelocityView from './reportViews/TeamVelocityView';
+import ActiveSprintSummaryView from './reportViews/ActiveSprintSummaryView';
 import type { ReportDefinition } from '@/lib/config';
 
 export interface ReportRenderContext {
@@ -222,6 +223,17 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
       loading,
       error,
       meta,
+    }),
+  },
+  'active-sprint-summary': {
+    component: ActiveSprintSummaryView,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, filters, refresh }) => ({
+      data: Array.isArray(result) ? result : [],
+      loading,
+      error,
+      filters,
+      refresh,
     }),
   },
 };

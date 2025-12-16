@@ -597,3 +597,34 @@ export interface AverageEpicCycleTimeResponse {
   };
   message: string;
 }
+
+export interface ActiveSprintSummaryItem {
+  sprint_id: number;
+  sprint_name: string;
+  team_name: string;
+  start_date: string;
+  end_date: string;
+  // Can be null when backend cannot calculate progress yet
+  overall_progress_pct: number | null;
+  // Controls the color of overall_progress_pct (red, yellow, green or null)
+  overall_progress_pct_color: 'green' | 'yellow' | 'red' | null;
+  issues_at_start: number;
+  issues_at_start_keys: string[];
+  issues_added: number;
+  issues_added_keys: string[];
+  // Optional color for issues_added column
+  issues_added_color?: 'red' | 'yellow' | 'default';
+  // New total issue counts for status categories
+  total_issues_to_do: number;
+  total_issues_in_progress: number;
+  total_issues_done: number;
+  // Keys for issues that were done in the sprint
+  issues_done_keys: string[];
+  flagged_issues: number;
+  // Backend may return null when there are no flagged issues
+  flagged_issues_keys: string[] | null;
+  issues_remaining: number;
+  issues_remaining_keys: string[];
+  sprint_goal: string;
+  [key: string]: any; // Allow for additional fields
+}
