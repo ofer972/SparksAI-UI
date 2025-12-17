@@ -7,6 +7,7 @@ import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
 import TeamGroupFilter from '../TeamGroupFilter';
 import DataTable, { Column, SortConfig } from '../DataTable';
+import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 
 export interface ActiveSprintSummaryViewProps {
   data: ActiveSprintSummaryItem[];
@@ -34,6 +35,20 @@ const ActiveSprintSummaryView: React.FC<ActiveSprintSummaryViewProps> = ({
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
   const teamName = (filters.team_name as string) ?? '';
   const isGroup = (filters.isGroup as boolean) ?? false;
+  const { groups, teams } = useTeamsGroups();
+
+  // Look up ID from name to construct proper teamValue
+  const teamValue = useMemo(() => {
+    if (!teamName) return null;
+    
+    if (isGroup) {
+      const group = groups.find(g => g.group_name === teamName);
+      return group ? `group:${group.group_key}` : null;
+    } else {
+      const team = teams.find(t => t.team_name === teamName);
+      return team ? `team:${team.team_key}` : null;
+    }
+  }, [teamName, isGroup, groups, teams]);
 
   const handleTeamGroupChange = React.useCallback(
     (value: string | null, type: 'group' | 'team', name: string) => {
@@ -537,7 +552,7 @@ const ActiveSprintSummaryView: React.FC<ActiveSprintSummaryViewProps> = ({
     <ReportFiltersRow>
       <ReportFilterField label="Team/Group">
         <TeamGroupFilter
-          value={teamName}
+          value={teamValue}
           onChange={handleTeamGroupChange}
           placeholder="Select team or group"
           allowClear={true}

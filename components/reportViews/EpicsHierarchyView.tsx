@@ -180,31 +180,13 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
           />
       </ReportFilterField>
 
-      <ReportFilterField label="Team Name">
-        <div className="flex items-center gap-2">
-          <TeamGroupFilter
-            value={teamValue}
-            onChange={handleTeamNameChange}
-            placeholder="Select team"
-            allowClear={true}
-          />
-          {teamName && (
-            <label className="flex items-center gap-1 text-xs text-gray-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isGroup}
-                onChange={(e) =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    isGroup: e.target.checked,
-                  }))
-                }
-                className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <span>Group</span>
-            </label>
-          )}
-        </div>
+      <ReportFilterField label="Team/Group">
+        <TeamGroupFilter
+          value={teamValue}
+          onChange={handleTeamNameChange}
+          placeholder="Select team or group"
+          allowClear={true}
+        />
       </ReportFilterField>
 
       <ReportFilterField label="Issue Type Hierarchy Level">
