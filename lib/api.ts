@@ -107,6 +107,7 @@ export interface BurndownDataPoint {
   issues_removed_on_day: number;
   issues_completed_on_day: number;
   planned_issues?: number; // For PI burndown
+  wip_issues_in_progress?: number; // Work in progress issues per day
 }
 
 export interface BurndownResponse {

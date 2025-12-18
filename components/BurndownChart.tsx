@@ -14,7 +14,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { BurndownDataPoint } from '@/lib/api';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isAfter, startOfDay } from 'date-fns';
 
 ChartJS.register(
   CategoryScale,
@@ -48,6 +48,15 @@ export default function BurndownChart({
     const actualRemaining = data.map(d => d.remaining_issues);
     const idealRemaining = data.map(d => d.ideal_remaining);
     const totalScope = data.map(d => d.total_issues);
+    const today = startOfDay(new Date());
+    const wipData = data.map(d => {
+      const snapshotDate = startOfDay(parseISO(d.snapshot_date));
+      // Set to null if date is in the future (after today) or if WIP data is missing
+      if (isAfter(snapshotDate, today) || d.wip_issues_in_progress === undefined || d.wip_issues_in_progress === null) {
+        return null;
+      }
+      return d.wip_issues_in_progress;
+    });
 
     // Create event markers for issues removed and completed
     const issuesRemovedData = data.map(d => d.issues_removed_on_day > 0 ? d.issues_removed_on_day : null);
@@ -96,6 +105,20 @@ export default function BurndownChart({
           backgroundColor: 'rgba(0, 102, 204, 0.1)',
           borderWidth: 2,
           borderDash: [2, 2],
+          pointRadius: 0,
+          fill: false,
+          tension: 0,
+          datalabels: {
+            display: false,
+          },
+        },
+        {
+          label: 'Work In Progress',
+          data: wipData,
+          borderColor: '#9d4edd',
+          backgroundColor: 'rgba(157, 78, 221, 0.1)',
+          borderWidth: 2,
+          borderDash: [10, 5],
           pointRadius: 0,
           fill: false,
           tension: 0,
@@ -215,6 +238,8 @@ export default function BurndownChart({
                 return `🔴 Issues Removed: ${value} issues`;
               case 'Issues Completed':
                 return `🟢 Issues Completed: ${value} issues`;
+              case 'Work In Progress':
+                return `🟣 Work In Progress: ${value} issues`;
               default:
                 return `${datasetLabel}: ${value}`;
             }
@@ -251,7 +276,11 @@ export default function BurndownChart({
           },
         },
         min: 0,
-        max: Math.max(...data.map(d => d.ideal_remaining), ...data.map(d => d.total_issues)) + 2,
+        max: Math.max(
+          ...data.map(d => d.ideal_remaining), 
+          ...data.map(d => d.total_issues),
+          ...data.map(d => d.wip_issues_in_progress ?? 0)
+        ) + 2,
         ticks: {
           stepSize: 2,
         },
