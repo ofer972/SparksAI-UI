@@ -3,7 +3,7 @@
 import React from 'react';
 import DashboardAIMenu from '@/components/DashboardAIMenu';
 
-type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-quarter' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings';
+type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-quarter' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings';
 
 interface FilterBadge {
   label: string;
@@ -37,6 +37,7 @@ interface DashboardTopBarContentProps {
   onToggleFilters: () => void;
   filtersCollapsed: boolean;
   filterBadges: FilterBadge[];
+  hasFilters: boolean;
 }
 
 export default function DashboardTopBarContent({
@@ -50,92 +51,95 @@ export default function DashboardTopBarContent({
   onToggleFilters,
   filtersCollapsed,
   filterBadges,
+  hasFilters,
 }: DashboardTopBarContentProps) {
   return (
     <div className="flex flex-col md:flex-row md:items-center gap-0 md:gap-4 flex-1 min-w-0 pr-3 md:px-0 md:py-2 w-full">
       {/* Mobile: Title, Actions, and Badges */}
       <div className="flex md:hidden flex-col w-full py-1">
         <div className="flex items-center justify-between w-full">
-          {/* View title */}
+        {/* View title */}
           <h1 className="text-lg font-semibold text-gray-900 whitespace-nowrap truncate mr-2">
-            {viewTitle}
-          </h1>
-          
+          {viewTitle}
+        </h1>
+        
           {/* Mobile Actions */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            {/* Filter Toggle Button (Mobile) */}
-            <button
-              onClick={onToggleFilters}
-              className={`inline-flex items-center justify-center h-7 w-7 rounded-lg border transition-all ${
-                !filtersCollapsed 
-                  ? 'border-blue-400 text-blue-600 bg-blue-50' 
-                  : 'border-gray-300 text-gray-500 active:bg-gray-100'
-              }`}
-              title={filtersCollapsed ? 'Show filters' : 'Hide filters'}
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-              </svg>
-            </button>
+            {/* Filter Toggle Button (Mobile) - Only show if view has filters */}
+            {hasFilters && (
+              <button
+                onClick={onToggleFilters}
+                className={`inline-flex items-center justify-center h-7 w-7 rounded-lg border transition-all ${
+                  !filtersCollapsed 
+                    ? 'border-blue-400 text-blue-600 bg-blue-50' 
+                    : 'border-gray-300 text-gray-500 active:bg-gray-100'
+                }`}
+                title={filtersCollapsed ? 'Show filters' : 'Hide filters'}
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+              </button>
+            )}
 
             {/* Manage Reports Button */}
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('Manage Reports button clicked (mobile)');
-                window.dispatchEvent(new CustomEvent('open-add-reports-modal'));
-              }}
-              className="inline-flex items-center justify-center h-7 w-7 rounded-lg border border-gray-300 text-gray-500 active:text-green-600 active:border-green-400 active:bg-green-50 transition-all touch-manipulation"
-              title="Manage dashboard reports"
-              aria-label="Manage reports"
-              type="button"
-            >
-              <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </button>
-            
-            {/* AI Chat Button */}
-            <DashboardAIMenu
-              onOpenAIChat={aiChat.onOpenChat}
-              prompts={aiChat.prompts}
-              selectedPrompt={aiChat.selectedPrompt}
-              onPromptChange={aiChat.onPromptChange}
-              loadingPrompts={aiChat.loadingPrompts}
-              onCollectDashboardData={() => {
-                // Wait for response event
-                return new Promise<any>((resolve) => {
-                  const handler = (e: Event) => {
-                    const customEvent = e as CustomEvent;
-                    window.removeEventListener('dashboard-data-collected', handler);
-                    console.log('[DashboardTopBarContent] Received dashboard data:', customEvent.detail);
-                    resolve(customEvent.detail);
-                  };
-                  // Add listener FIRST
-                  window.addEventListener('dashboard-data-collected', handler);
-                  // Then dispatch event to collect dashboard data
-                  console.log('[DashboardTopBarContent] Dispatching collect-dashboard-data event');
-                  window.dispatchEvent(new CustomEvent('collect-dashboard-data'));
-                  // Timeout after 1 second
-                  setTimeout(() => {
-                    console.log('[DashboardTopBarContent] Timeout reached, resolving with null');
-                    window.removeEventListener('dashboard-data-collected', handler);
-                    resolve(null);
-                  }, 1000);
-                });
-              }}
-            />
-            
-            {/* Mobile Logout Button */}
-            <button
-              onClick={onLogout}
-              className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 text-gray-700"
-              title="Logout"
-            >
-              Logout
-            </button>
-          </div>
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('Manage Reports button clicked (mobile)');
+              window.dispatchEvent(new CustomEvent('open-add-reports-modal'));
+            }}
+            className="inline-flex items-center justify-center h-7 w-7 rounded-lg border border-gray-300 text-gray-500 active:text-green-600 active:border-green-400 active:bg-green-50 transition-all touch-manipulation"
+            title="Manage dashboard reports"
+            aria-label="Manage reports"
+            type="button"
+          >
+            <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </button>
+          
+          {/* AI Chat Button */}
+          <DashboardAIMenu
+            onOpenAIChat={aiChat.onOpenChat}
+            prompts={aiChat.prompts}
+            selectedPrompt={aiChat.selectedPrompt}
+            onPromptChange={aiChat.onPromptChange}
+            loadingPrompts={aiChat.loadingPrompts}
+            onCollectDashboardData={() => {
+              // Wait for response event
+              return new Promise<any>((resolve) => {
+                const handler = (e: Event) => {
+                  const customEvent = e as CustomEvent;
+                  window.removeEventListener('dashboard-data-collected', handler);
+                  console.log('[DashboardTopBarContent] Received dashboard data:', customEvent.detail);
+                  resolve(customEvent.detail);
+                };
+                // Add listener FIRST
+                window.addEventListener('dashboard-data-collected', handler);
+                // Then dispatch event to collect dashboard data
+                console.log('[DashboardTopBarContent] Dispatching collect-dashboard-data event');
+                window.dispatchEvent(new CustomEvent('collect-dashboard-data'));
+                // Timeout after 1 second
+                setTimeout(() => {
+                  console.log('[DashboardTopBarContent] Timeout reached, resolving with null');
+                  window.removeEventListener('dashboard-data-collected', handler);
+                  resolve(null);
+                }, 1000);
+              });
+            }}
+          />
+          
+          {/* Mobile Logout Button */}
+          <button
+            onClick={onLogout}
+            className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 text-gray-700"
+            title="Logout"
+          >
+            Logout
+          </button>
+        </div>
         </div>
 
         {/* Filter Badges (Mobile) - Second Line */}
@@ -243,21 +247,23 @@ export default function DashboardTopBarContent({
             <div className="h-6 w-px bg-gray-300 mx-1"></div>
           )}
           
-          {/* Filter Toggle Button */}
-          <button
-            onClick={onToggleFilters}
-            className={`inline-flex items-center justify-center h-7 w-7 rounded-lg border-2 transition-all ${
-              !filtersCollapsed 
-                ? 'border-blue-400 text-blue-600 bg-blue-50' 
-                : 'border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400'
-            } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-            title={filtersCollapsed ? 'Show filters' : 'Hide filters'}
-            aria-label={filtersCollapsed ? 'Show filters' : 'Hide filters'}
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-            </svg>
-          </button>
+          {/* Filter Toggle Button - Only show if view has filters */}
+          {hasFilters && (
+            <button
+              onClick={onToggleFilters}
+              className={`inline-flex items-center justify-center h-7 w-7 rounded-lg border-2 transition-all ${
+                !filtersCollapsed 
+                  ? 'border-blue-400 text-blue-600 bg-blue-50' 
+                  : 'border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400'
+              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              title={filtersCollapsed ? 'Show filters' : 'Hide filters'}
+              aria-label={filtersCollapsed ? 'Show filters' : 'Hide filters'}
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+            </button>
+          )}
           
           {/* AI Chat Button */}
           <DashboardAIMenu

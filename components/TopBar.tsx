@@ -5,7 +5,7 @@ import DashboardTopBarContent from './topbar/DashboardTopBarContent';
 import InsightsTopBarContent from './topbar/InsightsTopBarContent';
 import TopBarFilterPanel from './topbar/TopBarFilterPanel';
 
-type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-quarter' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings';
+type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-quarter' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings';
 
 interface FilterBadge {
   label: string;
@@ -85,6 +85,18 @@ export default function TopBar({
     setFiltersCollapsed((prev) => !prev);
   }, []);
 
+  // Determine if current view has filters
+  const hasFilters = useMemo(() => {
+    const viewsWithFilters = [
+      'team-dashboard',
+      'pi-dashboard',
+      'team-ai-insights',
+      'pi-quarter',
+      'upload-transcripts',
+    ];
+    return viewsWithFilters.includes(activeNavItem);
+  }, [activeNavItem]);
+
   // Generate filter badges for active filters - only show badges for filters used in current view
   const filterBadges = useMemo((): FilterBadge[] => {
     const badges: FilterBadge[] = [];
@@ -125,18 +137,18 @@ export default function TopBar({
         {/* Main TopBar Content - Fixed height with bottom border */}
         <div className="bg-gradient-to-r from-white to-gray-50 border-b border-gray-200">
           <div className="flex flex-wrap md:flex-nowrap items-start md:items-center gap-0 md:gap-4 min-h-[40px] md:h-[57px] pl-3 md:pl-0 md:flex-1">
-            {/* Mobile hamburger */}
-            <button
-              onClick={onToggleMobileSidebar}
+        {/* Mobile hamburger */}
+        <button
+          onClick={onToggleMobileSidebar}
               className="md:hidden p-2 rounded hover:bg-gray-100 text-gray-600 mt-0.5"
-              aria-label="Open sidebar"
-            >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
+          aria-label="Open sidebar"
+        >
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
 
-            {/* Conditional rendering based on view type */}
+        {/* Conditional rendering based on view type */}
             {isDashboardView && dashboardSettings && aiChat ? (
               <DashboardTopBarContent
                 activeNavItem={activeNavItem}
@@ -149,6 +161,7 @@ export default function TopBar({
                 onToggleFilters={handleToggleFilters}
                 filtersCollapsed={filtersCollapsed}
                 filterBadges={filterBadges}
+                hasFilters={hasFilters}
               />
             ) : (
               <InsightsTopBarContent
@@ -161,16 +174,17 @@ export default function TopBar({
                 onToggleFilters={handleToggleFilters}
                 filtersCollapsed={filtersCollapsed}
                 filterBadges={filterBadges}
+                hasFilters={hasFilters}
               />
             )}
-          </div>
+      </div>
 
           {/* Filter Panel Cell - Separate cell below main TopBar */}
           {!filtersCollapsed && (
             <TopBarFilterPanel
-              activeNavItem={activeNavItem}
-              filters={filters}
-            />
+        activeNavItem={activeNavItem}
+        filters={filters}
+      />
           )}
         </div>
       </div>

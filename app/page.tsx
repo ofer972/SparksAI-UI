@@ -21,6 +21,7 @@ import CreateAgentJobView from '@/components/views/CreateAgentJobView';
 import UploadTranscriptsView from '@/components/views/UploadTranscriptsView';
 import UsersAdminView from '@/components/views/UsersAdminView';
 import TeamsAndMeetingsView from '@/components/views/TeamsAndMeetingsView';
+import DataSyncView from '@/components/views/DataSyncView';
 import UnsavedChangesModal from '@/components/UnsavedChangesModal';
 
 export default function Home() {
@@ -125,7 +126,7 @@ export default function Home() {
     }
   };
 
-  type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-quarter' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings';
+  type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-quarter' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings';
   const [activeNavItem, setActiveNavItem] = useState<NavItemId>('team-ai-insights');
   const prevActiveNavItemRef = useRef<NavItemId>(activeNavItem);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -717,7 +718,13 @@ export default function Home() {
     { id: 'general-data', label: 'View General Data', icon: '📁' },
     { id: 'create-agent-job', label: 'Create Agent Job', icon: '➕' },
     { id: 'upload-transcripts', label: 'Upload Transcripts', icon: '⬆️' },
-    ...(isAdmin ? [{ id: 'users-admin', label: 'Users', icon: '👥' }] : []),
+    ...(isAdmin ? [
+      { id: 'users-admin', label: 'Users', icon: '👥' },
+      { id: 'teams-and-meetings', label: 'Teams & Meetings', icon: '📅' },
+      { id: 'etl-dashboard', label: 'Data Sync View', icon: '🗄️' },
+      { id: 'etl-sync', label: 'Data Sync & History', icon: '🔄' },
+      { id: 'etl-settings', label: 'Data Sync Settings', icon: '⚙️' }
+    ] : []),
   ];
 
   // Modern SVG icon components
@@ -810,6 +817,31 @@ export default function Home() {
     </SidebarIcon>
   );
 
+  const IconDatabase = () => (
+    <SidebarIcon>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 7v10c0 2 2 3 8 3s8-1 8-3V7M4 7c0 2 2 3 8 3s8-1 8-3M4 7c0-2 2-3 8-3s8 1 8 3m0 5c0 2-2 3-8 3s-8-1-8-3" />
+      </svg>
+    </SidebarIcon>
+  );
+
+  const IconRefresh = () => (
+    <SidebarIcon>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+    </SidebarIcon>
+  );
+
+  const IconCogAlt = () => (
+    <SidebarIcon>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+      </svg>
+    </SidebarIcon>
+  );
+
+
   // Accordion navigation groups for the sidebar UI (beautified)
   const navigationGroups: Array<{ title: string; items: { id: string; label: string; icon: React.ReactNode }[] }> = [
     {
@@ -844,6 +876,14 @@ export default function Home() {
               { id: 'teams-and-meetings', label: 'Teams & Meetings', icon: <IconTeamsMeetings /> },
             ],
           },
+          {
+            title: 'Data Sync',
+            items: [
+              { id: 'etl-dashboard', label: 'Data Sync View', icon: <IconDatabase /> },
+              { id: 'etl-sync', label: 'Data Sync & History', icon: <IconRefresh /> },
+              { id: 'etl-settings', label: 'Data Sync Settings', icon: <IconCogAlt /> },
+            ],
+          },
         ]
       : []),
   ];
@@ -854,6 +894,7 @@ export default function Home() {
     Dashboards: true,
     Management: true,
     Administration: true,
+    'Data Sync': true,
   });
 
   const toggleGroup = (title: string) => {
@@ -872,6 +913,9 @@ export default function Home() {
     'upload-transcripts': 'SparksAI-Upload Transcripts',
     'users-admin': 'SparksAI-Users',
     'teams-and-meetings': 'SparksAI-Teams & Meetings',
+    'etl-dashboard': 'SparksAI-',
+    'etl-sync': 'SparksAI-Sync & History',
+    'etl-settings': 'SparksAI-Sync Settings',
   };
 
   useEffect(() => {
@@ -972,6 +1016,12 @@ export default function Home() {
         return <UsersAdminView />;
       case 'teams-and-meetings':
         return <TeamsAndMeetingsView />;
+      case 'etl-dashboard':
+        return <DataSyncView activeSubView="dashboard" />;
+      case 'etl-sync':
+        return <DataSyncView activeSubView="sync" />;
+      case 'etl-settings':
+        return <DataSyncView activeSubView="settings" />;
       default:
         return (
           <div className="bg-white rounded-lg shadow-sm p-6 text-center">
