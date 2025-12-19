@@ -93,12 +93,12 @@ export function useTimeSeriesChart({
         x: {
           type: 'category' as const,
           title: {
-            display: true,
+            display: false,
             text: 'Date',
           },
           ticks: {
             maxRotation: 45,
-            minRotation: 45,
+            minRotation: 0,
           },
         },
         y: {
