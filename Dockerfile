@@ -4,6 +4,9 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 
+# Install dependencies required for sharp
+RUN apk add --no-cache libc6-compat
+
 # Copy package files
 COPY package*.json ./
 
@@ -14,6 +17,9 @@ RUN npm ci --only=production && \
 # Stage 2: Builder
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+# Install dependencies required for sharp
+RUN apk add --no-cache libc6-compat
 
 # Copy package files
 COPY package*.json ./
@@ -27,12 +33,23 @@ COPY . .
 # Set environment variable for build (can be overridden)
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Build-time environment variables
+# NEXT_PUBLIC_* variables must be set at build time
+# Set NEXT_PUBLIC_API_BASE_URL to your gateway URL (e.g., https://gateway.railway.app/api)
+ARG NEXT_PUBLIC_API_BASE_URL
+ARG NEXT_PUBLIC_API_VERSION=v1
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_API_VERSION=$NEXT_PUBLIC_API_VERSION
+
 # Build the application
 RUN npm run build
 
 # Stage 3: Runner
 FROM node:20-alpine AS runner
 WORKDIR /app
+
+# Install runtime dependencies for sharp
+RUN apk add --no-cache libc6-compat
 
 # Set environment to production
 ENV NODE_ENV=production
