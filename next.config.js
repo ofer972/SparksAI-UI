@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Enable standalone output for Docker optimization
+  output: 'standalone',
+  
   // App directory is now stable in Next.js 14, no need for experimental flag
   async rewrites() {
     const target = process.env.INTERNAL_BACKEND_URL || 'http://localhost:8080';
