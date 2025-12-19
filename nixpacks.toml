@@ -1,0 +1,11 @@
+# Nixpacks configuration for Railway
+# Note: This file is ignored when using Dockerfile builder, but kept for reference
+
+[phases.setup]
+nixPkgs = ["nodejs-20_x"]
+
+[phases.build]
+cmds = ["npm ci", "npm run build"]
+
+[start]
+cmd = "node --max-http-header-size=32768 node_modules/next/dist/compiled/cli/next-start.js"
