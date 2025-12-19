@@ -51,7 +51,7 @@ export default function TimeSeriesChartContainer({
   }
 
   return (
-    <div className="w-full h-[500px]">
+    <div className="w-full h-full min-h-[350px]">
       <Chart ref={chartRef} type={chartType} data={chartData} options={chartOptions} />
     </div>
   );
