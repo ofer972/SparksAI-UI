@@ -33,14 +33,6 @@ COPY . .
 # Set environment variable for build (can be overridden)
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build-time environment variables
-# NEXT_PUBLIC_* variables must be set at build time
-# Set NEXT_PUBLIC_API_BASE_URL to your gateway URL (e.g., https://gateway.railway.app/api)
-ARG NEXT_PUBLIC_API_BASE_URL
-ARG NEXT_PUBLIC_API_VERSION=v1
-ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
-ENV NEXT_PUBLIC_API_VERSION=$NEXT_PUBLIC_API_VERSION
-
 # Build the application
 RUN npm run build
 
