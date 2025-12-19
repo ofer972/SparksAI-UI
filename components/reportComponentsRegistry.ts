@@ -15,6 +15,8 @@ import PIMetricsSummaryView from './reportViews/PIMetricsSummaryView';
 import CurrentSprintProgressView from './reportViews/CurrentSprintProgressView';
 import TeamVelocityView from './reportViews/TeamVelocityView';
 import ActiveSprintSummaryView from './reportViews/ActiveSprintSummaryView';
+import WIPOverTimeView from './reportViews/WIPOverTimeView';
+import CycleTimeView from './reportViews/CycleTimeView';
 import type { ReportDefinition } from '@/lib/config';
 
 export interface ReportRenderContext {
@@ -234,6 +236,26 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
       error,
       filters,
       refresh,
+    }),
+  },
+  'wip-over-time': {
+    component: WIPOverTimeView,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, meta }) => ({
+      data: Array.isArray(result) ? result : [],
+      loading,
+      error,
+      meta,
+    }),
+  },
+  'cycle-time-over-time': {
+    component: CycleTimeView,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, meta }) => ({
+      data: Array.isArray(result) ? result : [],
+      loading,
+      error,
+      meta,
     }),
   },
 };

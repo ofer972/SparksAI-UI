@@ -31,7 +31,8 @@ import {
   PIStatusForTodayItem,
   TopDependenciesSummaryResponse,
   AverageEpicCycleTimeResponse,
-  IssueTypesHierarchyResponse
+  IssueTypesHierarchyResponse,
+  CycleTimeIssuesResponse
 } from './config';
 import { getAuthHeaders, refreshAccessToken, clearTokens, getCurrentUser } from './auth';
 
@@ -437,6 +438,35 @@ export class ApiService {
     }
 
     return response.json();
+  }
+
+  // Cycle Time Issues API
+  async getCycleTimeIssues(
+    periodStart: string,
+    periodEnd: string,
+    issuetypes: string[],
+    teamName?: string,
+    isGroup: boolean = false
+  ): Promise<CycleTimeIssuesResponse> {
+    const params = new URLSearchParams();
+    params.append('period_start', periodStart);
+    params.append('period_end', periodEnd);
+    issuetypes.forEach(type => params.append('issuetypes', type));
+
+    if (teamName) {
+      params.append('team_name', teamName);
+    }
+    params.append('isGroup', isGroup.toString());
+
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.issues.cycleTimeWithIssueKeys)}?${params}`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch cycle time issues: ${response.statusText}`);
+    }
+
+    const result: CycleTimeIssuesResponse = await response.json();
+    return result;
   }
 
   // AI Cards API

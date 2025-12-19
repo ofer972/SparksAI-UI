@@ -41,6 +41,11 @@ export const API_CONFIG = {
       detail: '/reports',
     },
     
+    // Issues endpoints
+    issues: {
+      cycleTimeWithIssueKeys: '/issues/cycle-time-with-issues-keys',
+    },
+    
     // AI Cards endpoints
     aiCards: {
       getCards: '/team-ai-cards/getCards',
@@ -627,4 +632,39 @@ export interface ActiveSprintSummaryItem {
   issues_remaining_keys: string[];
   sprint_goal: string;
   [key: string]: any; // Allow for additional fields
+}
+
+// WIP Over Time types
+export interface WIPOverTimeDataPoint {
+  snapshot_day: string;
+  issuetype: string;
+  work_in_progress: number;
+  [key: string]: string | number; // Index signature for TimeSeriesDataPoint compatibility
+}
+
+// Cycle Time types
+export interface CycleTimeDataPoint {
+  snapshot_day: string;
+  issuetype: string;
+  avg_cycle_time: number;
+  issue_count: number;
+  [key: string]: string | number; // Index signature for TimeSeriesDataPoint compatibility
+}
+
+// Cycle Time Issues types
+export interface CycleTimeIssue {
+  issue_key: string;
+  summary: string;
+  cycle_time: number;
+  resolved_at: string;
+  issue_type: string;
+  team_name: string;
+}
+
+export interface CycleTimeIssuesResponse {
+  success: boolean;
+  data: {
+    issues: CycleTimeIssue[];
+  };
+  message?: string;
 }
