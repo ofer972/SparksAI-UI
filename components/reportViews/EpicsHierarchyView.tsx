@@ -226,30 +226,30 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
       size?: number;
     }> = [
       // Key (link)
-      { key: 'Key', header: 'Key', renderer: 'link', minWidth: 60, maxWidth: 120, size: 80 },
-      { key: 'key', header: 'Key', renderer: 'link', minWidth: 60, maxWidth: 120, size: 80 },
+      { key: 'Key', header: 'Key', renderer: 'link', minWidth: 69, maxWidth: 79, size: 74 },
+      { key: 'key', header: 'Key', renderer: 'link', minWidth: 69, maxWidth: 79, size: 74 },
       // Type (badge)
-      { key: 'Type', header: 'Type', renderer: 'badge', minWidth: 60, maxWidth: 120, size: 80 },
-      { key: 'type', header: 'Type', renderer: 'badge', minWidth: 60, maxWidth: 120, size: 80 },
+      { key: 'Type', header: 'Type', renderer: 'badge', minWidth: 70, maxWidth: 80, size: 75 },
+      { key: 'type', header: 'Type', renderer: 'badge', minWidth: 70, maxWidth: 80, size: 75 },
       // Quarter PI
-      { key: 'quarter_pi', header: 'PI', minWidth: 60, maxWidth: 120, size: 80 },
-      // Team Name
-      { key: 'Team Name', header: 'Team Name', minWidth: 60, maxWidth: 120, size: 80 },
-      { key: 'team_name', header: 'Team Name', minWidth: 60, maxWidth: 120, size: 80 },
-      // Summary (flexible width, no max)
-      { key: 'Issue Summary', header: 'Summary', renderer: 'text', minWidth: 200, size: 250 },
-      { key: 'summary', header: 'Summary', renderer: 'text', minWidth: 200, size: 250 },
+      { key: 'quarter_pi', header: 'PI', minWidth: 48, maxWidth: 56, size: 52 },
+      // Team Name - 5% smaller
+      { key: 'Team Name', header: 'Team Name', minWidth: 57, maxWidth: 114, size: 76 },
+      { key: 'team_name', header: 'Team Name', minWidth: 57, maxWidth: 114, size: 76 },
+      // Summary
+      { key: 'Issue Summary', header: 'Summary', renderer: 'text', minWidth: 200, size: 270 },
+      { key: 'summary', header: 'Summary', renderer: 'text', minWidth: 200, size: 270 },
       // Status (badge)
-      { key: 'Status', header: 'Status', renderer: 'badge', minWidth: 60, maxWidth: 120, size: 80 },
-      { key: 'status', header: 'Status', renderer: 'badge', minWidth: 60, maxWidth: 120, size: 80 },
+      { key: 'Status', header: 'Status', renderer: 'badge', minWidth: 83, maxWidth: 93, size: 88 },
+      { key: 'status', header: 'Status', renderer: 'badge', minWidth: 83, maxWidth: 93, size: 88 },
       // Progress% field
-      { key: 'Progress%', header: 'Progress %', renderer: 'text', minWidth: 100, maxWidth: 120, size: 105 },
-      { key: 'Progress (%)', header: 'Progress %', renderer: 'text', minWidth: 100, maxWidth: 120, size: 105 },
-      { key: 'Epic Progress %', header: 'Progress %', renderer: 'text', minWidth: 100, maxWidth: 120, size: 105 },
+      { key: 'Progress%', header: 'Progress %', renderer: 'text', minWidth: 61, maxWidth: 71, size: 66 },
+      { key: 'Progress (%)', header: 'Progress %', renderer: 'text', minWidth: 61, maxWidth: 71, size: 66 },
+      { key: 'Epic Progress %', header: 'Progress %', renderer: 'text', minWidth: 61, maxWidth: 71, size: 66 },
       // Dependency
-      { key: 'Dependency', header: 'Dependency', renderer: 'badge', minWidth: 60, maxWidth: 80, size: 65 },
+      { key: 'Dependency', header: 'Dependency', renderer: 'badge', minWidth: 58, maxWidth: 68, size: 63 },
       // Flagged Issues
-      { key: '# Flagged Issues', header: 'Flagged Issues', renderer: 'text', minWidth: 80, maxWidth: 100, size: 85 },
+      { key: '# Flagged Issues', header: 'Flagged Issues', renderer: 'text', minWidth: 58, maxWidth: 68, size: 63 },
     ];
 
     const addedHeaders = new Set<string>();

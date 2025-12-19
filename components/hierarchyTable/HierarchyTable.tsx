@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -33,7 +33,6 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
 }) => {
   const [internalExpanded, setInternalExpanded] = useState<ExpandedState>({});
   const [globalFilter, setGlobalFilter] = useState('');
-  const [columnSizing, setColumnSizing] = useState<Record<string, number>>({});
 
   // Use external expanded state if provided, otherwise use internal state
   const expanded = externalExpanded !== undefined ? externalExpanded : internalExpanded;
@@ -269,12 +268,19 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
           }
 
           // Default text renderer with indentation
+          let displayValue = value !== null && value !== undefined ? String(value) : '-';
+          
+          // Truncate Summary column at 55 characters
+          if ((col.id === 'Issue Summary' || col.id === 'summary' || col.id === 'Summary') && displayValue.length > 55) {
+            displayValue = displayValue.substring(0, 55) + '..';
+          }
+          
           return (
             <div
               className="text-sm text-gray-700"
               style={{ paddingLeft: `${level * 20}px` }}
             >
-              {value !== null && value !== undefined ? String(value) : '-'}
+              {displayValue}
             </div>
           );
         },
@@ -329,8 +335,8 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
           </button>
         );
       },
-      minSize: 40,
-      maxSize: 50,
+      minSize: 30,
+      maxSize: 30,
     };
 
     return [expandColumn, ...columnDefs];
@@ -341,15 +347,11 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
     columns: columnsWithExpand,
     state: {
       globalFilter,
-      columnSizing,
     },
     onGlobalFilterChange: setGlobalFilter,
-    onColumnSizingChange: setColumnSizing,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    enableColumnResizing: true,
-    columnResizeMode: 'onChange',
     globalFilterFn: (row, columnId, filterValue) => {
       const searchValue = String(filterValue).toLowerCase();
       if (!searchValue) return true;
@@ -365,120 +367,191 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
   });
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm ${className}`}>
-      {/* Global Filter (can be hidden by parent) */}
+    <div className={`flex flex-col h-full ${className}`}>
       {showControls && (
-        <div className="p-4 border-b border-gray-200">
-          <input
-            type="text"
-            placeholder="Search all columns..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+        <div className="flex-shrink-0 flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={globalFilter}
+              onChange={(event) => setGlobalFilter(event.target.value)}
+              placeholder="Search..."
+              className="px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              type="button"
+              onClick={toggleAllExpanded}
+              className="px-2 py-1 text-xs text-gray-600 border border-gray-200 rounded hover:bg-gray-50"
+            >
+              {Object.keys(expanded).length === 0 ? 'Expand all' : 'Collapse all'}
+            </button>
+          </div>
+          <div className="text-sm text-gray-500">Rows: {flatData.length}</div>
         </div>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
+      <div className="flex-1 overflow-auto border border-gray-200 rounded-lg max-h-[600px]">
+        <table className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed' }}>
+          <thead className="bg-gray-50 sticky top-0 z-10">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
-                  const isProgressColumn =
-                    header.id === 'Progress%' ||
-                    header.column.id === 'Progress%' ||
-                    header.id === 'Progress (%)' ||
-                    header.column.id === 'Progress (%)' ||
-                    header.id === 'Epic Progress %';
-                  const isFlaggedColumn = header.id === '# Flagged Issues' || header.column.id === '# Flagged Issues';
-                  const isDependencyColumn = header.id === 'Dependency' || header.column.id === 'Dependency';
-                  const isCenterAligned = isProgressColumn || isFlaggedColumn || isDependencyColumn;
+                  const isExpanderColumn = header.id === '__expander';
+                  const isKeyColumn = header.id === 'Key' || header.id === 'key';
+                  const isPIColumn = header.id === 'quarter_pi';
+                  const isTypeColumn = header.id === 'Type' || header.id === 'type';
+                  const isTeamNameColumn = header.id === 'Team Name' || header.id === 'team_name';
+                  const isStatusColumn = header.id === 'Status' || header.id === 'status';
+                  const isSummaryColumn = header.id === 'Issue Summary' || header.id === 'summary' || header.id === 'Summary';
+                  const isProgressColumn = header.id === 'Progress%' || header.id === 'Progress (%)' || header.id === 'Epic Progress %';
+                  const isDependencyColumn = header.id === 'Dependency';
+                  const isFlaggedColumn = header.id === '# Flagged Issues';
+                  
+                  const headerStyle: React.CSSProperties = {};
+                  
+                  if (isExpanderColumn) {
+                    headerStyle.width = 30;
+                    headerStyle.minWidth = 30;
+                    headerStyle.maxWidth = 30;
+                  } else if (isKeyColumn) {
+                    headerStyle.width = 74;
+                    headerStyle.minWidth = 74;
+                    headerStyle.maxWidth = 74;
+                  } else if (isPIColumn) {
+                    headerStyle.width = 52;
+                    headerStyle.minWidth = 52;
+                    headerStyle.maxWidth = 52;
+                  } else if (isTypeColumn) {
+                    headerStyle.width = 75;
+                    headerStyle.minWidth = 75;
+                    headerStyle.maxWidth = 75;
+                  } else if (isTeamNameColumn) {
+                    headerStyle.width = 76;
+                    headerStyle.minWidth = 76;
+                    headerStyle.maxWidth = 76;
+                  } else if (isStatusColumn) {
+                    headerStyle.width = 88;
+                    headerStyle.minWidth = 88;
+                    headerStyle.maxWidth = 88;
+                  } else if (isSummaryColumn) {
+                    headerStyle.width = 270;
+                    headerStyle.minWidth = 270;
+                  } else if (isProgressColumn) {
+                    headerStyle.width = 66;
+                    headerStyle.minWidth = 66;
+                    headerStyle.maxWidth = 66;
+                  } else if (isDependencyColumn) {
+                    headerStyle.width = 63;
+                    headerStyle.minWidth = 63;
+                    headerStyle.maxWidth = 63;
+                  } else if (isFlaggedColumn) {
+                    headerStyle.width = 63;
+                    headerStyle.minWidth = 63;
+                    headerStyle.maxWidth = 63;
+                  } else {
+                    const columnWidth = header.getSize() === Number.POSITIVE_INFINITY ? undefined : header.getSize();
+                    if (columnWidth !== undefined) {
+                      headerStyle.width = columnWidth;
+                    }
+                  }
+                  
                   return (
                     <th
                       key={header.id}
-                      className={`px-1.5 py-1.5 text-xs font-semibold text-gray-700 uppercase tracking-wider relative border-r border-gray-200 ${
-                        isCenterAligned ? 'text-center' : 'text-left'
-                      }`}
-                      style={{
-                        width: header.getSize(),
-                        minWidth: header.column.columnDef.minSize,
-                        maxWidth: header.column.columnDef.maxSize,
-                      }}
+                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-r border-gray-200"
+                      style={headerStyle}
                     >
-                      {header.isPlaceholder ? null : (
-                        <div
-                          {...{
-                            className: header.column.getCanSort()
-                              ? 'cursor-pointer select-none hover:text-gray-900'
-                              : '',
-                            onClick: header.column.getToggleSortingHandler(),
-                          }}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {{
-                            asc: ' ↑',
-                            desc: ' ↓',
-                          }[header.column.getIsSorted() as string] ?? ''}
-                        </div>
-                      )}
+                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                     </th>
                   );
                 })}
               </tr>
             ))}
           </thead>
-          <tbody>
+          <tbody className="bg-white divide-y divide-gray-200">
             {table.getRowModel().rows.length === 0 ? (
               <tr>
-                <td colSpan={columnsWithExpand.length} className="px-1.5 py-4 text-center text-gray-500">
+                <td colSpan={table.getAllColumns().length} className="px-3 py-6 text-center text-sm text-gray-500">
                   No data available
                 </td>
               </tr>
             ) : (
-              table.getRowModel().rows.map((row) => {
-                const isEpic = row.original.Type === 'Epic' || row.original.type === 'Epic';
-                return (
-                  <tr
-                    key={row.id}
-                    className={`border-b border-gray-100 transition-colors ${
-                      isEpic
-                        ? 'bg-gray-50 hover:bg-gray-100'
-                        : 'hover:bg-gray-50'
-                    }`}
-                    onClick={() => onRowClick?.(row.original as HierarchyItem)}
-                  >
-                    {row.getVisibleCells().map((cell) => {
-                      const isProgressColumn =
-                        cell.column.id === 'Progress%' || cell.column.id === 'Progress (%)' || cell.column.id === 'Epic Progress %';
-                      const isFlaggedColumn = cell.column.id === '# Flagged Issues';
-                      const isDependencyColumn = cell.column.id === 'Dependency';
-                      const isCenterAligned = isProgressColumn || isFlaggedColumn || isDependencyColumn;
-                      return (
-                        <td
-                          key={cell.id}
-                          className={`px-1.5 py-1.5 text-sm border-r border-gray-200 ${
-                            isCenterAligned ? 'text-center' : ''
-                          }`}
-                          style={{
-                            width: cell.column.getSize(),
-                          }}
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })
+              table.getRowModel().rows.map((row) => (
+                <tr
+                  key={row.id}
+                  className="hover:bg-gray-50 cursor-pointer"
+                  onClick={() => onRowClick?.(row.original as HierarchyItem)}
+                >
+                  {row.getVisibleCells().map((cell) => {
+                    const isExpanderColumn = cell.column.id === '__expander';
+                    const isKeyColumn = cell.column.id === 'Key' || cell.column.id === 'key';
+                    const isPIColumn = cell.column.id === 'quarter_pi';
+                    const isTypeColumn = cell.column.id === 'Type' || cell.column.id === 'type';
+                    const isTeamNameColumn = cell.column.id === 'Team Name' || cell.column.id === 'team_name';
+                    const isStatusColumn = cell.column.id === 'Status' || cell.column.id === 'status';
+                    const isSummaryColumn = cell.column.id === 'Issue Summary' || cell.column.id === 'summary' || cell.column.id === 'Summary';
+                    const isProgressColumn = cell.column.id === 'Progress%' || cell.column.id === 'Progress (%)' || cell.column.id === 'Epic Progress %';
+                    const isDependencyColumn = cell.column.id === 'Dependency';
+                    const isFlaggedColumn = cell.column.id === '# Flagged Issues';
+                    
+                    const cellStyle: React.CSSProperties = {};
+                    
+                    if (isExpanderColumn) {
+                      cellStyle.width = 30;
+                      cellStyle.minWidth = 30;
+                      cellStyle.maxWidth = 30;
+                    } else if (isKeyColumn) {
+                      cellStyle.width = 74;
+                      cellStyle.minWidth = 74;
+                      cellStyle.maxWidth = 74;
+                    } else if (isPIColumn) {
+                      cellStyle.width = 52;
+                      cellStyle.minWidth = 52;
+                      cellStyle.maxWidth = 52;
+                    } else if (isTypeColumn) {
+                      cellStyle.width = 75;
+                      cellStyle.minWidth = 75;
+                      cellStyle.maxWidth = 75;
+                    } else if (isTeamNameColumn) {
+                      cellStyle.width = 76;
+                      cellStyle.minWidth = 76;
+                      cellStyle.maxWidth = 76;
+                    } else if (isStatusColumn) {
+                      cellStyle.width = 88;
+                      cellStyle.minWidth = 88;
+                      cellStyle.maxWidth = 88;
+                    } else if (isSummaryColumn) {
+                      cellStyle.width = 270;
+                      cellStyle.minWidth = 270;
+                    } else if (isProgressColumn) {
+                      cellStyle.width = 66;
+                      cellStyle.minWidth = 66;
+                      cellStyle.maxWidth = 66;
+                    } else if (isDependencyColumn) {
+                      cellStyle.width = 63;
+                      cellStyle.minWidth = 63;
+                      cellStyle.maxWidth = 63;
+                    } else if (isFlaggedColumn) {
+                      cellStyle.width = 63;
+                      cellStyle.minWidth = 63;
+                      cellStyle.maxWidth = 63;
+                    }
+                    
+                    return (
+                      <td 
+                        key={cell.id} 
+                        className="px-3 py-2 text-sm text-gray-700 align-top border-r border-gray-200"
+                        style={Object.keys(cellStyle).length > 0 ? cellStyle : undefined}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))
             )}
           </tbody>
         </table>
-      </div>
-
-      {/* Footer with row count */}
-      <div className="p-4 border-t border-gray-200 text-sm text-gray-600">
-        Showing {table.getRowModel().rows.length} of {data.length} items
       </div>
     </div>
   );
