@@ -2,7 +2,6 @@
 
 import React, { useMemo } from 'react';
 import type { ReleasePredictabilityItem } from '@/lib/config';
-import { getCleanJiraUrl } from '@/lib/config';
 import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
 import ReportCard from '../reporting/ReportCard';
 import ReportFiltersRow from '../reporting/ReportFiltersRow';
@@ -142,15 +141,16 @@ const ReleasePredictabilityView: React.FC<ReleasePredictabilityViewProps> = ({
   filters,
   setFilters,
   refresh,
+  meta,
   componentProps,
   togglePin,
   pinnedFilters = [],
 }) => {
   const months = Number(filters.months ?? 3);
-  const jiraUrl = getCleanJiraUrl();
+  const jiraUrl = meta?.jira_url;
   const rows = Array.isArray(data) ? data : [];
 
-  const columns = useMemo(() => buildColumns(jiraUrl), [jiraUrl]);
+  const columns = useMemo(() => buildColumns(jiraUrl || ''), [jiraUrl]);
 
   const filtersContent = (
     <ReportFiltersRow>

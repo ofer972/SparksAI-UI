@@ -10,7 +10,7 @@ import {
   ColumnDef,
   ExpandedState,
 } from '@tanstack/react-table';
-import { getCleanJiraUrl, HierarchyItem } from '@/lib/config';
+import { HierarchyItem } from '@/lib/config';
 import { ColumnConfig, HierarchyTableProps, TreeNode } from './types';
 import { buildTree, flattenTree, getStatusCategoryColor, getTypeColor } from './utils';
 
@@ -20,6 +20,7 @@ export default function HierarchyTable({
   defaultExpanded = false,
   onRowClick,
   className = '',
+  jiraUrl,
 }: HierarchyTableProps) {
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [globalFilter, setGlobalFilter] = useState('');
@@ -84,9 +85,8 @@ export default function HierarchyTable({
 
           if (col.renderer === 'link' || col.id === 'key') {
             let linkUrl = col.linkBuilder ? col.linkBuilder(item as HierarchyItem) : `#${item.key}`;
-            if (col.id === 'key' && item.key) {
-              const cleanJiraUrl = getCleanJiraUrl();
-              linkUrl = `${cleanJiraUrl}/browse/${item.key}`;
+            if (col.id === 'key' && item.key && jiraUrl) {
+              linkUrl = `${jiraUrl}/browse/${item.key}`;
             }
 
             return (
@@ -94,9 +94,8 @@ export default function HierarchyTable({
                 className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (col.id === 'key' && item.key) {
-                    const cleanJiraUrl = getCleanJiraUrl();
-                    window.open(`${cleanJiraUrl}/browse/${item.key}`, '_blank');
+                  if (col.id === 'key' && item.key && jiraUrl) {
+                    window.open(`${jiraUrl}/browse/${item.key}`, '_blank');
                   } else if (onRowClick) {
                     onRowClick(item);
                   } else if (col.linkBuilder) {

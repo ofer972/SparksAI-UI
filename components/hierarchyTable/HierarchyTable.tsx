@@ -10,7 +10,6 @@ import {
   ColumnDef,
   ExpandedState,
 } from '@tanstack/react-table';
-import { getCleanJiraUrl } from '@/lib/config';
 import type { HierarchyItem } from '@/lib/config';
 import type { ColumnConfig, HierarchyTableProps, TreeNode } from './types';
 import {
@@ -30,6 +29,7 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
   expanded: externalExpanded,
   onExpandedChange,
   showControls = false,
+  jiraUrl,
 }) => {
   const [internalExpanded, setInternalExpanded] = useState<ExpandedState>({});
   const [globalFilter, setGlobalFilter] = useState('');
@@ -127,20 +127,18 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
             let linkUrl = col.linkBuilder ? col.linkBuilder(item as HierarchyItem) : `#${item.key}`;
 
             // For Key column, build JIRA URL
-            if ((col.id === 'key' || col.id === 'Key') && item.key) {
-              const cleanJiraUrl = getCleanJiraUrl();
-              linkUrl = `${cleanJiraUrl}/browse/${item.key}`;
+            if ((col.id === 'key' || col.id === 'Key') && item.key && jiraUrl) {
+              linkUrl = `${jiraUrl}/browse/${item.key}`;
             }
 
             return (
               <div
-                className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                className="text-[13px] text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
-                  if ((col.id === 'key' || col.id === 'Key') && item.key) {
+                  if ((col.id === 'key' || col.id === 'Key') && item.key && jiraUrl) {
                     // Open JIRA link in new tab
-                    const cleanJiraUrl = getCleanJiraUrl();
-                    window.open(`${cleanJiraUrl}/browse/${item.key}`, '_blank');
+                    window.open(`${jiraUrl}/browse/${item.key}`, '_blank');
                   } else if (onRowClick) {
                     onRowClick(item as HierarchyItem);
                   } else if (col.linkBuilder) {
@@ -175,7 +173,7 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
 
           // Badge renderer with color mapping
           if (col.renderer === 'badge' || col.id === 'status' || col.id === 'type' || col.id === 'status_category' || col.id === 'Status' || col.id === 'Type') {
-            let badgeClass = 'px-2 py-1 rounded text-xs font-medium border';
+            let badgeClass = 'px-2 py-1 rounded text-[13px] font-medium border';
             const colIdLower = String(col.id || '').toLowerCase();
 
             if (col.colorMap && value) {
@@ -219,7 +217,7 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
 
             return (
               <div className="text-center">
-                <span className="text-sm text-gray-700">
+                <span className="text-[13px] text-gray-700">
                   {flaggedCount}
                 </span>
               </div>
@@ -262,7 +260,7 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
 
             return (
               <div className="text-center">
-                <span className={`text-sm ${progressColor}`}>{displayValue}</span>
+                <span className={`text-[13px] ${progressColor}`}>{displayValue}</span>
               </div>
             );
           }
@@ -270,14 +268,18 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
           // Default text renderer with indentation
           let displayValue = value !== null && value !== undefined ? String(value) : '-';
           
-          // Truncate Summary column at 55 characters
-          if ((col.id === 'Issue Summary' || col.id === 'summary' || col.id === 'Summary') && displayValue.length > 55) {
-            displayValue = displayValue.substring(0, 55) + '..';
+          // Truncate Summary column at 65 characters
+          if ((col.id === 'Issue Summary' || col.id === 'summary' || col.id === 'Summary') && displayValue.length > 65) {
+            displayValue = displayValue.substring(0, 65) + '..';
           }
+          
+          // Use 12px font for Team Name column only
+          const isTeamNameColumn = col.id === 'Team Name' || col.id === 'team_name';
+          const fontSizeClass = isTeamNameColumn ? 'text-xs' : 'text-[13px]';
           
           return (
             <div
-              className="text-sm text-gray-700"
+              className={`${fontSizeClass} text-gray-700`}
               style={{ paddingLeft: `${level * 20}px` }}
             >
               {displayValue}
@@ -391,7 +393,7 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
       )}
 
       <div className="flex-1 overflow-auto border border-gray-200 rounded-lg max-h-[600px]">
-        <table className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed' }}>
+        <table className="min-w-full divide-y divide-gray-200 text-[13px]" style={{ tableLayout: 'fixed' }}>
           <thead className="bg-gray-50 sticky top-0 z-10">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
@@ -458,7 +460,7 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
                   return (
                     <th
                       key={header.id}
-                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-r border-gray-200"
+                      className="px-3 py-2 text-left text-[13px] font-medium text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-r border-gray-200"
                       style={headerStyle}
                     >
                       {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
@@ -471,7 +473,7 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
           <tbody className="bg-white divide-y divide-gray-200">
             {table.getRowModel().rows.length === 0 ? (
               <tr>
-                <td colSpan={table.getAllColumns().length} className="px-3 py-6 text-center text-sm text-gray-500">
+                <td colSpan={table.getAllColumns().length} className="px-3 py-6 text-center text-[13px] text-gray-500">
                   No data available
                 </td>
               </tr>
@@ -540,7 +542,7 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
                     return (
                       <td 
                         key={cell.id} 
-                        className="px-3 py-2 text-sm text-gray-700 align-top border-r border-gray-200"
+                        className="px-3 py-2 text-[13px] text-gray-700 align-top border-r border-gray-200"
                         style={Object.keys(cellStyle).length > 0 ? cellStyle : undefined}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}

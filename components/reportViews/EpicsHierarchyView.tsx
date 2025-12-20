@@ -367,6 +367,7 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
         <HierarchyTable
           data={filteredIssues}
           columns={columns}
+          jiraUrl={meta?.jira_url}
           defaultExpanded={false}
           expanded={expanded}
           onExpandedChange={setExpanded}

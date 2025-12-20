@@ -411,6 +411,7 @@ export default function CycleTimeView({
         periodStart={dialogPeriodStart}
         periodEnd={dialogPeriodEnd}
         issuetypes={dialogIssueTypes}
+        jiraUrl={meta?.jira_url}
         groupBy={groupBy}
         teamName={teamName}
         isGroup={isGroup}

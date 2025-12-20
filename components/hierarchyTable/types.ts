@@ -35,5 +35,6 @@ export interface HierarchyTableProps {
   expanded?: Record<string, boolean>;
   onExpandedChange?: (expanded: Record<string, boolean>) => void;
   showControls?: boolean;
+  jiraUrl?: string;
 }
 

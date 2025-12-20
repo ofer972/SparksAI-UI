@@ -108,11 +108,12 @@ export const API_CONFIG = {
 } as const;
 
 export const getJiraUrl = (): string => {
-  return API_CONFIG.jiraUrl || 'https://argus-sec.atlassian.net/';
+  return API_CONFIG.jiraUrl || '';
 };
 
 export const getCleanJiraUrl = (): string => {
   const jiraUrl = getJiraUrl();
+  if (!jiraUrl) return '';
   return jiraUrl.endsWith('/') ? jiraUrl.slice(0, -1) : jiraUrl;
 };
 
@@ -296,6 +297,7 @@ export interface ClosedSprint {
   sprint_predictability: string | number;
   sprint_goal?: string;
   team_name?: string;
+  closed_sprint_url?: string;
 }
 
 export interface ClosedSprintsResponse {
@@ -631,6 +633,7 @@ export interface ActiveSprintSummaryItem {
   issues_remaining: number;
   issues_remaining_keys: string[];
   sprint_goal: string;
+  active_sprint_url?: string;
   [key: string]: any; // Allow for additional fields
 }
 

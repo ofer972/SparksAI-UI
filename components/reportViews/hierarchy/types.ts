@@ -26,5 +26,6 @@ export interface HierarchyTableProps {
   defaultExpanded?: boolean;
   onRowClick?: (item: HierarchyItem) => void;
   className?: string;
+  jiraUrl?: string;
 }
 

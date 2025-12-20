@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { ActiveSprintSummaryItem, getCleanJiraUrl } from '@/lib/config';
+import { ActiveSprintSummaryItem } from '@/lib/config';
 import ReportCard from '../reporting/ReportCard';
 import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
@@ -16,6 +16,7 @@ export interface ActiveSprintSummaryViewProps {
   filters: Record<string, any>;
   setFilters: (updater: (prev: Record<string, any>) => Record<string, any>) => void;
   refresh: () => void;
+  meta?: Record<string, any> | null;
   componentProps?: Record<string, any>;
   togglePin?: (filterKey: string) => void;
   pinnedFilters?: string[];
@@ -28,6 +29,7 @@ const ActiveSprintSummaryView: React.FC<ActiveSprintSummaryViewProps> = ({
   filters,
   setFilters,
   refresh,
+  meta,
   componentProps,
   togglePin,
   pinnedFilters = [],
@@ -87,6 +89,7 @@ const ActiveSprintSummaryView: React.FC<ActiveSprintSummaryViewProps> = ({
       return [];
     }
 
+    const jiraUrl = meta?.jira_url;
     const firstItem = data[0];
     const allKeys = Object.keys(firstItem);
 
@@ -104,6 +107,9 @@ const ActiveSprintSummaryView: React.FC<ActiveSprintSummaryViewProps> = ({
       'total_issues_done',
       'issues_remaining',
       'issues_added_color',
+      'board_id',
+      'project_key',
+      'active_sprint_url',
     ];
 
     const otherKeys = allKeys.filter(key =>
@@ -131,11 +137,28 @@ const ActiveSprintSummaryView: React.FC<ActiveSprintSummaryViewProps> = ({
         align: 'left',
         sortable: true,
         width: '160px',
-        render: (value) => (
-          <div className="text-sm text-gray-900 font-medium">
-            {value || '-'}
-          </div>
-        ),
+        render: (value, row) => {
+          const sprintUrl = row.active_sprint_url;
+          if (sprintUrl) {
+            return (
+              <div
+                className="text-sm text-blue-600 font-medium hover:text-blue-800 hover:underline cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(sprintUrl, '_blank');
+                }}
+                title={sprintUrl}
+              >
+                {value || '-'}
+              </div>
+            );
+          }
+          return (
+            <div className="text-sm text-gray-900 font-medium">
+              {value || '-'}
+            </div>
+          );
+        },
       },
       {
         key: 'end_date',
@@ -270,11 +293,11 @@ const ActiveSprintSummaryView: React.FC<ActiveSprintSummaryViewProps> = ({
 
           const handleClick = (e: React.MouseEvent) => {
             e.stopPropagation();
-            const cleanJiraUrl = getCleanJiraUrl();
+            if (!jiraUrl) return;
             const keysParam = keysArray.join(', ');
             const jqlQuery = `key IN (${keysParam})`;
             const encodedJql = encodeURIComponent(jqlQuery);
-            const jiraLink = `${cleanJiraUrl}/issues/?jql=${encodedJql}`;
+            const jiraLink = `${jiraUrl}/issues/?jql=${encodedJql}`;
             window.open(jiraLink, '_blank');
           };
 
@@ -311,11 +334,11 @@ const ActiveSprintSummaryView: React.FC<ActiveSprintSummaryViewProps> = ({
 
           const handleClick = (e: React.MouseEvent) => {
             e.stopPropagation();
-            const cleanJiraUrl = getCleanJiraUrl();
+            if (!jiraUrl) return;
             const keysParam = keysArray.join(', ');
             const jqlQuery = `key IN (${keysParam})`;
             const encodedJql = encodeURIComponent(jqlQuery);
-            const jiraLink = `${cleanJiraUrl}/issues/?jql=${encodedJql}`;
+            const jiraLink = `${jiraUrl}/issues/?jql=${encodedJql}`;
             window.open(jiraLink, '_blank');
           };
 
@@ -472,11 +495,11 @@ const ActiveSprintSummaryView: React.FC<ActiveSprintSummaryViewProps> = ({
 
               const handleClick = (e: React.MouseEvent) => {
                 e.stopPropagation();
-                const cleanJiraUrl = getCleanJiraUrl();
+                if (!jiraUrl) return;
                 const keysParam = keysArray.join(', ');
                 const jqlQuery = `key IN (${keysParam})`;
                 const encodedJql = encodeURIComponent(jqlQuery);
-                const jiraLink = `${cleanJiraUrl}/issues/?jql=${encodedJql}`;
+                const jiraLink = `${jiraUrl}/issues/?jql=${encodedJql}`;
                 window.open(jiraLink, '_blank');
               };
 
@@ -546,7 +569,7 @@ const ActiveSprintSummaryView: React.FC<ActiveSprintSummaryViewProps> = ({
     });
 
     return builtColumns;
-  }, [data]);
+  }, [data, meta]);
 
   const filtersContent = (
     <ReportFiltersRow>

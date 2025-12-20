@@ -16,7 +16,6 @@ import {
 } from 'chart.js';
 import { Chart, getElementAtEvent } from 'react-chartjs-2';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { getCleanJiraUrl } from '@/lib/config';
 
 // Register Chart.js components
 ChartJS.register(
@@ -53,6 +52,7 @@ export interface StackedGroupedBarChartProps {
   loading?: boolean;
   error?: string | null;
   averageVelocity?: number | null;
+  jiraUrl?: string;
 }
 
 export default function StackedGroupedBarChart({
@@ -65,7 +65,8 @@ export default function StackedGroupedBarChart({
   height = '100%',
   loading = false,
   error = null,
-  averageVelocity = null
+  averageVelocity = null,
+  jiraUrl
 }: StackedGroupedBarChartProps) {
   
   const chartRef = useRef<ChartJS>(null);
@@ -176,15 +177,7 @@ export default function StackedGroupedBarChart({
 
   // Build Jira search URL with issue keys
   const buildJiraUrl = (issueKeys: string[]): string => {
-    if (!issueKeys || issueKeys.length === 0) return '';
-    
-    // Get clean Jira URL (without trailing slash)
-    const jiraUrl = getCleanJiraUrl();
-    
-    if (!jiraUrl) {
-      alert('Jira URL is not configured. Contact admin.');
-      return '';
-    }
+    if (!issueKeys || issueKeys.length === 0 || !jiraUrl) return '';
     
     // Format: key IN (KEY1, KEY2, KEY3)
     const jql = `key IN (${issueKeys.join(', ')})`;

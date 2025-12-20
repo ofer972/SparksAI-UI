@@ -245,6 +245,7 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
               yAxisLabel="# of Epics"
               xAxisLabel="Quarter"
               colorScheme={epicScopeColors}
+              jiraUrl={meta?.jira_url}
               loading={false}
               error={null}
             />

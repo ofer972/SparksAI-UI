@@ -230,12 +230,13 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
   'active-sprint-summary': {
     component: ActiveSprintSummaryView,
     requiredFilters: [],
-    mapProps: ({ result, loading, error, filters, refresh }) => ({
+    mapProps: ({ result, loading, error, filters, refresh, meta }) => ({
       data: Array.isArray(result) ? result : [],
       loading,
       error,
       filters,
       refresh,
+      meta,
     }),
   },
   'wip-over-time': {

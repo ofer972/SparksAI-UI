@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ApiService } from '@/lib/api';
-import { getCleanJiraUrl } from '@/lib/config';
 import type { CycleTimeIssue } from '@/lib/config';
 import DataTable, { Column, SortConfig } from '../DataTable';
 
@@ -15,6 +14,7 @@ interface CycleTimeIssuesDialogProps {
   groupBy: 'day' | 'week' | 'month';
   teamName?: string | null;
   isGroup?: boolean;
+  jiraUrl?: string;
 }
 
 export default function CycleTimeIssuesDialog({
@@ -26,6 +26,7 @@ export default function CycleTimeIssuesDialog({
   groupBy,
   teamName,
   isGroup = false,
+  jiraUrl,
 }: CycleTimeIssuesDialogProps) {
   const [issues, setIssues] = useState<CycleTimeIssue[]>([]);
   const [loading, setLoading] = useState(false);
@@ -93,11 +94,10 @@ export default function CycleTimeIssuesDialog({
   };
 
   const handleIssueKeyClick = useCallback((issueKey: string) => {
-    const jiraUrl = getCleanJiraUrl();
     if (jiraUrl && issueKey) {
       window.open(`${jiraUrl}/browse/${issueKey}`, '_blank');
     }
-  }, []);
+  }, [jiraUrl]);
 
   const handleSort = useCallback((key: string) => {
     setSortConfig(prev => {
@@ -107,8 +107,6 @@ export default function CycleTimeIssuesDialog({
       return { key, direction: 'asc' };
     });
   }, []);
-
-  const jiraUrl = getCleanJiraUrl();
 
   const columns: Column<CycleTimeIssue>[] = useMemo(() => [
     {

@@ -19,7 +19,6 @@ import type {
   MonthlyStatusDurationDataset,
 } from '@/lib/config';
 import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
-import { getCleanJiraUrl } from '@/lib/config';
 import ReportCard from '../reporting/ReportCard';
 import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
@@ -410,7 +409,7 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
     [chartData.labels, handleBarClick, monthlyData?.labels, viewMode]
   );
 
-  const jiraUrl = getCleanJiraUrl();
+  const jiraUrl = meta?.jira_url;
 
   const filtersContent = (
     <ReportFiltersRow>

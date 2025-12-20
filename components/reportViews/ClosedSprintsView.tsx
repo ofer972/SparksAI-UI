@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
-import { ClosedSprint, getCleanJiraUrl } from '@/lib/config';
+import { ClosedSprint } from '@/lib/config';
 import DataTable, { Column, SortConfig } from '../DataTable';
 import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
 import ReportCard from '../reporting/ReportCard';
@@ -142,7 +142,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
 
     const firstSprint = data[0];
     const hasCompleteDate = 'sprint_official_end_date' in firstSprint && firstSprint.sprint_official_end_date != null;
-    const jiraUrl = getCleanJiraUrl();
+    const jiraUrl = meta?.jira_url;
     
     // Get all keys, filter and sort them
     const allKeys = Object.keys(firstSprint)
@@ -164,6 +164,10 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
         }
         // Hide bugs_planned_plus_added column
         if (key === 'bugs_planned_plus_added') {
+          return false;
+        }
+        // Hide board_id, project_key, and closed_sprint_url
+        if (key === 'board_id' || key === 'project_key' || key === 'closed_sprint_url') {
           return false;
         }
         return true;
@@ -287,6 +291,22 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
           render: (value: any, row: ClosedSprint) => {
             if (value === null || value === undefined) return '-';
 
+            // Make sprint_name a link when closed_sprint_url exists
+            if (keyStr === 'sprint_name' && row.closed_sprint_url) {
+              return (
+                <div
+                  className="text-sm text-blue-600 font-medium hover:text-blue-800 hover:underline cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.open(row.closed_sprint_url, '_blank');
+                  }}
+                  title={row.closed_sprint_url}
+                >
+                  {value || '-'}
+                </div>
+              );
+            }
+
             // Format sprint_goal - return as string for expandable cell to handle
             if (keyStr === 'sprint_goal' && typeof value === 'string') {
               return value; // DataTable's ExpandableCell will handle truncation and "Read more"
@@ -367,7 +387,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
             // If there's a corresponding keys array and value is a number, make it clickable
             if (Array.isArray(keysArray) && typeof value === 'number' && value > 0) {
               const keys = keysArray.filter((k: any) => k != null && k !== '');
-              if (keys.length > 0) {
+              if (keys.length > 0 && jiraUrl) {
                 const link = getJiraSearchLink(keys, jiraUrl);
                 // Apply color coding - most are blue, but issues_remaining is red, bug_resolved is purple, and issues_removed is yellow/brown
                 let colorClass = 'text-blue-600';
@@ -426,7 +446,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
           },
         };
     });
-  }, [data, formatDate, getJiraSearchLink]);
+  }, [data, formatDate, getJiraSearchLink, meta]);
 
   const timePeriodOptions = [
     { value: 1, label: 'Last 1 month' },

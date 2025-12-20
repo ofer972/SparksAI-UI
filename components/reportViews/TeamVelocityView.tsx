@@ -287,6 +287,7 @@ const TeamVelocityView: React.FC<TeamVelocityViewProps> = ({
               yAxisLabel="# of Issues"
               xAxisLabel="Sprint"
               colorScheme={sprintScopeColors}
+              jiraUrl={meta?.jira_url}
               loading={false}
               error={null}
               averageVelocity={meta?.average_velocity ?? null}
