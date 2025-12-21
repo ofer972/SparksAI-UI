@@ -101,8 +101,10 @@ const TeamVelocityView: React.FC<TeamVelocityViewProps> = ({
     const chartDataPoints: StackedGroupedBarChartData[] = [];
 
     data.forEach((sprint) => {
-      // Use x_axis_name from backend if available, otherwise fall back to sprint_name
-      const sprintName = (sprint as any).x_axis_name ?? sprint.sprint_name;
+      // Include team name in sprint label to handle duplicate sprint names across teams
+      const sprintName = sprint.team_name
+        ? `${sprint.sprint_name} (${sprint.team_name})`
+        : sprint.sprint_name;
 
       // Handle both old and new field names from API
       const issuesAtStart = (sprint as any).issues_at_start ?? 0;

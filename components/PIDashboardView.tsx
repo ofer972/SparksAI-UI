@@ -469,7 +469,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   const controlledFiltersPI = useMemo(() => ({ pi: selectedPI || null }), [selectedPI]);
   const controlledFiltersPINames = useMemo(() => ({ 
     pi_names: selectedPI ? [selectedPI] : [],
-    ...(selectedTeam ? { team_name: selectedTeam } : {}),
+    team_name: selectedTeam || null,
     isGroup: selectedTreeType === 'group',
   }), [selectedPI, selectedTeam, selectedTreeType]);
   const controlledFiltersTeam = useMemo(() => ({
@@ -481,12 +481,12 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   }), [selectedPI]);
   const controlledFiltersPITeam = useMemo(() => ({
     pi: selectedPI || null,
-    ...(selectedTeam ? { team_name: selectedTeam } : {}),
+    team_name: selectedTeam || null,
     isGroup: selectedTreeType === 'group',
   }), [selectedPI, selectedTeam, selectedTreeType]);
   const controlledFiltersDefault = useMemo(() => ({
     ...(selectedPI ? { pi: selectedPI } : {}),
-    ...(selectedTeam ? { team_name: selectedTeam } : {}),
+    team_name: selectedTeam || null,
     isGroup: selectedTreeType === 'group',
   }), [selectedPI, selectedTeam, selectedTreeType]);
 
@@ -521,10 +521,12 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             initialFilters={{
               issue_type: 'Epic',
               pi: selectedPI,
+              team_name: selectedTeam,
+              isGroup: selectedTreeType === 'group',
               ...savedReportFilters
             }}
             initialPinnedFilters={savedPinnedFilters}
-            controlledFilters={controlledFiltersPI}
+            controlledFilters={controlledFiltersPITeam}
             enabled={true}
             componentProps={{ 
               isDashboard: true,
@@ -587,11 +589,13 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             key={panelKey}
             reportId="epic-scope-changes"
             initialFilters={{
-              quarters: selectedPI ? [selectedPI] : [],
+              pi_names: selectedPI ? [selectedPI] : [],
+              team_name: selectedTeam,
+              isGroup: selectedTreeType === 'group',
               ...savedReportFilters
             }}
             initialPinnedFilters={savedPinnedFilters}
-            controlledFilters={controlledFiltersQuarters}
+            controlledFilters={controlledFiltersPINames}
             enabled={true}
             componentProps={{ 
               autoSelectFirst: false, 
@@ -634,7 +638,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             reportId={reportId}
             initialFilters={{
               ...(selectedPI ? { pi: selectedPI } : {}),
-              ...(selectedTeam ? { team_name: selectedTeam } : {}),
+              team_name: selectedTeam || null,
               isGroup: selectedTreeType === 'group',
               ...savedReportFilters
             }}

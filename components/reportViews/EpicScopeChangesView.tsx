@@ -10,6 +10,8 @@ import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
 import ReportCard from '../reporting/ReportCard';
 import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
+import TeamGroupFilter from '../TeamGroupFilter';
+import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 
 const epicScopeColors = {
   'Issues Planned': '#0066cc',
@@ -72,12 +74,15 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
   togglePin,
   pinnedFilters = [],
 }) => {
-  const quarters = Array.isArray(filters.quarters) ? filters.quarters : [];
-  const [selectedPIs, setSelectedPIs] = useState<string[]>(quarters);
+  const piNames = Array.isArray(filters.pi_names) ? filters.pi_names : [];
+  const [selectedPIs, setSelectedPIs] = useState<string[]>(piNames);
   const autoSelectFirst =
     componentProps && typeof componentProps.autoSelectFirst === 'boolean'
       ? componentProps.autoSelectFirst
       : true;
+  const { groups, teams } = useTeamsGroups();
+  const teamName = (filters.team_name as string) ?? '';
+  const isGroup = (filters.isGroup as boolean) ?? false;
 
   const availablePIs = useMemo(() => {
     if (meta && Array.isArray(meta.available_pis)) {
@@ -86,13 +91,26 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
     return [];
   }, [meta]);
 
+  // Look up ID from name to construct proper teamValue
+  const teamValue = useMemo(() => {
+    if (!teamName) return null;
+    
+    if (isGroup) {
+      const group = groups.find(g => g.group_name === teamName);
+      return group ? `group:${group.group_key}` : null;
+    } else {
+      const team = teams.find(t => t.team_name === teamName);
+      return team ? `team:${team.team_key}` : null;
+    }
+  }, [teamName, isGroup, groups, teams]);
+
   const hasAutoSelectedRef = useRef(false);
 
   React.useEffect(() => {
-    if (!arraysEqual(quarters, selectedPIs)) {
-      setSelectedPIs(quarters);
+    if (!arraysEqual(piNames, selectedPIs)) {
+      setSelectedPIs(piNames);
     }
-  }, [quarters, selectedPIs]);
+  }, [piNames, selectedPIs]);
 
   const aggregatedData = useMemo((): StackedGroupedBarChartData[] => {
     if (!Array.isArray(data) || data.length === 0) {
@@ -144,18 +162,37 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
       }
       setSelectedPIs(values);
       setFilters((prev) => {
-        const nextQuarters = values;
-        const prevQuarters = Array.isArray(prev.quarters) ? prev.quarters : [];
-        if (arraysEqual(nextQuarters, prevQuarters)) {
+        const nextPiNames = values;
+        const prevPiNames = Array.isArray(prev.pi_names) ? prev.pi_names : [];
+        if (arraysEqual(nextPiNames, prevPiNames)) {
           return prev;
         }
         return {
           ...prev,
-          quarters: nextQuarters,
+          pi_names: nextPiNames,
         };
       });
     },
     [selectedPIs, setFilters]
+  );
+
+  const handleTeamGroupChange = useCallback(
+    (value: string | null, type: 'group' | 'team', name: string) => {
+      if (value === null) {
+        setFilters((prev) => ({
+          ...prev,
+          team_name: null,
+          isGroup: false,
+        }));
+      } else {
+        setFilters((prev) => ({
+          ...prev,
+          team_name: name,
+          isGroup: type === 'group',
+        }));
+      }
+    },
+    [setFilters]
   );
 
   // Auto-select all PIs if none selected
@@ -166,11 +203,11 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
     }
 
     // Auto-select all PIs if no PI is selected and we haven't auto-selected yet
-    if (quarters.length === 0 && !hasAutoSelectedRef.current) {
+    if (piNames.length === 0 && !hasAutoSelectedRef.current) {
       hasAutoSelectedRef.current = true;
       handlePIsChange(availablePIs); // Select ALL PIs
     }
-  }, [availablePIs, quarters.length, loading, handlePIsChange]);
+  }, [availablePIs, piNames.length, loading, handlePIsChange]);
 
   const filtersContent = (
     <ReportFiltersRow>
@@ -181,6 +218,15 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
           maxSelections={100}
           autoSelectFirst={false}
           pis={availablePIs}
+        />
+      </ReportFilterField>
+
+      <ReportFilterField label="Team/Group">
+        <TeamGroupFilter
+          value={teamValue}
+          onChange={handleTeamGroupChange}
+          placeholder="Select team or group"
+          allowClear={true}
         />
       </ReportFilterField>
     </ReportFiltersRow>
@@ -194,13 +240,22 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
       badges.push({
         label: 'PIs',
         value: `${selectedPIs.length} selected`,
-        filterKey: 'quarters',
-        isPinned: pinnedFilters.includes('quarters'),
+        filterKey: 'pi_names',
+        isPinned: pinnedFilters.includes('pi_names'),
+      });
+    }
+    
+    if (teamName) {
+      badges.push({
+        label: isGroup ? 'Group' : 'Team',
+        value: teamName,
+        filterKey: 'team_name',
+        isPinned: pinnedFilters.includes('team_name'),
       });
     }
     
     return badges;
-  }, [selectedPIs.length, pinnedFilters]);
+  }, [selectedPIs.length, teamName, isGroup, pinnedFilters]);
 
   const showChart = !loading && !error && selectedPIs.length > 0 && aggregatedData.length > 0;
 

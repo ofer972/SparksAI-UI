@@ -9,6 +9,8 @@ import type {
 import ReportCard from '../reporting/ReportCard';
 import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
+import TeamGroupFilter from '../TeamGroupFilter';
+import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 import { getIssueTypes } from '@/lib/issueTypes';
 
 interface PIBurndownViewProps {
@@ -40,8 +42,24 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
   const project = (filters.project as string) ?? '';
   const piName = (filters.pi as string) ?? '';
   const isDashboard = componentProps?.isDashboard;
+  const { groups, teams } = useTeamsGroups();
+  const teamName = (filters.team_name as string) ?? '';
+  const isGroup = (filters.isGroup as boolean) ?? false;
 
   const issueTypeOptions = useMemo(() => getIssueTypes(), []);
+
+  // Look up ID from name to construct proper teamValue
+  const teamValue = useMemo(() => {
+    if (!teamName) return null;
+    
+    if (isGroup) {
+      const group = groups.find(g => g.group_name === teamName);
+      return group ? `group:${group.group_key}` : null;
+    } else {
+      const team = teams.find(t => t.team_name === teamName);
+      return team ? `team:${team.team_key}` : null;
+    }
+  }, [teamName, isGroup, groups, teams]);
 
   const availablePIs = useMemo(() => {
     if (meta && Array.isArray(meta.available_pis)) {
@@ -58,6 +76,25 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
       [key]: value,
     }));
   }, [setFilters]);
+
+  const handleTeamGroupChange = useCallback(
+    (value: string | null, type: 'group' | 'team', name: string) => {
+      if (value === null) {
+        setFilters((prev) => ({
+          ...prev,
+          team_name: null,
+          isGroup: false,
+        }));
+      } else {
+        setFilters((prev) => ({
+          ...prev,
+          team_name: name,
+          isGroup: type === 'group',
+        }));
+      }
+    },
+    [setFilters]
+  );
 
   // Auto-select current PI if available and no PI is selected
   useEffect(() => {
@@ -89,6 +126,15 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
           ))}
         </select>
         </ReportFilterField>
+
+      <ReportFilterField label="Team/Group">
+        <TeamGroupFilter
+          value={teamValue}
+          onChange={handleTeamGroupChange}
+          placeholder="Select team or group"
+          allowClear={true}
+        />
+      </ReportFilterField>
 
       <ReportFilterField label="Issue Type">
         <select
@@ -147,8 +193,17 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
       });
     }
     
+    if (teamName) {
+      badges.push({
+        label: isGroup ? 'Group' : 'Team',
+        value: teamName,
+        filterKey: 'team_name',
+        isPinned: pinnedFilters.includes('team_name'),
+      });
+    }
+    
     return badges;
-  }, [piName, issueType, project, pinnedFilters]);
+  }, [piName, issueType, project, teamName, isGroup, pinnedFilters]);
 
   return (
     <ReportCard 
