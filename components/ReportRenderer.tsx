@@ -27,6 +27,8 @@ export interface ReportRendererProps {
   errorFallback?: (errorMessage: string) => React.ReactNode;
   onResolved?: (payload: ReportInstancePayload) => void;
   refreshKey?: number;
+  bypassCache?: boolean;
+  onBypassCacheUsed?: () => void;
 }
 
 const valueProvided = (value: FilterValue): boolean => {
@@ -124,6 +126,8 @@ const ReportRenderer: React.FC<ReportRendererProps> = ({
   errorFallback,
   onResolved,
   refreshKey = 0,
+  bypassCache = false,
+  onBypassCacheUsed,
 }) => {
   const registry = React.useMemo<ReportComponentRegistry>(() => {
     if (!componentOverrides) {
@@ -183,16 +187,18 @@ const ReportRenderer: React.FC<ReportRendererProps> = ({
 
     const fetchReport = async () => {
       try {
-        console.log(`[ReportRenderer] 🌐 Fetching report: ${reportId}`, {
-          filters: sanitizedFilters,
-          filterCacheKey,
-          refreshKey
-        });
         setLoading(true);
         setError(null);
 
-        const payload = await apiService.getReport(reportId, sanitizedFilters);
-        console.log(`[ReportRenderer] ✅ Report fetched successfully: ${reportId}`);
+        const filtersWithBypass = bypassCache 
+          ? { ...sanitizedFilters, bypass_cache: true }
+          : sanitizedFilters;
+        
+        if (bypassCache && onBypassCacheUsed) {
+          onBypassCacheUsed();
+        }
+        
+        const payload = await apiService.getReport(reportId, filtersWithBypass);
 
         if (!isMounted) {
           return;
@@ -247,7 +253,7 @@ const ReportRenderer: React.FC<ReportRendererProps> = ({
       isMounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reportId, filterCacheKey, enabled, refreshKey]);
+  }, [reportId, filterCacheKey, enabled, refreshKey, bypassCache]);
 
   if (!reportConfig) {
     return <>{fallback}</>;
