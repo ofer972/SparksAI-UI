@@ -32,6 +32,7 @@ export default function TopBarFilterPanel({
   
   const showTeamGroupFilter = activeNavItem === 'team-dashboard' || 
                               activeNavItem === 'team-ai-insights' || 
+                              activeNavItem === 'pi-dashboard' ||
                               activeNavItem === 'upload-transcripts';
 
   const showCategoryFilter = activeNavItem === 'team-ai-insights';

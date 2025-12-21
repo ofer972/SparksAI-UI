@@ -86,7 +86,6 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
     initialFilters ? { ...initialFilters } : {}
   );
   const [refreshKey, setRefreshKey] = React.useState(0);
-  const bypassCacheRef = React.useRef(false);
   
   // Track which filter keys are pinned (custom/locked)
   // Initialize with saved pinned filters if provided
@@ -233,12 +232,7 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
     });
   }, [controlledFilters, onPinnedFiltersChange, onFiltersChange, reportId]);
 
-  const resetBypassCache = React.useCallback(() => {
-    bypassCacheRef.current = false;
-  }, []);
-
   const refresh = React.useCallback(() => {
-    bypassCacheRef.current = true;
     setRefreshKey((key) => key + 1);
   }, []);
 
@@ -288,8 +282,6 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
     return <>{fallback}</>;
   }
 
-  const bypassCache = bypassCacheRef.current;
-
   return (
     <div className="h-full">
       <ReportRenderer
@@ -298,8 +290,6 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
         reportId={reportId}
         filters={currentFilters}
         refreshKey={refreshKey}
-        bypassCache={bypassCache}
-        onBypassCacheUsed={resetBypassCache}
         componentOverrides={overrides}
       />
     </div>

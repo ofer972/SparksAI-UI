@@ -108,6 +108,7 @@ export default function TopBar({
     
     const showTeamGroupFilter = activeNavItem === 'team-dashboard' || 
                                 activeNavItem === 'team-ai-insights' || 
+                                activeNavItem === 'pi-dashboard' ||
                                 activeNavItem === 'upload-transcripts';
 
     // Add PI filter badge if selected AND applicable to current view
