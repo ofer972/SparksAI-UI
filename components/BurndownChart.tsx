@@ -70,7 +70,7 @@ export default function BurndownChart({
           data: actualRemaining,
           borderColor: '#ff8c00',
           backgroundColor: 'rgba(255, 140, 0, 0.1)',
-          borderWidth: 1,
+          borderWidth: 1.5,
           pointRadius: 3,
           pointHoverRadius: 8,
           pointBackgroundColor: '#ff8c00',
