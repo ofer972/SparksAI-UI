@@ -473,7 +473,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     isGroup: selectedTreeType === 'group',
   }), [selectedPI, selectedTeam, selectedTreeType]);
   const controlledFiltersTeam = useMemo(() => ({
-    ...(selectedTeam ? { team_name: selectedTeam } : {}),
+    team_name: selectedTeam || null,
     isGroup: selectedTreeType === 'group',
   }), [selectedTeam, selectedTreeType]);
   const controlledFiltersQuarters = useMemo(() => ({ 
@@ -567,7 +567,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             reportId="sprint-predictability"
             initialFilters={{ 
               months: 3,
-              ...(selectedTeam ? { team_name: selectedTeam } : {}),
+              team_name: selectedTeam || null,
               isGroup: selectedTreeType === 'group',
               ...savedReportFilters 
             }}

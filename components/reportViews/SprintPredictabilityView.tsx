@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import type { SprintPredictabilityItem } from '@/lib/config';
 import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
 import ReportCard from '../reporting/ReportCard';
 import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
 import DataTable, { Column } from '../DataTable';
+import TeamGroupFilter from '../TeamGroupFilter';
+import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 
 interface SprintPredictabilityViewProps {
   data: SprintPredictabilityItem[] | null | undefined;
@@ -175,7 +177,42 @@ const SprintPredictabilityView: React.FC<SprintPredictabilityViewProps> = ({
   const jiraUrl = meta?.jira_url;
   const rows = Array.isArray(data) ? data : [];
 
+  const { groups, teams } = useTeamsGroups();
+  const teamName = (filters.team_name as string) ?? '';
+  const isGroup = (filters.isGroup as boolean) ?? false;
+
+  const teamValue = useMemo(() => {
+    if (!teamName) return null;
+    
+    if (isGroup) {
+      const group = groups.find(g => g.group_name === teamName);
+      return group ? `group:${group.group_key}` : null;
+    } else {
+      const team = teams.find(t => t.team_name === teamName);
+      return team ? `team:${team.team_key}` : null;
+    }
+  }, [teamName, isGroup, groups, teams]);
+
   const columns = useMemo(() => buildColumns(jiraUrl || ''), [jiraUrl]);
+
+  const handleTeamGroupChange = useCallback(
+    (value: string | null, type: 'group' | 'team', name: string) => {
+      if (value === null) {
+        setFilters((prev) => ({
+          ...prev,
+          team_name: null,
+          isGroup: false,
+        }));
+      } else {
+        setFilters((prev) => ({
+          ...prev,
+          team_name: name,
+          isGroup: type === 'group',
+        }));
+      }
+    },
+    [setFilters]
+  );
 
   const filtersContent = (
     <ReportFiltersRow>
@@ -198,6 +235,15 @@ const SprintPredictabilityView: React.FC<SprintPredictabilityViewProps> = ({
         </select>
       </ReportFilterField>
 
+      <ReportFilterField label="Team/Group">
+        <TeamGroupFilter
+          value={teamValue}
+          onChange={handleTeamGroupChange}
+          placeholder="Select team or group"
+          allowClear={true}
+        />
+      </ReportFilterField>
+
       <ReportFilterField label="Rows">
         <span className="text-sm text-gray-700">{rows.length}</span>
       </ReportFilterField>
@@ -217,8 +263,17 @@ const SprintPredictabilityView: React.FC<SprintPredictabilityViewProps> = ({
       });
     }
     
+    if (teamName) {
+      badges.push({
+        label: isGroup ? 'Group' : 'Team',
+        value: teamName,
+        filterKey: 'team_name',
+        isPinned: pinnedFilters.includes('team_name'),
+      });
+    }
+    
     return badges;
-  }, [months, pinnedFilters]);
+  }, [months, teamName, isGroup, pinnedFilters]);
 
   return (
     <ReportCard 
