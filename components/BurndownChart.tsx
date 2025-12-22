@@ -205,7 +205,7 @@ export default function BurndownChart({
       },
       tooltip: {
         mode: 'index' as const,
-        intersect: false,
+        intersect: true,
         backgroundColor: 'rgba(0, 0, 0, 0.8)',
         titleColor: '#fff',
         bodyColor: '#fff',
@@ -289,9 +289,14 @@ export default function BurndownChart({
         },
       },
     },
+    elements: {
+      point: {
+        hitRadius: 10,
+      },
+    },
     interaction: {
       mode: 'index' as const,
-      intersect: false,
+      intersect: true,
     },
   }), [data]);
 
