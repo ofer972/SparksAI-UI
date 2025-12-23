@@ -170,6 +170,10 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
         if (key === 'board_id' || key === 'project_key' || key === 'closed_sprint_url') {
           return false;
         }
+        // Hide x_axis_name column
+        if (key === 'x_axis_name') {
+          return false;
+        }
         return true;
       })
       .sort((a, b) => {
