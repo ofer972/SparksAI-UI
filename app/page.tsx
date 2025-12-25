@@ -9,7 +9,7 @@ import PIMetrics from '@/components/PIMetrics';
 import PIDashboardView from '@/components/PIDashboardView';
 import GeneralDataView from '@/components/GeneralDataView';
 import AIChatModal from '@/components/AIChatModal';
-import { ApiService, verifyAdmin, checkBackendHealth } from '@/lib/api';
+import { ApiService, verifyAdmin } from '@/lib/api';
 import TopBar from '@/components/TopBar';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 import { usePageSettings } from '@/hooks/usePageSettings';
@@ -35,7 +35,6 @@ export default function Home() {
   const piInsightSettings = usePageSettings('pi-insight');
   
   const [authChecked, setAuthChecked] = useState(false);
-  const [backendAvailable, setBackendAvailable] = useState<boolean | null>(null);
   const [pendingRestore, setPendingRestore] = useState<{dashboard: string, filters: any} | null>(null);
   const initializedTreeValues = useRef(false);
   const appliedRestoreRef = useRef(false);
@@ -55,17 +54,6 @@ export default function Home() {
       setAuthChecked(true);
     })();
   }, [router]);
-
-  // Backend health check on startup (after auth check)
-  useEffect(() => {
-    if (authChecked && backendAvailable === null) {
-      (async () => {
-        const isAvailable = await checkBackendHealth(5000);
-        setBackendAvailable(isAvailable);
-      })();
-    }
-  }, [authChecked, backendAvailable]);
-
 
   // Apply pending filter restore when teams/groups finish loading (only once)
   useEffect(() => {
@@ -1007,12 +995,6 @@ export default function Home() {
   }, [activeNavItem]);
 
   const renderMainContent = () => {
-    // If backend is unavailable on startup, show empty content (menu still visible)
-    // Once user clicks menu items, allow normal rendering (components handle their own errors)
-    if (backendAvailable === false && !userNavigatedRef.current) {
-      return <div className="flex-1" />;
-    }
-
     switch (activeNavItem) {
       case 'team-ai-insights':
         return (
