@@ -109,12 +109,12 @@ export default function JiraConnectionTab({ settings, onSaved, onShowToast }: Ji
       
       // Handle validation result
       if (result.connection_valid && result.configured) {
-        setValidationSuccess(result.message || 'JIRA settings are valid and connection is successful');
+        setValidationSuccess('JIRA settings are valid and connection is successful');
         setValidationError(null);
         setIsValidated(true);
       } else {
         // Validation failed
-        const errorMsg = result.error || result.message || 'JIRA validation failed';
+        const errorMsg = result.error || 'JIRA validation failed';
         setValidationError(errorMsg);
         setIsValidated(false);
       }
