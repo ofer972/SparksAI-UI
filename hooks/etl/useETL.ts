@@ -32,16 +32,37 @@ export function useETL(): UseETLReturn {
     try {
       setLoading(true);
       setError(null);
-      const [settingsData, jobStatusData, fieldsData] = await Promise.all([
+      
+      // Use allSettled to make custom fields non-blocking
+      const [settingsResult, jobStatusResult, fieldsResult] = await Promise.allSettled([
         etlApiService.getSettings(),
         etlApiService.getJobStatus(),
         etlApiService.getJIRACustomFields(),
       ]);
+      
+      // Check if required data (settings, jobStatus) failed
+      if (settingsResult.status === 'rejected') {
+        throw new Error(settingsResult.reason?.message || 'Failed to load settings');
+      }
+      if (jobStatusResult.status === 'rejected') {
+        throw new Error(jobStatusResult.reason?.message || 'Failed to load job status');
+      }
+      
+      // Set required data
+      const settingsData = settingsResult.value;
+      const jobStatusData = jobStatusResult.value;
       console.log('Settings data received:', settingsData);
       console.log('History last backfill timestamp:', settingsData?.history_last_backfill_timestamp);
       setSettings(settingsData);
       setJobStatus(jobStatusData);
-      setCustomFields(fieldsData);
+      
+      // Custom fields is optional - if it fails, set to empty object and continue
+      if (fieldsResult.status === 'fulfilled') {
+        setCustomFields(fieldsResult.value);
+      } else {
+        console.warn('Failed to load custom fields (non-blocking):', fieldsResult.reason);
+        setCustomFields({}); // Set to empty object, don't block
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load data');
       console.error('Error loading data:', err);
