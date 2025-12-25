@@ -9,7 +9,7 @@ import PIMetrics from '@/components/PIMetrics';
 import PIDashboardView from '@/components/PIDashboardView';
 import GeneralDataView from '@/components/GeneralDataView';
 import AIChatModal from '@/components/AIChatModal';
-import { ApiService, verifyAdmin } from '@/lib/api';
+import { ApiService, verifyAdmin, checkBackendHealth } from '@/lib/api';
 import TopBar from '@/components/TopBar';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 import { usePageSettings } from '@/hooks/usePageSettings';
@@ -23,6 +23,8 @@ import UsersAdminView from '@/components/views/UsersAdminView';
 import TeamsAndMeetingsView from '@/components/views/TeamsAndMeetingsView';
 import DataSyncView from '@/components/views/DataSyncView';
 import UnsavedChangesModal from '@/components/UnsavedChangesModal';
+import JiraSetupModal from '@/components/JiraSetupModal';
+import { useJiraConfigurationCheck } from '@/hooks/etl/useJiraConfigurationCheck';
 
 export default function Home() {
   const router = useRouter();
@@ -33,9 +35,11 @@ export default function Home() {
   const piInsightSettings = usePageSettings('pi-insight');
   
   const [authChecked, setAuthChecked] = useState(false);
+  const [backendAvailable, setBackendAvailable] = useState<boolean | null>(null);
   const [pendingRestore, setPendingRestore] = useState<{dashboard: string, filters: any} | null>(null);
   const initializedTreeValues = useRef(false);
   const appliedRestoreRef = useRef(false);
+  const userNavigatedRef = useRef(false);
   useEffect(() => {
     (async () => {
       const token = getAccessToken();
@@ -51,6 +55,17 @@ export default function Home() {
       setAuthChecked(true);
     })();
   }, [router]);
+
+  // Backend health check on startup (after auth check)
+  useEffect(() => {
+    if (authChecked && backendAvailable === null) {
+      (async () => {
+        const isAvailable = await checkBackendHealth(5000);
+        setBackendAvailable(isAvailable);
+      })();
+    }
+  }, [authChecked, backendAvailable]);
+
 
   // Apply pending filter restore when teams/groups finish loading (only once)
   useEffect(() => {
@@ -155,6 +170,7 @@ export default function Home() {
       setShowUnsavedChangesModal(true);
     } else {
       // Navigate directly
+      userNavigatedRef.current = true; // User has navigated, allow normal rendering
       setActiveNavItem(navItem);
       setMobileSidebarOpen(false);
     }
@@ -176,6 +192,7 @@ export default function Home() {
       
       // Navigate to pending item
       if (pendingNavItem) {
+        userNavigatedRef.current = true; // User has navigated, allow normal rendering
         setActiveNavItem(pendingNavItem);
         setMobileSidebarOpen(false);
       }
@@ -192,6 +209,7 @@ export default function Home() {
   // Handle discard and navigate
   const handleDiscardAndNavigate = () => {
     if (pendingNavItem) {
+      userNavigatedRef.current = true; // User has navigated, allow normal rendering
       setActiveNavItem(pendingNavItem);
       setMobileSidebarOpen(false);
     }
@@ -293,6 +311,11 @@ export default function Home() {
   const [loadingPrompts, setLoadingPrompts] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   
+  // JIRA configuration check
+  const jiraConfigCheck = useJiraConfigurationCheck();
+  const [showJiraSetupModal, setShowJiraSetupModal] = useState(false);
+  const [jiraConfigChecked, setJiraConfigChecked] = useState(false);
+  
   // Dashboard settings state
   const [dashboardSettingsState, setDashboardSettingsState] = useState<{
     hasChanges: boolean;
@@ -377,7 +400,36 @@ export default function Home() {
       }
     })();
   }, []);
-  
+
+  // JIRA configuration check - run after auth and admin check
+  useEffect(() => {
+    // Only check once, after auth is checked and admin check is complete
+    if (authChecked && !jiraConfigChecked && !jiraConfigCheck.isLoading) {
+      setJiraConfigChecked(true);
+      
+      // Only show modal if:
+      // 1. Backend is available
+      // 2. JIRA is not configured
+      // 3. We haven't already shown the modal
+      if (
+        jiraConfigCheck.backendAvailable &&
+        !jiraConfigCheck.isConfigured &&
+        !showJiraSetupModal
+      ) {
+        setShowJiraSetupModal(true);
+      }
+    }
+  }, [authChecked, jiraConfigCheck.isLoading, jiraConfigCheck.backendAvailable, jiraConfigCheck.isConfigured, jiraConfigChecked, showJiraSetupModal]);
+
+  const handleJiraSetupConfirm = () => {
+    setShowJiraSetupModal(false);
+    if (isAdmin) {
+      // Navigate to sync settings
+      userNavigatedRef.current = true; // User has navigated, allow normal rendering
+      setActiveNavItem('etl-settings');
+    }
+  };
+
   // Listen for dashboard settings state changes
   useEffect(() => {
     const handleSettingsState = (event: CustomEvent) => {
@@ -955,6 +1007,12 @@ export default function Home() {
   }, [activeNavItem]);
 
   const renderMainContent = () => {
+    // If backend is unavailable on startup, show empty content (menu still visible)
+    // Once user clicks menu items, allow normal rendering (components handle their own errors)
+    if (backendAvailable === false && !userNavigatedRef.current) {
+      return <div className="flex-1" />;
+    }
+
     switch (activeNavItem) {
       case 'team-ai-insights':
         return (
@@ -1037,6 +1095,14 @@ export default function Home() {
 
   return authChecked ? (
     <div className="h-screen bg-white flex flex-col overflow-hidden">
+      {/* JIRA Setup Modal */}
+      <JiraSetupModal
+        isOpen={showJiraSetupModal}
+        hasPermission={isAdmin}
+        onConfirm={handleJiraSetupConfirm}
+        onClose={handleJiraSetupConfirm}
+      />
+      
       {/* Mobile Sidebar Overlay */}
       {mobileSidebarOpen && (
         <div className="fixed inset-0 z-50 md:hidden">

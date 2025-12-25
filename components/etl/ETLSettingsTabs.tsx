@@ -5,6 +5,7 @@ import { ETLSettings } from '@/lib/etl';
 import { etlApiService } from '@/lib/etl';
 import { PIDefinition } from '@/lib/etl';
 import PIManagement from './PIManagement';
+import JiraConnectionTab from './JiraConnectionTab';
 
 interface ETLSettingsTabsProps {
   settings: ETLSettings;
@@ -12,13 +13,22 @@ interface ETLSettingsTabsProps {
   onSaved: () => void;
 }
 
-type TabType = 'projects' | 'jql' | 'fields' | 'history' | 'derived' | 'pi';
+type TabType = 'jira-connection' | 'projects' | 'jql' | 'fields' | 'history' | 'derived' | 'pi';
 
 export default function ETLSettingsTabs({ settings, customFields, onSaved }: ETLSettingsTabsProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('projects');
+  const [activeTab, setActiveTab] = useState<TabType>('jira-connection');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const tabs = [
+    { 
+      id: 'jira-connection' as TabType, 
+      label: 'JIRA Connection', 
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+        </svg>
+      )
+    },
     { 
       id: 'projects' as TabType, 
       label: 'Projects', 
@@ -80,6 +90,11 @@ export default function ETLSettingsTabs({ settings, customFields, onSaved }: ETL
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  // Reload data when tab changes
+  useEffect(() => {
+    onSaved();
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div className="h-full flex flex-col overflow-hidden p-6">
       {/* Toast Message */}
@@ -113,6 +128,11 @@ export default function ETLSettingsTabs({ settings, customFields, onSaved }: ETL
 
       {/* Tab Content Area with Border */}
       <div className="flex-1 overflow-y-auto bg-white border border-gray-300 rounded-tr-lg rounded-b-lg shadow-sm p-6">
+        {activeTab === 'jira-connection' && (
+          <div className="w-full max-w-[50%]">
+            <JiraConnectionTab settings={settings} onSaved={onSaved} onShowToast={showToast} />
+          </div>
+        )}
         {activeTab === 'projects' && (
           <div className="w-full max-w-[38.4%]">
             <ProjectsTab settings={settings} onSaved={onSaved} onShowToast={showToast} />
@@ -490,6 +510,28 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
   const [sizingField, setSizingField] = useState<string>(settings.selected_sizing_field_id || '');
   const [teamNameField, setTeamNameField] = useState<string>(settings.selected_team_name_field_id || '');
   const [flaggedField, setFlaggedField] = useState<string>(settings.selected_flagged_field_id || '');
+  
+  // Local state for custom fields (reloaded when tab opens)
+  const [localCustomFields, setLocalCustomFields] = useState<{ [field_id: string]: string }>(customFields);
+  const [loadingMetadata, setLoadingMetadata] = useState(false);
+
+  // Reload custom fields when tab opens
+  useEffect(() => {
+    const loadCustomFields = async () => {
+      try {
+        setLoadingMetadata(true);
+        const fieldsData = await etlApiService.getJIRACustomFields();
+        setLocalCustomFields(fieldsData);
+      } catch (err: any) {
+        console.error('Failed to load custom fields:', err);
+        // Keep existing customFields as fallback
+      } finally {
+        setLoadingMetadata(false);
+      }
+    };
+
+    loadCustomFields();
+  }, []);
 
   const handleSave = async () => {
     try {
@@ -513,7 +555,7 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
     }
   };
 
-  if (Object.keys(customFields).length === 0) {
+  if (loadingMetadata || Object.keys(localCustomFields).length === 0) {
     return <div className="text-gray-600">Loading JIRA custom fields...</div>;
   }
 
@@ -538,7 +580,7 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
               className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm"
             >
               <option value="">--- Not Set ---</option>
-              {Object.entries(customFields).map(([id, name]) => (
+              {Object.entries(localCustomFields).map(([id, name]) => (
                 <option key={id} value={id}>
                   {name} ({id})
                 </option>
@@ -556,7 +598,7 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
               className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm"
             >
               <option value="sprint">Sprint (System Default)</option>
-              {Object.entries(customFields).map(([id, name]) => (
+              {Object.entries(localCustomFields).map(([id, name]) => (
                 <option key={id} value={id}>
                   {name} ({id})
                 </option>
@@ -574,7 +616,7 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
               className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm"
             >
               <option value="">--- Not Set ---</option>
-              {Object.entries(customFields).map(([id, name]) => (
+              {Object.entries(localCustomFields).map(([id, name]) => (
                 <option key={id} value={id}>
                   {name} ({id})
                 </option>
@@ -592,7 +634,7 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
               className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm"
             >
               <option value="">--- Not Set ---</option>
-              {Object.entries(customFields).map(([id, name]) => (
+              {Object.entries(localCustomFields).map(([id, name]) => (
                 <option key={id} value={id}>
                   {name} ({id})
                 </option>
@@ -610,7 +652,7 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
               className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm"
             >
               <option value="">--- Not Set ---</option>
-              {Object.entries(customFields).map(([id, name]) => (
+              {Object.entries(localCustomFields).map(([id, name]) => (
                 <option key={id} value={id}>
                   {name} ({id})
                 </option>
@@ -636,7 +678,7 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
         </div>
 
         <div className="border border-gray-300 rounded p-2 pb-2 max-h-[230px] overflow-y-auto mb-2">
-          {Object.entries(customFields)
+          {Object.entries(localCustomFields)
             .filter(([id, name]) => {
               if (!searchTerm) return true;
               const searchLower = searchTerm.toLowerCase();
@@ -664,7 +706,7 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
                 </span>
               </label>
             ))}
-          {Object.entries(customFields).filter(([id, name]) => {
+          {Object.entries(localCustomFields).filter(([id, name]) => {
             if (!searchTerm) return false;
             const searchLower = searchTerm.toLowerCase();
             return id.toLowerCase().includes(searchLower) || name.toLowerCase().includes(searchLower);

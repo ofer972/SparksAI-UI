@@ -1999,6 +1999,27 @@ export async function updateUserDashboardSettings(userId: string, settings: Part
   return data.data || data;
 }
 
+// Backend health check with timeout - used on startup
+export async function checkBackendHealth(timeoutMs: number = 5000): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, timeoutMs);
+
+    const response = await fetch(buildBackendUrl('/health'), {
+      method: 'GET',
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+    return response.ok;
+  } catch (error: any) {
+    // Timeout, network error, or abort - backend unavailable
+    return false;
+  }
+}
+
 // New page-based settings functions
 export async function getPageSettings(userId: string, page: PageType): Promise<PageSettings | null> {
   const res = await fetch(buildUserServiceUrl(`/users/${userId}/settings/page/${page}`));

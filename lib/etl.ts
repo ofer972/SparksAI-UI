@@ -20,6 +20,10 @@ export interface ETLSettings {
   etl_last_success_time: string | null;
   field_definitions_yaml_content: string;
   jql_scope?: string | null;
+  jira_url?: string | null;
+  jira_email?: string | null;
+  jira_api_token?: string | null; // Backend won't return this, always null
+  jira_cloud?: boolean;
 }
 
 export interface ETLSettingsResponse {
@@ -102,6 +106,24 @@ export interface ApiResponse<T> {
   success: boolean;
   data: T;
   message: string;
+}
+
+// JIRA Configuration Types
+export interface JiraConfigResponse {
+  configured: boolean;
+  has_url: boolean;
+  url_valid: boolean;
+  connection_valid: boolean;
+  url: string | null;
+  error: string | null;
+  error_type: string | null;
+}
+
+export interface JiraConfigCheckResult {
+  configured: boolean;
+  backendAvailable: boolean;
+  data?: JiraConfigResponse;
+  error?: string;
 }
 
 /**
@@ -365,6 +387,78 @@ export class ETLApiService {
     } catch {
       return false;
     }
+  }
+
+  // JIRA Configuration Check (reads from database - for startup check)
+  async checkJiraConfiguration(): Promise<JiraConfigCheckResult> {
+    try {
+      // First check if backend is available
+      const backendAvailable = await this.checkHealth();
+      if (!backendAvailable) {
+        // Backend not available - treat as configured to avoid blocking
+        return { configured: true, backendAvailable: false };
+      }
+      
+      // Call the jira-is-configured endpoint with POST and empty body
+      const response = await authFetch(buildETLUrl('/jira-is-configured'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+      
+      if (!response.ok) {
+        // If endpoint fails, treat as backend unavailable
+        return { configured: true, backendAvailable: false };
+      }
+      
+      const result: ApiResponse<JiraConfigResponse> = await response.json();
+      const configData = result.data;
+      
+      return {
+        configured: configData.configured,
+        backendAvailable: true,
+        data: configData
+      };
+    } catch (error: any) {
+      // Network errors, timeouts, 503, etc. - backend unavailable
+      // Treat as configured to avoid blocking UI
+      return { 
+        configured: true, 
+        backendAvailable: false, 
+        error: error.message 
+      };
+    }
+  }
+
+  // JIRA Settings Validation (validates form values - for Validate button)
+  async validateJiraSettings(
+    jiraUrl: string,
+    email: string,
+    apiToken: string,
+    jiraCloud: boolean
+  ): Promise<JiraConfigResponse> {
+    const response = await authFetch(buildETLUrl('/jira-is-configured'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        jira_url: jiraUrl,
+        jira_email: email,
+        jira_api_token: apiToken,
+        jira_cloud: jiraCloud,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to validate JIRA settings: ${errorText}`);
+    }
+
+    const result: ApiResponse<JiraConfigResponse> = await response.json();
+    return result.data;
   }
 }
 
