@@ -6,20 +6,12 @@ const nextConfig = {
   output: 'standalone',
   
   async rewrites() {
-    // Auto-detect environment and use appropriate default
-    // KUBERNETES_SERVICE_HOST is automatically set in all Kubernetes pods
-    const isKubernetes = !!process.env.KUBERNETES_SERVICE_HOST;
-    const defaultTarget = isKubernetes 
-      ? 'http://sparksai-gateway:8080'  // Kubernetes: use service DNS
-      : 'http://localhost:8080';         // Local dev: use localhost
+    // Use INTERNAL_BACKEND_URL if set (runtime override)
+    // Otherwise default to Kubernetes service DNS (works in both K8s and local with proper setup)
+    // For pure local dev without K8s, set INTERNAL_BACKEND_URL=http://localhost:8080 before build
+    const target = process.env.INTERNAL_BACKEND_URL || 'http://sparksai-gateway:8080';
     
-    const target = process.env.INTERNAL_BACKEND_URL || defaultTarget;
-    
-    console.log('🔧 Next.js rewrites config:', {
-      isKubernetes,
-      target,
-      source: process.env.INTERNAL_BACKEND_URL ? 'env var' : 'default'
-    });
+    console.log('🔧 Next.js rewrites target:', target);
     
     // Ensure destination is valid for Next.js (must start with /, http:// or https://)
     if (!/^https?:\/\//.test(target)) {

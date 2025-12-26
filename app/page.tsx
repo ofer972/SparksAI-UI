@@ -591,11 +591,9 @@ export default function Home() {
   // Load saved team insight settings after clearing
   useEffect(() => {
     if (activeNavItem === 'team-ai-insights' && !teamInsightSettings.isLoading) {
-      // Check if groups and teams are loaded
-      if (groups.length === 0 && teams.length === 0) {
-        console.log('[App] Groups and teams not loaded yet, waiting...');
-        return;
-      }
+      // Note: Empty groups/teams arrays are valid (just means no teams configured yet)
+      // Don't block on empty arrays - only the settings loading state matters
+      console.log('[App] Team insights settings loaded, groups:', groups.length, 'teams:', teams.length);
       
       if (teamInsightSettings.savedState) {
         console.log('[App] Loading saved team insight settings:', teamInsightSettings.savedState);
