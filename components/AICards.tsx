@@ -2,7 +2,7 @@
 
 import { useAICards } from '@/hooks';
 import AICardsInsight from './insights/AICardsInsight';
-import { teamAICardsConfig } from '@/lib/teamAICardsConfig';
+import { aiCardsConfig } from '@/lib/aiCardsConfig';
 
 interface AICardProps {
   teamName?: string;
@@ -29,7 +29,7 @@ export default function AICards({ teamName, categories, isGroup }: AICardProps) 
       onRefetch={refetch}
       title="Team AI Insights"
       emptyMessage={`No AI insights available for ${teamName} at this time.`}
-      config={teamAICardsConfig}
+      config={aiCardsConfig}
       chatType="Team_insights"
     />
   );

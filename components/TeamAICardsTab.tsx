@@ -1,6 +1,6 @@
 import React from 'react';
 import { useEntityTableManager } from '@/hooks/useEntityTableManager';
-import { teamAICardsConfig } from '@/lib/teamAICardsConfig';
+import { aiCardsConfig } from '@/lib/aiCardsConfig';
 import { DataTable } from '@/components/DataTable';
 import { ViewRecordModal } from '@/components/ViewRecordModal';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
@@ -26,7 +26,7 @@ export default function TeamAICardsTab() {
     handleSort,
     handleFilterChange,
     closeModals,
-  } = useEntityTableManager(teamAICardsConfig);
+  } = useEntityTableManager(aiCardsConfig);
 
   return (
     <>
@@ -37,13 +37,13 @@ export default function TeamAICardsTab() {
             type="text"
             value={filterText}
             onChange={(event) => handleFilterChange(event.target.value)}
-            placeholder="Search team AI cards..."
+            placeholder="Search AI cards..."
             className="w-full sm:w-72 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div className="flex-1 min-h-0">
           <DataTable
-            config={teamAICardsConfig}
+            config={aiCardsConfig}
             data={sortedData}
             loading={loading}
             error={error}
@@ -60,15 +60,15 @@ export default function TeamAICardsTab() {
         isOpen={isDetailModalOpen}
         onClose={closeModals}
         item={selectedItem}
-        config={teamAICardsConfig}
+        config={aiCardsConfig}
       />
       
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={closeModals}
         onConfirm={handleConfirmDelete}
-        itemName="team AI card"
-        itemId={selectedItem ? String(selectedItem[teamAICardsConfig.primaryKey]) : undefined}
+        itemName="AI card"
+        itemId={selectedItem ? String(selectedItem[aiCardsConfig.primaryKey]) : undefined}
       />
     </>
   );

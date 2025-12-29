@@ -35,7 +35,7 @@ export default function TopBarFilterPanel({
                               activeNavItem === 'pi-dashboard' ||
                               activeNavItem === 'upload-transcripts';
 
-  const showCategoryFilter = activeNavItem === 'team-ai-insights';
+  const showCategoryFilter = activeNavItem === 'team-ai-insights' || activeNavItem === 'pi-quarter';
 
   // If no filters to show, don't render anything
   if (!showPIFilter && !showTeamGroupFilter && !showCategoryFilter) {
@@ -76,7 +76,7 @@ export default function TopBarFilterPanel({
           </div>
         )}
 
-        {/* Category Filter - for team-ai-insights view */}
+        {/* Category Filter - for team-ai-insights and pi-quarter views */}
         {showCategoryFilter && (
           <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 w-full md:w-auto">
             <div className="w-full md:w-auto">

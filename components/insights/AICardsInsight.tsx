@@ -18,7 +18,8 @@ interface AICard {
   updated_at: string;
   team_name: string;
   card_name: string;
-  card_type: string;
+  insight_type: string; // Changed from card_type to insight_type
+  card_type?: string; // Keep for backward compatibility
   priority: string;
   source: string;
   description: string;
@@ -545,7 +546,8 @@ export default function AICardsInsight({
   const hasContent = (c: AICard) => {
     if (c && typeof c.description === 'string' && c.description.trim().length > 0) return true;
     // Check parsed JSON content
-    if (c.card_type === 'Sprint Goal') {
+    const cardType = c.insight_type || c.card_type; // Support both field names
+    if (cardType === 'Sprint Goal') {
       const sprintGoalItems = parseSprintGoalJson(c.information_json);
       if (sprintGoalItems && sprintGoalItems.length > 0) return true;
     }
@@ -686,7 +688,8 @@ export default function AICardsInsight({
                   <div className={`${dynamicTextSize} ${dynamicLineHeight} text-gray-600 max-w-none w-full break-words whitespace-normal hyphens-auto transition-all duration-200`}>
                     {(() => {
                       // Handle Sprint Goal cards with JSON table format
-                      if (card.card_type === 'Sprint Goal') {
+                      const cardType = card.insight_type || card.card_type; // Support both field names
+                      if (cardType === 'Sprint Goal') {
                         const sprintGoalItems = parseSprintGoalJson(card.information_json);
                         
                         if (sprintGoalItems && sprintGoalItems.length > 0) {
@@ -799,7 +802,8 @@ export default function AICardsInsight({
                                 const text = children?.toString() || '';
                                 
                                 // Apply goal cell styling only for "Sprint Goal" card type
-                                if (card.card_type === 'Sprint Goal') {
+                                const cardType = card.insight_type || card.card_type; // Support both field names
+                                if (cardType === 'Sprint Goal') {
                                   // For sprint goal cards, ensure full text, left-aligned
                                   return <td className="border border-gray-300 px-1 py-0.5 text-left w-2/3 whitespace-normal break-words overflow-visible">{children}</td>;
                                 }
@@ -874,7 +878,8 @@ export default function AICardsInsight({
                               const text = children?.toString() || '';
                               
                               // Apply goal cell styling only for "Sprint Goal" card type
-                              if (card.card_type === 'Sprint Goal') {
+                              const cardType = card.insight_type || card.card_type; // Support both field names
+                              if (cardType === 'Sprint Goal') {
                                 // For sprint goal cards, ensure full text, left-aligned
                                 return <td className="border border-gray-300 px-1 py-0.5 text-left w-2/3 whitespace-normal break-words overflow-visible">{children}</td>;
                               }

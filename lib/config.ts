@@ -520,6 +520,8 @@ export interface InsightType {
   requireGroup?: boolean; // Whether this insight requires a Group
   require_group?: boolean; // Snake case variant
   requires_group?: boolean; // Alternative snake case variant
+  requireSprint?: boolean; // Whether this insight is a Sprint insight
+  sprint_insight?: boolean; // Snake case variant from API
   active: boolean;
   is_active?: boolean; // Alternative field name
   cron_config?: {

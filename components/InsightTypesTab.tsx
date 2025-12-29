@@ -164,9 +164,13 @@ export default function InsightTypesTab() {
 
   const columns = useMemo(() => [
     { key: 'id', label: 'ID', sortable: true, width: '50px', align: 'center' as const },
-    { key: 'insight_type', label: 'Insight Type', sortable: true, width: '150px' },
-    { key: 'insight_description', label: 'Description', sortable: true, width: '220px' },
+    { key: 'insight_type', label: 'Insight Type', sortable: true, width: '150px', align: 'left' as const },
+    { key: 'insight_description', label: 'Description', sortable: true, width: '220px', align: 'left' as const },
     { key: 'categories', label: 'Categories', sortable: true, width: '260px' },
+    { key: 'pi_insight', label: 'PI Insight', sortable: true, width: '100px', align: 'center' as const },
+    { key: 'sprint_insight', label: 'Sprint Insight', sortable: true, width: '120px', align: 'center' as const },
+    { key: 'team_insight', label: 'Team Insight', sortable: true, width: '110px', align: 'center' as const },
+    { key: 'group_insight', label: 'Group Insight', sortable: true, width: '120px', align: 'center' as const },
     { key: 'active', label: 'Active', sortable: true, width: '80px', align: 'center' as const },
     { key: 'last_modification_date', label: 'Last Modification Date', sortable: true, width: '160px', align: 'center' as const },
   ], []);
@@ -233,24 +237,9 @@ export default function InsightTypesTab() {
                 if (col.key === 'categories') {
                   const includedCategories = row.insight_categories || row.categories || [];
                   return (
-                    <div className="flex flex-wrap gap-1 justify-start">
-                      {includedCategories.map((category, index) => (
-                        <div key={category} className="flex items-center">
-                          <label className="flex items-center gap-1 cursor-default" title={category}>
-                            <input
-                              type="checkbox"
-                              checked={true}
-                              readOnly
-                              className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-default"
-                            />
-                            <span className="text-sm text-gray-700">{category}</span>
-                          </label>
-                          {index < includedCategories.length - 1 && (
-                            <span className="mx-1 text-gray-300">|</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                    <span className="text-sm text-gray-700">
+                      {includedCategories.length > 0 ? includedCategories.join(', ') : '-'}
+                    </span>
                   );
                 }
                 if (col.key === 'active') {
@@ -258,6 +247,50 @@ export default function InsightTypesTab() {
                     <input
                       type="checkbox"
                       checked={row.active}
+                      readOnly
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-default"
+                    />
+                  );
+                }
+                if (col.key === 'pi_insight') {
+                  const piInsight = Boolean(row.pi_insight ?? row.requirePI ?? row.require_pi ?? row.requires_pi ?? false);
+                  return (
+                    <input
+                      type="checkbox"
+                      checked={piInsight}
+                      readOnly
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-default"
+                    />
+                  );
+                }
+                if (col.key === 'sprint_insight') {
+                  const sprintInsight = Boolean(row.sprint_insight ?? row.requireSprint ?? false);
+                  return (
+                    <input
+                      type="checkbox"
+                      checked={sprintInsight}
+                      readOnly
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-default"
+                    />
+                  );
+                }
+                if (col.key === 'team_insight') {
+                  const teamInsight = Boolean(row.team_insight ?? row.requireTeam ?? row.require_team ?? row.requires_team ?? false);
+                  return (
+                    <input
+                      type="checkbox"
+                      checked={teamInsight}
+                      readOnly
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-default"
+                    />
+                  );
+                }
+                if (col.key === 'group_insight') {
+                  const groupInsight = Boolean(row.group_insight ?? row.requireGroup ?? row.require_group ?? row.requires_group ?? false);
+                  return (
+                    <input
+                      type="checkbox"
+                      checked={groupInsight}
                       readOnly
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-default"
                     />

@@ -47,7 +47,7 @@ export default function MobileControlsPanel({
         )}
         
         {/* Insight Category Filter */}
-        {activeNavItem === 'team-ai-insights' && (
+        {(activeNavItem === 'team-ai-insights' || activeNavItem === 'pi-quarter') && (
           <InsightCategoryFilter
             selectedCategories={filters.selectedCategories || []}
             onCategoriesChange={filters.onCategoriesChange || (() => {})}

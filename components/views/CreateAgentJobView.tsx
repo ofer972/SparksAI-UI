@@ -17,9 +17,7 @@ export default function CreateAgentJobView() {
   const [selectedPI, setSelectedPI] = useState<Record<string | number, string>>({});
   const [selectedTeam, setSelectedTeam] = useState<Record<string | number, string>>({});
   const [selectedGroup, setSelectedGroup] = useState<Record<string | number, string>>({});
-  const [globalTeamFilter, setGlobalTeamFilter] = useState<string>('');
   const [globalPIFilter, setGlobalPIFilter] = useState<string>('');
-  const [globalGroupFilter, setGlobalGroupFilter] = useState<string>('');
   const [loading, setLoading] = useState<Record<string | number, boolean>>({});
   const [toast, setToast] = useState<string | null>(null);
   const [errorModal, setErrorModal] = useState<string | null>(null);
@@ -77,9 +75,10 @@ export default function CreateAgentJobView() {
           insight_type: type.insight_type,
           description: type.description || type.insight_description || '',
           insight_description: type.insight_description || type.description || '',
-          requirePI: Boolean(type.requirePI ?? type.requires_pi ?? type.require_pi ?? false),
-          requireTeam: Boolean(type.requireTeam ?? type.requires_team ?? type.require_team ?? false),
-          requireGroup: Boolean(type.requireGroup ?? type.requires_group ?? type.require_group ?? false),
+          requirePI: Boolean(type.pi_insight ?? type.requirePI ?? type.requires_pi ?? type.require_pi ?? false),
+          requireTeam: Boolean(type.team_insight ?? type.requireTeam ?? type.requires_team ?? type.require_team ?? false),
+          requireGroup: Boolean(type.group_insight ?? type.requireGroup ?? type.requires_group ?? type.require_group ?? false),
+          requireSprint: Boolean(type.sprint_insight ?? type.requireSprint ?? false),
           active: Boolean(type.active ?? type.is_active ?? false),
           ...type // Keep original fields for reference
         };
@@ -102,28 +101,11 @@ export default function CreateAgentJobView() {
     fetchGroups();
   }, []);
 
-  // Apply global team filter when insight types or filter changes
-  useEffect(() => {
-    if (globalTeamFilter && insightTypes.length > 0) {
-      const teamInsightIds = insightTypes
-        .filter(type => type.requireTeam === true)
-        .map(type => type.id);
-      
-      setSelectedTeam(prev => {
-        const updated = { ...prev };
-        teamInsightIds.forEach(id => {
-          updated[id] = globalTeamFilter;
-        });
-        return updated;
-      });
-    }
-  }, [globalTeamFilter, insightTypes]);
-
   // Apply global PI filter when insight types or filter changes
   useEffect(() => {
     if (globalPIFilter && insightTypes.length > 0) {
       const piInsightIds = insightTypes
-        .filter(type => type.requireTeam !== true && type.requireGroup !== true)
+        .filter(type => type.requirePI === true)
         .map(type => type.id);
       
       setSelectedPI(prev => {
@@ -136,36 +118,9 @@ export default function CreateAgentJobView() {
     }
   }, [globalPIFilter, insightTypes]);
 
-  // Apply global group filter when insight types or filter changes
-  useEffect(() => {
-    if (globalGroupFilter && insightTypes.length > 0) {
-      const groupInsightIds = insightTypes
-        .filter(type => type.requireGroup === true)
-        .map(type => type.id);
-      
-      setSelectedGroup(prev => {
-        const updated = { ...prev };
-        groupInsightIds.forEach(id => {
-          updated[id] = globalGroupFilter;
-        });
-        return updated;
-      });
-    }
-  }, [globalGroupFilter, insightTypes]);
-
-  // Handle global team filter - applies to all team insights
-  const handleGlobalTeamFilter = (team: string) => {
-    setGlobalTeamFilter(team);
-  };
-
   // Handle global PI filter - applies to all PI insights
   const handleGlobalPIFilter = (pi: string) => {
     setGlobalPIFilter(pi);
-  };
-
-  // Handle global group filter - applies to all group insights
-  const handleGlobalGroupFilter = (group: string) => {
-    setGlobalGroupFilter(group);
   };
 
   // Create job handler
@@ -373,16 +328,15 @@ export default function CreateAgentJobView() {
     );
   };
 
-  // Separate insight types into Team Insights, Group Insights, and PI Insights
-  const teamInsights = insightTypes
-    .filter(type => type.requireTeam === true && !type.requireGroup)
-    .sort((a, b) => {
-      if (a.requirePI && !b.requirePI) return 1;
-      if (!a.requirePI && b.requirePI) return -1;
-      return 0;
-    });
-  const groupInsights = insightTypes.filter(type => type.requireGroup === true);
-  const piInsights = insightTypes.filter(type => type.requireTeam !== true && type.requireGroup !== true);
+  // Separate insight types into PI Insights and Sprint Insights
+  // PI Insights: pi_insight = true
+  const piInsights = insightTypes.filter(type => type.requirePI === true);
+  
+  // Sprint Insights: pi_insight = false AND (sprint_insight = true OR team_insight = true OR group_insight = true)
+  const sprintInsights = insightTypes.filter(type => 
+    type.requirePI === false && 
+    (type.requireSprint === true || type.requireTeam === true || type.requireGroup === true)
+  );
 
   return (
     <div className="h-full flex flex-col">{/* Removed space-y-6 overflow-auto pb-6 */}
@@ -420,95 +374,7 @@ export default function CreateAgentJobView() {
       )}
 
       {!fetching && !fetchError && insightTypes.length > 0 && (
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 overflow-hidden">{/* Changed gap-6 to gap-4 and added flex-1 overflow-hidden */}
-          {/* Team Insights Container */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200 p-4 shadow-lg flex flex-col overflow-hidden">
-            <div className="flex items-center gap-3 mb-3 flex-shrink-0">
-              <div className="p-2 bg-blue-600 rounded-lg">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">Team Insights</h2>
-            </div>
-            
-            {/* Global Team Filter */}
-            <div className="mb-3 bg-white rounded-lg p-3 shadow-sm border border-blue-100 flex-shrink-0">
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                Apply to All Teams:
-              </label>
-              <select
-                value={globalTeamFilter}
-                onChange={(e) => handleGlobalTeamFilter(e.target.value)}
-                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                disabled={teamInsights.length === 0}
-              >
-                <option value="">Select Team</option>
-                {availableTeams.length > 0 ? (
-                  availableTeams.map(team => (
-                    <option key={team} value={team}>{team}</option>
-                  ))
-                ) : (
-                  <option value="" disabled>Loading Teams...</option>
-                )}
-              </select>
-            </div>
-
-            {teamInsights.length > 0 ? (
-              <div className="space-y-3 overflow-y-auto flex-1">
-                {teamInsights.map(renderInsightTypeCard)}
-              </div>
-            ) : (
-              <div className="bg-white rounded-lg border border-gray-200 p-6 text-center">
-                <p className="text-gray-500 font-medium">No Team Insights available</p>
-              </div>
-            )}
-          </div>
-
-          {/* Group Insights Container */}
-          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border-2 border-purple-200 p-4 shadow-lg flex flex-col overflow-hidden">
-            <div className="flex items-center gap-3 mb-3 flex-shrink-0">
-              <div className="p-2 bg-purple-600 rounded-lg">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">Group Insights</h2>
-            </div>
-            
-            {/* Global Group Filter */}
-            <div className="mb-3 bg-white rounded-lg p-3 shadow-sm border border-purple-100 flex-shrink-0">
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                Apply to All Groups:
-              </label>
-              <select
-                value={globalGroupFilter}
-                onChange={(e) => handleGlobalGroupFilter(e.target.value)}
-                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
-                disabled={groupInsights.length === 0}
-              >
-                <option value="">Select Group</option>
-                {availableGroups.length > 0 ? (
-                  availableGroups.map(group => (
-                    <option key={group} value={group}>{group}</option>
-                  ))
-                ) : (
-                  <option value="" disabled>Loading Groups...</option>
-                )}
-              </select>
-            </div>
-
-            {groupInsights.length > 0 ? (
-              <div className="space-y-3 overflow-y-auto flex-1">
-                {groupInsights.map(renderInsightTypeCard)}
-              </div>
-            ) : (
-              <div className="bg-white rounded-lg border border-gray-200 p-6 text-center">
-                <p className="text-gray-500 font-medium">No Group Insights available</p>
-              </div>
-            )}
-          </div>
-
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 overflow-hidden">
           {/* PI Insights Container */}
           <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border-2 border-green-200 p-4 shadow-lg flex flex-col overflow-hidden">
             <div className="flex items-center gap-3 mb-3 flex-shrink-0">
@@ -518,8 +384,8 @@ export default function CreateAgentJobView() {
                 </svg>
               </div>
               <h2 className="text-xl font-bold text-gray-900">PI Insights</h2>
-          </div>
-          
+            </div>
+            
             {/* Global PI Filter */}
             <div className="mb-3 bg-white rounded-lg p-3 shadow-sm border border-green-100 flex-shrink-0">
               <label className="block text-xs font-semibold text-gray-700 mb-1.5">
@@ -549,10 +415,32 @@ export default function CreateAgentJobView() {
             ) : (
               <div className="bg-white rounded-lg border border-gray-200 p-6 text-center">
                 <p className="text-gray-500 font-medium">No PI Insights available</p>
+              </div>
+            )}
+          </div>
+
+          {/* Sprint Insights Container */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200 p-4 shadow-lg flex flex-col overflow-hidden">
+            <div className="flex items-center gap-3 mb-3 flex-shrink-0">
+              <div className="p-2 bg-blue-600 rounded-lg">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Sprint Insights</h2>
             </div>
-          )}
+
+            {sprintInsights.length > 0 ? (
+              <div className="space-y-3 overflow-y-auto flex-1">
+                {sprintInsights.map(renderInsightTypeCard)}
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg border border-gray-200 p-6 text-center">
+                <p className="text-gray-500 font-medium">No Sprint Insights available</p>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
       )}
 
       {/* Success Toast */}

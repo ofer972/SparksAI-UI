@@ -237,7 +237,7 @@ export default function Home() {
   });
   
   const [piDashboardFilters, setPiDashboardFilters] = useState({
-    selectedPI: 'Q32025',
+    selectedPI: '',
     selectedTeam: '',
     selectedTreeValue: null as string | null,
     selectedTreeLabel: '',
@@ -253,11 +253,12 @@ export default function Home() {
   });
   
   const [piQuarterFilters, setPiQuarterFilters] = useState({
-    selectedPI: 'Q32025',
+    selectedPI: '',
+    selectedCategories: [] as string[],
   });
   
   const [uploadTranscriptsFilters, setUploadTranscriptsFilters] = useState({
-    selectedPI: 'Q32025',
+    selectedPI: '',
     selectedTeam: '',
     selectedTreeValue: null as string | null,
     selectedTreeLabel: '',
@@ -269,7 +270,7 @@ export default function Home() {
   const [selectedTreeValue, setSelectedTreeValue] = useState<string | null>(null);
   const [selectedTreeLabel, setSelectedTreeLabel] = useState<string>('');
   const [selectedTreeType, setSelectedTreeType] = useState<'group' | 'team'>('team');
-  const [selectedPI, setSelectedPI] = useState('Q32025');
+  const [selectedPI, setSelectedPI] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isDashboardChatModalOpen, setIsDashboardChatModalOpen] = useState(false);
@@ -1352,15 +1353,29 @@ export default function Home() {
                     setSelectedTeam(value ? label : '');
                 }
               },
-              selectedCategories: activeNavItem === 'team-ai-insights' ? teamInsightsFilters.selectedCategories : selectedCategories,
+              selectedCategories: activeNavItem === 'team-ai-insights' 
+                ? teamInsightsFilters.selectedCategories 
+                : activeNavItem === 'pi-quarter'
+                ? piQuarterFilters.selectedCategories
+                : selectedCategories,
               onCategoriesChange: (categories: string[]) => {
                 if (activeNavItem === 'team-ai-insights') {
                   setTeamInsightsFilters(prev => ({ ...prev, selectedCategories: categories }));
+                } else if (activeNavItem === 'pi-quarter') {
+                  setPiQuarterFilters(prev => ({ ...prev, selectedCategories: categories }));
                 }
                 setSelectedCategories(categories);
               },
-              settingsLoading: teamInsightSettings.isLoading,
-              hasSavedSettings: !!teamInsightSettings.savedState,
+              settingsLoading: activeNavItem === 'team-ai-insights' 
+                ? teamInsightSettings.isLoading 
+                : activeNavItem === 'pi-quarter'
+                ? piInsightSettings.isLoading
+                : false,
+              hasSavedSettings: activeNavItem === 'team-ai-insights'
+                ? !!teamInsightSettings.savedState
+                : activeNavItem === 'pi-quarter'
+                ? !!piInsightSettings.savedState
+                : false,
             }}
             aiChat={(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') ? {
               onOpenChat: (dashboardData?: any) => {

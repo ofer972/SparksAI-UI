@@ -695,12 +695,13 @@ export class ApiService {
     return Array.isArray(payload.result) ? payload.result : [];
   }
 
-  // Team AI Cards API
+  // AI Cards API (unified endpoint for all AI cards)
   async getTeamAICards(): Promise<any[]> {
-    const response = await fetch(buildBackendUrl(API_CONFIG.endpoints.generalData.teamAICards));
+    // Use the unified /ai-insights endpoint to get all AI cards
+    const response = await fetch(buildBackendUrl('/ai-insights?limit=1000'));
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch team AI cards: ${response.statusText}`);
+      throw new Error(`Failed to fetch AI cards: ${response.statusText}`);
     }
 
     const result = await response.json();
@@ -720,7 +721,7 @@ export class ApiService {
     }
     
     // Fallback: return empty array
-    console.warn('Unexpected response structure for team AI cards:', result);
+    console.warn('Unexpected response structure for AI cards:', result);
     return [];
   }
 
@@ -763,12 +764,13 @@ export class ApiService {
   }
 
   async getTeamAICardDetail(id: string): Promise<any> {
-    const url = `${buildBackendUrl(API_CONFIG.endpoints.generalData.teamAICardDetail)}/${id}`;
+    // Use the unified /ai-insights/{id} endpoint
+    const url = `${buildBackendUrl('/ai-insights')}/${id}`;
     
     const response = await fetch(url);
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch team AI card detail: ${response.statusText}`);
+      throw new Error(`Failed to fetch AI card detail: ${response.statusText}`);
     }
 
     const result: ApiResponse<any> = await response.json();

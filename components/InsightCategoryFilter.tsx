@@ -80,11 +80,10 @@ export default function InsightCategoryFilter({
           });
         }
         
-        // Filter to only Team categories
-        const teamCategories = categoryObjects.filter((cat: InsightCategory) => cat.class === 'Team');
-        setCategories(teamCategories);
+        // Show all categories (no filtering by class)
+        setCategories(categoryObjects);
         
-        // Note: Auto-select "daily" is handled in a separate useEffect that waits for settings to load
+        // Note: Auto-select first category is handled in a separate useEffect that waits for settings to load
       } catch (err) {
         console.error('Error fetching insight categories:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch categories');
@@ -96,7 +95,7 @@ export default function InsightCategoryFilter({
     fetchCategories();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-select "daily" after settings have loaded if no categories are selected
+  // Auto-select first category after settings have loaded if no categories are selected
   // Only run this if:
   // 1. Settings are done loading
   // 2. No settings were found (new user or no saved preferences)
@@ -124,10 +123,10 @@ export default function InsightCategoryFilter({
       return;
     }
     
-    const dailyCategory = categories.find(cat => cat.name.toLowerCase() === 'daily');
-    if (dailyCategory) {
-      console.log('[InsightCategoryFilter] Auto-selecting Daily category');
-      onCategoriesChange([dailyCategory.name]);
+    // Auto-select the first available category
+    if (categories.length > 0) {
+      console.log('[InsightCategoryFilter] Auto-selecting first category:', categories[0].name);
+      onCategoriesChange([categories[0].name]);
       autoSelectDone.current = true;
     }
   }, [settingsLoading, hasSavedSettings, categories, selectedCategories, onCategoriesChange, loading]);
@@ -232,7 +231,7 @@ export default function InsightCategoryFilter({
               >
           <div className="p-2">
             {categories.length === 0 ? (
-              <div className="text-sm text-gray-500 py-2">No Team categories available</div>
+              <div className="text-sm text-gray-500 py-2">No categories available</div>
             ) : (
               categories.map((category) => (
                 <label
