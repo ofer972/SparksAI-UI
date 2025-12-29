@@ -486,9 +486,18 @@ export class ApiService {
   }
 
   async getTeamAICardsWithRecommendations(teamName: string, categories?: string[], isGroup?: boolean): Promise<AICardsResponse> {
+    // Determine insight_type based on isGroup flag
+    const insightType = isGroup ? 'group' : 'team';
     const params = new URLSearchParams({
-      team_name: teamName,
+      insight_type: insightType,
     });
+
+    // Add identifier parameter based on insight_type
+    if (insightType === 'group') {
+      params.append('group_name', teamName);
+    } else {
+      params.append('team_name', teamName);
+    }
 
     // Add multiple category parameters if provided
     if (categories && categories.length > 0) {
@@ -497,12 +506,7 @@ export class ApiService {
       });
     }
 
-    // Add isGroup parameter if provided
-    if (isGroup !== undefined) {
-      params.append('isGroup', String(isGroup));
-    }
-
-    const response = await fetch(`${buildBackendUrl('/team-ai-cards/getTopCardsWithRecommendations')}?${params}`);
+    const response = await fetch(`${buildBackendUrl('/ai-insights/getTopCardsWithRecommendations')}?${params}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch AI cards with recommendations: ${response.statusText}`);
@@ -531,10 +535,11 @@ export class ApiService {
   // PI AI Cards API
   async getPIAICards(piName: string): Promise<AICardsResponse> {
     const params = new URLSearchParams({
+      insight_type: 'pi',
       pi: piName,
     });
 
-    const response = await fetch(`${buildBackendUrl('/pi-ai-cards/getTopCards')}?${params}`);
+    const response = await fetch(`${buildBackendUrl('/ai-insights/getTopCards')}?${params}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch PI AI cards: ${response.statusText}`);
@@ -546,10 +551,11 @@ export class ApiService {
 
   async getPIAICardsWithRecommendations(piName: string): Promise<AICardsResponse> {
     const params = new URLSearchParams({
+      insight_type: 'pi',
       pi: piName,
     });
 
-    const response = await fetch(`${buildBackendUrl('/pi-ai-cards/getTopCardsWithRecommendations')}?${params}`);
+    const response = await fetch(`${buildBackendUrl('/ai-insights/getTopCardsWithRecommendations')}?${params}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch PI AI cards with recommendations: ${response.statusText}`);
@@ -720,7 +726,10 @@ export class ApiService {
 
   // PI AI Cards API (list)
   async getPIAICardsList(): Promise<any[]> {
-    const response = await fetch(buildBackendUrl('/pi-ai-cards'));
+    const params = new URLSearchParams({
+      insight_type: 'pi',
+    });
+    const response = await fetch(`${buildBackendUrl('/ai-insights')}?${params}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch PI AI cards: ${response.statusText}`);
@@ -741,7 +750,7 @@ export class ApiService {
 
   // PI AI Card detail
   async getPIAICardDetail(id: string): Promise<any> {
-    const url = `${buildBackendUrl('/pi-ai-cards')}/${id}`;
+    const url = `${buildBackendUrl('/ai-insights')}/${id}`;
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch PI AI card detail: ${response.statusText}`);
