@@ -29,14 +29,6 @@ export default function MobileControlsPanel({
     <div className="md:hidden border-t border-gray-200 bg-gradient-to-b from-white to-gray-50 pl-3 pr-3 pt-2 pb-2 space-y-2 -mt-[1px] overflow-visible">
       {/* Filters */}
       <div className="flex flex-col gap-2">
-        {/* PI Filter - shown first for PI views */}
-        {(activeNavItem === 'pi-dashboard' || activeNavItem === 'team-ai-insights' || activeNavItem === 'upload-transcripts') && (
-          <PIFilter 
-            selectedPI={filters.selectedPI}
-            onPIChange={filters.onPIChange}
-          />
-        )}
-        
         {/* Team/Group Filter */}
         {(activeNavItem === 'team-ai-insights' || activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (
           <TreeSelect 
@@ -46,13 +38,21 @@ export default function MobileControlsPanel({
           />
         )}
         
-        {/* Insight Category Filter */}
+        {/* Insight Category Filter (Focus) */}
         {(activeNavItem === 'team-ai-insights') && (
           <InsightCategoryFilter
             selectedCategories={filters.selectedCategories || []}
             onCategoriesChange={filters.onCategoriesChange || (() => {})}
             settingsLoading={filters.settingsLoading}
             hasSavedSettings={filters.hasSavedSettings}
+          />
+        )}
+        
+        {/* PI Filter - shown last, after Focus (Category Filter) */}
+        {(activeNavItem === 'pi-dashboard' || activeNavItem === 'team-ai-insights' || activeNavItem === 'upload-transcripts') && (
+          <PIFilter 
+            selectedPI={filters.selectedPI}
+            onPIChange={filters.onPIChange}
           />
         )}
       </div>

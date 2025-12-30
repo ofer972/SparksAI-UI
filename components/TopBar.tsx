@@ -110,20 +110,20 @@ export default function TopBar({
                                 activeNavItem === 'pi-dashboard' ||
                                 activeNavItem === 'upload-transcripts';
 
-    // Add PI filter badge if selected AND applicable to current view
-    if (filters.selectedPI && showPIFilter) {
-      badges.push({
-        label: 'PI',
-        value: filters.selectedPI,
-      });
-    }
-
     // Add Team/Group filter badge if selected AND applicable to current view
     if (filters.selectedTreeValue && filters.selectedTreeLabel && showTeamGroupFilter) {
       const type = filters.selectedTreeValue.startsWith('group:') ? 'Group' : 'Team';
       badges.push({
         label: type,
         value: filters.selectedTreeLabel,
+      });
+    }
+
+    // Add PI filter badge if selected AND applicable to current view (shown last, after Team/Group)
+    if (filters.selectedPI && showPIFilter) {
+      badges.push({
+        label: 'PI',
+        value: filters.selectedPI,
       });
     }
 

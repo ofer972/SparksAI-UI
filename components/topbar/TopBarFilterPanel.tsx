@@ -45,21 +45,6 @@ export default function TopBarFilterPanel({
   return (
     <div className="border-b border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50 py-3 animate-fadeIn">
       <div className="flex flex-wrap items-center gap-4 px-4">
-        {/* PI Filter */}
-        {showPIFilter && (
-          <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 w-full md:w-auto">
-            <label className="text-sm font-semibold text-gray-700 whitespace-nowrap">
-              PI:
-            </label>
-            <div className="w-full md:min-w-[200px] md:max-w-[300px]">
-              <PIFilter 
-                selectedPI={filters.selectedPI}
-                onPIChange={filters.onPIChange}
-              />
-            </div>
-          </div>
-        )}
-        
         {/* Team/Group Filter */}
         {showTeamGroupFilter && (
           <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 w-full md:w-auto">
@@ -76,7 +61,7 @@ export default function TopBarFilterPanel({
           </div>
         )}
 
-        {/* Category Filter - for team-ai-insights view */}
+        {/* Category Filter - for team-ai-insights view (Focus) */}
         {showCategoryFilter && (
           <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 w-full md:w-auto">
             <div className="w-full md:w-auto">
@@ -85,6 +70,21 @@ export default function TopBarFilterPanel({
                 onCategoriesChange={filters.onCategoriesChange || (() => {})}
                 settingsLoading={filters.settingsLoading}
                 hasSavedSettings={filters.hasSavedSettings}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* PI Filter - shown last, after Focus (Category Filter) */}
+        {showPIFilter && (
+          <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 w-full md:w-auto">
+            <label className="text-sm font-semibold text-gray-700 whitespace-nowrap">
+              PI:
+            </label>
+            <div className="w-full md:min-w-[200px] md:max-w-[300px]">
+              <PIFilter 
+                selectedPI={filters.selectedPI}
+                onPIChange={filters.onPIChange}
               />
             </div>
           </div>
