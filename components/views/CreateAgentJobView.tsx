@@ -141,32 +141,15 @@ export default function CreateAgentJobView() {
 
     setLoading(prev => ({ ...prev, [insightType.id]: true }));
     try {
-      let response;
       // Use insight type name (job_type) instead of ID
       const jobType = insightType.name || insightType.insight_type || 'Unknown';
       
-      if (insightType.requirePI && insightType.requireTeam) {
-        response = await apiService.createPIJobForTeam(
-          jobType,
-          selectedPI[insightType.id],
-          selectedTeam[insightType.id]
-        );
-      } else if (insightType.requireTeam) {
-        response = await apiService.createTeamJob(
-          jobType,
-          selectedTeam[insightType.id]
-        );
-      } else if (insightType.requirePI) {
-        response = await apiService.createPIJob(
-          jobType,
-          selectedPI[insightType.id]
-        );
-      } else if (insightType.requireGroup) {
-        response = await apiService.createGroupJob(
-          jobType,
-          selectedGroup[insightType.id]
-        );
-      }
+      const response = await apiService.createAgentJob(
+        jobType,
+        selectedTeam[insightType.id] || undefined,
+        selectedPI[insightType.id] || undefined,
+        selectedGroup[insightType.id] || undefined
+      );
 
       if (response?.success) {
         // Build toast message with agent name, PI, team, and group if they exist

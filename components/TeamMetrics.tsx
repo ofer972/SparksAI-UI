@@ -124,8 +124,7 @@ const DaysLeftCard = ({ id, daysLeft, daysInSprint, tooltip, className = "", act
 }) => {
   const formatDaysLeft = (days: number | undefined): string => {
     if (days === undefined || days === null) return "N/A";
-    if (days === 1) return "Last day";
-    return `${days} days left`;
+    return `${days}`;
   };
 
   const calculateProgress = (): number => {
@@ -159,9 +158,14 @@ const DaysLeftCard = ({ id, daysLeft, daysInSprint, tooltip, className = "", act
         </div>
       </div>
       
-      {/* Days Left Text (formatted) - at bottom like other labels */}
-      <div className="text-xs text-gray-700 mt-auto font-semibold">
+      {/* Days Left Value (number) - displayed as the main value */}
+      <div className="text-lg font-bold text-gray-800 mb-1">
         {formatDaysLeft(daysLeft)}
+      </div>
+      
+      {/* Days Left Label */}
+      <div className="text-xs text-gray-700 mt-auto font-semibold">
+        days left in Sprint
       </div>
       
       {/* Tooltip */}
@@ -311,7 +315,7 @@ export default function TeamMetrics({ teamName, isGroup }: TeamMetricsProps) {
           id="velocity"
           icon="📈"
           value={sprintMetrics?.velocity?.toString() || "0"}
-          label="Avg Velocity"
+          label="Avg Sprint Velocity"
           tooltip="Average velocity in the last five closed sprints"
           isLeftmost={true}
           status={sprintMetrics?.velocity_status}
@@ -326,7 +330,7 @@ export default function TeamMetrics({ teamName, isGroup }: TeamMetricsProps) {
           id="cycleTime"
           icon="⏱️"
           value={sprintMetrics?.cycle_time ? `${sprintMetrics.cycle_time.toFixed(1)}d` : "0d"}
-          label="Avg Cycle Time"
+          label="Avg Story/Task Cycle Time"
           tooltip="Average story cycle time in the last five sprints"
           status={sprintMetrics?.cycle_time_status}
           trendData={sprintMetrics?.trend_data}
@@ -354,7 +358,7 @@ export default function TeamMetrics({ teamName, isGroup }: TeamMetricsProps) {
           id="wip"
           icon="🔄"
           value={completionRate?.in_progress_issues?.toString() || "0"}
-          label="Work in Progress"
+          label="Sprint Work in Progress"
           tooltip="Number of issues in progress in the current active sprint"
           status={completionRate?.in_progress_issues_status}
           activeTooltip={activeTooltip}
@@ -366,7 +370,7 @@ export default function TeamMetrics({ teamName, isGroup }: TeamMetricsProps) {
           id="completion"
           icon="🎯"
           value={completionRate?.percent_completed ? `${Math.round(completionRate.percent_completed)}%` : "0%"}
-          label="Completion"
+          label="Sprint Completion"
           tooltip="Completed issues (%) in the current active sprint"
           status={completionRate?.percent_completed_status}
           activeTooltip={activeTooltip}

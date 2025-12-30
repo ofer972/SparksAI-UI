@@ -245,7 +245,7 @@ export default function PIMetrics({ piName }: PIMetricsProps) {
       cardId: 'outboundDependencies',
       title: (
         <>
-          <span className="font-bold">Outbound</span> Dependencies
+          <span className="font-bold">PI Outbound</span> Dependencies
         </>
       ),
       tooltip: metrics?.dependencies?.outbound && metrics.dependencies.outbound.length > 0
@@ -259,7 +259,7 @@ export default function PIMetrics({ piName }: PIMetricsProps) {
       cardId: 'inboundDependencies',
       title: (
         <>
-          <span className="font-bold">Inbound</span> Dependencies
+          <span className="font-bold">PI Inbound</span> Dependencies
         </>
       ),
       tooltip: metrics?.dependencies?.inbound && metrics.dependencies.inbound.length > 0

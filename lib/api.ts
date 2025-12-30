@@ -7,7 +7,6 @@ import {
   TeamsResponse,
   PIsResponse,
   AICardsResponse,
-  RecommendationsResponse,
   SprintMetrics,
   CompletionRate,
   ClosedSprint,
@@ -516,44 +515,32 @@ export class ApiService {
     return result.data;
   }
 
-  // Recommendations API
-  async getRecommendations(teamName: string): Promise<RecommendationsResponse> {
-    const params = new URLSearchParams({
-      team_name: teamName,
-    });
-
-    const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.recommendations.getTop)}?${params}`);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch recommendations: ${response.statusText}`);
-    }
-
-    const result: ApiResponse<RecommendationsResponse> = await response.json();
-    return result.data;
-  }
-
   // PI AI Cards API
-  async getPIAICards(piName: string): Promise<AICardsResponse> {
+  async getAICardsWithRecommendations(
+    piName: string,
+    teamName?: string,
+    isGroup?: boolean,
+    categories?: string[]
+  ): Promise<AICardsResponse> {
     const params = new URLSearchParams({
-      insight_type: 'pi',
       pi: piName,
     });
 
-    const response = await fetch(`${buildBackendUrl('/ai-insights/getTopCards')}?${params}`);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch PI AI cards: ${response.statusText}`);
+    // Add team or group parameter if provided
+    if (teamName) {
+      if (isGroup) {
+        params.append('group_name', teamName);
+      } else {
+        params.append('team_name', teamName);
+      }
     }
 
-    const result: ApiResponse<AICardsResponse> = await response.json();
-    return result.data;
-  }
-
-  async getPIAICardsWithRecommendations(piName: string): Promise<AICardsResponse> {
-    const params = new URLSearchParams({
-      insight_type: 'pi',
-      pi: piName,
-    });
+    // Add category parameters if provided
+    if (categories && categories.length > 0) {
+      categories.forEach(cat => {
+        params.append('category', cat);
+      });
+    }
 
     const response = await fetch(`${buildBackendUrl('/ai-insights/getTopCardsWithRecommendations')}?${params}`);
     
@@ -562,22 +549,6 @@ export class ApiService {
     }
 
     const result: ApiResponse<AICardsResponse> = await response.json();
-    return result.data;
-  }
-
-  // PI Recommendations API
-  async getPIRecommendations(piName: string): Promise<RecommendationsResponse> {
-    const params = new URLSearchParams({
-      pi: piName,
-    });
-
-    const response = await fetch(`${buildBackendUrl('/recommendations/getPITop')}?${params}`);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch PI recommendations: ${response.statusText}`);
-    }
-
-    const result: ApiResponse<RecommendationsResponse> = await response.json();
     return result.data;
   }
 
@@ -725,44 +696,6 @@ export class ApiService {
     return [];
   }
 
-  // PI AI Cards API (list)
-  async getPIAICardsList(): Promise<any[]> {
-    const params = new URLSearchParams({
-      insight_type: 'pi',
-    });
-    const response = await fetch(`${buildBackendUrl('/ai-insights')}?${params}`);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch PI AI cards: ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    if (result.success && result.data && Array.isArray(result.data.cards)) {
-      return result.data.cards;
-    }
-    if (result.success && Array.isArray(result.data)) {
-      return result.data;
-    }
-    if (Array.isArray(result)) {
-      return result;
-    }
-    return [];
-  }
-
-  // PI AI Card detail
-  async getPIAICardDetail(id: string): Promise<any> {
-    const url = `${buildBackendUrl('/ai-insights')}/${id}`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch PI AI card detail: ${response.statusText}`);
-    }
-    const result: ApiResponse<any> = await response.json();
-    if (result.success && result.data) {
-      return result.data.card || result.data;
-    }
-    return result.data;
-  }
-
   async getTeamAICardDetail(id: string): Promise<any> {
     // Use the unified /ai-insights/{id} endpoint
     const url = `${buildBackendUrl('/ai-insights')}/${id}`;
@@ -848,21 +781,23 @@ export class ApiService {
     };
   }
 
-  // Create Team Agent Job (legacy method name for backward compatibility)
-  async createTeamAgentJob(jobType: string, teamName: string): Promise<any> {
-    return this.createTeamJob(jobType, teamName);
-  }
-
-  // Create Team Job (new method name matching Reports project)
-  async createTeamJob(jobType: string, teamName: string): Promise<CreateJobResponse> {
-    const response = await fetch(buildBackendUrl(API_CONFIG.endpoints.generalData.createTeamJob), {
+  // Create Agent Job (unified endpoint)
+  async createAgentJob(
+    jobType: string,
+    teamName?: string,
+    pi?: string,
+    groupName?: string
+  ): Promise<CreateJobResponse> {
+    const response = await fetch(buildBackendUrl('/agent-jobs/create'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         job_type: jobType,
-        team_name: teamName,
+        team_name: teamName || null,
+        pi: pi || null,
+        group_name: groupName || null,
       }),
     });
 
@@ -883,106 +818,6 @@ export class ApiService {
     return response.json();
   }
 
-  // Create PI Agent Job (legacy method name for backward compatibility)
-  async createPiAgentJob(jobType: string, pi: string): Promise<any> {
-    return this.createPIJob(jobType, pi);
-  }
-
-  // Create PI Job (new method name matching Reports project)
-  async createPIJob(jobType: string, pi: string): Promise<CreateJobResponse> {
-    const response = await fetch(buildBackendUrl(API_CONFIG.endpoints.generalData.createPiJob), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        job_type: jobType,
-        pi: pi,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      try {
-        const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.message || errorJson.error || errorMessage;
-      } catch {
-        if (errorText && errorText.length < 200) {
-          errorMessage = errorText;
-        }
-      }
-      throw new Error(errorMessage);
-    }
-
-    return response.json();
-  }
-
-  // Create PI Job for Team (legacy method name for backward compatibility)
-  async createPiJobForTeam(jobType: string, pi: string, teamName: string): Promise<any> {
-    return this.createPIJobForTeam(jobType, pi, teamName);
-  }
-
-  // Create PI Job for Team (new method name matching Reports project)
-  async createPIJobForTeam(jobType: string, pi: string, teamName: string): Promise<CreateJobResponse> {
-    const response = await fetch(buildBackendUrl(API_CONFIG.endpoints.generalData.createPiJobForTeam), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        job_type: jobType,
-        pi: pi,
-        team_name: teamName,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      try {
-        const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.message || errorJson.error || errorMessage;
-      } catch {
-        if (errorText && errorText.length < 200) {
-          errorMessage = errorText;
-        }
-      }
-      throw new Error(errorMessage);
-    }
-
-    return response.json();
-  }
-
-  // Create Group Job
-  async createGroupJob(jobType: string, groupName: string): Promise<CreateJobResponse> {
-    const response = await fetch(buildBackendUrl('/agent-jobs/create-group-job'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        job_type: jobType,
-        group_name: groupName,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      try {
-        const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.message || errorJson.error || errorMessage;
-      } catch {
-        if (errorText && errorText.length < 200) {
-          errorMessage = errorText;
-        }
-      }
-      throw new Error(errorMessage);
-    }
-
-    return response.json();
-  }
 
   // Upload Team Transcript
   async uploadTeamTranscript(

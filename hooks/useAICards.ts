@@ -10,14 +10,15 @@ interface UseAICardsReturn {
 }
 
 /**
- * Custom hook for fetching AI cards data for a specific team with recommendations.
+ * Custom hook for fetching AI cards data with recommendations.
  * 
- * @param teamName - The name of the team to fetch AI cards for
+ * @param piName - Optional PI name to filter by
+ * @param teamName - Optional team name to filter by
  * @param categories - Optional category filters array
  * @param isGroup - Optional boolean indicating if the teamName is a group (true) or a team (false)
  * @returns Object containing cards data, loading state, error state, and refetch function
  */
-export function useAICards(teamName?: string, categories?: string[], isGroup?: boolean): UseAICardsReturn {
+export function useAICards(piName?: string, teamName?: string, categories?: string[], isGroup?: boolean): UseAICardsReturn {
   const [cards, setCards] = useState<AICard[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,23 +27,28 @@ export function useAICards(teamName?: string, categories?: string[], isGroup?: b
   const categoriesKey = useMemo(() => JSON.stringify(categories || []), [categories]);
 
   const fetchCards = useCallback(async () => {
-    console.log('[useAICards] fetchCards called with teamName:', teamName, 'categories:', categories, 'isGroup:', isGroup);
+    console.log('[useAICards] fetchCards called with piName:', piName, 'teamName:', teamName, 'categories:', categories, 'isGroup:', isGroup);
     
-    if (!teamName || teamName.trim() === '') {
-      console.log('[useAICards] No team name, skipping fetch');
+    if ((!piName || piName.trim() === '') && (!teamName || teamName.trim() === '')) {
+      console.log('[useAICards] No PI or team name, skipping fetch');
       setCards([]);
       setLoading(false);
       return;
     }
 
     try {
-      console.log('[useAICards] Fetching cards for team:', teamName, 'categories:', categories, 'isGroup:', isGroup);
+      console.log('[useAICards] Fetching cards for piName:', piName, 'teamName:', teamName, 'categories:', categories, 'isGroup:', isGroup);
       setLoading(true);
       setError(null);
       const apiService = new ApiService();
-      // Use the new endpoint with recommendations, pass categories and isGroup if provided
-      const response = await apiService.getTeamAICardsWithRecommendations(teamName, categories, isGroup);
-      console.log('[useAICards] Received cards for team:', teamName, 'count:', response.ai_cards?.length || 0);
+      // Use the unified endpoint with recommendations, pass piName, teamName, categories and isGroup
+      const response = await apiService.getAICardsWithRecommendations(
+        piName || '',  // Use piName if provided, otherwise empty string
+        teamName,
+        isGroup,
+        categories
+      );
+      console.log('[useAICards] Received cards, count:', response.ai_cards?.length || 0);
       setCards(response.ai_cards || []);
     } catch (err) {
       console.error('[useAICards] Error fetching AI cards:', err);
@@ -51,7 +57,7 @@ export function useAICards(teamName?: string, categories?: string[], isGroup?: b
     } finally {
       setLoading(false);
     }
-  }, [teamName, categoriesKey, categories, isGroup]);
+  }, [piName, teamName, categoriesKey, categories, isGroup]);
 
   useEffect(() => {
     fetchCards();

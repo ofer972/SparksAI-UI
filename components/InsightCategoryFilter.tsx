@@ -195,7 +195,7 @@ export default function InsightCategoryFilter({
   return (
     <div className={`relative z-40 ${className}`} ref={dropdownRef}>
       <div className="flex flex-col md:flex-row md:items-center gap-1">
-        <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Today:</span>
+        <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Focus:</span>
         <div className="relative w-full md:w-auto">
           <button
             ref={buttonRef}

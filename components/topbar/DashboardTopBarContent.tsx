@@ -3,7 +3,7 @@
 import React from 'react';
 import DashboardAIMenu from '@/components/DashboardAIMenu';
 
-type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-quarter' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings';
+type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings';
 
 interface FilterBadge {
   label: string;

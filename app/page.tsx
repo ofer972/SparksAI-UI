@@ -15,7 +15,6 @@ import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 import { usePageSettings } from '@/hooks/usePageSettings';
 import TeamAIInsightsView from '@/components/views/TeamAIInsightsView';
 import TeamDashboardView from '@/components/views/TeamDashboardView';
-import PIAIInsightsView from '@/components/views/PIAIInsightsView';
 import SystemSettingsView from '@/components/views/SystemSettingsView';
 import CreateAgentJobView from '@/components/views/CreateAgentJobView';
 import UploadTranscriptsView from '@/components/views/UploadTranscriptsView';
@@ -32,7 +31,6 @@ export default function Home() {
   
   // Page settings hooks for insights pages
   const teamInsightSettings = usePageSettings('team-insight');
-  const piInsightSettings = usePageSettings('pi-insight');
   
   const [authChecked, setAuthChecked] = useState(false);
   const [pendingRestore, setPendingRestore] = useState<{dashboard: string, filters: any} | null>(null);
@@ -129,7 +127,7 @@ export default function Home() {
     }
   };
 
-  type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-quarter' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings';
+  type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings';
   const [activeNavItem, setActiveNavItem] = useState<NavItemId>('team-ai-insights');
   const prevActiveNavItemRef = useRef<NavItemId>(activeNavItem);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -140,7 +138,7 @@ export default function Home() {
     if (activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') {
       return dashboardSettingsState.hasChanges;
     }
-    if (activeNavItem === 'team-ai-insights' || activeNavItem === 'pi-quarter') {
+    if (activeNavItem === 'team-ai-insights') {
       return insightSettingsState.hasChanges;
     }
     return false;
@@ -174,8 +172,6 @@ export default function Home() {
         await new Promise(resolve => setTimeout(resolve, 500));
       } else if (activeNavItem === 'team-ai-insights') {
         await teamInsightSettings.saveSettings();
-      } else if (activeNavItem === 'pi-quarter') {
-        await piInsightSettings.saveSettings();
       }
       
       // Navigate to pending item
@@ -245,15 +241,11 @@ export default function Home() {
   });
   
   const [teamInsightsFilters, setTeamInsightsFilters] = useState({
+    selectedPI: '',
     selectedTeam: '',
     selectedTreeValue: null as string | null,
     selectedTreeLabel: '',
     selectedTreeType: 'team' as 'group' | 'team',
-    selectedCategories: [] as string[],
-  });
-  
-  const [piQuarterFilters, setPiQuarterFilters] = useState({
-    selectedPI: '',
     selectedCategories: [] as string[],
   });
   
@@ -488,26 +480,15 @@ export default function Home() {
     if (!teamInsightSettings.isLoading && activeNavItem === 'team-ai-insights') {
       teamInsightSettings.updateCurrentState({
         topBarFilters: {
+          selectedPI: teamInsightsFilters.selectedPI,
           selectedTeam: teamInsightsFilters.selectedTeam,
           selectedTreeType: teamInsightsFilters.selectedTreeType,
         },
         selectedCategories: teamInsightsFilters.selectedCategories,
       });
     }
-  }, [teamInsightsFilters.selectedTeam, teamInsightsFilters.selectedTreeType, teamInsightsFilters.selectedCategories, activeNavItem, teamInsightSettings.isLoading]);
+  }, [teamInsightsFilters.selectedPI, teamInsightsFilters.selectedTeam, teamInsightsFilters.selectedTreeType, teamInsightsFilters.selectedCategories, activeNavItem, teamInsightSettings.isLoading]);
 
-  // Track PI insight settings changes
-  useEffect(() => {
-    if (!piInsightSettings.isLoading && activeNavItem === 'pi-quarter') {
-      piInsightSettings.updateCurrentState({
-        topBarFilters: {
-          selectedPI: piQuarterFilters.selectedPI,
-          selectedTeam,
-          selectedTreeType,
-        },
-      });
-    }
-  }, [piQuarterFilters.selectedPI, selectedTeam, selectedTreeType, activeNavItem, piInsightSettings.isLoading]);
 
   // Update insight settings state based on active page
   useEffect(() => {
@@ -517,21 +498,12 @@ export default function Home() {
         isSaving: teamInsightSettings.isSaving,
         error: teamInsightSettings.error,
       });
-    } else if (activeNavItem === 'pi-quarter') {
-      setInsightSettingsState({
-        hasChanges: piInsightSettings.hasChanges,
-        isSaving: piInsightSettings.isSaving,
-        error: piInsightSettings.error,
-      });
     }
   }, [
     activeNavItem,
     teamInsightSettings.hasChanges,
     teamInsightSettings.isSaving,
     teamInsightSettings.error,
-    piInsightSettings.hasChanges,
-    piInsightSettings.isSaving,
-    piInsightSettings.error,
   ]);
 
   // Handle insight settings save
@@ -539,8 +511,6 @@ export default function Home() {
     try {
       if (activeNavItem === 'team-ai-insights') {
         await teamInsightSettings.saveSettings();
-      } else if (activeNavItem === 'pi-quarter') {
-        await piInsightSettings.saveSettings();
       }
       setMessage({ type: 'success', text: 'Insight settings saved successfully' });
       setTimeout(() => setMessage(null), 3000);
@@ -554,10 +524,6 @@ export default function Home() {
   const [teamInsightsReady, setTeamInsightsReady] = useState(false);
   const teamInsightsReadyRef = useRef(false);
   
-  // Track if we're loading PI insights for the first time
-  const [piInsightsReady, setPiInsightsReady] = useState(false);
-  const piInsightsReadyRef = useRef(false);
-
   // Clear state when navigating TO team-ai-insights
   useEffect(() => {
     if (activeNavItem === 'team-ai-insights') {
@@ -601,6 +567,16 @@ export default function Home() {
         const saved = teamInsightSettings.savedState;
         
         if (saved.topBarFilters) {
+          // Restore PI if saved
+          if (saved.topBarFilters.selectedPI) {
+            setTeamInsightsFilters(prev => ({
+              ...prev,
+              selectedPI: saved.topBarFilters.selectedPI || '',
+            }));
+            setSelectedPI(saved.topBarFilters.selectedPI || '');
+            console.log('[App] Restored saved PI:', saved.topBarFilters.selectedPI);
+          }
+          
           const teamName = saved.topBarFilters.selectedTeam;
           const treeType = saved.topBarFilters.selectedTreeType;
           
@@ -632,13 +608,14 @@ export default function Home() {
             }
             
             // Update teamInsightsFilters state
-            setTeamInsightsFilters({
+            setTeamInsightsFilters(prev => ({
+              ...prev,
               selectedTeam: teamName,
               selectedTreeValue: treeValue,
               selectedTreeLabel: teamName,
               selectedTreeType: treeType || 'team',
               selectedCategories: saved.selectedCategories || [],
-            });
+            }));
             console.log('[App] Updated teamInsightsFilters:', { teamName, treeValue, treeType });
           }
           
@@ -666,92 +643,11 @@ export default function Home() {
     }
   }, [activeNavItem, teamInsightSettings.isLoading, teamInsightSettings.savedState, groups, teams]);
 
-  // Clear state when navigating TO pi-quarter
-  useEffect(() => {
-    if (activeNavItem === 'pi-quarter') {
-      console.log('[App] Navigating to pi-quarter, clearing state...');
-      
-      // Mark as not ready IMMEDIATELY using ref (synchronous)
-      piInsightsReadyRef.current = false;
-      setPiInsightsReady(false);
-      
-      // Clear legacy state immediately when navigating to pi-quarter
-      setSelectedPI('');
-      setSelectedTeam('');
-      setSelectedTreeValue(null);
-      setSelectedTreeLabel('');
-      setSelectedTreeType('team');
-      setSelectedCategories([]);
-      
-      // Clear piQuarterFilters state
-      setPiQuarterFilters({
-        selectedPI: '',
-      });
-    } else {
-      // Reset when leaving pi-quarter
-      piInsightsReadyRef.current = false;
-      setPiInsightsReady(false);
-    }
-  }, [activeNavItem]);
-
-  // Load saved PI insight settings after clearing
-  useEffect(() => {
-    if (activeNavItem === 'pi-quarter' && !piInsightSettings.isLoading) {
-      if (piInsightSettings.savedState) {
-        console.log('[App] Loading saved PI insight settings:', piInsightSettings.savedState);
-        const saved = piInsightSettings.savedState;
-        
-        if (saved.topBarFilters) {
-          if (saved.topBarFilters.selectedPI) {
-            console.log('[App] PI Insight: Setting selectedPI to:', saved.topBarFilters.selectedPI);
-            setSelectedPI(saved.topBarFilters.selectedPI);
-            // Update piQuarterFilters state
-            setPiQuarterFilters({ selectedPI: saved.topBarFilters.selectedPI });
-          }
-          
-          const teamName = saved.topBarFilters.selectedTeam;
-          const treeType = saved.topBarFilters.selectedTreeType;
-          
-          if (teamName && (groups.length > 0 || teams.length > 0)) {
-            console.log('[App] PI Insight: Setting selectedTeam to:', teamName);
-            setSelectedTeam(teamName);
-            setSelectedTreeLabel(teamName);
-            
-            // Find and set the tree value from the team/group name
-            if (treeType === 'group') {
-              const group = groups.find(g => g.group_name === teamName);
-              if (group) setSelectedTreeValue(`group:${group.group_key}`);
-            } else {
-              const team = teams.find(t => t.team_name === teamName);
-              if (team) setSelectedTreeValue(`team:${team.team_key}`);
-            }
-          }
-          
-          if (treeType) setSelectedTreeType(treeType);
-        }
-        
-        // Restore saved categories if they exist
-        if (saved.selectedCategories !== undefined) {
-          console.log('[App] Restoring saved PI categories:', saved.selectedCategories);
-          setSelectedCategories(saved.selectedCategories);
-        }
-      } else {
-        console.log('[App] No saved PI insight settings found');
-      }
-      
-      // Mark as ready after settings are loaded (or if no settings exist)
-      piInsightsReadyRef.current = true;
-      setPiInsightsReady(true);
-      console.log('[App] PI insights ready!');
-    }
-  }, [activeNavItem, piInsightSettings.isLoading, piInsightSettings.savedState, groups, teams]);
-
   const apiService = new ApiService();
 
   const navigationItems = [
-    { id: 'team-ai-insights', label: 'Team AI Insights', icon: '💡' },
+    { id: 'team-ai-insights', label: 'AI Insights', icon: '💡' },
     { id: 'team-dashboard', label: 'Team Dashboard', icon: '📊' },
-    { id: 'pi-quarter', label: 'PI AI Insights', icon: '🎯' },
     { id: 'pi-dashboard', label: 'PI Dashboard', icon: '📈' },
     { id: 'settings', label: 'System Settings', icon: '⚙️' },
     { id: 'general-data', label: 'View General Data', icon: '📁' },
@@ -886,8 +782,7 @@ export default function Home() {
     {
       title: 'Insights',
       items: [
-        { id: 'team-ai-insights', label: 'Team AI Insights', icon: <IconLightbulb /> },
-        { id: 'pi-quarter', label: 'PI AI Insights', icon: <IconTarget /> },
+        { id: 'team-ai-insights', label: 'AI Insights', icon: <IconLightbulb /> },
       ],
     },
     {
@@ -942,9 +837,8 @@ export default function Home() {
 
   // Map sidebar items to browser tab titles (no spaces around '-')
   const titles: Record<string, string> = {
-    'team-ai-insights': 'SparksAI-Team AI Insights',
+    'team-ai-insights': 'SparksAI-AI Insights',
     'team-dashboard': 'SparksAI-Team Dashboard',
-    'pi-quarter': 'SparksAI-PI AI Insights',
     'pi-dashboard': 'SparksAI-PI Dashboard',
     'settings': 'SparksAI-System Settings',
     'general-data': 'SparksAI-General Data',
@@ -998,6 +892,7 @@ export default function Home() {
       case 'team-ai-insights':
         return (
           <TeamAIInsightsView
+            selectedPI={teamInsightsFilters.selectedPI}
             selectedTeam={teamInsightsFilters.selectedTeam}
             selectedTreeType={teamInsightsFilters.selectedTreeType}
             selectedCategories={teamInsightsFilters.selectedCategories}
@@ -1011,14 +906,6 @@ export default function Home() {
             selectedTeam={teamDashboardFilters.selectedTeam}
             selectedTreeType={teamDashboardFilters.selectedTreeType}
             selectedTreeValue={teamDashboardFilters.selectedTreeValue}
-          />
-        );
-      case 'pi-quarter':
-        return (
-          <PIAIInsightsView
-            selectedPI={piQuarterFilters.selectedPI}
-            isLoading={piInsightSettings.isLoading}
-            isReady={piInsightsReadyRef.current && piInsightsReady}
           />
         );
       case 'pi-dashboard':
@@ -1259,7 +1146,7 @@ export default function Home() {
               onSave: handleSaveDashboardSettings,
               onReset: () => setShowResetConfirm(true),
             } : undefined}
-            insightSettings={(['team-ai-insights', 'pi-quarter'].includes(activeNavItem)) ? {
+            insightSettings={(activeNavItem === 'team-ai-insights') ? {
               hasChanges: insightSettingsState.hasChanges,
               isSaving: insightSettingsState.isSaving,
               onSave: handleSaveInsightSettings,
@@ -1268,7 +1155,7 @@ export default function Home() {
               selectedPI: (() => {
                 switch (activeNavItem) {
                   case 'pi-dashboard': return piDashboardFilters.selectedPI;
-                  case 'pi-quarter': return piQuarterFilters.selectedPI;
+                  case 'team-ai-insights': return teamInsightsFilters.selectedPI;
                   case 'upload-transcripts': return uploadTranscriptsFilters.selectedPI;
                   default: return selectedPI;
                 }
@@ -1278,8 +1165,8 @@ export default function Home() {
                   case 'pi-dashboard':
                     setPiDashboardFilters(prev => ({ ...prev, selectedPI: pi }));
                     break;
-                  case 'pi-quarter':
-                    setPiQuarterFilters({ selectedPI: pi });
+                  case 'team-ai-insights':
+                    setTeamInsightsFilters(prev => ({ ...prev, selectedPI: pi }));
                     setSelectedPI(pi); // Update legacy state for views that need it
                     break;
                   case 'upload-transcripts':
@@ -1355,26 +1242,18 @@ export default function Home() {
               },
               selectedCategories: activeNavItem === 'team-ai-insights' 
                 ? teamInsightsFilters.selectedCategories 
-                : activeNavItem === 'pi-quarter'
-                ? piQuarterFilters.selectedCategories
                 : selectedCategories,
               onCategoriesChange: (categories: string[]) => {
                 if (activeNavItem === 'team-ai-insights') {
                   setTeamInsightsFilters(prev => ({ ...prev, selectedCategories: categories }));
-                } else if (activeNavItem === 'pi-quarter') {
-                  setPiQuarterFilters(prev => ({ ...prev, selectedCategories: categories }));
                 }
                 setSelectedCategories(categories);
               },
               settingsLoading: activeNavItem === 'team-ai-insights' 
                 ? teamInsightSettings.isLoading 
-                : activeNavItem === 'pi-quarter'
-                ? piInsightSettings.isLoading
                 : false,
               hasSavedSettings: activeNavItem === 'team-ai-insights'
                 ? !!teamInsightSettings.savedState
-                : activeNavItem === 'pi-quarter'
-                ? !!piInsightSettings.savedState
                 : false,
             }}
             aiChat={(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') ? {
@@ -1401,8 +1280,8 @@ export default function Home() {
           {renderMainContent()}
         </div>
 
-        {/* Team Metrics Bottom Bar - only for team-ai-insights on desktop */}
-        {activeNavItem === 'team-ai-insights' && (
+        {/* Team Metrics Bottom Bar - only for team-ai-insights on desktop when team/group is selected */}
+        {activeNavItem === 'team-ai-insights' && teamInsightsFilters.selectedTeam && (
           <div className="hidden md:flex flex-shrink-0 border-t border-gray-200 bg-white relative z-30" style={{ zoom: 0.90, overflow: 'visible' }}>
             <div className="px-3 md:px-4 py-2 md:py-2.5 w-full" style={{ overflow: 'visible' }}>
               <TeamMetrics teamName={teamInsightsFilters.selectedTeam} isGroup={teamInsightsFilters.selectedTreeType === 'group'} />
@@ -1410,14 +1289,17 @@ export default function Home() {
           </div>
         )}
 
-        {/* PI Metrics Bottom Bar - only for pi-quarter on desktop */}
-        {activeNavItem === 'pi-quarter' && (
+        {/* PI Metrics Bottom Bar - only for team-ai-insights on desktop when PI is selected and no team/group is selected */}
+        {activeNavItem === 'team-ai-insights' && 
+         !teamInsightsFilters.selectedTeam && 
+         teamInsightsFilters.selectedPI && (
           <div className="hidden md:flex flex-shrink-0 border-t border-gray-200 bg-white relative z-30" style={{ zoom: 0.90, overflow: 'visible' }}>
             <div className="px-3 md:px-4 py-2 md:py-2.5 w-full" style={{ overflow: 'visible' }}>
-              <PIMetrics piName={piQuarterFilters.selectedPI} />
+              <PIMetrics piName={teamInsightsFilters.selectedPI} />
             </div>
           </div>
         )}
+
           </div>
         </div>
       </div>

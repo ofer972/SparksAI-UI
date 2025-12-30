@@ -5,7 +5,7 @@ import PIFilter from '@/components/PIFilter';
 import TreeSelect from '@/components/TreeSelect';
 import InsightCategoryFilter from '@/components/InsightCategoryFilter';
 
-type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-quarter' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings';
+type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings';
 
 interface TopBarFilterPanelProps {
   activeNavItem: NavItemId;
@@ -27,7 +27,7 @@ export default function TopBarFilterPanel({
 }: TopBarFilterPanelProps) {
   // Determine which filters to show based on active nav item
   const showPIFilter = activeNavItem === 'pi-dashboard' || 
-                       activeNavItem === 'pi-quarter' || 
+                       activeNavItem === 'team-ai-insights' ||
                        activeNavItem === 'upload-transcripts';
   
   const showTeamGroupFilter = activeNavItem === 'team-dashboard' || 
@@ -35,7 +35,7 @@ export default function TopBarFilterPanel({
                               activeNavItem === 'pi-dashboard' ||
                               activeNavItem === 'upload-transcripts';
 
-  const showCategoryFilter = activeNavItem === 'team-ai-insights' || activeNavItem === 'pi-quarter';
+  const showCategoryFilter = activeNavItem === 'team-ai-insights';
 
   // If no filters to show, don't render anything
   if (!showPIFilter && !showTeamGroupFilter && !showCategoryFilter) {
@@ -76,7 +76,7 @@ export default function TopBarFilterPanel({
           </div>
         )}
 
-        {/* Category Filter - for team-ai-insights and pi-quarter views */}
+        {/* Category Filter - for team-ai-insights view */}
         {showCategoryFilter && (
           <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 w-full md:w-auto">
             <div className="w-full md:w-auto">

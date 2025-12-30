@@ -51,11 +51,6 @@ export const API_CONFIG = {
       getCards: '/team-ai-cards/getCards',
     },
     
-    // Recommendations endpoints
-    recommendations: {
-      getTop: '/recommendations/getTeamTop',
-    },
-    
     // Team Metrics endpoints
     teamMetrics: {
       avgSprintMetrics: '/team-metrics/get-avg-sprint-metrics',
@@ -238,13 +233,6 @@ export interface Recommendation {
   priority: string;
   status: string;
   information_json?: string;
-}
-
-export interface RecommendationsResponse {
-  recommendations: Recommendation[];
-  count: number;
-  team_name: string;
-  limit: number;
 }
 
 export interface TrendDataPoint {

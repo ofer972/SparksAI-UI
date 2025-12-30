@@ -5,7 +5,7 @@ import PIFilter from '@/components/PIFilter';
 import TreeSelect from '@/components/TreeSelect';
 import InsightCategoryFilter from '@/components/InsightCategoryFilter';
 
-type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-quarter' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings';
+type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings';
 
 interface MobileControlsPanelProps {
   activeNavItem: NavItemId;
@@ -30,7 +30,7 @@ export default function MobileControlsPanel({
       {/* Filters */}
       <div className="flex flex-col gap-2">
         {/* PI Filter - shown first for PI views */}
-        {(activeNavItem === 'pi-quarter' || activeNavItem === 'pi-dashboard' || activeNavItem === 'upload-transcripts') && (
+        {(activeNavItem === 'pi-dashboard' || activeNavItem === 'team-ai-insights' || activeNavItem === 'upload-transcripts') && (
           <PIFilter 
             selectedPI={filters.selectedPI}
             onPIChange={filters.onPIChange}
@@ -47,7 +47,7 @@ export default function MobileControlsPanel({
         )}
         
         {/* Insight Category Filter */}
-        {(activeNavItem === 'team-ai-insights' || activeNavItem === 'pi-quarter') && (
+        {(activeNavItem === 'team-ai-insights') && (
           <InsightCategoryFilter
             selectedCategories={filters.selectedCategories || []}
             onCategoriesChange={filters.onCategoriesChange || (() => {})}

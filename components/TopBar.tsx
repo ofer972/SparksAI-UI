@@ -5,7 +5,7 @@ import DashboardTopBarContent from './topbar/DashboardTopBarContent';
 import InsightsTopBarContent from './topbar/InsightsTopBarContent';
 import TopBarFilterPanel from './topbar/TopBarFilterPanel';
 
-type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-quarter' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings';
+type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings';
 
 interface FilterBadge {
   label: string;
@@ -26,7 +26,7 @@ interface TopBarProps {
     onReset: () => void;
   };
   
-  // Insights-specific (team-ai-insights, pi-quarter)
+  // Insights-specific (team-ai-insights)
   insightSettings?: {
     hasChanges: boolean;
     isSaving: boolean;
@@ -91,7 +91,6 @@ export default function TopBar({
       'team-dashboard',
       'pi-dashboard',
       'team-ai-insights',
-      'pi-quarter',
       'upload-transcripts',
     ];
     return viewsWithFilters.includes(activeNavItem);
@@ -103,7 +102,7 @@ export default function TopBar({
 
     // Determine which filters are applicable for current view
     const showPIFilter = activeNavItem === 'pi-dashboard' || 
-                         activeNavItem === 'pi-quarter' || 
+                         activeNavItem === 'team-ai-insights' ||
                          activeNavItem === 'upload-transcripts';
     
     const showTeamGroupFilter = activeNavItem === 'team-dashboard' || 
