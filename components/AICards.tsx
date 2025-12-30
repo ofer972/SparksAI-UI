@@ -22,9 +22,16 @@ export default function AICards({ piName, teamName, categories, isGroup }: AICar
     return null;
   }
 
+  // Map cards to ensure they have insight_type (required by AICardsInsight)
+  const mappedCards = cards.map(card => ({
+    ...card,
+    insight_type: (card as any).insight_type || card.card_type || '',
+    card_type: card.card_type, // Keep for backward compatibility
+  }));
+
   return (
     <AICardsInsight
-      cards={cards}
+      cards={mappedCards}
       loading={loading}
       error={error}
       onRefetch={refetch}

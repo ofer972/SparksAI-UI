@@ -542,6 +542,7 @@ export default function Home() {
       
       // Clear teamInsightsFilters state
       setTeamInsightsFilters({
+        selectedPI: '',
         selectedTeam: '',
         selectedTreeValue: null,
         selectedTreeLabel: '',
@@ -567,18 +568,19 @@ export default function Home() {
         const saved = teamInsightSettings.savedState;
         
         if (saved.topBarFilters) {
+          const topBarFilters = saved.topBarFilters;
           // Restore PI if saved
-          if (saved.topBarFilters.selectedPI) {
+          if (topBarFilters.selectedPI) {
             setTeamInsightsFilters(prev => ({
               ...prev,
-              selectedPI: saved.topBarFilters.selectedPI || '',
+              selectedPI: topBarFilters.selectedPI || '',
             }));
-            setSelectedPI(saved.topBarFilters.selectedPI || '');
-            console.log('[App] Restored saved PI:', saved.topBarFilters.selectedPI);
+            setSelectedPI(topBarFilters.selectedPI || '');
+            console.log('[App] Restored saved PI:', topBarFilters.selectedPI);
           }
           
-          const teamName = saved.topBarFilters.selectedTeam;
-          const treeType = saved.topBarFilters.selectedTreeType;
+          const teamName = topBarFilters.selectedTeam;
+          const treeType = topBarFilters.selectedTreeType;
           
           if (teamName) {
             console.log('[App] Team Insight: Setting selectedTeam to:', teamName);
