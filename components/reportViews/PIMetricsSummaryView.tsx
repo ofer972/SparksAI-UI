@@ -121,12 +121,9 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
   const idealRemaining = statusRecord?.ideal_remaining ?? undefined;
 
   const piName = (filters.pi as string) ?? '';
-  const project = (filters.project as string) ?? '';
-  const issueType = (filters.issue_type as string) ?? 'Epic';
   const { groups, teams } = useTeamsGroups();
   const teamName = (filters.team_name as string) ?? '';
   const isGroup = (filters.isGroup as boolean) ?? false;
-  const gracePeriod = Number(filters.plan_grace_period ?? 5);
   const isDashboard = componentProps?.isDashboard;
   
   console.log('[PIMetricsSummary] Current filters:', { piName, teamName, isGroup });
@@ -199,20 +196,6 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
         </select>
       </ReportFilterField>
 
-      <ReportFilterField label="Issue Type">
-        <select
-          value={issueType}
-          onChange={(event) => handleFilterChange('issue_type', event.target.value || 'Epic')}
-          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[120px]"
-        >
-          {availableIssueTypes.map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </select>
-      </ReportFilterField>
-
       <ReportFilterField label="Team/Group">
         <TeamGroupFilter
           value={teamValue}
@@ -235,26 +218,6 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
           allowClear={true}
         />
       </ReportFilterField>
-
-      <ReportFilterField label="Grace Period (days)">
-        <input
-          type="number"
-          min={0}
-          value={gracePeriod}
-          onChange={(event) => handleFilterChange('plan_grace_period', Number(event.target.value) || 5)}
-          className="w-24 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-        />
-      </ReportFilterField>
-
-      <ReportFilterField label="Project">
-        <input
-          type="text"
-          value={project}
-          onChange={(event) => handleFilterChange('project', event.target.value.trim() || null)}
-          placeholder="Project key"
-          className="w-40 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-        />
-      </ReportFilterField>
     </ReportFiltersRow>
   );
 
@@ -271,15 +234,6 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
       });
     }
     
-    if (issueType) {
-      badges.push({
-        label: 'Issue Type',
-        value: issueType,
-        filterKey: 'issue_type',
-        isPinned: pinnedFilters.includes('issue_type'),
-      });
-    }
-    
     if (teamName) {
       badges.push({
         label: isGroup ? 'Group' : 'Team',
@@ -289,26 +243,8 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
       });
     }
     
-    if (gracePeriod !== 5) {
-      badges.push({
-        label: 'Grace Period',
-        value: `${gracePeriod} days`,
-        filterKey: 'plan_grace_period',
-        isPinned: pinnedFilters.includes('plan_grace_period'),
-      });
-    }
-    
-    if (project) {
-      badges.push({
-        label: 'Project',
-        value: project,
-        filterKey: 'project',
-        isPinned: pinnedFilters.includes('project'),
-      });
-    }
-    
     return badges;
-  }, [piName, issueType, teamName, isGroup, gracePeriod, project, pinnedFilters]);
+  }, [piName, teamName, isGroup, pinnedFilters]);
 
   return (
     <ReportCard 
