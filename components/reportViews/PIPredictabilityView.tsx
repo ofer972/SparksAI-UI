@@ -365,7 +365,7 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
           type="text"
           value={filterText}
           onChange={(event) => setFilterText(event.target.value)}
-          placeholder="Filter by PI, team, or predictability..."
+          placeholder="Filter by PI, team..."
           className="w-56 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
       </ReportFilterField>

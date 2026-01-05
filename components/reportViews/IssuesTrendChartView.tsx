@@ -332,7 +332,8 @@ const IssuesTrendChartView: React.FC<IssuesTrendChartViewProps> = ({
               issue_type: e.target.value,
             }))
           }
-          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+          disabled
+          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-gray-100 cursor-not-allowed"
         >
           {availableIssueTypes.map((type) => (
             <option key={type.value} value={type.value}>
