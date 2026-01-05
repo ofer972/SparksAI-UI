@@ -36,6 +36,77 @@ export default function MeetingsManagementTab() {
     loadData();
   }, []);
 
+  const mergeMeetings = (watched: MeetingName[], currentTeams: Team[], currentGroups: Group[]): MeetingName[] => {
+    const placeholders: MeetingName[] = [];
+    
+    // Generate for Teams
+    currentTeams.forEach(team => {
+      TEAM_TYPES.forEach(type => {
+        placeholders.push({
+          id: 0, // 0 indicates generated
+          name: `${team.team_name} - ${type}`,
+          team_name: team.team_name,
+          is_group: false,
+          type: type,
+          active: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      });
+    });
+
+    // Generate for Groups
+    currentGroups.forEach(group => {
+      GROUP_TYPES.forEach(type => {
+        placeholders.push({
+          id: 0,
+          name: `${group.group_name} - ${type}`,
+          team_name: group.group_name,
+          is_group: true,
+          type: type,
+          active: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      });
+    });
+    
+    const merged: MeetingName[] = [];
+    
+    // Map watched meetings by key for faster lookup
+    // Key: team_name + is_group + type
+    const watchedMap = new Map<string, MeetingName>();
+    watched.forEach(m => {
+        // Only use matches if team_name and type are present
+        if (m.team_name && m.type) {
+            const key = `${m.team_name}-${m.is_group}-${m.type}`;
+            watchedMap.set(key, m);
+        }
+    });
+    
+    placeholders.forEach(p => {
+        const key = `${p.team_name}-${p.is_group}-${p.type}`;
+        if (watchedMap.has(key)) {
+            merged.push(watchedMap.get(key)!);
+            watchedMap.delete(key);
+        } else {
+            merged.push(p);
+        }
+    });
+    
+    // Add remaining watched meetings (custom ones or ones that didn't match placeholders)
+    watchedMap.forEach(m => merged.push(m));
+    
+    // Also add watched meetings that didn't have team_name/type (legacy or raw entries)
+    watched.forEach(m => {
+         if (!m.team_name || !m.type) {
+             merged.push(m);
+         }
+    });
+
+    return merged;
+  };
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -45,9 +116,16 @@ export default function MeetingsManagementTab() {
         apiService.getAllTeams(),
         apiService.getAllGroups(),
       ]);
-      setMeetings(meetingsData);
-      setTeams(teamsData.teams || []);
-      setGroups(groupsData.groups || []);
+      
+      const loadedTeams = teamsData.teams || [];
+      const loadedGroups = groupsData.groups || [];
+      
+      setTeams(loadedTeams);
+      setGroups(loadedGroups);
+      
+      // Merge watched meetings with placeholders
+      const merged = mergeMeetings(meetingsData, loadedTeams, loadedGroups);
+      setMeetings(merged);
     } catch (err) {
       console.error('Error loading data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load data');
@@ -59,7 +137,9 @@ export default function MeetingsManagementTab() {
   const refreshMeetings = async () => {
     try {
       const meetingsData = await getMeetingNames(true);
-      setMeetings(meetingsData);
+      // Re-merge with existing teams/groups
+      const merged = mergeMeetings(meetingsData, teams, groups);
+      setMeetings(merged);
     } catch (err) {
       console.error('Failed to refresh meetings:', err);
     }
@@ -110,6 +190,12 @@ export default function MeetingsManagementTab() {
 
   const saveEditing = async (meeting: MeetingName) => {
     if (editingMeetingKey !== getMeetingKey(meeting)) return;
+
+    // Validate organizer email
+    if (!editOrganizerEmail || !editOrganizerEmail.trim()) {
+      alert('Organizer email is required to watch a meeting.');
+      return;
+    }
 
     // Check if this is a generated meeting (no ID or ID = 0) or a database override
     const isGenerated = !meeting.id || meeting.id === 0;

@@ -21,6 +21,7 @@ interface AICard {
   insight_type: string; // Changed from card_type to insight_type
   card_type?: string; // Keep for backward compatibility
   priority: string;
+  priority_color?: string; // Color from backend: "Red", "Yellow", "Green", "Gray"
   source: string;
   description: string;
   full_information: string;
@@ -39,44 +40,81 @@ interface AICardsInsightProps {
   config: EntityConfig<any>;
   chatType?: string; // Chat type for AI chat: "Team_insights" or "PI_insights"
   piName?: string; // PI name for PI insights context
+  fullWidth?: boolean; // If true, cards take full width (single column) instead of 2-column grid
+  showHeader?: boolean; // If false, don't show individual card headers (for use inside ReportCard)
 }
 
+// Map priority_color from backend to Tailwind CSS classes
+const getPriorityColorFromColor = (priorityColor?: string) => {
+  switch (priorityColor) {
+    case 'Red':
+      return {
+        headerGradient: 'bg-gradient-to-r from-red-50 to-red-100',
+        border: 'border-red-200',
+        iconBorder: 'border-red-400',
+        text: 'text-red-700'
+      };
+    case 'Yellow':
+      return {
+        headerGradient: 'bg-gradient-to-r from-yellow-50 to-yellow-100',
+        border: 'border-yellow-200',
+        iconBorder: 'border-yellow-400',
+        text: 'text-yellow-700'
+      };
+    case 'Green':
+      return {
+        headerGradient: 'bg-gradient-to-r from-green-50 to-green-100',
+        border: 'border-green-200',
+        iconBorder: 'border-green-400',
+        text: 'text-green-700'
+      };
+    default: // Gray or undefined
+      return {
+        headerGradient: 'bg-gradient-to-r from-gray-50 to-gray-100',
+        border: 'border-gray-200',
+        iconBorder: 'border-gray-400',
+        text: 'text-gray-700'
+      };
+  }
+};
+
+// Fallback function for when priority_color is not available (uses priority string)
 const getPriorityColor = (priority: string) => {
   switch (priority.toLowerCase()) {
     case 'critical':
       return {
-        border: 'border-red-600',
-        frame: 'border-red-600',
-        bg: 'bg-red-600',
+        headerGradient: 'bg-gradient-to-r from-red-50 to-red-100',
+        border: 'border-red-200',
+        iconBorder: 'border-red-400',
         text: 'text-red-700'
       };
     case 'high':
       return {
-        border: 'border-yellow-500',
-        frame: 'border-yellow-500',
-        bg: 'bg-yellow-500',
-        text: 'text-yellow-600'
+        headerGradient: 'bg-gradient-to-r from-yellow-50 to-yellow-100',
+        border: 'border-yellow-200',
+        iconBorder: 'border-yellow-400',
+        text: 'text-yellow-700'
       };
     case 'medium':
       return {
-        border: 'border-orange-500',
-        frame: 'border-orange-500',
-        bg: 'bg-orange-500',
-        text: 'text-orange-600'
+        headerGradient: 'bg-gradient-to-r from-orange-50 to-orange-100',
+        border: 'border-orange-200',
+        iconBorder: 'border-orange-400',
+        text: 'text-orange-700'
       };
     case 'low':
       return {
-        border: 'border-green-500',
-        frame: 'border-green-500',
-        bg: 'bg-green-500',
-        text: 'text-green-600'
+        headerGradient: 'bg-gradient-to-r from-green-50 to-green-100',
+        border: 'border-green-200',
+        iconBorder: 'border-green-400',
+        text: 'text-green-700'
       };
     default:
       return {
-        border: 'border-gray-500',
-        frame: 'border-gray-500',
-        bg: 'bg-gray-500',
-        text: 'text-gray-600'
+        headerGradient: 'bg-gradient-to-r from-gray-50 to-gray-100',
+        border: 'border-gray-200',
+        iconBorder: 'border-gray-400',
+        text: 'text-gray-700'
       };
   }
 };
@@ -93,6 +131,20 @@ const getPriorityIcon = (priority: string) => {
       return '🟢'; // Green circle
     default:
       return '⚪'; // White circle
+  }
+};
+
+// Get icon based on priority_color for header title
+const getPriorityColorIcon = (priorityColor?: string) => {
+  switch (priorityColor) {
+    case 'Red':
+      return '🚨'; // Red alarm/siren icon
+    case 'Yellow':
+      return '⚠️'; // Yellow warning triangle
+    case 'Green':
+      return '✅'; // Green checkmark
+    default: // Gray or undefined
+      return 'ℹ️'; // Info icon
   }
 };
 
@@ -222,8 +274,12 @@ export default function AICardsInsight({
   emptyMessage = "No AI insights available at this time.",
   config,
   chatType = "Team_insights", // Default to Team_insights
-  piName // Optional PI name for PI insights
+  piName, // Optional PI name for PI insights
+  fullWidth = false, // Default to 2-column grid
+  showHeader = true // Default to showing headers
 }: AICardsInsightProps) {
+  // Removed view mode toggle - always use grid view
+
   // State for detail modal
   const [selectedCard, setSelectedCard] = useState<AICard | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -233,8 +289,7 @@ export default function AICardsInsight({
   const [selectedInsightId, setSelectedInsightId] = useState<number | null>(null);
   const [selectedTeamName, setSelectedTeamName] = useState<string>('');
 
-  // State for expanded recommendations per card (cardId -> boolean)
-  const [expandedRecommendations, setExpandedRecommendations] = useState<Record<number, boolean>>({});
+  // Removed collapsed recommendations state - recommendations are always visible now
   
   // State for expanded "read more" tooltips per recommendation (recId -> boolean)
   const [expandedRecTooltips, setExpandedRecTooltips] = useState<Record<number, boolean>>({});
@@ -441,16 +496,7 @@ export default function AICardsInsight({
     };
   }, [fullInfoTooltipOpen, calculateTooltipPosition]);
 
-  const toggleRecommendation = (cardId: number) => {
-    setExpandedRecommendations(prev => ({
-      ...prev,
-      [cardId]: !prev[cardId]
-    }));
-  };
-
-  const isRecommendationExpanded = (cardId: number) => {
-    return expandedRecommendations[cardId] || false;
-  };
+  
   
   const toggleRecTooltip = (recId: number, buttonElement?: HTMLButtonElement) => {
     // Store button position when opening
@@ -498,11 +544,15 @@ export default function AICardsInsight({
     setIsDetailModalOpen(false);
     setSelectedCard(null);
   };
+  
+  // Removed toggleCardCollapse and isCardCollapsed - no longer needed for grid-only view
+  
+  // Removed toggleRecommendationsCollapse and isRecommendationsCollapsed - recommendations are always visible
 
   if (loading) {
     return (
       <div className="h-full">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full h-full auto-rows-fr">
+        <div className={`grid ${fullWidth ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'} gap-3 w-full h-full auto-rows-fr`}>
           {[...Array(3)].map((_, i) => (
             <div key={i} className="bg-white rounded-lg shadow-lg p-4 border-l-4 border-gray-200 animate-pulse min-h-[300px]">
               <div className="h-4 bg-gray-200 rounded mb-2"></div>
@@ -589,12 +639,19 @@ export default function AICardsInsight({
   const cardsToDisplay = sortedCards.slice(0, maxCardsToShow);
   const emptySlots = Math.max(0, maxCardsToShow - cardsToDisplay.length);
 
+  // Removed renderTwoColumnCard function - only using grid view now
+
   return (
-    <div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full auto-rows-auto">
+    <div className="mb-0">
+      {/* Grid View */}
+      <div className={`grid ${fullWidth ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'} ${showHeader ? 'gap-3' : 'gap-0'} w-full items-start`}>
         {cardsToDisplay.map((card) => {
-            const colors = getPriorityColor(card.priority);
+            // Use priority_color if available, otherwise fall back to priority string
+            const colors = card.priority_color 
+              ? getPriorityColorFromColor(card.priority_color)
+              : getPriorityColor(card.priority);
             const priorityIcon = getPriorityIcon(card.priority);
+            const priorityColorIcon = getPriorityColorIcon(card.priority_color);
             
             // Use consistent text size for all cards
             const dynamicTextSize = 'text-sm';
@@ -602,90 +659,89 @@ export default function AICardsInsight({
             const dynamicLineHeight = 'leading-normal';
             
             return (
-              <div key={card.id} className={`bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 pt-1 pb-4 px-4 border-2 ${colors.border} ${colors.frame} relative overflow-hidden flex flex-col h-full`}>
-                {/* Decorative colored strip at top */}
-                <div className={`absolute top-0 left-0 right-0 h-1 ${colors.border.replace('border-', 'bg-')}`}></div>
-                
-                {/* Header Section */}
-                <div className="flex items-center justify-between mb-2 mt-1">
-                  <div className="flex items-center space-x-2 flex-1 min-w-0">
-                    <div className="relative group flex-shrink-0">
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center border-2 border-blue-200 shadow-sm">
-                        <span className="text-lg cursor-pointer">
-                          {priorityIcon}
-                        </span>
+              <div key={card.id} className={`${showHeader ? 'bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-gray-200' : 'bg-white'} overflow-hidden flex flex-col group/card`}>
+                {/* Report Header - Only show if showHeader is true */}
+                {showHeader && (
+                <div className={`flex items-center justify-between px-4 py-2 ${colors.headerGradient} border-b-2 border-gray-200 rounded-t-xl`}>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <span className="text-lg flex-shrink-0" aria-label={`Priority: ${card.priority_color || card.priority}`}>
+                      {priorityColorIcon}
+                    </span>
+                    <h2 className="text-base font-bold text-gray-800 truncate">{card.card_name}</h2>
+                    {/* Date badge - only show when showHeader is true (not on custom dashboard) */}
+                    {card.updated_at && (
+                      <div className="px-2 py-0.5 bg-white border-2 border-gray-300 rounded-md text-[10px] text-gray-600 font-medium flex-shrink-0 shadow-sm">
+                        {(() => {
+                          const date = new Date(card.updated_at);
+                          const dateOptions: Intl.DateTimeFormatOptions = { 
+                            month: 'short', 
+                            day: 'numeric' 
+                          };
+                          const timeOptions: Intl.DateTimeFormatOptions = {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false
+                          };
+                          const formattedDate = date.toLocaleDateString('en-US', dateOptions);
+                          const formattedTime = date.toLocaleTimeString('en-US', timeOptions);
+                          return `${formattedDate} ${formattedTime}`;
+                        })()}
                       </div>
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10 shadow-lg">
-                        {card.priority}
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <h3 className="text-sm font-bold text-gray-800 truncate">{card.card_name}</h3>
-                      {/* Date Badge after title */}
-                      {card.updated_at && (
-                        <div className="px-2 py-0.5 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border border-blue-200 rounded-lg text-[10px] text-indigo-700 font-semibold shadow-sm flex-shrink-0">
-                          {(() => {
-                            const date = new Date(card.updated_at);
-                            const dateOptions: Intl.DateTimeFormatOptions = { 
-                              month: 'short', 
-                              day: 'numeric' 
-                            };
-                            const timeOptions: Intl.DateTimeFormatOptions = {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: false
-                            };
-                            const formattedDate = date.toLocaleDateString('en-US', dateOptions);
-                            const formattedTime = date.toLocaleTimeString('en-US', timeOptions);
-                            return `${formattedDate} ${formattedTime}`;
-                          })()}
-                        </div>
-                      )}
-                      {/* Eye icon for Full Information tooltip */}
-                      {card.full_information && (
-                        <button
-                          ref={(el) => {
-                            if (el) {
-                              eyeIconRefs.current[card.id] = el;
-                            }
-                          }}
-                          onClick={(e) => toggleFullInfoTooltip(card.id, e)}
-                          data-tooltip-button={`full-info-${card.id}`}
-                          className="flex-shrink-0 p-1 text-gray-500 hover:text-blue-600 transition-colors rounded hover:bg-blue-50"
-                          title="View full information"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                        </button>
-                      )}
-                      <button 
-                        onClick={() => handleViewCard(card)}
-                        className="text-[10px] text-blue-600 hover:text-blue-800 cursor-pointer bg-transparent border-none p-0 font-semibold hover:underline transition-colors flex-shrink-0"
-                        title="Click to view details"
-                      >
+                    )}
+                    {/* ID badge - only show when showHeader is true (not on custom dashboard) */}
+                    {card.id && (
+                      <div className="px-2 py-0.5 bg-white border-2 border-gray-300 rounded-md text-[10px] text-gray-600 font-medium flex-shrink-0 shadow-sm">
                         ID: {card.id}
+                      </div>
+                    )}
+                    {/* Eye icon for Full Information tooltip - moved to left after ID */}
+                    {card.full_information && (
+                      <button
+                        ref={(el) => {
+                          if (el) {
+                            eyeIconRefs.current[card.id] = el;
+                          }
+                        }}
+                        onClick={(e) => toggleFullInfoTooltip(card.id, e)}
+                        data-tooltip-button={`full-info-${card.id}`}
+                        className="inline-flex items-center justify-center h-7 w-7 rounded-lg bg-white border-2 border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 shadow-sm flex-shrink-0"
+                        aria-label="View full information"
+                        title="View full information"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
                       </button>
-                    </div>
-                  </div>
-                  <div className="flex items-center flex-shrink-0 ml-2">
-                    {/* AI Chat Button at top right */}
-                    <button 
-                      onClick={() => handleAIChat(card)}
-                      className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-2 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md hover:shadow-lg border border-blue-500 flex items-center gap-1 flex-shrink-0 whitespace-nowrap"
-                    >
-                      <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                      </svg>
-                      AI Chat
-                    </button>
+                    )}
+                        </div>
+                  <div className="flex items-center justify-end flex-shrink-0">
+                    {/* AI Chat Button - replaced icon with text button */}
+                    {chatType && (
+                      <button 
+                        onClick={() => handleAIChat(card)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 shadow-sm"
+                        aria-label="AI Chat for this card"
+                        title="Open AI chat for this card"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
+                          <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
+                        </svg>
+                        AI Chat
+                      </button>
+                    )}
                   </div>
                 </div>
+                )}
                 
-                <div className="flex-1 overflow-auto">
-                  <div className={`${dynamicTextSize} ${dynamicLineHeight} text-gray-600 max-w-none w-full break-words whitespace-normal hyphens-auto transition-all duration-200`}>
+                <div className={`flex-1 flex flex-col min-h-0 bg-white`}>
+                  {/* Insights Title Header */}
+                  <div className="flex-shrink-0 flex items-center gap-2 px-5 pt-4 pb-0 bg-white">
+                    <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wide">Insights</h4>
+                  </div>
+                  <div className={`flex-1 overflow-auto ${showHeader ? 'px-5 pt-0 pb-2' : 'px-4 pt-0 pb-2 mt-3'}`}>
+                    <div className={`${dynamicTextSize} ${dynamicLineHeight} text-gray-700 max-w-none w-full break-words whitespace-normal hyphens-auto`}>
                     {(() => {
                       // Handle Sprint Goal cards with JSON table format
                       const cardType = card.insight_type || card.card_type; // Support both field names
@@ -710,12 +766,12 @@ export default function AICardsInsight({
                           }
                           
                           return (
-                            <div className="w-full overflow-auto rounded-lg border border-gray-300 mb-4" style={{ maxHeight: '150px' }}>
+                            <div className="w-full overflow-auto rounded-lg border-2 border-gray-200 mb-4 shadow-sm bg-gradient-to-r from-gray-50 to-blue-50" style={{ maxHeight: '150px' }}>
                               <table 
                                 className="text-sm border-collapse w-full" 
                                 style={{ tableLayout: 'auto' }}
                               >
-                                <thead className="sticky top-0 bg-gray-50 z-10">
+                                <thead className="sticky top-0 bg-gradient-to-r from-blue-50 to-indigo-50 z-10">
                                   <tr>
                                     {columns.map((column) => {
                                       const isGoalColumn = column.toLowerCase().includes('goal');
@@ -723,7 +779,7 @@ export default function AICardsInsight({
                                       return (
                                         <th 
                                           key={column} 
-                                          className={`border-b-2 border-gray-300 px-2 py-1.5 bg-gray-100 font-semibold text-gray-700 text-sm ${
+                                          className={`border-b-2 border-gray-200 px-3 py-2 font-semibold text-gray-800 text-xs ${
                                             isGoalColumn || isAlertColumn ? 'text-left' : 'text-center'
                                           }`}
                                           style={isGoalColumn ? { minWidth: '200px' } : { minWidth: '80px' }}
@@ -734,9 +790,9 @@ export default function AICardsInsight({
                                     })}
                                   </tr>
                                 </thead>
-                                <tbody>
+                                <tbody className="bg-white">
                                   {sprintGoalItems.map((item, index) => (
-                                    <tr key={index} className="hover:bg-gray-50">
+                                    <tr key={index} className="hover:bg-blue-50/50 transition-colors border-b border-gray-200">
                                       {columns.map((column) => {
                                         const isGoalColumn = column.toLowerCase().includes('goal');
                                         const isAlertColumn = column.toLowerCase() === 'alert';
@@ -744,7 +800,7 @@ export default function AICardsInsight({
                                         return (
                                           <td 
                                             key={column} 
-                                            className={`border-b border-gray-200 px-2 py-1.5 text-sm text-gray-600 ${
+                                            className={`px-3 py-2 text-xs text-gray-700 ${
                                               isGoalColumn || isAlertColumn
                                                 ? 'whitespace-normal break-words text-left' 
                                                 : 'text-center'
@@ -775,28 +831,28 @@ export default function AICardsInsight({
                           <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={{
-                              p: ({ children }) => <p className={`${dynamicTextSize} ${dynamicLineHeight} text-gray-600 mb-1`}>{children}</p>,
-                              strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                              p: ({ children }) => <p className={`${dynamicTextSize} ${dynamicLineHeight} text-gray-700 mb-1`}>{children}</p>,
+                              strong: ({ children }) => <strong className="font-semibold text-gray-800">{children}</strong>,
                               em: ({ children }) => <em className="italic">{children}</em>,
-                              ul: ({ children }) => <ul className={`list-disc list-inside ${dynamicTextSize} text-gray-600`}>{children}</ul>,
-                              ol: ({ children }) => <ol className={`list-decimal list-inside ${dynamicTextSize} text-gray-600`}>{children}</ol>,
-                              li: ({ children }) => <li className={`${dynamicTextSize} text-gray-600`}>{children}</li>,
-                              code: ({ children }) => <code className={`bg-gray-100 px-1 rounded ${dynamicTextSize}`}>{children}</code>,
-                              pre: ({ children }) => <pre className={`bg-gray-100 p-2 rounded ${dynamicTextSize} overflow-x-auto`}>{children}</pre>,
+                              ul: ({ children }) => <ul className={`list-disc list-inside ${dynamicTextSize} text-gray-700`}>{children}</ul>,
+                              ol: ({ children }) => <ol className={`list-decimal list-inside ${dynamicTextSize} text-gray-700`}>{children}</ol>,
+                              li: ({ children }) => <li className={`${dynamicTextSize} text-gray-700`}>{children}</li>,
+                              code: ({ children }) => <code className={`bg-gray-100 px-1 rounded text-blue-700 ${dynamicTextSize}`}>{children}</code>,
+                              pre: ({ children }) => <pre className={`bg-gray-100 p-2 rounded ${dynamicTextSize} overflow-x-auto border-2 border-gray-200`}>{children}</pre>,
                               h1: ({ children }) => <h1 className={`${dynamicTextSize} font-bold text-gray-800 mb-1`}>{children}</h1>,
                               h2: ({ children }) => <h2 className={`${dynamicTextSize} font-bold text-gray-800 mb-1`}>{children}</h2>,
                               h3: ({ children }) => <h3 className={`${dynamicTextSize} font-semibold text-gray-800 mb-1`}>{children}</h3>,
-                              blockquote: ({ children }) => <blockquote className={`border-l-2 border-gray-300 pl-2 italic text-gray-600 ${dynamicTextSize}`}>{children}</blockquote>,
-                              table: ({ children }) => <table className={`w-full ${dynamicTextSize} border-collapse border border-gray-300 table-fixed h-full`}>{children}</table>,
+                              blockquote: ({ children }) => <blockquote className={`border-l-2 border-blue-400 pl-2 italic text-gray-700 ${dynamicTextSize}`}>{children}</blockquote>,
+                              table: ({ children }) => <table className={`w-full ${dynamicTextSize} border-collapse border-2 border-gray-200 table-fixed h-full`}>{children}</table>,
                               thead: ({ children }) => <thead>{children}</thead>,
                               tbody: ({ children }) => <tbody className="h-full">{children}</tbody>,
                               tr: ({ children }) => <tr>{children}</tr>,
                               th: ({ children }) => {
                                 const text = children?.toString() || '';
                                 if (text.includes('Goal') || text.includes('🎯')) {
-                                  return <th className="border border-gray-300 px-1 py-0.5 bg-gray-100 font-semibold text-left w-2/3">{children}</th>;
+                                  return <th className="border-2 border-gray-200 px-1 py-0.5 bg-gray-100 font-semibold text-left w-2/3">{children}</th>;
                                 }
-                                return <th className="border border-gray-300 px-1 py-0.5 bg-gray-100 font-semibold text-center">{children}</th>;
+                                return <th className="border-2 border-gray-200 px-1 py-0.5 bg-gray-100 font-semibold text-center">{children}</th>;
                               },
                               td: ({ children }) => {
                                 const text = children?.toString() || '';
@@ -805,11 +861,11 @@ export default function AICardsInsight({
                                 const cardType = card.insight_type || card.card_type; // Support both field names
                                 if (cardType === 'Sprint Goal') {
                                   // For sprint goal cards, ensure full text, left-aligned
-                                  return <td className="border border-gray-300 px-1 py-0.5 text-left w-2/3 whitespace-normal break-words overflow-visible">{children}</td>;
+                                  return <td className="border-2 border-gray-200 px-1 py-0.5 text-left w-2/3 whitespace-normal break-words overflow-visible">{children}</td>;
                                 }
                                 
                                 // Other card types remain center-aligned
-                                return <td className="border border-gray-300 px-1 py-0.5 text-center">{children}</td>;
+                                return <td className="border-2 border-gray-200 px-1 py-0.5 text-center">{children}</td>;
                               },
                             }}
                           >
@@ -830,15 +886,11 @@ export default function AICardsInsight({
                       
                       if (informationItems && informationItems.length > 0) {
                         return (
-                          <div className={`${dynamicSpacing} mb-4`}>
+                          <div className="space-y-0 mb-4">
                             {informationItems.map((item, index) => (
-                              <div key={index} className={`${dynamicTextSize} ${dynamicLineHeight}`}>
-                                <span className="font-bold" style={{ color: '#2563eb', fontWeight: '700' }}>
-                                  {item.header}{!item.header.endsWith(':') ? ':' : ''}
-                                </span>
-                                <span className="text-gray-600 ml-1">
-                                  {item.text}
-                                </span>
+                              <div key={index} className={`py-2.5 border-b border-gray-200 last:border-b-0 hover:bg-blue-50/50 transition-colors rounded-md px-2 -mx-2 ${index === 0 ? 'border-t-0' : ''}`}>
+                                <span className="font-semibold text-blue-800 text-sm">{item.header}:</span>
+                                <span className="text-gray-700 text-sm leading-relaxed ml-2">{item.text}</span>
                               </div>
                             ))}
                           </div>
@@ -851,28 +903,28 @@ export default function AICardsInsight({
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
                           components={{
-                            p: ({ children }) => <p className={`${dynamicTextSize} ${dynamicLineHeight} text-gray-600 mb-1`}>{children}</p>,
-                            strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                            p: ({ children }) => <p className={`${dynamicTextSize} ${dynamicLineHeight} text-gray-700 mb-1`}>{children}</p>,
+                            strong: ({ children }) => <strong className="font-semibold text-gray-800">{children}</strong>,
                             em: ({ children }) => <em className="italic">{children}</em>,
-                            ul: ({ children }) => <ul className={`list-disc list-inside ${dynamicTextSize} text-gray-600`}>{children}</ul>,
-                            ol: ({ children }) => <ol className={`list-decimal list-inside ${dynamicTextSize} text-gray-600`}>{children}</ol>,
-                            li: ({ children }) => <li className={`${dynamicTextSize} text-gray-600`}>{children}</li>,
-                            code: ({ children }) => <code className={`bg-gray-100 px-1 rounded ${dynamicTextSize}`}>{children}</code>,
-                            pre: ({ children }) => <pre className={`bg-gray-100 p-2 rounded ${dynamicTextSize} overflow-x-auto`}>{children}</pre>,
+                            ul: ({ children }) => <ul className={`list-disc list-inside ${dynamicTextSize} text-gray-700`}>{children}</ul>,
+                            ol: ({ children }) => <ol className={`list-decimal list-inside ${dynamicTextSize} text-gray-700`}>{children}</ol>,
+                            li: ({ children }) => <li className={`${dynamicTextSize} text-gray-700`}>{children}</li>,
+                            code: ({ children }) => <code className={`bg-gray-100 px-1 rounded text-blue-700 ${dynamicTextSize}`}>{children}</code>,
+                            pre: ({ children }) => <pre className={`bg-gray-100 p-2 rounded ${dynamicTextSize} overflow-x-auto border-2 border-gray-200`}>{children}</pre>,
                             h1: ({ children }) => <h1 className={`${dynamicTextSize} font-bold text-gray-800 mb-1`}>{children}</h1>,
                             h2: ({ children }) => <h2 className={`${dynamicTextSize} font-bold text-gray-800 mb-1`}>{children}</h2>,
                             h3: ({ children }) => <h3 className={`${dynamicTextSize} font-semibold text-gray-800 mb-1`}>{children}</h3>,
-                            blockquote: ({ children }) => <blockquote className={`border-l-2 border-gray-300 pl-2 italic text-gray-600 ${dynamicTextSize}`}>{children}</blockquote>,
-                            table: ({ children }) => <table className={`w-full ${dynamicTextSize} border-collapse border border-gray-300 table-fixed h-full`}>{children}</table>,
+                            blockquote: ({ children }) => <blockquote className={`border-l-2 border-blue-400 pl-2 italic text-gray-700 ${dynamicTextSize}`}>{children}</blockquote>,
+                            table: ({ children }) => <table className={`w-full ${dynamicTextSize} border-collapse border-2 border-gray-200 table-fixed h-full`}>{children}</table>,
                             thead: ({ children }) => <thead>{children}</thead>,
                             tbody: ({ children }) => <tbody className="h-full">{children}</tbody>,
                             tr: ({ children }) => <tr>{children}</tr>,
                             th: ({ children }) => {
                               const text = children?.toString() || '';
                               if (text.includes('Goal') || text.includes('🎯')) {
-                                return <th className="border border-gray-300 px-1 py-0.5 bg-gray-100 font-semibold text-left w-2/3">{children}</th>;
+                                return <th className="border-2 border-gray-200 px-1 py-0.5 bg-gray-100 font-semibold text-left w-2/3">{children}</th>;
                               }
-                              return <th className="border border-gray-300 px-1 py-0.5 bg-gray-100 font-semibold text-center">{children}</th>;
+                              return <th className="border-2 border-gray-200 px-1 py-0.5 bg-gray-100 font-semibold text-center">{children}</th>;
                             },
                             td: ({ children }) => {
                               const text = children?.toString() || '';
@@ -881,11 +933,11 @@ export default function AICardsInsight({
                               const cardType = card.insight_type || card.card_type; // Support both field names
                               if (cardType === 'Sprint Goal') {
                                 // For sprint goal cards, ensure full text, left-aligned
-                                return <td className="border border-gray-300 px-1 py-0.5 text-left w-2/3 whitespace-normal break-words overflow-visible">{children}</td>;
+                                return <td className="border-2 border-gray-200 px-1 py-0.5 text-left w-2/3 whitespace-normal break-words overflow-visible">{children}</td>;
                               }
                               
                               // Other card types remain center-aligned
-                              return <td className="border border-gray-300 px-1 py-0.5 text-center">{children}</td>;
+                              return <td className="border-2 border-gray-200 px-1 py-0.5 text-center">{children}</td>;
                             },
                           }}
                         >
@@ -900,148 +952,45 @@ export default function AICardsInsight({
                         </div>
                       );
                     })()}
+                    </div>
                   </div>
                 </div>
                 
-                {/* Recommendations Section and AI Chat Button */}
-                {card.recommendations && card.recommendations.length > 0 && (() => {
-                  const recommendationsToShow = card.recommendations;
-                  
-                  return (
-                    <div className="mt-2 pt-0.5 flex-shrink-0">
-                      <div className="flex items-center mb-1">
-                        <h4 className="text-xs font-bold text-gray-700">Recommendations</h4>
+                {/* Recommendations Section - Always visible */}
+                {card.recommendations && card.recommendations.length > 0 && (
+                  <div className="flex-1 flex flex-col min-h-0 bg-gradient-to-r from-gray-50 to-blue-50">
+                    <div className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-gray-50 to-blue-50">
+                      <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wide">Recommendations</h4>
+                      <span className="text-xs font-semibold text-blue-800 bg-white px-1.5 py-0.5 rounded-md border-2 border-blue-200 shadow-sm">{card.recommendations.length}</span>
                       </div>
-                      {/* Recommendations panel */}
-                      <div className="relative">
-                        <div className="border-2 border-gray-300 rounded-lg shadow-sm w-full p-2 overflow-hidden">
-                        <style dangerouslySetInnerHTML={{__html: `
-                          .recommendations-table-scroll {
-                            overflow-y: auto;
-                            scrollbar-width: none;
-                            -ms-overflow-style: none;
-                          }
-                          .recommendations-table-scroll::-webkit-scrollbar {
-                            display: none;
-                          }
-                          .recommendations-table-scroll:hover {
-                            scrollbar-width: thin;
-                            scrollbar-color: #94a3b8 #f7fafc;
-                          }
-                          .recommendations-table-scroll:hover::-webkit-scrollbar {
-                            display: block;
-                            width: 8px;
-                          }
-                          .recommendations-table-scroll:hover::-webkit-scrollbar-track {
-                            background: #f7fafc;
-                            border-radius: 4px;
-                          }
-                          .recommendations-table-scroll:hover::-webkit-scrollbar-thumb {
-                            background: #94a3b8;
-                            border-radius: 4px;
-                          }
-                          .recommendations-table-scroll:hover::-webkit-scrollbar-thumb:hover {
-                            background: #64748b;
-                          }
-                        `}} />
-                        <div className="recommendations-table-scroll max-h-[200px] overflow-y-auto">
-                          <div className="space-y-1">
-                            {recommendationsToShow.map((rec: Recommendation) => {
-                              const recPriorityIcon = getPriorityIcon(rec.priority);
-                              const fullText = `${rec.rational || ''}${rec.rational && rec.action_text ? ' - ' : ''}${rec.action_text || ''}`;
-                              const isTooLong = fullText.length > 50;
-                              const isTooltipOpen = isRecTooltipExpanded(rec.id);
-                              const buttonPosition = buttonPositions[rec.id];
-                              
+                    <div className="flex-1 flex flex-col min-h-0 px-5 pb-4 pt-2">
+                      <div className="flex-1 space-y-2.5 overflow-y-auto pr-1">
+                        {card.recommendations.map((rec: Recommendation, index: number) => {
                               return (
-                                <div key={rec.id} className={`flex items-center gap-2 border-b border-gray-200 py-1 last:border-b-0`}>
-                                  <div className="flex-1 min-w-0 overflow-hidden">
-                                    <div className={`${dynamicTextSize} text-gray-600 whitespace-nowrap overflow-hidden text-ellipsis`}>
-                                      {rec.rational && (
-                                        <span className="font-bold text-purple-600">
-                                          {rec.rational}
-                                        </span>
-                                      )}
-                                      {rec.rational && rec.action_text && <span className="mx-1 text-gray-400">-</span>}
-                                      {rec.action_text}
-                                    </div>
+                            <React.Fragment key={rec.id}>
+                              <div className="text-sm leading-relaxed text-gray-700">
+                                        {rec.rational && (
+                                    <span className="font-semibold text-blue-800">{rec.rational}</span>
+                                        )}
+                                  {rec.rational && rec.action_text && <span className="mx-1.5 text-gray-300">•</span>}
+                                  <span className="text-gray-700">{rec.action_text}</span>
                                   </div>
-                                  {/* "see more" button inline at the end of each recommendation */}
-                                  <button
-                                    data-tooltip-button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const panel = e.currentTarget.closest('.border-2.border-gray-300');
-                                      if (panel) {
-                                        const rect = panel.getBoundingClientRect();
-                                        toggleRecTooltip(rec.id, e.currentTarget);
-                                        // Update position to left of panel
-                                        setButtonPositions(prev => ({
-                                          ...prev,
-                                          [rec.id]: {
-                                            top: rect.bottom + window.scrollY,
-                                            left: rect.left + window.scrollX
-                                          }
-                                        }));
-                                      }
-                                    }}
-                                    className="text-blue-600 hover:text-blue-800 text-xs flex-shrink-0"
-                                    title="See more"
-                                  >
-                                    👁️
-                                  </button>
-                                  {/* Tooltip/Balloon with full text - rendered with portal */}
-                                  {isTooltipOpen && typeof window !== 'undefined' && buttonPosition && createPortal(
-                                    <div 
-                                      data-tooltip-content
-                                      className="fixed"
-                                      style={{ 
-                                        top: `${buttonPosition.top + 4}px`,
-                                        left: `${buttonPosition.left}px`,
-                                        zIndex: 10001
-                                      }}
-                                    >
-                                      <div 
-                                        className="bg-white border-2 border-blue-300 rounded-lg shadow-2xl p-4 min-w-[300px] max-w-[450px]"
-                                      >
-                                        <div className="text-sm text-gray-700 leading-relaxed whitespace-normal break-words">
-                                          {rec.rational && (
-                                            <span className="font-bold text-purple-600">
-                                              {rec.rational}
-                                            </span>
-                                          )}
-                                          {rec.rational && rec.action_text && <span className="mx-1 text-gray-400">-</span>}
-                                          {rec.action_text}
-                                        </div>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            toggleRecTooltip(rec.id);
-                                          }}
-                                          className="mt-3 text-blue-600 hover:text-blue-800 text-xs font-semibold underline"
-                                        >
-                                          Close
-                                        </button>
-                                      </div>
-                                    </div>,
-                                    document.body
-                                  )}
-                                </div>
+                              {card.recommendations && index < card.recommendations.length - 1 && (
+                                <div className="border-b border-gray-200 my-2"></div>
+                              )}
+                            </React.Fragment>
                               );
                             })}
                           </div>
                         </div>
                         </div>
-                      </div>
-                    </div>
-                  );
-                })()}
+                )}
               </div>
             );
         })}
         {/* Empty placeholder slots to maintain grid layout */}
         {Array.from({ length: emptySlots }).map((_, index) => (
-          <div key={`empty-${index}`} className="bg-white rounded-xl shadow-md border-2 border-gray-200 opacity-0 pointer-events-none h-full" aria-hidden="true">
+          <div key={`empty-${index}`} className="bg-white rounded-lg shadow-md border-2 border-gray-300 opacity-0 pointer-events-none h-full" aria-hidden="true">
           </div>
         ))}
       </div>
@@ -1084,22 +1033,22 @@ export default function AICardsInsight({
               left: `${tooltipPosition.left}px`,
             }}
           >
-            <div className="bg-white border-2 border-blue-300 rounded-lg shadow-2xl p-4" style={{ width: '500px', height: '400px', overflowY: 'auto' }}>
-              <div className="flex items-center justify-between mb-3 border-b border-gray-200 pb-2">
-                <h4 className="text-sm font-semibold text-gray-800">Full Information</h4>
+            <div className="bg-white border-2 border-gray-400 rounded shadow-2xl overflow-hidden" style={{ width: '500px', height: '400px' }}>
+              <div className="flex items-center justify-between px-4 py-3 bg-gray-100 border-b-2 border-gray-300">
+                <h4 className="text-sm font-bold text-gray-800 uppercase">Full Information</h4>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleFullInfoTooltip(card.id);
                   }}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="w-7 h-7 flex items-center justify-center bg-white border-2 border-gray-300 rounded text-gray-600 hover:text-red-600 hover:border-red-500 hover:bg-red-50 transition-all"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
-              <div className="bg-gray-50 p-3 rounded text-sm text-gray-900">
+              <div className="bg-white p-4 text-sm text-gray-900 overflow-y-auto" style={{ height: 'calc(100% - 56px)' }}>
                 <div className="prose prose-sm max-w-none">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkBreaks]}

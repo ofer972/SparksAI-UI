@@ -5,7 +5,7 @@ import PIFilter from '@/components/PIFilter';
 import TreeSelect from '@/components/TreeSelect';
 import InsightCategoryFilter from '@/components/InsightCategoryFilter';
 
-type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings';
+type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'custom-dashboards' | 'custom-dashboard-editor' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings' | 'user-settings';
 
 interface TopBarFilterPanelProps {
   activeNavItem: NavItemId;
@@ -28,12 +28,14 @@ export default function TopBarFilterPanel({
   // Determine which filters to show based on active nav item
   const showPIFilter = activeNavItem === 'pi-dashboard' || 
                        activeNavItem === 'team-ai-insights' ||
-                       activeNavItem === 'upload-transcripts';
+                       activeNavItem === 'upload-transcripts' ||
+                       activeNavItem === 'custom-dashboard-editor';
   
   const showTeamGroupFilter = activeNavItem === 'team-dashboard' || 
                               activeNavItem === 'team-ai-insights' || 
                               activeNavItem === 'pi-dashboard' ||
-                              activeNavItem === 'upload-transcripts';
+                              activeNavItem === 'upload-transcripts' ||
+                              activeNavItem === 'custom-dashboard-editor';
 
   const showCategoryFilter = activeNavItem === 'team-ai-insights';
 

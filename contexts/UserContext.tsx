@@ -1,16 +1,32 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { User } from '@/lib/config';
+import { getCurrentUser } from '@/lib/auth';
+import { 
+  getUserPreferences, 
+  updateUserPreferences, 
+  UserPreferences, 
+  UpdatePreferencesRequest 
+} from '@/lib/api';
 
 // Re-export User type for convenience
 export type { User };
+
+// Re-export preferences types
+export type { UserPreferences, UpdatePreferencesRequest };
 
 interface UserContextType {
   user: User | null;
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
+  // Preferences
+  preferences: UserPreferences | null;
+  preferencesLoading: boolean;
+  preferencesError: string | null;
+  fetchPreferences: () => Promise<void>;
+  savePreferences: (prefs: UpdatePreferencesRequest) => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -20,22 +36,120 @@ interface UserProviderProps {
 }
 
 export function UserProvider({ children }: UserProviderProps) {
-  // TODO: Remove temporary hardcoded user and restore API call to getCurrentUser
-  const [user, setUser] = useState<User | null>({
-    user_id: 'admin',
-    user_name: 'admin',
-    user_type: 'Admin',
-  });
-  const [loading, setLoading] = useState<boolean>(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refetch = async () => {
-    // TODO: Restore API call to getCurrentUser when ready
-    // No-op for now
-  };
+  // Preferences state
+  const [preferences, setPreferences] = useState<UserPreferences | null>(null);
+  const [preferencesLoading, setPreferencesLoading] = useState<boolean>(false);
+  const [preferencesError, setPreferencesError] = useState<string | null>(null);
+
+  const refetch = useCallback(async () => {
+    console.log('[UserContext] Fetching current user from JWT token');
+    setLoading(true);
+    setError(null);
+    try {
+      const currentUser = getCurrentUser();
+      console.log('[UserContext] Current user from token:', currentUser);
+      if (currentUser) {
+        // Map the token payload to User interface
+        const mappedUser = {
+          user_id: currentUser.id || '',
+          id: currentUser.id,
+          user_name: currentUser.name || currentUser.email || 'User',
+          name: currentUser.name,
+          email: currentUser.email,
+          user_type: 'User', // Default type, can be enhanced if token has role info
+        };
+        console.log('[UserContext] Setting user state:', mappedUser);
+        setUser(mappedUser);
+      } else {
+        console.log('[UserContext] No user found in JWT token');
+        setUser(null);
+        setError('No user logged in');
+      }
+    } catch (err: any) {
+      console.error('[UserContext] Failed to get current user:', err);
+      setError(err.message || 'Failed to get user');
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch user on mount
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  const fetchPreferences = useCallback(async () => {
+    if (!user?.user_id && !user?.id) {
+      console.log('[UserContext] Cannot fetch preferences - no user ID');
+      return;
+    }
+    
+    const userId = String(user.user_id || user.id);
+    console.log('[UserContext] Fetching preferences for user:', userId);
+    setPreferencesLoading(true);
+    setPreferencesError(null);
+    
+    try {
+      const prefs = await getUserPreferences(userId);
+      console.log('[UserContext] Preferences fetched:', prefs);
+      setPreferences(prefs);
+    } catch (err: any) {
+      console.error('[UserContext] Failed to fetch user preferences:', err);
+      setPreferencesError(err.message || 'Failed to fetch preferences');
+    } finally {
+      setPreferencesLoading(false);
+    }
+  }, [user]);
+
+  const savePreferences = useCallback(async (prefs: UpdatePreferencesRequest) => {
+    if (!user?.user_id && !user?.id) {
+      throw new Error('No user logged in');
+    }
+    
+    const userId = String(user.user_id || user.id);
+    setPreferencesLoading(true);
+    setPreferencesError(null);
+    
+    try {
+      const updated = await updateUserPreferences(userId, prefs);
+      setPreferences(updated);
+    } catch (err: any) {
+      console.error('Failed to update user preferences:', err);
+      setPreferencesError(err.message || 'Failed to update preferences');
+      throw err;
+    } finally {
+      setPreferencesLoading(false);
+    }
+  }, [user]);
+
+  // Fetch preferences when user changes
+  useEffect(() => {
+    console.log('[UserContext] User changed, checking if we should fetch preferences:', user);
+    if (user?.user_id || user?.id) {
+      console.log('[UserContext] User has ID, fetching preferences');
+      fetchPreferences();
+    } else {
+      console.log('[UserContext] No user ID, skipping preferences fetch');
+    }
+  }, [user, fetchPreferences]);
 
   return (
-    <UserContext.Provider value={{ user, loading, error, refetch }}>
+    <UserContext.Provider value={{ 
+      user, 
+      loading, 
+      error, 
+      refetch,
+      preferences,
+      preferencesLoading,
+      preferencesError,
+      fetchPreferences,
+      savePreferences,
+    }}>
       {children}
     </UserContext.Provider>
   );
@@ -88,4 +202,28 @@ export function useUserId(): string | number | null {
     return user.id;
   }
   return null;
+}
+
+/**
+ * Convenience hook to get user preferences
+ * 
+ * @returns Object containing preferences and related functions
+ * @throws Error if used outside of UserProvider
+ */
+export function useUserPreferences() {
+  const { 
+    preferences, 
+    preferencesLoading, 
+    preferencesError, 
+    fetchPreferences, 
+    savePreferences 
+  } = useUser();
+  
+  return {
+    preferences,
+    loading: preferencesLoading,
+    error: preferencesError,
+    refetch: fetchPreferences,
+    save: savePreferences,
+  };
 }

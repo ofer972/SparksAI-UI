@@ -22,6 +22,7 @@ export const API_CONFIG = {
     // PI endpoints
     pis: {
       getPis: '/pis/getPis',
+      getCurrentAndNext: '/pis/current-and-next',
       getPredictability: '/pis/predictability',
       getBurndown: '/pis/burndown',
       getScopeChanges: '/pis/scope-changes',
@@ -475,6 +476,8 @@ export interface ReportInstancePayload<T = any> {
   meta: Record<string, any>;
 }
 
+// Legacy LayoutRow for backward compatibility (used by other dashboards)
+// Legacy LayoutRow for backward compatibility (used by other dashboards)
 export interface LayoutRow {
   id: string;
   reportIds: string[];
@@ -484,11 +487,66 @@ export interface LayoutConfig {
   rows: LayoutRow[];
 }
 
+// Widget in a row - now stored in layout_config
+export interface DashboardWidget {
+  id: string;
+  type: 'report' | 'insight_card' | 'insight_type';
+  widget_id: string; // report_id, insight_card_id, or insight_type_id
+  filters?: Record<string, any>; // widget-specific filters (for insight_type: pi, team_name, group_name)
+}
+
+// Row in layout for custom dashboards - now contains widgets array
+export interface CustomDashboardLayoutRow {
+  id: string;
+  widgets: DashboardWidget[]; // Changed from reportIds to widgets
+}
+
+// Layout config structure for custom dashboards - now matches user_settings format
+export interface DashboardLayoutConfig {
+  layoutConfig: {
+    rows: CustomDashboardLayoutRow[];
+  };
+  pinnedFilters?: Record<string, string[]>; // widget_id -> pinned filter keys
+  reportFilters?: Record<string, Record<string, any>>; // widget_id -> filters
+  topBarFilters?: {
+    selectedPI?: string;
+    selectedTeam?: string;
+    selectedTreeValue?: string | null;
+    selectedTreeLabel?: string;
+    selectedTreeType?: 'team' | 'group';
+  };
+}
+
 export interface DashboardViewConfig {
   view: string;
   reportIds: string[];
   layout_config?: LayoutConfig;
 }
+
+// Custom Dashboard interfaces
+export interface CustomDashboard {
+  id: string;
+  user_id: string;
+  name: string;
+  description?: string;
+  layout_config?: DashboardLayoutConfig; // Now contains everything
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateDashboardRequest {
+  name: string;
+  description?: string;
+  layout_config?: DashboardLayoutConfig;
+}
+
+export interface UpdateDashboardRequest {
+  name?: string;
+  description?: string;
+  layout_config?: DashboardLayoutConfig;
+}
+
+// Removed - widgets are now managed through dashboard updates
 
 export interface InsightType {
   id: number;

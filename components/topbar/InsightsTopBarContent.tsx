@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
+import UserDropdownMenu from '../UserDropdownMenu';
 
-type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings';
+type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'custom-dashboards' | 'custom-dashboard-editor' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings' | 'user-settings';
 
 interface FilterBadge {
   label: string;
@@ -33,6 +34,7 @@ interface InsightsTopBarContentProps {
   filtersCollapsed: boolean;
   filterBadges: FilterBadge[];
   hasFilters: boolean;
+  onNavigateToSettings?: () => void;
 }
 
 export default function InsightsTopBarContent({
@@ -46,6 +48,7 @@ export default function InsightsTopBarContent({
   filtersCollapsed,
   filterBadges,
   hasFilters,
+  onNavigateToSettings,
 }: InsightsTopBarContentProps) {
   return (
     <div className="flex flex-col md:flex-row md:items-center gap-0 md:gap-4 flex-1 min-w-0 pr-3 md:px-0 md:py-2 w-full">
@@ -76,14 +79,8 @@ export default function InsightsTopBarContent({
               </button>
             )}
 
-            {/* Mobile Logout Button */}
-        <button
-          onClick={onLogout}
-          className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 text-gray-700"
-          title="Logout"
-        >
-          Logout
-        </button>
+            {/* Mobile User Menu */}
+            <UserDropdownMenu onOpenSettings={onNavigateToSettings} />
           </div>
         </div>
 
@@ -172,29 +169,8 @@ export default function InsightsTopBarContent({
           </button>
         )}
         
-        <div className="flex items-center space-x-3 text-sm text-gray-700">
-          {(() => {
-            if (!currentUser) return <span>Signed in</span>;
-            const fullName = (currentUser.name || '').trim();
-            const firstName = fullName ? fullName.split(/\s+/)[0] : (currentUser.email ? String(currentUser.email).split('@')[0] : 'Signed in');
-            const desktopLabel = currentUser.name && currentUser.email ? `${currentUser.name} (${currentUser.email})` : (currentUser.name || currentUser.email || 'Signed in');
-            return (
-              <>
-                {/* Mobile: first name only, no email */}
-                <span className="md:hidden truncate max-w-[120px]" title={fullName || ''}>{firstName}</span>
-                {/* Desktop: name (email) */}
-                <span className="hidden md:inline" title={currentUser.email || ''}>{desktopLabel}</span>
-              </>
-            );
-          })()}
-          <button
-            onClick={onLogout}
-            className="px-2 py-1 border rounded hover:bg-gray-50"
-            title="Logout"
-          >
-            Logout
-          </button>
-        </div>
+        {/* User Dropdown Menu */}
+        <UserDropdownMenu onOpenSettings={onNavigateToSettings} />
       </div>
     </div>
   );

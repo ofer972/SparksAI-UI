@@ -2,8 +2,9 @@
 
 import React from 'react';
 import DashboardAIMenu from '@/components/DashboardAIMenu';
+import UserDropdownMenu from '../UserDropdownMenu';
 
-type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings';
+type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'custom-dashboards' | 'custom-dashboard-editor' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings' | 'user-settings';
 
 interface FilterBadge {
   label: string;
@@ -38,6 +39,7 @@ interface DashboardTopBarContentProps {
   filtersCollapsed: boolean;
   filterBadges: FilterBadge[];
   hasFilters: boolean;
+  onNavigateToSettings?: () => void;
 }
 
 export default function DashboardTopBarContent({
@@ -52,6 +54,7 @@ export default function DashboardTopBarContent({
   filtersCollapsed,
   filterBadges,
   hasFilters,
+  onNavigateToSettings,
 }: DashboardTopBarContentProps) {
   return (
     <div className="flex flex-col md:flex-row md:items-center gap-0 md:gap-4 flex-1 min-w-0 pr-3 md:px-0 md:py-2 w-full">
@@ -131,14 +134,8 @@ export default function DashboardTopBarContent({
             }}
           />
           
-          {/* Mobile Logout Button */}
-          <button
-            onClick={onLogout}
-            className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 text-gray-700"
-            title="Logout"
-          >
-            Logout
-          </button>
+          {/* Mobile User Menu */}
+          <UserDropdownMenu onOpenSettings={onNavigateToSettings} />
         </div>
         </div>
 
@@ -203,29 +200,31 @@ export default function DashboardTopBarContent({
             </svg>
           </button>
           
-          {/* Save Settings Button - for dashboards */}
-          <button
-            onClick={dashboardSettings.onSave}
-            disabled={!dashboardSettings.hasChanges || dashboardSettings.isSaving}
-            className={`hidden md:inline-flex items-center justify-center h-7 w-7 rounded-lg border transition-all ${
-              dashboardSettings.hasChanges && !dashboardSettings.isSaving
-                ? 'border-blue-500 text-blue-600 hover:text-blue-700 hover:border-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer' 
-                : 'border-gray-300 text-gray-400 cursor-not-allowed'
-            }`}
-            title={dashboardSettings.isSaving ? 'Saving...' : dashboardSettings.hasChanges ? 'Save dashboard layout and filters' : 'No changes to save'}
-            aria-label="Save dashboard settings"
-          >
-            {dashboardSettings.isSaving ? (
-              <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-              </svg>
-            )}
-          </button>
+          {/* Save Settings Button - for dashboards (not for custom dashboards) */}
+          {activeNavItem !== 'custom-dashboard-editor' && (
+            <button
+              onClick={dashboardSettings.onSave}
+              disabled={!dashboardSettings.hasChanges || dashboardSettings.isSaving}
+              className={`hidden md:inline-flex items-center justify-center h-7 w-7 rounded-lg border transition-all ${
+                dashboardSettings.hasChanges && !dashboardSettings.isSaving
+                  ? 'border-blue-500 text-blue-600 hover:text-blue-700 hover:border-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer' 
+                  : 'border-gray-300 text-gray-400 cursor-not-allowed'
+              }`}
+              title={dashboardSettings.isSaving ? 'Saving...' : dashboardSettings.hasChanges ? 'Save dashboard layout and filters' : 'No changes to save'}
+              aria-label="Save dashboard settings"
+            >
+              {dashboardSettings.isSaving ? (
+                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                </svg>
+              )}
+            </button>
+          )}
           
           {/* Reset to Defaults Button - for dashboards only */}
           {(['team-dashboard', 'pi-dashboard'].includes(activeNavItem)) && (
@@ -296,29 +295,8 @@ export default function DashboardTopBarContent({
             }}
           />
           
-          <div className="flex items-center space-x-3 text-sm text-gray-700">
-            {(() => {
-              if (!currentUser) return <span>Signed in</span>;
-              const fullName = (currentUser.name || '').trim();
-              const firstName = fullName ? fullName.split(/\s+/)[0] : (currentUser.email ? String(currentUser.email).split('@')[0] : 'Signed in');
-              const desktopLabel = currentUser.name && currentUser.email ? `${currentUser.name} (${currentUser.email})` : (currentUser.name || currentUser.email || 'Signed in');
-              return (
-                <>
-                  {/* Mobile: first name only, no email */}
-                  <span className="md:hidden truncate max-w-[120px]" title={fullName || ''}>{firstName}</span>
-                  {/* Desktop: name (email) */}
-                  <span className="hidden md:inline" title={currentUser.email || ''}>{desktopLabel}</span>
-                </>
-              );
-            })()}
-            <button
-              onClick={onLogout}
-              className="px-2 py-1 border rounded hover:bg-gray-50"
-              title="Logout"
-            >
-              Logout
-            </button>
-          </div>
+          {/* User Dropdown Menu */}
+          <UserDropdownMenu onOpenSettings={onNavigateToSettings} />
         </div>
       </div>
     </div>

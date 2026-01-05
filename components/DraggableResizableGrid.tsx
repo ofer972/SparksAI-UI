@@ -28,6 +28,7 @@ interface DraggableResizableGridProps {
   onRemoveReport?: (reportId: string) => void;
   defaultRowHeight?: number;
   minRowHeight?: number;
+  emptyRowIds?: string[]; // IDs of rows that are empty and should show drag indicator
 }
 
 interface DraggableReportCardProps {
@@ -77,10 +78,13 @@ function DraggableReportCard({ reportId, rowId, children, onRemove }: DraggableR
         ref={setActivatorNodeRef}
         {...attributes}
         {...listeners}
-        className="absolute top-3 left-14 h-8 z-30 cursor-grab active:cursor-grabbing hover:bg-blue-50 hover:bg-opacity-30 rounded transition-colors"
+        className="absolute top-3 left-14 h-8 cursor-grab active:cursor-grabbing hover:bg-blue-50 hover:bg-opacity-30 rounded transition-colors"
         style={{ 
           touchAction: 'none',
-          width: 'calc(100% - 210px)', // Leave space for collapse button on left and more buttons on right
+          width: 'calc(100% - 280px)', // Leave space for collapse button on left (~56px) and action buttons on right (~224px)
+          right: '280px', // Ensure it stops before the action buttons area
+          pointerEvents: 'auto',
+          zIndex: 45, // Above header (z-40) but below action buttons (z-50)
         }}
         title="Drag from title to move this report"
       />
@@ -89,7 +93,7 @@ function DraggableReportCard({ reportId, rowId, children, onRemove }: DraggableR
   );
 }
 
-function DroppableRow({ rowId, children }: { rowId: string; children: React.ReactNode }) {
+function DroppableRow({ rowId, children, isEmpty, isNewRow }: { rowId: string; children: React.ReactNode; isEmpty: boolean; isNewRow: boolean }) {
   const { setNodeRef, isOver } = useDroppable({
     id: `droppable-${rowId}`,
     data: { rowId, type: 'row' },
@@ -98,7 +102,11 @@ function DroppableRow({ rowId, children }: { rowId: string; children: React.Reac
   return (
     <div
       ref={setNodeRef}
-      className={`h-full transition-all ${isOver ? 'ring-2 ring-blue-400 ring-inset' : ''}`}
+      className={`h-full transition-all ${
+        isOver ? 'ring-2 ring-blue-400 ring-inset bg-blue-50' : ''
+      } ${
+        isEmpty && isNewRow ? 'border-2 border-dashed border-blue-400 bg-blue-50/30' : ''
+      }`}
     >
       {children}
     </div>
@@ -112,6 +120,7 @@ export default function DraggableResizableGrid({
   onRemoveReport,
   defaultRowHeight = 500,
   minRowHeight = 500,
+  emptyRowIds = [],
 }: DraggableResizableGridProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeReportId, setActiveReportId] = useState<string | null>(null);
@@ -306,24 +315,15 @@ export default function DraggableResizableGrid({
             row.reportIds.every((id, idx) => id === oldReportIds[idx])) {
           newWidths[row.id] = oldWidths;
         }
-        // Reports were removed - preserve proportions
+        // Reports were removed - redistribute equally to fill the space
         else if (oldWidths.length > row.reportIds.length) {
-          const remainingWidths: number[] = [];
-          let totalRemainingWidth = 0;
-          
-          row.reportIds.forEach((reportId) => {
-            const oldIndex = oldReportIds.indexOf(reportId);
-            if (oldIndex !== -1 && oldWidths[oldIndex]) {
-              remainingWidths.push(oldWidths[oldIndex]);
-              totalRemainingWidth += oldWidths[oldIndex];
-            }
-          });
-          
-          // Normalize to 100% while preserving proportions
-          if (totalRemainingWidth > 0 && remainingWidths.length === row.reportIds.length) {
-            newWidths[row.id] = remainingWidths.map(w => (w / totalRemainingWidth) * 100);
-          } else {
+          // When widgets are removed, redistribute remaining widgets equally
+          // This ensures no blank space is left
+          if (row.reportIds.length > 0) {
             newWidths[row.id] = Array(row.reportIds.length).fill(100 / row.reportIds.length);
+          } else {
+            // Row is now empty, but we still need to handle it
+            newWidths[row.id] = [];
           }
         }
         // Reports were added or reordered - distribute equally
@@ -466,15 +466,28 @@ export default function DraggableResizableGrid({
               items={row.reportIds.map((id) => `${row.id}-${id}`)}
               strategy={rectSortingStrategy}
             >
-              <DroppableRow rowId={row.id}>
+              <DroppableRow 
+                rowId={row.id}
+                isEmpty={row.reportIds.length === 0}
+                isNewRow={emptyRowIds.includes(row.id)}
+              >
                 <div
                   ref={(el) => { containerRefs.current[row.id] = el; }}
-                  className="flex"
+                  className="flex relative"
                   style={{
                     height: isRowCollapsed(row) ? '60px' : `${rowHeights[rowIndex]}px`,
                     transition: 'height 0.3s ease-in-out',
                   }}
                 >
+                  {row.reportIds.length === 0 && emptyRowIds.includes(row.id) && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+                      <div className="text-center text-gray-500 animate-pulse">
+                        <div className="text-4xl mb-2">⬇️</div>
+                        <div className="text-sm font-semibold">Drag widgets here</div>
+                        <div className="text-xs text-gray-400 mt-1">Drop reports or insight cards into this row</div>
+                      </div>
+                    </div>
+                  )}
                   {row.reportIds.map((reportId, colIndex) => (
                     <React.Fragment key={`${row.id}-${reportId}`}>
                       <div

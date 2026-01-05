@@ -5,7 +5,7 @@ import DashboardTopBarContent from './topbar/DashboardTopBarContent';
 import InsightsTopBarContent from './topbar/InsightsTopBarContent';
 import TopBarFilterPanel from './topbar/TopBarFilterPanel';
 
-type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings';
+type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'custom-dashboards' | 'custom-dashboard-editor' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings' | 'user-settings';
 
 interface FilterBadge {
   label: string;
@@ -16,6 +16,7 @@ interface TopBarProps {
   // Navigation
   activeNavItem: NavItemId;
   navigationItems: Array<{id: string; label: string}>;
+  customViewTitle?: string; // Optional custom title override
   onToggleMobileSidebar: () => void;
   
   // Dashboard-specific (team-dashboard, pi-dashboard)
@@ -58,11 +59,13 @@ interface TopBarProps {
   // User
   currentUser: any;
   onLogout: () => void;
+  onNavigateToSettings?: () => void;
 }
 
 export default function TopBar({
   activeNavItem,
   navigationItems,
+  customViewTitle,
   onToggleMobileSidebar,
   dashboardSettings,
   insightSettings,
@@ -70,11 +73,12 @@ export default function TopBar({
   aiChat,
   currentUser,
   onLogout,
+  onNavigateToSettings,
 }: TopBarProps) {
   const [filtersCollapsed, setFiltersCollapsed] = useState(true);
   
-  const isDashboardView = activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard';
-  const viewTitle = navigationItems.find(item => item.id === activeNavItem)?.label || 'SparksAI';
+  const isDashboardView = activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'custom-dashboard-editor';
+  const viewTitle = customViewTitle || navigationItems.find(item => item.id === activeNavItem)?.label || 'SparksAI';
 
   // Close filters when switching views
   React.useEffect(() => {
@@ -92,6 +96,7 @@ export default function TopBar({
       'pi-dashboard',
       'team-ai-insights',
       'upload-transcripts',
+      'custom-dashboard-editor',
     ];
     return viewsWithFilters.includes(activeNavItem);
   }, [activeNavItem]);
@@ -162,6 +167,7 @@ export default function TopBar({
                 filtersCollapsed={filtersCollapsed}
                 filterBadges={filterBadges}
                 hasFilters={hasFilters}
+                onNavigateToSettings={onNavigateToSettings}
               />
             ) : (
               <InsightsTopBarContent
@@ -175,6 +181,7 @@ export default function TopBar({
                 filtersCollapsed={filtersCollapsed}
                 filterBadges={filterBadges}
                 hasFilters={hasFilters}
+                onNavigateToSettings={onNavigateToSettings}
               />
             )}
       </div>

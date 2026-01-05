@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { PageSettings, PageType, getPageSettings, updatePageSettings } from '@/lib/api';
+import { PageSettings, PageType, getPageSettings, updatePageSettings, getUserPreferences } from '@/lib/api';
 import { getCurrentUser } from '@/lib/auth';
 import { LayoutConfig } from '@/lib/config';
 
@@ -127,19 +127,69 @@ export function usePageSettings(pageType: PageType): UsePageSettingsReturn {
       }
 
       const settings = await getPageSettings(user.id, pageType);
+      let loadedState: PageState = {
+        layoutConfig: null,
+        topBarFilters: {},
+        reportFilters: {},
+        pinnedFilters: {},
+        selectedCategories: [],
+      };
 
       if (settings) {
-        const loadedState: PageState = {
+        loadedState = {
           layoutConfig: settings.layoutConfig || null,
           topBarFilters: settings.topBarFilters || {},
           reportFilters: settings.reportFilters || {},
           pinnedFilters: settings.pinnedFilters || {},
           selectedCategories: settings.selectedCategories || [],
         };
-        
-        setSavedState(loadedState);
-        setCurrentState(loadedState);
       }
+
+      // If there's no team/group selection in the page settings, check user preferences
+      const topBarFilters = loadedState.topBarFilters || {};
+      const hasTeamSelection = topBarFilters.selectedTreeValue || topBarFilters.selectedTeam;
+      
+      if (!hasTeamSelection) {
+        console.log('[usePageSettings] No team selection in page settings, checking user preferences for default');
+        try {
+          const preferences = await getUserPreferences(user.id);
+          if (preferences?.default_team_or_group && preferences.default_type) {
+            console.log('[usePageSettings] Found default preference:', preferences.default_team_or_group, 'type:', preferences.default_type);
+            
+            // Clean the team/group name (in case it has tree value format from old data)
+            let teamGroupName = preferences.default_team_or_group;
+            if (teamGroupName.includes(':')) {
+              // Handle old format like "team:Engineering" -> extract "Engineering"
+              teamGroupName = teamGroupName.split(':')[1] || teamGroupName;
+              console.log('[usePageSettings] Cleaned old format preference to:', teamGroupName);
+            }
+            
+            // Apply default preference to topBarFilters
+            const treeValue = preferences.default_type === 'group' 
+              ? `group:${teamGroupName}`
+              : preferences.default_type === 'team'
+              ? `team:${teamGroupName}`
+              : null;
+            
+            if (treeValue) {
+              loadedState.topBarFilters = {
+                ...loadedState.topBarFilters,
+                selectedTreeValue: treeValue,
+                selectedTreeLabel: teamGroupName,
+                selectedTreeType: preferences.default_type,
+                selectedTeam: teamGroupName, // For backward compatibility
+              };
+              console.log('[usePageSettings] Applied default preference to filters:', loadedState.topBarFilters);
+            }
+          }
+        } catch (err) {
+          console.warn('[usePageSettings] Failed to load user preferences:', err);
+          // Continue without default preferences
+        }
+      }
+      
+      setSavedState(loadedState);
+      setCurrentState(loadedState);
       
       initialLoadDone.current = true;
     } catch (err) {

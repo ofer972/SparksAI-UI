@@ -11,6 +11,7 @@ export interface AICard {
   card_name: string;
   insight_type: string;
   priority: string;
+  priority_color?: string; // Color from backend: "Red", "Yellow", "Green", "Gray"
   source: string;
   description: string;
   full_information: string;
@@ -120,4 +121,5 @@ export const aiCardsConfig: EntityConfig<AICard> = {
   // Field categorization for detail view
   normalFields: ['id', 'updated_at', 'pi', 'card_name', 'insight_type', 'priority', 'team_name', 'group_name', 'source'],
   longTextFields: ['description', 'full_information', 'information_json'],
+  markdownFields: ['description', 'full_information'], // Render these fields as markdown
 };

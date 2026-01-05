@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAccessToken, refreshAccessToken, clearTokens, getCurrentUser, logout } from '@/lib/auth';
 import SparksAILogo from '@/components/SparksAILogo';
@@ -21,9 +21,16 @@ import UploadTranscriptsView from '@/components/views/UploadTranscriptsView';
 import UsersAdminView from '@/components/views/UsersAdminView';
 import TeamsAndMeetingsView from '@/components/views/TeamsAndMeetingsView';
 import DataSyncView from '@/components/views/DataSyncView';
+import UserSettingsView from '@/components/views/UserSettingsView';
 import UnsavedChangesModal from '@/components/UnsavedChangesModal';
 import JiraSetupModal from '@/components/JiraSetupModal';
+import WelcomeModal from '@/components/WelcomeModal';
 import { useJiraConfigurationCheck } from '@/hooks/etl/useJiraConfigurationCheck';
+import { useUserPreferences, useUser } from '@/contexts/UserContext';
+import CustomDashboardsView from '@/components/CustomDashboardsView';
+import CustomDashboardEditor from '@/components/CustomDashboardEditor';
+import { getUserDashboards, getUserPreferences } from '@/lib/api';
+import type { CustomDashboard } from '@/lib/config';
 
 export default function Home() {
   const router = useRouter();
@@ -127,7 +134,7 @@ export default function Home() {
     }
   };
 
-  type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings';
+  type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'custom-dashboards' | 'custom-dashboard-editor' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings' | 'user-settings';
   const [activeNavItem, setActiveNavItem] = useState<NavItemId>('team-ai-insights');
   const prevActiveNavItemRef = useRef<NavItemId>(activeNavItem);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -145,19 +152,28 @@ export default function Home() {
   };
   
   // Function to handle navigation with unsaved changes check
-  const handleNavigation = (navItem: NavItemId) => {
+  const handleNavigation = (navItem: NavItemId | string) => {
+    // Handle custom dashboard IDs (format: "custom-dashboard-{id}")
+    if (typeof navItem === 'string' && navItem.startsWith('custom-dashboard-')) {
+      const dashboardId = navItem.replace('custom-dashboard-', '');
+      setSelectedCustomDashboardId(dashboardId);
+      setActiveNavItem('custom-dashboard-editor');
+      setMobileSidebarOpen(false);
+      return;
+    }
+
     if (navItem === activeNavItem) {
       return; // Already on this view
     }
     
     if (hasUnsavedChanges()) {
       // Show confirmation modal
-      setPendingNavItem(navItem);
+      setPendingNavItem(navItem as NavItemId);
       setShowUnsavedChangesModal(true);
     } else {
       // Navigate directly
       userNavigatedRef.current = true; // User has navigated, allow normal rendering
-      setActiveNavItem(navItem);
+      setActiveNavItem(navItem as NavItemId);
       setMobileSidebarOpen(false);
     }
   };
@@ -256,6 +272,214 @@ export default function Home() {
     selectedTreeLabel: '',
     selectedTreeType: 'team' as 'group' | 'team',
   });
+
+  const [selectedCustomDashboardId, setSelectedCustomDashboardId] = useState<string | null>(null);
+  const [customDashboards, setCustomDashboards] = useState<CustomDashboard[]>([]);
+  const [loadingDashboards, setLoadingDashboards] = useState(false);
+  const [customDashboardData, setCustomDashboardData] = useState<CustomDashboard | null>(null);
+  const customDashboardFiltersInitializedRef = useRef(false);
+  const { user } = useUser();
+  
+  const [customDashboardFilters, setCustomDashboardFilters] = useState({
+    selectedPI: '',
+    selectedTeam: '',
+    selectedTreeValue: null as string | null,
+    selectedTreeLabel: '',
+    selectedTreeType: 'team' as 'group' | 'team',
+  });
+  
+  // Initialize custom dashboard filters from loaded dashboard or user's default team/group
+  // Note: CustomDashboardEditor will apply saved filters via onFiltersChange, so we only set defaults here
+  // Use a ref to prevent re-initialization loops
+  useEffect(() => {
+    if (!customDashboardData) {
+      // No dashboard loaded, reset filters and ref
+      customDashboardFiltersInitializedRef.current = false;
+      setCustomDashboardFilters({
+        selectedPI: '',
+        selectedTeam: '',
+        selectedTreeValue: null,
+        selectedTreeLabel: '',
+        selectedTreeType: 'team',
+      });
+      return;
+    }
+    
+    // If dashboard has saved filters, look up the team/group and set filters correctly
+    // This ensures the correct team_key is used for the dropdown
+    const topBarFilters = customDashboardData?.layout_config?.topBarFilters;
+    console.log('[App] Custom dashboard data loaded, topBarFilters:', topBarFilters, 'Current filters:', customDashboardFilters);
+    if (topBarFilters && (topBarFilters.selectedTreeValue || topBarFilters.selectedTeam || topBarFilters.selectedPI)) {
+      // Dashboard has saved filters - look up the team/group to ensure correct treeValue
+      const teamName = topBarFilters.selectedTeam;
+      const treeType = topBarFilters.selectedTreeType || 'team';
+      const savedPI = topBarFilters.selectedPI || '';
+      
+      const currentFilters = customDashboardFilters;
+      
+      // Always check if PI needs to be set - this is critical for new dashboards
+      const piNeedsUpdate = savedPI && savedPI !== '' && currentFilters.selectedPI !== savedPI;
+      
+      // Check if team needs update
+      let teamNeedsUpdate = false;
+      let treeValue = topBarFilters.selectedTreeValue || null;
+      let selectedTreeLabel: string = topBarFilters.selectedTreeLabel || teamName || '';
+      
+      if (teamName && !teamsLoading && (teams.length > 0 || groups.length > 0)) {
+        // Look up the team/group in the teams/groups list to get the correct treeValue
+        if (treeType === 'group') {
+          const group = groups.find(g => g.group_name === teamName);
+          if (group) {
+            treeValue = `group:${group.group_key}`;
+            selectedTreeLabel = group.group_name;
+          }
+        } else {
+          const team = teams.find(t => t.team_name === teamName);
+          if (team) {
+            treeValue = `team:${team.team_key}`;
+            selectedTreeLabel = team.team_name;
+          }
+        }
+        
+        teamNeedsUpdate = (
+          currentFilters.selectedTeam !== teamName ||
+          currentFilters.selectedTreeValue !== treeValue ||
+          currentFilters.selectedTreeType !== treeType
+        );
+      } else if (teamName) {
+        // Teams not loaded yet - team will be updated when teams load
+        teamNeedsUpdate = (
+          currentFilters.selectedTeam !== teamName ||
+          currentFilters.selectedTreeValue !== topBarFilters.selectedTreeValue ||
+          currentFilters.selectedTreeType !== treeType
+        );
+      }
+      
+      console.log('[App] Filter update check - PI needs update:', piNeedsUpdate, 'Team needs update:', teamNeedsUpdate, 'Saved PI:', savedPI, 'Current PI:', currentFilters.selectedPI);
+      
+      // Update filters if PI or team needs update
+      if (piNeedsUpdate || teamNeedsUpdate) {
+        if (teamName && !teamsLoading && (teams.length > 0 || groups.length > 0)) {
+          // Team found, set both team and PI
+          console.log('[App] Setting custom dashboard filters with PI:', savedPI, 'Team:', teamName);
+          setCustomDashboardFilters({
+            selectedPI: savedPI,
+            selectedTeam: teamName,
+            selectedTreeValue: treeValue,
+            selectedTreeLabel: selectedTreeLabel,
+            selectedTreeType: treeType,
+          });
+          customDashboardFiltersInitializedRef.current = true;
+        } else if (teamName) {
+          // Teams not loaded yet, use saved values as-is
+          console.log('[App] Setting custom dashboard filters (teams loading) with PI:', savedPI);
+          setCustomDashboardFilters({
+            selectedPI: savedPI,
+            selectedTeam: topBarFilters.selectedTeam || '',
+            selectedTreeValue: topBarFilters.selectedTreeValue || null,
+            selectedTreeLabel: (topBarFilters.selectedTreeLabel || topBarFilters.selectedTeam || ''),
+            selectedTreeType: (topBarFilters.selectedTreeType || 'team'),
+          });
+          customDashboardFiltersInitializedRef.current = true;
+        } else if (piNeedsUpdate) {
+          // No team but has PI - set the PI filter
+          console.log('[App] Setting custom dashboard filters (PI only):', savedPI);
+          setCustomDashboardFilters({
+            selectedPI: savedPI,
+            selectedTeam: '',
+            selectedTreeValue: null,
+            selectedTreeLabel: '',
+            selectedTreeType: 'team',
+          });
+          customDashboardFiltersInitializedRef.current = true;
+        }
+      }
+      return;
+    }
+    
+    // Only initialize defaults if we haven't done so yet and there are no saved filters
+    if (customDashboardFiltersInitializedRef.current) {
+      return;
+    }
+    
+    // Dashboard has no saved filters, initialize with user's default team/group (only once)
+    if (!teamsLoading && teams.length > 0) {
+      // Try to get user preferences for default team/group
+      const currentUser = getCurrentUser();
+      if (currentUser?.id) {
+        getUserPreferences(currentUser.id).then(preferences => {
+            if (preferences?.default_team_or_group && preferences.default_type) {
+              let teamGroupName = preferences.default_team_or_group;
+              // Clean the team/group name (in case it has tree value format from old data)
+              if (teamGroupName.includes(':')) {
+                teamGroupName = teamGroupName.split(':')[1] || teamGroupName;
+              }
+              
+              // Find the team/group in the teams list
+              const team = teams.find(t => 
+                t.team_name === teamGroupName || 
+                (preferences.default_type === 'group' && t.group_names?.includes(teamGroupName))
+              );
+              
+              if (team) {
+                const treeType = preferences.default_type === 'group' ? 'group' : 'team';
+                const treeValue = preferences.default_type === 'group' 
+                  ? `group:${team.team_key || teamGroupName}`
+                  : `team:${team.team_key || teamGroupName}`;
+                
+                setCustomDashboardFilters({
+                  selectedPI: '',
+                  selectedTeam: teamGroupName,
+                  selectedTreeValue: treeValue,
+                  selectedTreeLabel: teamGroupName,
+                  selectedTreeType: treeType,
+                });
+                customDashboardFiltersInitializedRef.current = true;
+              }
+            } else if (teams.length > 0) {
+              // Fallback: use first team if no default preference
+              const firstTeam = teams[0];
+              const treeValue = `team:${firstTeam.team_key}`;
+              setCustomDashboardFilters({
+                selectedPI: '',
+                selectedTeam: firstTeam.team_name,
+                selectedTreeValue: treeValue,
+                selectedTreeLabel: firstTeam.team_name,
+                selectedTreeType: 'team' as const,
+              });
+              customDashboardFiltersInitializedRef.current = true;
+            }
+          }).catch(err => {
+            console.warn('[App] Failed to load user preferences for custom dashboard:', err);
+            // Fallback: use first team if preferences fail
+            if (teams.length > 0) {
+              const firstTeam = teams[0];
+              const treeValue = `team:${firstTeam.team_key}`;
+              setCustomDashboardFilters({
+                selectedPI: '',
+                selectedTeam: firstTeam.team_name,
+                selectedTreeValue: treeValue,
+                selectedTreeLabel: firstTeam.team_name,
+                selectedTreeType: 'team' as const,
+              });
+              customDashboardFiltersInitializedRef.current = true;
+            }
+          });
+        } else if (teams.length > 0) {
+          // No user, but we have teams - use first team as fallback
+          const firstTeam = teams[0];
+          const treeValue = `team:${firstTeam.team_key}`;
+          setCustomDashboardFilters({
+            selectedPI: '',
+            selectedTeam: firstTeam.team_name,
+            selectedTreeValue: treeValue,
+            selectedTreeLabel: firstTeam.team_name,
+            selectedTreeType: 'team' as const,
+          });
+          customDashboardFiltersInitializedRef.current = true;
+        }
+    }
+  }, [teamsLoading, teams, groups, customDashboardData]);
   
   // Legacy state for backward compatibility (used by old code)
   const [selectedTeam, setSelectedTeam] = useState('');
@@ -296,6 +520,16 @@ export default function Home() {
   const jiraConfigCheck = useJiraConfigurationCheck();
   const [showJiraSetupModal, setShowJiraSetupModal] = useState(false);
   const [jiraConfigChecked, setJiraConfigChecked] = useState(false);
+  
+  // User preferences and welcome modal
+  const { preferences, loading: preferencesLoading } = useUserPreferences();
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [welcomeModalChecked, setWelcomeModalChecked] = useState(false);
+  
+  // Debug modal state changes
+  useEffect(() => {
+    console.log('[WelcomeModal] Modal state changed:', showWelcomeModal);
+  }, [showWelcomeModal]);
   
   // Dashboard settings state
   const [dashboardSettingsState, setDashboardSettingsState] = useState<{
@@ -401,6 +635,31 @@ export default function Home() {
       }
     }
   }, [authChecked, jiraConfigCheck.isLoading, jiraConfigCheck.backendAvailable, jiraConfigCheck.isConfigured, jiraConfigChecked, showJiraSetupModal]);
+  
+  // Welcome modal check - show on first login if onboarding not completed
+  useEffect(() => {
+    console.log('[WelcomeModal] Check state:', {
+      authChecked,
+      welcomeModalChecked,
+      preferencesLoading,
+      preferences,
+      has_completed_onboarding: preferences?.has_completed_onboarding
+    });
+    
+    if (authChecked && !welcomeModalChecked && !preferencesLoading && preferences) {
+      setWelcomeModalChecked(true);
+      
+      // Show welcome modal if user hasn't completed onboarding
+      // Check for false explicitly, or if the field is undefined/null (new user)
+      const shouldShowModal = !preferences.has_completed_onboarding;
+      console.log('[WelcomeModal] Should show modal:', shouldShowModal, 'onboarding status:', preferences.has_completed_onboarding);
+      
+      if (shouldShowModal) {
+        console.log('[WelcomeModal] Showing welcome modal for first-time user');
+        setShowWelcomeModal(true);
+      }
+    }
+  }, [authChecked, welcomeModalChecked, preferencesLoading, preferences]);
 
   const handleJiraSetupConfirm = () => {
     setShowJiraSetupModal(false);
@@ -645,12 +904,36 @@ export default function Home() {
     }
   }, [activeNavItem, teamInsightSettings.isLoading, teamInsightSettings.savedState, groups, teams]);
 
+  // Fetch custom dashboards
+  const loadDashboards = useCallback(async () => {
+    if (!user?.id && !user?.user_id) return;
+    
+    setLoadingDashboards(true);
+    try {
+      const userId = (user?.id || user?.user_id) as string;
+      const dashboards = await getUserDashboards(userId);
+      setCustomDashboards(dashboards);
+    } catch (err) {
+      console.error('Failed to load custom dashboards:', err);
+      setCustomDashboards([]);
+    } finally {
+      setLoadingDashboards(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (authChecked && user) {
+      loadDashboards();
+    }
+  }, [authChecked, user, loadDashboards]);
+
   const apiService = new ApiService();
 
   const navigationItems = [
     { id: 'team-ai-insights', label: 'AI Insights', icon: '💡' },
     { id: 'team-dashboard', label: 'Team Dashboard', icon: '📊' },
     { id: 'pi-dashboard', label: 'PI Dashboard', icon: '📈' },
+    { id: 'user-settings', label: 'Settings', icon: '👤' },
     { id: 'settings', label: 'System Settings', icon: '⚙️' },
     { id: 'general-data', label: 'View General Data', icon: '📁' },
     { id: 'create-agent-job', label: 'Create Agent Job', icon: '➕' },
@@ -709,6 +992,14 @@ export default function Home() {
     <SidebarIcon>
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+      </svg>
+    </SidebarIcon>
+  );
+
+  const IconDashboard = () => (
+    <SidebarIcon>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 13a1 1 0 011-1h4a1 1 0 011 1v6a1 1 0 01-1 1h-4a1 1 0 01-1-1v-6z" />
       </svg>
     </SidebarIcon>
   );
@@ -780,19 +1071,22 @@ export default function Home() {
 
 
   // Accordion navigation groups for the sidebar UI (beautified)
-  const navigationGroups: Array<{ title: string; items: { id: string; label: string; icon: React.ReactNode }[] }> = [
+  const navigationGroups: Array<{ title: string; items: Array<{ id: string; label: string; icon: React.ReactNode; children?: Array<{ id: string; label: string; icon: React.ReactNode }> }> }> = [
     {
-      title: 'Insights',
+      title: 'System Dashboards',
       items: [
         { id: 'team-ai-insights', label: 'AI Insights', icon: <IconLightbulb /> },
-      ],
-    },
-    {
-      title: 'Dashboards',
-      items: [
         { id: 'team-dashboard', label: 'Team Dashboard', icon: <IconChartBar /> },
         { id: 'pi-dashboard', label: 'PI Dashboard', icon: <IconTrendingUp /> },
       ],
+    },
+    {
+      title: 'My Dashboards',
+      items: customDashboards.map((dashboard) => ({
+        id: `custom-dashboard-${dashboard.id}`,
+        label: dashboard.name,
+        icon: <IconDashboard />,
+      })),
     },
     {
       title: 'Management',
@@ -826,11 +1120,14 @@ export default function Home() {
 
   // Track which accordion groups are expanded
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
-    Insights: true,
-    Dashboards: true,
+    'System Dashboards': true,
+    'My Dashboards': true,
     Management: true,
     Administration: true,
     'Data Sync': true,
+  });
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
+    'custom-dashboards': true,
   });
 
   const toggleGroup = (title: string) => {
@@ -842,6 +1139,8 @@ export default function Home() {
     'team-ai-insights': 'SparksAI-AI Insights',
     'team-dashboard': 'SparksAI-Team Dashboard',
     'pi-dashboard': 'SparksAI-PI Dashboard',
+    'custom-dashboards': 'SparksAI-My Dashboards',
+    'custom-dashboard-editor': 'SparksAI-Dashboard Editor',
     'settings': 'SparksAI-System Settings',
     'general-data': 'SparksAI-General Data',
     'create-agent-job': 'SparksAI-Create Agent Job',
@@ -950,6 +1249,48 @@ export default function Home() {
         return <DataSyncView activeSubView="sync" />;
       case 'etl-settings':
         return <DataSyncView activeSubView="settings" />;
+      case 'user-settings':
+        return <UserSettingsView />;
+      case 'custom-dashboards':
+        return (
+          <CustomDashboardsView
+            onSelectDashboard={(dashboardId) => {
+              setSelectedCustomDashboardId(dashboardId);
+              setActiveNavItem('custom-dashboard-editor');
+            }}
+            onDashboardCreated={loadDashboards}
+          />
+        );
+      case 'custom-dashboard-editor':
+        if (!selectedCustomDashboardId) {
+          return (
+            <div className="p-4">
+              <p className="text-gray-600">No dashboard selected. Please select a dashboard from My Dashboards.</p>
+              <button
+                onClick={() => setActiveNavItem('custom-dashboards')}
+                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Go to My Dashboards
+              </button>
+            </div>
+          );
+        }
+        return (
+          <CustomDashboardEditor
+            dashboardId={selectedCustomDashboardId}
+            filters={customDashboardFilters}
+            onFiltersChange={setCustomDashboardFilters}
+            onDashboardLoaded={setCustomDashboardData}
+            onClose={() => {
+              setSelectedCustomDashboardId(null);
+              setCustomDashboardData(null);
+              setActiveNavItem('custom-dashboards');
+            }}
+            onSave={() => {
+              // Dashboard saved, could show a success message
+            }}
+          />
+        );
       default:
         return (
           <div className="bg-white rounded-lg shadow-sm p-6 text-center">
@@ -965,6 +1306,12 @@ export default function Home() {
 
   return authChecked ? (
     <div className="h-screen bg-white flex flex-col overflow-hidden">
+      {/* Welcome Modal (first-time login) */}
+      <WelcomeModal
+        isOpen={showWelcomeModal}
+        onClose={() => setShowWelcomeModal(false)}
+      />
+      
       {/* JIRA Setup Modal */}
       <JiraSetupModal
         isOpen={showJiraSetupModal}
@@ -993,37 +1340,111 @@ export default function Home() {
               <div className="space-y-3">
                 {navigationGroups.map((group) => (
                   <div key={group.title}>
-                    <button
-                      onClick={() => toggleGroup(group.title)}
-                      className="w-full flex items-center justify-between px-2 py-2 text-[10px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-800 transition-colors"
-                    >
-                      <span>{group.title}</span>
-                      <svg 
-                        className={`w-3 h-3 transition-transform duration-200 ${expandedGroups[group.title] ? 'rotate-180' : ''}`}
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
+                    <div className="w-full flex items-center justify-between px-2 py-2">
+                      <button
+                        onClick={() => toggleGroup(group.title)}
+                        className="flex-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-800 transition-colors"
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-                    {expandedGroups[group.title] && (
-                      <div className="mt-1 space-y-1">
-                        {group.items.map((item) => (
-                          <button
-                            key={item.id}
-                            onClick={() => handleNavigation(item.id as NavItemId)}
-                              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all duration-200 ${
-                              activeNavItem === item.id
-                                  ? 'bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 text-indigo-700 shadow-md border border-indigo-200/60'
-                                  : 'text-gray-700 hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
-                            }`}
-                            title={item.label}
+                        <span>{group.title}</span>
+                        <div className="flex items-center gap-2">
+                          {group.title === 'My Dashboards' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleNavigation('custom-dashboards' as NavItemId);
+                                setMobileSidebarOpen(false);
+                              }}
+                              className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                              title="Open My Dashboards"
+                              aria-label="Open My Dashboards"
+                            >
+                              <svg 
+                                className="w-3.5 h-3.5" 
+                                fill="none" 
+                                viewBox="0 0 24 24" 
+                                stroke="currentColor"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                              </svg>
+                            </button>
+                          )}
+                          <svg 
+                            className={`w-3 h-3 transition-transform duration-200 ${expandedGroups[group.title] ? 'rotate-180' : ''}`}
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
                           >
-                              <span className={`flex-shrink-0 flex items-center justify-center ${activeNavItem === item.id ? 'text-indigo-700' : 'text-gray-600'}`}>{item.icon}</span>
-                            <span className="text-xs font-medium">{item.label}</span>
-                          </button>
-                        ))}
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </button>
+                    </div>
+                    {expandedGroups[group.title] && (
+                      <div className={`mt-1 space-y-1 ${group.title === 'My Dashboards' ? 'max-h-[12.5rem] overflow-y-auto overflow-x-auto' : ''}`}>
+                        {group.items.map((item) => {
+                          const hasChildren = item.children && item.children.length > 0;
+                          const isExpanded = expandedItems[item.id] ?? false;
+                          const isItemActive = activeNavItem === item.id || (item.id.startsWith('custom-dashboard-') && selectedCustomDashboardId === item.id.replace('custom-dashboard-', '') && activeNavItem === 'custom-dashboard-editor');
+                          
+                          return (
+                            <div key={item.id} className={group.title === 'My Dashboards' ? 'flex-shrink-0' : ''}>
+                              <button
+                                onClick={() => {
+                                  if (hasChildren) {
+                                    setExpandedItems(prev => ({ ...prev, [item.id]: !isExpanded }));
+                                  } else {
+                                    handleNavigation(item.id as NavItemId);
+                                    setMobileSidebarOpen(false);
+                                  }
+                                }}
+                                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all duration-200 ${
+                                  isItemActive && !hasChildren
+                                    ? 'bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 text-indigo-700 shadow-md border border-indigo-200/60'
+                                    : 'text-gray-700 hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
+                                } ${group.title === 'My Dashboards' ? 'min-w-max' : ''}`}
+                                title={item.label}
+                              >
+                                {hasChildren ? (
+                                  <svg 
+                                    className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''} flex-shrink-0`}
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                  </svg>
+                                ) : null}
+                                <span className={`flex-shrink-0 flex items-center justify-center ${isItemActive && !hasChildren ? 'text-indigo-700' : 'text-gray-600'}`}>{item.icon}</span>
+                                <span className={`text-xs font-medium ${group.title === 'My Dashboards' ? 'whitespace-nowrap' : ''}`}>{item.label}</span>
+                              </button>
+                              {hasChildren && isExpanded && (
+                                <div className="ml-6 mt-1 space-y-1">
+                                  {item.children!.map((child) => {
+                                    const isChildActive = selectedCustomDashboardId === child.id.replace('custom-dashboard-', '') && activeNavItem === 'custom-dashboard-editor';
+                                    return (
+                                      <button
+                                        key={child.id}
+                                        onClick={() => {
+                                          handleNavigation(child.id as NavItemId);
+                                          setMobileSidebarOpen(false);
+                                        }}
+                                        className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all duration-200 ${
+                                          isChildActive
+                                            ? 'bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 text-indigo-700 shadow-md border border-indigo-200/60'
+                                            : 'text-gray-700 hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
+                                        }`}
+                                        title={child.label}
+                                      >
+                                        <span className={`flex-shrink-0 flex items-center justify-center ${isChildActive ? 'text-indigo-700' : 'text-gray-600'}`}>{child.icon}</span>
+                                        <span className="text-xs font-medium">{child.label}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                     <div className="mx-2 my-2 border-t border-gray-100"></div>
@@ -1055,12 +1476,14 @@ export default function Home() {
             }`}>
               {sidebarCollapsed ? (
                 <div className="space-y-1">
-                  {navigationGroups.flatMap((g) => g.items).map((item) => (
+                  {navigationGroups.flatMap((g) => g.items.flatMap(item => 
+                    item.children ? [item, ...item.children] : [item]
+                  )).map((item) => (
                     <button
                       key={item.id}
                       onClick={() => handleNavigation(item.id as NavItemId)}
                       className={`w-full flex items-center justify-center px-2 py-2.5 rounded-lg transition-all duration-200 ${
-                        activeNavItem === item.id
+                        activeNavItem === item.id || (item.id.startsWith('custom-dashboard-') && selectedCustomDashboardId === item.id.replace('custom-dashboard-', '') && activeNavItem === 'custom-dashboard-editor')
                           ? 'bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 text-indigo-700 shadow-md border border-indigo-200/60'
                           : 'text-gray-600 hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
                       }`}
@@ -1074,37 +1497,106 @@ export default function Home() {
                 <div className="space-y-3">
                   {navigationGroups.map((group) => (
                     <div key={group.title}>
-                      <button
-                        onClick={() => toggleGroup(group.title)}
-                        className="w-full flex items-center justify-between px-2 py-2 text-[10px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-800 transition-colors"
-                      >
-                        <span>{group.title}</span>
-                        <svg 
-                          className={`w-3 h-3 transition-transform duration-200 ${expandedGroups[group.title] ? 'rotate-180' : ''}`}
-                          fill="none" 
-                          stroke="currentColor" 
-                          viewBox="0 0 24 24"
+                      <div className="w-full flex items-center justify-between px-2 py-2">
+                        <button
+                          onClick={() => toggleGroup(group.title)}
+                          className="flex-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-800 transition-colors"
                         >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                      {expandedGroups[group.title] && (
-                        <div className="mt-1 space-y-1">
-                          {group.items.map((item) => (
-                            <button
-                              key={item.id}
-                              onClick={() => handleNavigation(item.id as NavItemId)}
-                              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all duration-200 ${
-                                activeNavItem === item.id
-                                  ? 'bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 text-indigo-700 shadow-md border border-indigo-200/60'
-                                  : 'text-gray-700 hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
-                              }`}
-                              title={item.label}
+                          <span>{group.title}</span>
+                          <div className="flex items-center gap-2">
+                            {group.title === 'My Dashboards' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleNavigation('custom-dashboards' as NavItemId);
+                                }}
+                                className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                                title="Open My Dashboards"
+                                aria-label="Open My Dashboards"
+                              >
+                                <svg 
+                                  className="w-3.5 h-3.5" 
+                                  fill="none" 
+                                  viewBox="0 0 24 24" 
+                                  stroke="currentColor"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
+                              </button>
+                            )}
+                            <svg 
+                              className={`w-3 h-3 transition-transform duration-200 ${expandedGroups[group.title] ? 'rotate-180' : ''}`}
+                              fill="none" 
+                              stroke="currentColor" 
+                              viewBox="0 0 24 24"
                             >
-                              <span className={`flex-shrink-0 flex items-center justify-center ${activeNavItem === item.id ? 'text-indigo-700' : 'text-gray-600'}`}>{item.icon}</span>
-                              <span className="text-xs font-medium">{item.label}</span>
-                            </button>
-                          ))}
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                        </button>
+                      </div>
+                      {expandedGroups[group.title] && (
+                        <div className={`mt-1 space-y-1 ${group.title === 'My Dashboards' ? 'max-h-[12.5rem] overflow-y-auto overflow-x-auto' : ''}`}>
+                          {group.items.map((item) => {
+                            const hasChildren = item.children && item.children.length > 0;
+                            const isExpanded = expandedItems[item.id] ?? false;
+                            const isItemActive = activeNavItem === item.id || (item.id.startsWith('custom-dashboard-') && selectedCustomDashboardId === item.id.replace('custom-dashboard-', '') && activeNavItem === 'custom-dashboard-editor');
+                            
+                            return (
+                              <div key={item.id} className={group.title === 'My Dashboards' ? 'flex-shrink-0' : ''}>
+                                <button
+                                  onClick={() => {
+                                    if (hasChildren) {
+                                      setExpandedItems(prev => ({ ...prev, [item.id]: !isExpanded }));
+                                    } else {
+                                      handleNavigation(item.id as NavItemId);
+                                    }
+                                  }}
+                                  className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all duration-200 ${
+                                    isItemActive && !hasChildren
+                                      ? 'bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 text-indigo-700 shadow-md border border-indigo-200/60'
+                                      : 'text-gray-700 hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
+                                  } ${group.title === 'My Dashboards' ? 'min-w-max' : ''}`}
+                                  title={item.label}
+                                >
+                                  {hasChildren ? (
+                                    <svg 
+                                      className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''} flex-shrink-0`}
+                                      fill="none" 
+                                      stroke="currentColor" 
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                  ) : null}
+                                  <span className={`flex-shrink-0 flex items-center justify-center ${isItemActive && !hasChildren ? 'text-indigo-700' : 'text-gray-600'}`}>{item.icon}</span>
+                                  <span className={`text-xs font-medium ${group.title === 'My Dashboards' ? 'whitespace-nowrap' : ''}`}>{item.label}</span>
+                                </button>
+                                {hasChildren && isExpanded && (
+                                  <div className="ml-6 mt-1 space-y-1">
+                                    {item.children!.map((child) => {
+                                      const isChildActive = selectedCustomDashboardId === child.id.replace('custom-dashboard-', '') && activeNavItem === 'custom-dashboard-editor';
+                                      return (
+                                        <button
+                                          key={child.id}
+                                          onClick={() => handleNavigation(child.id as NavItemId)}
+                                          className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all duration-200 ${
+                                            isChildActive
+                                              ? 'bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 text-indigo-700 shadow-md border border-indigo-200/60'
+                                              : 'text-gray-700 hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
+                                          }`}
+                                          title={child.label}
+                                        >
+                                          <span className={`flex-shrink-0 flex items-center justify-center ${isChildActive ? 'text-indigo-700' : 'text-gray-600'}`}>{child.icon}</span>
+                                          <span className="text-xs font-medium">{child.label}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                       <div className="mx-2 my-2 border-t border-gray-100"></div>
@@ -1141,12 +1633,13 @@ export default function Home() {
             <TopBar
             activeNavItem={activeNavItem}
             navigationItems={navigationItems}
+            customViewTitle={activeNavItem === 'custom-dashboard-editor' && customDashboardData ? customDashboardData.name : undefined}
             onToggleMobileSidebar={() => setMobileSidebarOpen(true)}
-            dashboardSettings={(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') ? {
-              hasChanges: dashboardSettingsState.hasChanges,
-              isSaving: dashboardSettingsState.isSaving,
-              onSave: handleSaveDashboardSettings,
-              onReset: () => setShowResetConfirm(true),
+            dashboardSettings={(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'custom-dashboard-editor') ? {
+              hasChanges: activeNavItem === 'custom-dashboard-editor' ? false : dashboardSettingsState.hasChanges,
+              isSaving: activeNavItem === 'custom-dashboard-editor' ? false : dashboardSettingsState.isSaving,
+              onSave: activeNavItem === 'custom-dashboard-editor' ? () => {} : handleSaveDashboardSettings,
+              onReset: activeNavItem === 'custom-dashboard-editor' ? () => {} : () => setShowResetConfirm(true),
             } : undefined}
             insightSettings={(activeNavItem === 'team-ai-insights') ? {
               hasChanges: insightSettingsState.hasChanges,
@@ -1159,6 +1652,7 @@ export default function Home() {
                   case 'pi-dashboard': return piDashboardFilters.selectedPI;
                   case 'team-ai-insights': return teamInsightsFilters.selectedPI;
                   case 'upload-transcripts': return uploadTranscriptsFilters.selectedPI;
+                  case 'custom-dashboard-editor': return customDashboardFilters.selectedPI;
                   default: return selectedPI;
                 }
               })(),
@@ -1174,6 +1668,9 @@ export default function Home() {
                   case 'upload-transcripts':
                     setUploadTranscriptsFilters(prev => ({ ...prev, selectedPI: pi }));
                     break;
+                  case 'custom-dashboard-editor':
+                    setCustomDashboardFilters(prev => ({ ...prev, selectedPI: pi }));
+                    break;
                   default:
                     setSelectedPI(pi);
                 }
@@ -1184,6 +1681,7 @@ export default function Home() {
                   case 'pi-dashboard': return piDashboardFilters.selectedTreeValue;
                   case 'team-ai-insights': return teamInsightsFilters.selectedTreeValue;
                   case 'upload-transcripts': return uploadTranscriptsFilters.selectedTreeValue;
+                  case 'custom-dashboard-editor': return customDashboardFilters.selectedTreeValue;
                   default: return selectedTreeValue;
                 }
               })(),
@@ -1193,6 +1691,7 @@ export default function Home() {
                   case 'pi-dashboard': return piDashboardFilters.selectedTreeLabel;
                   case 'team-ai-insights': return teamInsightsFilters.selectedTreeLabel;
                   case 'upload-transcripts': return uploadTranscriptsFilters.selectedTreeLabel;
+                  case 'custom-dashboard-editor': return customDashboardFilters.selectedTreeLabel;
                   default: return selectedTreeLabel;
                 }
               })(),
@@ -1235,6 +1734,15 @@ export default function Home() {
                       selectedTreeType: type,
                     }));
                     break;
+                  case 'custom-dashboard-editor':
+                    setCustomDashboardFilters(prev => ({
+                      ...prev,
+                      selectedTeam: value ? label : '',
+                      selectedTreeValue: value,
+                      selectedTreeLabel: value ? label : '',
+                      selectedTreeType: type,
+                    }));
+                    break;
                   default:
                     setSelectedTreeValue(value);
                     setSelectedTreeLabel(value ? label : '');
@@ -1258,19 +1766,20 @@ export default function Home() {
                 ? !!teamInsightSettings.savedState
                 : false,
             }}
-            aiChat={(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') ? {
+            aiChat={(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'custom-dashboard-editor') ? {
               onOpenChat: (dashboardData?: any) => {
                 console.log('[AI Menu] Opening chat modal with dashboard data:', dashboardData);
                 setCollectedDashboardData(dashboardData || null);
                 setIsDashboardChatModalOpen(true);
               },
-              prompts,
-              selectedPrompt,
+              prompts: prompts,
+              selectedPrompt: selectedPrompt,
               onPromptChange: setSelectedPrompt,
-              loadingPrompts,
+              loadingPrompts: loadingPrompts,
             } : undefined}
             currentUser={getCurrentUser()}
             onLogout={() => { logout(); try { location.assign('/login'); } catch {} }}
+            onNavigateToSettings={() => setActiveNavItem('user-settings')}
             />
           </div>
 
@@ -1307,7 +1816,7 @@ export default function Home() {
       </div>
 
       {/* Dashboard Insights AI Chat Modal */}
-      {(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') && (
+      {(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'custom-dashboard-editor') && (
         <AIChatModal
           isOpen={isDashboardChatModalOpen}
           onClose={() => {
@@ -1320,7 +1829,9 @@ export default function Home() {
               ? 'Team_dashboard' 
               : activeNavItem === 'pi-dashboard' 
                 ? 'PI_dashboard' 
-                : ''
+                : activeNavItem === 'custom-dashboard-editor'
+                  ? 'Custom_dashboard'
+                  : ''
           }
           teamName={activeNavItem === 'team-dashboard' ? selectedTeam : undefined}
           piName={activeNavItem === 'pi-dashboard' ? selectedPI : undefined}

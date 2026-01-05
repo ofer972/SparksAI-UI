@@ -41,10 +41,7 @@ export default function PIFilter({ selectedPI, onPIChange, className = '' }: PIF
         
         if (response.pis) {
           setPis(response.pis);
-          // Set default PI if none selected
-          if (!selectedPI && response.pis.length > 0) {
-            onPIChange(response.pis[0].pi_name);
-          }
+          // Don't auto-select PI - let user choose or parent component handle default
         } else {
           throw new Error('Failed to fetch PIs');
         }
@@ -80,10 +77,11 @@ export default function PIFilter({ selectedPI, onPIChange, className = '' }: PIF
 
   return (
     <select
-      value={selectedPI}
-      onChange={(e) => onPIChange(e.target.value)}
+      value={selectedPI || ''}
+      onChange={(e) => onPIChange(e.target.value || '')}
       className={`w-full border border-gray-300 rounded-lg px-4 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 hover:border-gray-400 transition-colors ${className}`}
     >
+      <option value="">Select PI</option>
       {pis.map((pi) => (
         <option key={pi.pi_name} value={pi.pi_name}>
           {pi.pi_name}

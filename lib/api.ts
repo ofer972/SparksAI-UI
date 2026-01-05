@@ -314,6 +314,18 @@ export class ApiService {
     return result.data;
   }
 
+  // Get current and next PIs
+  async getCurrentAndNextPIs(): Promise<PIsResponse> {
+    const response = await authFetch(buildBackendUrl(API_CONFIG.endpoints.pis.getCurrentAndNext));
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch current and next PIs: ${response.statusText}`);
+    }
+
+    const result: ApiResponse<PIsResponse> = await response.json();
+    return result.data;
+  }
+
   // Burndown API
   async getBurndownData(
     teamName: string,
@@ -1999,6 +2011,95 @@ export async function deleteMeetingName(id: number): Promise<void> {
   });
   if (!res.ok) throw new Error(await res.text() || 'Failed to delete meeting name');
 }
+
+// User Preferences API
+export interface UserPreferences {
+  user_id: string;
+  default_team_or_group?: string | null;
+  default_type?: 'team' | 'group' | 'none' | null;
+  has_completed_onboarding: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface UpdatePreferencesRequest {
+  default_team_or_group?: string | null;
+  default_type?: 'team' | 'group' | 'none' | null;
+  has_completed_onboarding?: boolean;
+}
+
+export async function getUserPreferences(userId: string): Promise<UserPreferences> {
+  const res = await authFetch(buildUserServiceUrl(`/users/${userId}/preferences`));
+  if (!res.ok) throw new Error('Failed to fetch user preferences');
+  const data = await res.json();
+  return data.data || data;
+}
+
+export async function updateUserPreferences(userId: string, preferences: UpdatePreferencesRequest): Promise<UserPreferences> {
+  const res = await authFetch(buildUserServiceUrl(`/users/${userId}/preferences`), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(preferences),
+  });
+  if (!res.ok) throw new Error(await res.text() || 'Failed to update user preferences');
+  const data = await res.json();
+  return data.data || data;
+}
+
+// Custom Dashboards API
+import type { 
+  CustomDashboard, 
+  DashboardWidget, 
+  CreateDashboardRequest, 
+  UpdateDashboardRequest,
+  DashboardLayoutConfig
+} from './config';
+
+export async function getUserDashboards(userId: string): Promise<CustomDashboard[]> {
+  const res = await authFetch(buildUserServiceUrl(`/users/${userId}/dashboards`));
+  if (!res.ok) throw new Error('Failed to fetch user dashboards');
+  const data = await res.json();
+  return data.data || [];
+}
+
+export async function getDashboard(userId: string, dashboardId: string): Promise<CustomDashboard> {
+  const res = await authFetch(buildUserServiceUrl(`/users/${userId}/dashboards/${dashboardId}`));
+  if (!res.ok) throw new Error('Failed to fetch dashboard');
+  const data = await res.json();
+  return data.data || data;
+}
+
+export async function createDashboard(userId: string, dashboardData: CreateDashboardRequest): Promise<CustomDashboard> {
+  const res = await authFetch(buildUserServiceUrl(`/users/${userId}/dashboards`), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dashboardData),
+  });
+  if (!res.ok) throw new Error(await res.text() || 'Failed to create dashboard');
+  const data = await res.json();
+  return data.data || data;
+}
+
+export async function updateDashboard(userId: string, dashboardId: string, dashboardData: UpdateDashboardRequest): Promise<CustomDashboard> {
+  const res = await authFetch(buildUserServiceUrl(`/users/${userId}/dashboards/${dashboardId}`), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dashboardData),
+  });
+  if (!res.ok) throw new Error(await res.text() || 'Failed to update dashboard');
+  const data = await res.json();
+  return data.data || data;
+}
+
+export async function deleteDashboard(userId: string, dashboardId: string): Promise<void> {
+  const res = await authFetch(buildUserServiceUrl(`/users/${userId}/dashboards/${dashboardId}`), {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error(await res.text() || 'Failed to delete dashboard');
+}
+
+// Widget operations are now handled through dashboard updates
+// All widget data is stored in layout_config
 
 // Legacy class for backward compatibility
 export class BurndownApiService {
