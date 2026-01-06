@@ -361,6 +361,55 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
       console.log('[PIDashboard] Dashboard data collection requested');
       // Use ref to access latest values
       const latest = latestValuesRef.current;
+      
+      // Merge report filters with controlled filters for each report
+      const mergedReportFilters: Record<string, Record<string, any>> = {};
+      
+      // Get all report IDs from layout config
+      const allReportIds = latest.layoutConfig?.rows?.flatMap((row: any) => row.reportIds || []) || [];
+      const uniqueReportIds = Array.from(new Set(allReportIds));
+      
+      uniqueReportIds.forEach((reportId: string) => {
+        const savedReportFilters = latest.reportFilters[reportId] || {};
+        const savedPinnedFilters = latest.pinnedFilters[reportId] || [];
+        
+        // Determine which controlled filters to use based on report type
+        let controlledFilters: Record<string, any> = {};
+        switch (reportId) {
+          case 'pi-burndown':
+          case 'pi-metrics-summary':
+            controlledFilters = {
+              pi: latest.selectedPI || null,
+              team_name: latest.selectedTeam || null,
+              isGroup: latest.selectedTreeType === 'group',
+            };
+            break;
+          case 'pi-predictability':
+            controlledFilters = {
+              pi_names: latest.selectedPI ? [latest.selectedPI] : [],
+              team_name: latest.selectedTeam || null,
+              isGroup: latest.selectedTreeType === 'group',
+            };
+            break;
+          default:
+            controlledFilters = {
+              ...(latest.selectedPI ? { pi: latest.selectedPI } : {}),
+              team_name: latest.selectedTeam || null,
+              isGroup: latest.selectedTreeType === 'group',
+            };
+        }
+        
+        // Merge: unpinned filters use topbar values, pinned filters use saved values
+        const merged: Record<string, any> = { ...savedReportFilters };
+        Object.entries(controlledFilters).forEach(([key, value]) => {
+          if (!savedPinnedFilters.includes(key)) {
+            merged[key] = value;
+          }
+        });
+        
+        mergedReportFilters[reportId] = merged;
+      });
+      
       const data = {
         layoutConfig: latest.layoutConfig,
         topBarFilters: {
@@ -368,10 +417,11 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           selectedTeam: latest.selectedTeam,
           selectedTreeType: latest.selectedTreeType,
         },
-        reportFilters: latest.reportFilters,
+        reportFilters: mergedReportFilters,
         pinnedFilters: latest.pinnedFilters,
       };
       console.log('[PIDashboard] Collected dashboard data:', data);
+      console.log('[PIDashboard] Merged report filters (unpinned use topbar):', mergedReportFilters);
       window.dispatchEvent(new CustomEvent('dashboard-data-collected', { detail: data }));
     };
     
@@ -403,6 +453,49 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     
     // Get current dashboard data from ref
     const latest = latestValuesRef.current;
+    
+    // Get the saved report filters and pinned filters for this report
+    const savedReportFilters = latest.reportFilters[reportId] || {};
+    const savedPinnedFilters = latest.pinnedFilters[reportId] || [];
+    
+    // Determine which controlled filters to use based on report type
+    let controlledFilters: Record<string, any> = {};
+    switch (reportId) {
+      case 'pi-burndown':
+      case 'pi-metrics-summary':
+        controlledFilters = {
+          pi: latest.selectedPI || null,
+          team_name: latest.selectedTeam || null,
+          isGroup: latest.selectedTreeType === 'group',
+        };
+        break;
+      case 'pi-predictability':
+        controlledFilters = {
+          pi_names: latest.selectedPI ? [latest.selectedPI] : [],
+          team_name: latest.selectedTeam || null,
+          isGroup: latest.selectedTreeType === 'group',
+        };
+        break;
+      default:
+        controlledFilters = {
+          ...(latest.selectedPI ? { pi: latest.selectedPI } : {}),
+          team_name: latest.selectedTeam || null,
+          isGroup: latest.selectedTreeType === 'group',
+        };
+    }
+    
+    // Merge report filters with controlled filters
+    // For unpinned filters, use controlled (topbar) values
+    // For pinned filters, use saved report filter values
+    const mergedReportFilters: Record<string, any> = { ...savedReportFilters };
+    Object.entries(controlledFilters).forEach(([key, value]) => {
+      // If this filter is NOT pinned, use the current topbar value
+      if (!savedPinnedFilters.includes(key)) {
+        mergedReportFilters[key] = value;
+      }
+      // If it IS pinned, keep the saved report filter value (already in mergedReportFilters)
+    });
+    
     const data = {
       layoutConfig: {
         rows: [{
@@ -416,14 +509,15 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
         selectedTreeType: latest.selectedTreeType,
       },
       reportFilters: {
-        [reportId]: latest.reportFilters[reportId] || {}
+        [reportId]: mergedReportFilters
       },
       pinnedFilters: {
-        [reportId]: latest.pinnedFilters[reportId] || []
+        [reportId]: savedPinnedFilters
       },
     };
     
     console.log('[PIDashboardView] Dispatching report AI chat data:', data);
+    console.log('[PIDashboardView] Merged report filters (unpinned use topbar):', mergedReportFilters);
     
     // Dispatch event to open AI chat with this specific report's data
     window.dispatchEvent(new CustomEvent('open-report-ai-chat', { detail: data }));

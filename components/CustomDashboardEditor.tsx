@@ -124,6 +124,30 @@ export default function CustomDashboardEditor({
         })).filter(row => row.reportIds.length > 0), // Only include rows with reports
       };
       
+      // Merge widget filters with reportPanelFilters for each widget
+      const mergedReportFilters: Record<string, Record<string, any>> = {};
+      
+      // Get all report widgets
+      const allWidgets = dashboardLayoutConfig.layoutConfig.rows.flatMap(row => row.widgets || []);
+      const reportWidgets = allWidgets.filter(widget => widget.type === 'report');
+      
+      reportWidgets.forEach(widget => {
+        // Use widget.id to get saved filters (widget instance ID)
+        const savedWidgetFilters = dashboardLayoutConfig.reportFilters?.[widget.id] || widget.filters || {};
+        const savedPinnedFilters = dashboardLayoutConfig.pinnedFilters?.[widget.id] || [];
+        
+        // Merge: unpinned filters use reportPanelFilters (topbar) values, pinned filters use saved widget values
+        const merged: Record<string, any> = { ...savedWidgetFilters };
+        Object.entries(reportPanelFilters).forEach(([key, value]) => {
+          if (!savedPinnedFilters.includes(key)) {
+            merged[key] = value;
+          }
+        });
+        
+        // Use widget.widget_id (report ID) as the key for AI chat, not widget.id (widget instance ID)
+        mergedReportFilters[widget.widget_id] = merged;
+      });
+      
       const data = {
         layoutConfig,
         topBarFilters: dashboardLayoutConfig.topBarFilters || {
@@ -133,11 +157,12 @@ export default function CustomDashboardEditor({
           selectedTreeLabel: externalFilters?.selectedTreeLabel || '',
           selectedTreeType: externalFilters?.selectedTreeType || 'team',
         },
-        reportFilters: dashboardLayoutConfig.reportFilters || {},
+        reportFilters: mergedReportFilters,
         pinnedFilters: dashboardLayoutConfig.pinnedFilters || {},
       };
       
       console.log('[CustomDashboardEditor] Collected dashboard data:', data);
+      console.log('[CustomDashboardEditor] Merged report filters (unpinned use topbar):', mergedReportFilters);
       window.dispatchEvent(new CustomEvent('dashboard-data-collected', { detail: data }));
     };
     
@@ -145,7 +170,7 @@ export default function CustomDashboardEditor({
     return () => {
       window.removeEventListener('collect-dashboard-data', handleCollectDashboardData as EventListener);
     };
-  }, [dashboardLayoutConfig, externalFilters]);
+  }, [dashboardLayoutConfig, externalFilters, reportPanelFilters]);
 
   // Dashboard form state
   const [dashboardName, setDashboardName] = useState('');
@@ -910,6 +935,22 @@ export default function CustomDashboardEditor({
                 // Use saved topBarFilters from dashboardLayoutConfig (like TeamDashboard uses dashboardSettings.currentState.topBarFilters)
                 const topBarFilters = dashboardLayoutConfig.topBarFilters || {};
                 
+                // Get saved widget filters and pinned filters
+                const savedWidgetFilters = widgetFilters || {};
+                const savedPinnedFilters = widgetPinnedFilters || [];
+                
+                // Merge widget filters with reportPanelFilters (current topbar values)
+                // For unpinned filters, use reportPanelFilters (topbar) values
+                // For pinned filters, use saved widget filter values
+                const mergedReportFilters: Record<string, any> = { ...savedWidgetFilters };
+                Object.entries(reportPanelFilters).forEach(([key, value]) => {
+                  // If this filter is NOT pinned, use the current topbar value
+                  if (!savedPinnedFilters.includes(key)) {
+                    mergedReportFilters[key] = value;
+                  }
+                  // If it IS pinned, keep the saved widget filter value (already in mergedReportFilters)
+                });
+                
                 const data = {
                   layoutConfig: {
                     rows: [{
@@ -919,14 +960,15 @@ export default function CustomDashboardEditor({
                   },
                   topBarFilters: topBarFilters,
                   reportFilters: {
-                    [widget.widget_id]: widgetFilters || {}
+                    [widget.widget_id]: mergedReportFilters
                   },
                   pinnedFilters: {
-                    [widget.widget_id]: widgetPinnedFilters || []
+                    [widget.widget_id]: savedPinnedFilters
                   },
                 };
                 
                 console.log('[CustomDashboardEditor] Dispatching report AI chat data:', data);
+                console.log('[CustomDashboardEditor] Merged report filters (unpinned use topbar):', mergedReportFilters);
                 
                 // Dispatch event to open AI chat with this specific report's data
                 window.dispatchEvent(new CustomEvent('open-report-ai-chat', { detail: data }));

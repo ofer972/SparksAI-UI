@@ -349,6 +349,35 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
       console.log('[TeamDashboard] Dashboard data collection requested');
       // Use ref to access latest values
       const latest = latestValuesRef.current;
+      
+      // Merge report filters with controlled filters for each report
+      const mergedReportFilters: Record<string, Record<string, any>> = {};
+      
+      // Get all report IDs from layout config
+      const allReportIds = latest.layoutConfig?.rows?.flatMap((row: any) => row.reportIds || []) || [];
+      const uniqueReportIds = Array.from(new Set(allReportIds));
+      
+      // Get controlled filters (current topbar values)
+      const controlledFilters = {
+        ...(latest.selectedTeam ? { team_name: latest.selectedTeam } : {}),
+        isGroup: latest.selectedTreeType === 'group',
+      };
+      
+      uniqueReportIds.forEach((reportId: string) => {
+        const savedReportFilters = latest.reportFilters[reportId] || {};
+        const savedPinnedFilters = latest.pinnedFilters[reportId] || [];
+        
+        // Merge: unpinned filters use topbar values, pinned filters use saved values
+        const merged: Record<string, any> = { ...savedReportFilters };
+        Object.entries(controlledFilters).forEach(([key, value]) => {
+          if (!savedPinnedFilters.includes(key)) {
+            merged[key] = value;
+          }
+        });
+        
+        mergedReportFilters[reportId] = merged;
+      });
+      
       const data = {
         layoutConfig: latest.layoutConfig,
         topBarFilters: {
@@ -356,10 +385,11 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
           selectedTreeType: latest.selectedTreeType,
           selectedSprint: latest.selectedSprint,
         },
-        reportFilters: latest.reportFilters,
+        reportFilters: mergedReportFilters,
         pinnedFilters: latest.pinnedFilters,
       };
       console.log('[TeamDashboard] Collected dashboard data:', data);
+      console.log('[TeamDashboard] Merged report filters (unpinned use topbar):', mergedReportFilters);
       window.dispatchEvent(new CustomEvent('dashboard-data-collected', { detail: data }));
     };
     
@@ -397,6 +427,27 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
     console.log('[TeamDashboard] Opening AI chat for report:', reportId);
     
     // Get current dashboard data
+    const savedReportFilters = dashboardSettings.currentState.reportFilters[reportId] || {};
+    const savedPinnedFilters = dashboardSettings.currentState.pinnedFilters[reportId] || [];
+    
+    // Get controlled filters (current topbar values)
+    const controlledFilters = {
+      ...(selectedTeam ? { team_name: selectedTeam } : {}),
+      isGroup: selectedTreeType === 'group',
+    };
+    
+    // Merge report filters with controlled filters
+    // For unpinned filters, use controlled (topbar) values
+    // For pinned filters, use saved report filter values
+    const mergedReportFilters: Record<string, any> = { ...savedReportFilters };
+    Object.entries(controlledFilters).forEach(([key, value]) => {
+      // If this filter is NOT pinned, use the current topbar value
+      if (!savedPinnedFilters.includes(key)) {
+        mergedReportFilters[key] = value;
+      }
+      // If it IS pinned, keep the saved report filter value (already in mergedReportFilters)
+    });
+    
     const data = {
       layoutConfig: {
         rows: [{
@@ -406,18 +457,19 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
       },
       topBarFilters: dashboardSettings.currentState.topBarFilters,
       reportFilters: {
-        [reportId]: dashboardSettings.currentState.reportFilters[reportId] || {}
+        [reportId]: mergedReportFilters
       },
       pinnedFilters: {
-        [reportId]: dashboardSettings.currentState.pinnedFilters[reportId] || []
+        [reportId]: savedPinnedFilters
       },
     };
     
     console.log('[TeamDashboard] Dispatching report AI chat data:', data);
+    console.log('[TeamDashboard] Merged report filters (unpinned use topbar):', mergedReportFilters);
     
     // Dispatch event to open AI chat with this specific report's data
     window.dispatchEvent(new CustomEvent('open-report-ai-chat', { detail: data }));
-  }, [dashboardSettings.currentState]);
+  }, [dashboardSettings.currentState, selectedTeam, selectedTreeType]);
 
   const commonPanelProps = useMemo(
     () => ({
