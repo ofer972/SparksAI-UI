@@ -109,68 +109,6 @@ export default function CustomDashboardEditor({
     return () => window.removeEventListener('open-add-reports-modal', handleOpenModal);
   }, []);
 
-  // Listen for dashboard data collection request (for AI chat button)
-  useEffect(() => {
-    const handleCollectDashboardData = () => {
-      console.log('[CustomDashboardEditor] Dashboard data collection requested');
-      
-      // Convert widgets to reportIds format for layoutConfig
-      const layoutConfig = {
-        rows: dashboardLayoutConfig.layoutConfig.rows.map(row => ({
-          id: row.id,
-          reportIds: row.widgets
-            .filter(widget => widget.type === 'report')
-            .map(widget => widget.widget_id),
-        })).filter(row => row.reportIds.length > 0), // Only include rows with reports
-      };
-      
-      // Merge widget filters with reportPanelFilters for each widget
-      const mergedReportFilters: Record<string, Record<string, any>> = {};
-      
-      // Get all report widgets
-      const allWidgets = dashboardLayoutConfig.layoutConfig.rows.flatMap(row => row.widgets || []);
-      const reportWidgets = allWidgets.filter(widget => widget.type === 'report');
-      
-      reportWidgets.forEach(widget => {
-        // Use widget.id to get saved filters (widget instance ID)
-        const savedWidgetFilters = dashboardLayoutConfig.reportFilters?.[widget.id] || widget.filters || {};
-        const savedPinnedFilters = dashboardLayoutConfig.pinnedFilters?.[widget.id] || [];
-        
-        // Merge: unpinned filters use reportPanelFilters (topbar) values, pinned filters use saved widget values
-        const merged: Record<string, any> = { ...savedWidgetFilters };
-        Object.entries(reportPanelFilters).forEach(([key, value]) => {
-          if (!savedPinnedFilters.includes(key)) {
-            merged[key] = value;
-          }
-        });
-        
-        // Use widget.widget_id (report ID) as the key for AI chat, not widget.id (widget instance ID)
-        mergedReportFilters[widget.widget_id] = merged;
-      });
-      
-      const data = {
-        layoutConfig,
-        topBarFilters: dashboardLayoutConfig.topBarFilters || {
-          selectedPI: externalFilters?.selectedPI || '',
-          selectedTeam: externalFilters?.selectedTeam || '',
-          selectedTreeValue: externalFilters?.selectedTreeValue || null,
-          selectedTreeLabel: externalFilters?.selectedTreeLabel || '',
-          selectedTreeType: externalFilters?.selectedTreeType || 'team',
-        },
-        reportFilters: mergedReportFilters,
-        pinnedFilters: dashboardLayoutConfig.pinnedFilters || {},
-      };
-      
-      console.log('[CustomDashboardEditor] Collected dashboard data:', data);
-      console.log('[CustomDashboardEditor] Merged report filters (unpinned use topbar):', mergedReportFilters);
-      window.dispatchEvent(new CustomEvent('dashboard-data-collected', { detail: data }));
-    };
-    
-    window.addEventListener('collect-dashboard-data', handleCollectDashboardData as EventListener);
-    return () => {
-      window.removeEventListener('collect-dashboard-data', handleCollectDashboardData as EventListener);
-    };
-  }, [dashboardLayoutConfig, externalFilters, reportPanelFilters]);
 
   // Dashboard form state
   const [dashboardName, setDashboardName] = useState('');
@@ -297,6 +235,69 @@ export default function CustomDashboardEditor({
     
     return filters;
   }, [effectiveFilters]);
+
+  // Listen for dashboard data collection request (for AI chat button)
+  useEffect(() => {
+    const handleCollectDashboardData = () => {
+      console.log('[CustomDashboardEditor] Dashboard data collection requested');
+      
+      // Convert widgets to reportIds format for layoutConfig
+      const layoutConfig = {
+        rows: dashboardLayoutConfig.layoutConfig.rows.map(row => ({
+          id: row.id,
+          reportIds: row.widgets
+            .filter(widget => widget.type === 'report')
+            .map(widget => widget.widget_id),
+        })).filter(row => row.reportIds.length > 0), // Only include rows with reports
+      };
+      
+      // Merge widget filters with reportPanelFilters for each widget
+      const mergedReportFilters: Record<string, Record<string, any>> = {};
+      
+      // Get all report widgets
+      const allWidgets = dashboardLayoutConfig.layoutConfig.rows.flatMap(row => row.widgets || []);
+      const reportWidgets = allWidgets.filter(widget => widget.type === 'report');
+      
+      reportWidgets.forEach(widget => {
+        // Use widget.id to get saved filters (widget instance ID)
+        const savedWidgetFilters = dashboardLayoutConfig.reportFilters?.[widget.id] || widget.filters || {};
+        const savedPinnedFilters = dashboardLayoutConfig.pinnedFilters?.[widget.id] || [];
+        
+        // Merge: unpinned filters use reportPanelFilters (topbar) values, pinned filters use saved widget values
+        const merged: Record<string, any> = { ...savedWidgetFilters };
+        Object.entries(reportPanelFilters).forEach(([key, value]) => {
+          if (!savedPinnedFilters.includes(key)) {
+            merged[key] = value;
+          }
+        });
+        
+        // Use widget.widget_id (report ID) as the key for AI chat, not widget.id (widget instance ID)
+        mergedReportFilters[widget.widget_id] = merged;
+      });
+      
+      const data = {
+        layoutConfig,
+        topBarFilters: dashboardLayoutConfig.topBarFilters || {
+          selectedPI: externalFilters?.selectedPI || '',
+          selectedTeam: externalFilters?.selectedTeam || '',
+          selectedTreeValue: externalFilters?.selectedTreeValue || null,
+          selectedTreeLabel: externalFilters?.selectedTreeLabel || '',
+          selectedTreeType: externalFilters?.selectedTreeType || 'team',
+        },
+        reportFilters: mergedReportFilters,
+        pinnedFilters: dashboardLayoutConfig.pinnedFilters || {},
+      };
+      
+      console.log('[CustomDashboardEditor] Collected dashboard data:', data);
+      console.log('[CustomDashboardEditor] Merged report filters (unpinned use topbar):', mergedReportFilters);
+      window.dispatchEvent(new CustomEvent('dashboard-data-collected', { detail: data }));
+    };
+    
+    window.addEventListener('collect-dashboard-data', handleCollectDashboardData as EventListener);
+    return () => {
+      window.removeEventListener('collect-dashboard-data', handleCollectDashboardData as EventListener);
+    };
+  }, [dashboardLayoutConfig, externalFilters, reportPanelFilters]);
 
   useEffect(() => {
     if (dashboardId && (user?.id || user?.user_id)) {
