@@ -11,7 +11,7 @@ export interface TreeNode extends HierarchyItem {
 
 export interface ColumnConfig {
   id: string;
-  header: string;
+  header: string | ReactNode | (() => ReactNode);
   accessorKey?: string;
   renderer?: 'link' | 'badge' | 'text' | 'custom';
   colorMap?: Record<string, string>;

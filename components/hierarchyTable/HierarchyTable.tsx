@@ -105,9 +105,16 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
     return columns.map((col: ColumnConfig) => {
       const accessorKey = col.accessorKey || col.id;
 
+      // Convert header to TanStack Table format
+      const headerValue = typeof col.header === 'function' 
+        ? col.header 
+        : typeof col.header === 'string' 
+        ? col.header 
+        : () => col.header;
+
       return {
         id: col.id,
-        header: col.header,
+        header: headerValue,
         accessorKey,
         minSize: col.minWidth,
         maxSize: col.maxWidth,

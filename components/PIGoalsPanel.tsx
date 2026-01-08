@@ -10,7 +10,7 @@ import { buildNodeChildrenMap } from './pigoals/utils';
 import { getStatusCategoryColor } from './hierarchyTable/utils';
 import { ApiService } from '@/lib/api';
 import { EditRecordModal } from './EditRecordModal';
-import type { EditableEntityConfig } from '@/lib/entityConfig';
+import type { EditableEntityConfig, FormFieldConfig } from '@/lib/entityConfig';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 
 interface PIGoalsPanelProps {
@@ -106,7 +106,7 @@ export default function PIGoalsPanel({
     const isGroupGoal = currentGoalType === 'group';
     
     // Base fields that are always shown
-    const baseFields = [
+    const baseFields: FormFieldConfig<GoalForEdit>[] = [
         {
           key: 'goal_type',
           label: 'Goal Type',
@@ -167,7 +167,7 @@ export default function PIGoalsPanel({
     ];
     
     // Conditionally add Team and Group fields
-    const teamGroupFields = [];
+    const teamGroupFields: FormFieldConfig<GoalForEdit>[] = [];
     
     if (mode === 'create') {
       // In create mode, always include both fields but conditionally show/hide based on goal_type
@@ -226,7 +226,7 @@ export default function PIGoalsPanel({
     }
     
     // Insert Team/Group fields after Goal Type
-    const editableFields = [
+    const editableFields: FormFieldConfig<GoalForEdit>[] = [
       baseFields[0], // goal_type
       ...teamGroupFields, // team_name and/or group_name
       ...baseFields.slice(1), // goal_text, status, priority_bv
@@ -494,7 +494,7 @@ export default function PIGoalsPanel({
       }
 
       // Merge current epic keys with newly selected ones (avoid duplicates)
-      const allEpicKeys = [...new Set([...currentEpicKeys, ...selectedEpicKeys])];
+      const allEpicKeys = Array.from(new Set([...currentEpicKeys, ...selectedEpicKeys]));
 
       // Update the goal with merged epic_keys
       await apiService.updatePIGoal(goalToConnectEpics.id, {
@@ -1293,7 +1293,7 @@ export default function PIGoalsPanel({
                 epic_keys: [],
               };
               
-              if (data.priority_bv !== undefined && data.priority_bv !== null && data.priority_bv !== '') {
+              if (data.priority_bv !== undefined && data.priority_bv !== null) {
                 // Convert to number if it's a string (from select dropdown)
                 createData.priority_bv = typeof data.priority_bv === 'string' 
                   ? parseInt(data.priority_bv, 10) 
@@ -1328,7 +1328,7 @@ export default function PIGoalsPanel({
             } else if (editGoal && editGoal.id) {
               // Update existing goal
               // Convert priority_bv to number if it's a string (from select dropdown)
-              const priorityBv = data.priority_bv !== undefined && data.priority_bv !== null && data.priority_bv !== ''
+              const priorityBv = data.priority_bv !== undefined && data.priority_bv !== null
                 ? (typeof data.priority_bv === 'string' ? parseInt(data.priority_bv, 10) : (data.priority_bv as number))
                 : null;
 
