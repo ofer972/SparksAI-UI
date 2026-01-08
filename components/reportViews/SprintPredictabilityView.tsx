@@ -243,10 +243,6 @@ const SprintPredictabilityView: React.FC<SprintPredictabilityViewProps> = ({
           allowClear={true}
         />
       </ReportFilterField>
-
-      <ReportFilterField label="Rows">
-        <span className="text-sm text-gray-700">{rows.length}</span>
-      </ReportFilterField>
     </ReportFiltersRow>
   );
 
