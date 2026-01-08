@@ -222,16 +222,14 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
             data={Array.isArray(data) ? data : []}
             loading={loading}
             error={error}
+            title={meta?.pi ? `PI Burndown: ${meta.pi}` : undefined}
           />
         </div>
-        {(meta?.pi || meta?.start_date || meta?.end_date) && (
+        {Array.isArray(data) && data.length > 0 && (
           <div className="mt-2 text-xs text-gray-500 text-center">
-            {meta?.pi && <span>PI: {meta.pi}</span>}
-            {meta?.start_date && meta?.end_date && (
-              <span className="ml-2">
-                Dates: {meta.start_date} – {meta.end_date}
-              </span>
-            )}
+            <span>
+              Dates of the PI: {data[0].snapshot_date} – {data[data.length - 1].snapshot_date}
+            </span>
           </div>
         )}
       </div>

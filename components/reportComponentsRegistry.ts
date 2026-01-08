@@ -49,22 +49,51 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
   'team-sprint-burndown': {
     component: SprintBurndownView,
     requiredFilters: [],
-    mapProps: ({ result, loading, error, meta }) => ({
-      data: Array.isArray(result) ? result : [],
-      loading,
-      error,
-      meta,
-    }),
+    mapProps: ({ result, loading, error, meta }) => {
+      // Handle new response format where result is an object with burndown_data
+      if (result && typeof result === 'object' && 'burndown_data' in result && Array.isArray(result.burndown_data)) {
+        return {
+          data: result.burndown_data,
+          loading,
+          error,
+          meta,
+        };
+      }
+      return {
+        data: [],
+        loading,
+        error,
+        meta,
+      };
+    },
   },
   'pi-burndown': {
     component: PIBurndownView,
     requiredFilters: [],
-    mapProps: ({ result, loading, error, meta }) => ({
-      data: Array.isArray(result) ? result : [],
-      loading,
-      error,
-      meta,
-    }),
+    mapProps: ({ result, loading, error, meta }) => {
+      // Handle new response format where result is an object with burndown_data
+      if (result && typeof result === 'object' && 'burndown_data' in result && Array.isArray(result.burndown_data)) {
+        // Extract dates from result object if they exist
+        const enhancedMeta = {
+          ...meta,
+          ...(result.start_date && { start_date: result.start_date }),
+          ...(result.end_date && { end_date: result.end_date }),
+          ...(result.pi_name && { pi: result.pi_name }),
+        };
+        return {
+          data: result.burndown_data,
+          loading,
+          error,
+          meta: enhancedMeta,
+        };
+      }
+      return {
+        data: [],
+        loading,
+        error,
+        meta,
+      };
+    },
   },
   'team-closed-sprints': {
     component: ClosedSprintsView,

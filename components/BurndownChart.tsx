@@ -31,12 +31,14 @@ interface BurndownChartProps {
   data: BurndownDataPoint[];
   loading: boolean;
   error: string | null;
+  title?: string;
 }
 
 export default function BurndownChart({ 
   data,
   loading,
-  error
+  error,
+  title
 }: BurndownChartProps) {
 
   // Memoize chart data preparation to prevent unnecessary recalculations
@@ -201,7 +203,7 @@ export default function BurndownChart({
       },
       title: {
         display: true,
-        text: 'Burndown Chart',
+        text: title || 'Burndown Chart',
       },
       tooltip: {
         mode: 'index' as const,

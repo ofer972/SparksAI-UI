@@ -44,6 +44,11 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
   togglePin,
   pinnedFilters = [],
 }) => {
+  // Data should already be extracted as array from the registry mapProps
+  const burndownData = React.useMemo(() => {
+    return Array.isArray(data) ? data : [];
+  }, [data]);
+
   const issueType = (filters.issue_type as string) ?? 'all';
   const sprintName = (filters.sprint_name as string) ?? '';
   const { groups, teams: allTeams } = useTeamsGroups();
@@ -237,16 +242,16 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
       <div className="w-full h-full flex flex-col">
         <div className="relative flex-1 min-h-[350px]">
           <BurndownChart
-            data={Array.isArray(data) ? data : []}
+            data={burndownData}
             loading={loading}
             error={error}
+            title={meta?.sprint_name ? `Sprint Burndown: ${meta.sprint_name}` : undefined}
           />
         </div>
-        {(meta?.sprint_name || meta?.start_date || meta?.end_date) && (
+        {(meta?.start_date || meta?.end_date) && (
           <div className="mt-2 text-xs text-gray-500 text-center">
-            {meta?.sprint_name && <span>Sprint: {meta.sprint_name}</span>}
             {meta?.start_date && meta?.end_date && (
-              <span className="ml-2">
+              <span>
                 Dates: {meta.start_date} – {meta.end_date}
               </span>
             )}

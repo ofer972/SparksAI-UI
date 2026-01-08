@@ -98,8 +98,8 @@ const fetch = (input: RequestInfo | URL, init?: RequestInit) => authFetch(input,
 export interface BurndownDataPoint {
   snapshot_date: string;
   pi_name?: string; // For PI burndown
-  start_date: string;
-  end_date: string;
+  start_date: string | null; // Can be null in new response format
+  end_date: string | null; // Can be null in new response format
   remaining_issues: number | null;
   ideal_remaining: number;
   total_issues: number;
@@ -107,7 +107,7 @@ export interface BurndownDataPoint {
   issues_removed_on_day: number;
   issues_completed_on_day: number;
   planned_issues?: number; // For PI burndown
-  wip_issues_in_progress?: number; // Work in progress issues per day
+  wip_issues_in_progress?: number | null; // Work in progress issues per day
 }
 
 export interface BurndownResponse {
