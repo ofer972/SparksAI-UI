@@ -169,7 +169,6 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
             onChange={(event) => handleSprintChange(event.target.value)}
             className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
-            <option value="">Current Sprint</option>
             {sprintOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
