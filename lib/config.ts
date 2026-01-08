@@ -487,12 +487,22 @@ export interface LayoutConfig {
   rows: LayoutRow[];
 }
 
+// Metrics widget configuration
+export interface MetricsSelection {
+  metricsType: 'team' | 'pi';
+  teamName?: string;
+  piName?: string;
+  isGroup?: boolean;
+  selectedMetrics: string[];
+}
+
 // Widget in a row - now stored in layout_config
 export interface DashboardWidget {
   id: string;
-  type: 'report' | 'insight_card' | 'insight_type';
-  widget_id: string; // report_id, insight_card_id, or insight_type_id
+  type: 'report' | 'insight_card' | 'insight_type' | 'metrics';
+  widget_id: string; // report_id, insight_card_id, insight_type_id, or metrics widget id
   filters?: Record<string, any>; // widget-specific filters (for insight_type: pi, team_name, group_name)
+  metricsConfig?: MetricsSelection; // Configuration for metrics widgets
 }
 
 // Row in layout for custom dashboards - now contains widgets array

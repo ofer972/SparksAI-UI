@@ -8,6 +8,7 @@ import { TrendDataPoint } from '@/lib/config';
 interface TeamMetricsProps {
   teamName?: string;
   isGroup?: boolean;
+  selectedMetrics?: string[]; // Optional: filter which metrics to display
 }
 
 interface SprintMetricsData {
@@ -139,32 +140,32 @@ const DaysLeftCard = ({ id, daysLeft, daysInSprint, tooltip, className = "", act
 
   return (
     <div 
-      className={`bg-gradient-to-br from-white to-gray-50 rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 p-4 flex flex-col items-center text-center h-full relative ${className}`}
+      className={`bg-gradient-to-br from-white to-gray-50 rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 p-2 sm:p-3 flex flex-col items-center justify-center text-center h-full relative min-w-0 ${className}`}
       onMouseEnter={() => setActiveTooltip(id)}
       onMouseLeave={() => setActiveTooltip(null)}
     >
       {/* Icon */}
-      <div className="w-8 h-8 mb-2 flex items-center justify-center text-2xl rounded">
+      <div className="w-6 h-6 sm:w-8 sm:h-8 mb-1 sm:mb-2 flex items-center justify-center text-xl sm:text-2xl rounded flex-shrink-0">
         📅
       </div>
       
       {/* Progress Bar - takes same space as value in other cards */}
-      <div className="w-full mb-2 flex items-center justify-center" style={{ minHeight: '24px' }}>
-        <div className="w-full bg-gradient-to-r from-gray-100 to-gray-200 rounded-full h-2 shadow-inner">
+      <div className="w-full mb-1 sm:mb-2 flex items-center justify-center" style={{ minHeight: '20px', maxHeight: '24px' }}>
+        <div className="w-full bg-gradient-to-r from-gray-100 to-gray-200 rounded-full h-1.5 sm:h-2 shadow-inner">
           <div
-            className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-300 shadow-sm"
+            className="bg-gradient-to-r from-blue-500 to-indigo-600 h-1.5 sm:h-2 rounded-full transition-all duration-300 shadow-sm"
             style={{ width: `${progress}%` }}
           />
         </div>
       </div>
       
       {/* Days Left Value (number) - displayed as the main value */}
-      <div className="text-lg font-bold text-gray-800 mb-1">
+      <div className="text-base sm:text-lg font-bold text-gray-800 mb-0.5 sm:mb-1">
         {formatDaysLeft(daysLeft)}
       </div>
       
       {/* Days Left Label */}
-      <div className="text-xs text-gray-700 mt-auto font-semibold">
+      <div className="text-[10px] sm:text-xs text-gray-700 font-semibold leading-tight">
         days left in Sprint
       </div>
       
@@ -216,24 +217,24 @@ const MetricCard = ({ id, icon, value, label, tooltip, className = "", isLeftmos
 
   return (
     <div 
-      className={`bg-gradient-to-br from-white to-gray-50 rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 p-4 flex flex-col items-center text-center h-full relative ${className}`}
+      className={`bg-gradient-to-br from-white to-gray-50 rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 p-2 sm:p-3 flex flex-col items-center justify-center text-center h-full relative min-w-0 ${className}`}
       onMouseEnter={() => setActiveTooltip(id)}
       onMouseLeave={() => setActiveTooltip(null)}
     >
       {/* Show trend line if data exists, otherwise show icon */}
       {trendData && trendData.length > 0 && metricType ? (
-        <div className="w-full mb-2 flex items-center justify-center" style={{ minHeight: '32px' }}>
+        <div className="w-full mb-1 sm:mb-2 flex items-center justify-center" style={{ minHeight: '24px', maxHeight: '32px' }}>
           <TrendLine data={trendData} metricType={metricType} />
         </div>
       ) : (
-        <div className="w-8 h-8 mb-2 flex items-center justify-center text-2xl rounded">
+        <div className="w-6 h-6 sm:w-8 sm:h-8 mb-1 sm:mb-2 flex items-center justify-center text-xl sm:text-2xl rounded flex-shrink-0">
           {icon}
         </div>
       )}
-      <div className={`text-lg font-bold mb-1.5 ${getStatusColor(status)}`}>
+      <div className={`text-base sm:text-lg font-bold mb-1 sm:mb-1.5 ${getStatusColor(status)}`}>
         {value}
       </div>
-      <div className="text-xs text-gray-700 break-words text-center font-semibold">
+      <div className="text-[10px] sm:text-xs text-gray-700 break-words text-center font-semibold leading-tight">
         {label}
       </div>
       {/* Tooltip */}
@@ -253,7 +254,7 @@ const MetricCard = ({ id, icon, value, label, tooltip, className = "", isLeftmos
   );
 };
 
-export default function TeamMetrics({ teamName, isGroup }: TeamMetricsProps) {
+export default function TeamMetrics({ teamName, isGroup, selectedMetrics }: TeamMetricsProps) {
   const { sprintMetrics, completionRate, loading, error } = useTeamMetrics(teamName, isGroup);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
@@ -266,16 +267,29 @@ export default function TeamMetrics({ teamName, isGroup }: TeamMetricsProps) {
   }
 
   if (loading) {
+    const loadingCount = selectedMetrics && selectedMetrics.length > 0 ? selectedMetrics.length : 6;
+    const isOdd = loadingCount % 2 !== 0;
+    const lastItemIndex = loadingCount - 1;
     return (
-      <div className="overflow-x-hidden">
-        <div className="grid gap-3 w-full" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-gradient-to-br from-white to-gray-50 rounded-lg border border-gray-200 shadow-sm p-4 animate-pulse h-full">
-              <div className="w-8 h-8 bg-transparent rounded mb-2 mx-auto"></div>
-              <div className="h-5 bg-gray-200 rounded mb-1.5"></div>
-              <div className="h-3 bg-gray-200 rounded"></div>
-            </div>
-          ))}
+      <div className="h-full w-full overflow-hidden">
+        <div className="grid gap-2 w-full h-full" style={{ 
+          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+          gridAutoRows: '1fr'
+        }}>
+          {[...Array(loadingCount)].map((_, i) => {
+            const isLastItem = i === lastItemIndex && isOdd;
+            return (
+              <div 
+                key={i} 
+                className="bg-gradient-to-br from-white to-gray-50 rounded-lg border border-gray-200 shadow-sm p-2 sm:p-3 animate-pulse h-full min-w-0"
+                style={isLastItem ? { gridColumn: '1 / -1' } : {}}
+              >
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-transparent rounded mb-1 sm:mb-2 mx-auto"></div>
+                <div className="h-4 sm:h-5 bg-gray-200 rounded mb-1 sm:mb-1.5"></div>
+                <div className="h-2 sm:h-3 bg-gray-200 rounded"></div>
+              </div>
+            );
+          })}
         </div>
       </div>
     );
@@ -298,7 +312,7 @@ export default function TeamMetrics({ teamName, isGroup }: TeamMetricsProps) {
     }
     
     return (
-      <div className="overflow-x-hidden">
+      <div className="h-full w-full overflow-hidden flex items-center justify-center">
         <div className="text-center py-4">
           <div className="text-red-500 text-2xl mb-2">⚠️</div>
           <p className="text-xs text-gray-700 font-semibold">Error loading metrics</p>
@@ -307,11 +321,13 @@ export default function TeamMetrics({ teamName, isGroup }: TeamMetricsProps) {
     );
   }
 
-  return (
-    <div className="relative">
-      <div className="grid gap-3 w-full" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
-        {/* Avg Velocity */}
+  // Define all available metrics with their IDs
+  const allMetrics = [
+    {
+      id: 'velocity',
+      component: (
         <MetricCard
+          key="velocity"
           id="velocity"
           icon="📈"
           value={sprintMetrics?.velocity?.toString() || "0"}
@@ -324,9 +340,13 @@ export default function TeamMetrics({ teamName, isGroup }: TeamMetricsProps) {
           activeTooltip={activeTooltip}
           setActiveTooltip={setActiveTooltip}
         />
-        
-        {/* Avg Cycle Time */}
+      ),
+    },
+    {
+      id: 'cycleTime',
+      component: (
         <MetricCard
+          key="cycleTime"
           id="cycleTime"
           icon="⏱️"
           value={sprintMetrics?.cycle_time ? `${sprintMetrics.cycle_time.toFixed(1)}d` : "0d"}
@@ -338,9 +358,13 @@ export default function TeamMetrics({ teamName, isGroup }: TeamMetricsProps) {
           activeTooltip={activeTooltip}
           setActiveTooltip={setActiveTooltip}
         />
-        
-        {/* Avg Sprint Predictability */}
+      ),
+    },
+    {
+      id: 'predictability',
+      component: (
         <MetricCard
+          key="predictability"
           id="predictability"
           icon="📊"
           value={sprintMetrics?.predictability ? `${Math.round(sprintMetrics.predictability)}%` : "0%"}
@@ -352,9 +376,13 @@ export default function TeamMetrics({ teamName, isGroup }: TeamMetricsProps) {
           activeTooltip={activeTooltip}
           setActiveTooltip={setActiveTooltip}
         />
-        
-        {/* Work in Progress */}
+      ),
+    },
+    {
+      id: 'wip',
+      component: (
         <MetricCard
+          key="wip"
           id="wip"
           icon="🔄"
           value={completionRate?.in_progress_issues?.toString() || "0"}
@@ -364,9 +392,13 @@ export default function TeamMetrics({ teamName, isGroup }: TeamMetricsProps) {
           activeTooltip={activeTooltip}
           setActiveTooltip={setActiveTooltip}
         />
-        
-        {/* Completion */}
+      ),
+    },
+    {
+      id: 'completion',
+      component: (
         <MetricCard
+          key="completion"
           id="completion"
           icon="🎯"
           value={completionRate?.percent_completed ? `${Math.round(completionRate.percent_completed)}%` : "0%"}
@@ -376,9 +408,13 @@ export default function TeamMetrics({ teamName, isGroup }: TeamMetricsProps) {
           activeTooltip={activeTooltip}
           setActiveTooltip={setActiveTooltip}
         />
-        
-        {/* Days Left */}
+      ),
+    },
+    {
+      id: 'daysLeft',
+      component: (
         <DaysLeftCard
+          key="daysLeft"
           id="daysLeft"
           daysLeft={completionRate?.days_left}
           daysInSprint={completionRate?.days_in_sprint}
@@ -386,6 +422,36 @@ export default function TeamMetrics({ teamName, isGroup }: TeamMetricsProps) {
           activeTooltip={activeTooltip}
           setActiveTooltip={setActiveTooltip}
         />
+      ),
+    },
+  ];
+
+  // Filter metrics based on selectedMetrics if provided
+  const metricsToDisplay = selectedMetrics && selectedMetrics.length > 0
+    ? allMetrics.filter(m => selectedMetrics.includes(m.id))
+    : allMetrics;
+
+  const isOdd = metricsToDisplay.length % 2 !== 0;
+  const lastItemIndex = metricsToDisplay.length - 1;
+
+  return (
+    <div className="relative h-full w-full overflow-hidden">
+      <div className="grid gap-2 w-full h-full" style={{ 
+        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+        gridAutoRows: '1fr'
+      }}>
+        {metricsToDisplay.map((m, index) => {
+          const isLastItem = index === lastItemIndex && isOdd;
+          return (
+            <div 
+              key={m.id} 
+              className="min-w-0 h-full"
+              style={isLastItem ? { gridColumn: '1 / -1' } : {}}
+            >
+              {m.component}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

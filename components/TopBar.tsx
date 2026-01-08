@@ -108,12 +108,14 @@ export default function TopBar({
     // Determine which filters are applicable for current view
     const showPIFilter = activeNavItem === 'pi-dashboard' || 
                          activeNavItem === 'team-ai-insights' ||
-                         activeNavItem === 'upload-transcripts';
+                         activeNavItem === 'upload-transcripts' ||
+                         activeNavItem === 'custom-dashboard-editor';
     
     const showTeamGroupFilter = activeNavItem === 'team-dashboard' || 
                                 activeNavItem === 'team-ai-insights' || 
                                 activeNavItem === 'pi-dashboard' ||
-                                activeNavItem === 'upload-transcripts';
+                                activeNavItem === 'upload-transcripts' ||
+                                activeNavItem === 'custom-dashboard-editor';
 
     // Add Team/Group filter badge if selected AND applicable to current view
     if (filters.selectedTreeValue && filters.selectedTreeLabel && showTeamGroupFilter) {

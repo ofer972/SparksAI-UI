@@ -21,7 +21,14 @@ import WidgetFiltersPanel from './WidgetFiltersPanel';
 import ReportPanel from './ReportPanel';
 import InsightCardWidget from './InsightCardWidget';
 import InsightTypeWidget from './InsightTypeWidget';
+import MetricsWidget from './MetricsWidget';
 import ReportCard from './reporting/ReportCard';
+import ReportFiltersRow from './reporting/ReportFiltersRow';
+import ReportFilterField from './reporting/ReportFilterField';
+import TeamGroupFilter from './TeamGroupFilter';
+import PIFilter from './PIFilter';
+import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
+import { ApiService } from '@/lib/api';
 
 interface CustomDashboardEditorProps {
   dashboardId: string;
@@ -550,7 +557,7 @@ export default function CustomDashboardEditor({
 
   // Handle adding multiple widgets (like team/PI dashboards - 2 per row)
   // Now supports adding the same item multiple times
-  const handleUpdateWidgets = async (widgetIds: Array<{ type: 'report' | 'insight_card' | 'insight_type'; id: string; filters?: Record<string, any> }>) => {
+  const handleUpdateWidgets = async (widgetIds: Array<{ type: 'report' | 'insight_card' | 'insight_type' | 'metrics'; id: string; filters?: Record<string, any>; metricsConfig?: any }>) => {
     console.log('[CustomDashboardEditor] handleUpdateWidgets called with:', {
       widgetCount: widgetIds.length,
       widgets: widgetIds,
@@ -580,7 +587,8 @@ export default function CustomDashboardEditor({
       
       // Calculate widgets to add (all requested widgets, allowing duplicates)
       // For insight_type, only allow one per type
-      const widgetsToAdd: Array<{ type: 'report' | 'insight_card' | 'insight_type'; id: string; filters?: Record<string, any> }> = [];
+      // For metrics, allow multiple (each can have different config)
+      const widgetsToAdd: Array<{ type: 'report' | 'insight_card' | 'insight_type' | 'metrics'; id: string; filters?: Record<string, any>; metricsConfig?: any }> = [];
       const insightTypeIds = new Set<string>(); // Track which insight types are already on dashboard
       
       currentWidgets.forEach(w => {
@@ -602,6 +610,17 @@ export default function CustomDashboardEditor({
               filters: widgetInfo?.filters || {},
             });
             insightTypeIds.add(widgetId);
+          }
+        } else if (widgetType === 'metrics') {
+          // For metrics, allow multiple (each can have different config)
+          const currentCount = currentWidgetCounts.get(widgetId) || 0;
+          const toAdd = count - currentCount;
+          for (let i = 0; i < toAdd; i++) {
+            widgetsToAdd.push({ 
+              type: widgetType, 
+              id: widgetId,
+              metricsConfig: widgetInfo?.metricsConfig,
+            });
           }
         } else {
           // For reports and insight_cards, allow multiple
@@ -685,6 +704,7 @@ export default function CustomDashboardEditor({
             type: widget.type,
             widget_id: widget.id,
             filters: widget.filters || {}, // Include filters for insight_type widgets
+            ...(widget.type === 'metrics' && widget.metricsConfig ? { metricsConfig: widget.metricsConfig } : {}),
           };
           
           console.log('[CustomDashboardEditor] Adding widget:', {
@@ -921,7 +941,7 @@ export default function CustomDashboardEditor({
       const widgetPinnedFilters = dashboardLayoutConfig.pinnedFilters?.[widget.id] || [];
       
       return (
-        <div key={widget.id} className={`h-full ${isMobile ? '' : 'mx-2'}`}>
+        <div key={widget.id} className="h-full">
           <ReportPanel
             reportId={widget.widget_id}
             initialFilters={widgetFilters}
@@ -1009,12 +1029,203 @@ export default function CustomDashboardEditor({
       );
     } else if (widget.type === 'insight_card') {
       return (
-        <div key={widget.id} className={`h-full ${isMobile ? '' : 'mx-2'}`}>
+        <div key={widget.id} className="h-full">
           <InsightCardWidget
             cardId={widget.widget_id}
             filters={{ ...reportPanelFilters, ...widgetFilters }} // Merge global and widget-specific filters for InsightCardWidget
             onClose={() => handleRemoveWidget(widget.id)}
           />
+        </div>
+      );
+    } else if (widget.type === 'metrics') {
+      // Get metrics config from widget
+      const metricsConfig = widget.metricsConfig || (widget as any).metrics_config;
+      if (!metricsConfig) {
+        console.error('[CustomDashboardEditor] Metrics widget missing metricsConfig:', widget);
+        return null;
+      }
+      
+      // MetricsWidgetFilters component to handle filter changes
+      const MetricsWidgetFilters = () => {
+        const { groups, teams } = useTeamsGroups();
+        const [availablePIs, setAvailablePIs] = React.useState<string[]>([]);
+        const [loadingPIs, setLoadingPIs] = React.useState(false);
+        
+        // Load PIs for PI metrics
+        React.useEffect(() => {
+          if (metricsConfig.metricsType === 'pi') {
+            const loadPIs = async () => {
+              try {
+                setLoadingPIs(true);
+                const api = new ApiService();
+                const pisResponse = await api.getPIs();
+                if (pisResponse.pis && pisResponse.pis.length > 0) {
+                  setAvailablePIs(pisResponse.pis.map(p => p.pi_name));
+                }
+              } catch (err) {
+                console.error('Failed to load PIs:', err);
+              } finally {
+                setLoadingPIs(false);
+              }
+            };
+            loadPIs();
+          }
+        }, [metricsConfig.metricsType]);
+        
+        // Build teamValue for TeamGroupFilter
+        const teamValue = React.useMemo(() => {
+          if (!metricsConfig.teamName) return null;
+          if (metricsConfig.isGroup) {
+            const group = groups.find(g => g.group_name === metricsConfig.teamName);
+            return group ? `group:${group.group_key}` : null;
+          } else {
+            const team = teams.find(t => t.team_name === metricsConfig.teamName);
+            return team ? `team:${team.team_key}` : null;
+          }
+        }, [metricsConfig.teamName, metricsConfig.isGroup, groups, teams]);
+        
+        const handleTeamGroupChange = (value: string | null, type: 'group' | 'team', name: string) => {
+          const updatedConfig = {
+            ...metricsConfig,
+            teamName: value ? name : undefined,
+            isGroup: value ? type === 'group' : false,
+          };
+          
+          // Update widget's metricsConfig
+          const updatedLayoutConfig: DashboardLayoutConfig = {
+            ...dashboardLayoutConfig,
+            layoutConfig: {
+              ...dashboardLayoutConfig.layoutConfig,
+              rows: dashboardLayoutConfig.layoutConfig.rows.map(row => ({
+                ...row,
+                widgets: row.widgets.map(w => 
+                  w.id === widget.id 
+                    ? { ...w, metricsConfig: updatedConfig }
+                    : w
+                ),
+              })),
+            },
+          };
+          setDashboardLayoutConfig(updatedLayoutConfig);
+          
+          // Auto-save
+          if (user) {
+            const userId = (user?.id || user?.user_id) as string;
+            const timerKey = `metrics-config-${widget.id}`;
+            if (filterSaveTimersRef.current[timerKey]) {
+              clearTimeout(filterSaveTimersRef.current[timerKey]);
+            }
+            filterSaveTimersRef.current[timerKey] = setTimeout(() => {
+              updateDashboard(userId, dashboardId, {
+                layout_config: updatedLayoutConfig,
+              }).catch(err => {
+                console.error(`[CustomDashboard] Failed to save metrics config for widget ${widget.id}:`, err);
+              });
+              delete filterSaveTimersRef.current[timerKey];
+            }, 1000);
+          }
+        };
+        
+        const handlePIChange = (pi: string) => {
+          const updatedConfig = {
+            ...metricsConfig,
+            piName: pi || undefined,
+          };
+          
+          // Update widget's metricsConfig
+          const updatedLayoutConfig: DashboardLayoutConfig = {
+            ...dashboardLayoutConfig,
+            layoutConfig: {
+              ...dashboardLayoutConfig.layoutConfig,
+              rows: dashboardLayoutConfig.layoutConfig.rows.map(row => ({
+                ...row,
+                widgets: row.widgets.map(w => 
+                  w.id === widget.id 
+                    ? { ...w, metricsConfig: updatedConfig }
+                    : w
+                ),
+              })),
+            },
+          };
+          setDashboardLayoutConfig(updatedLayoutConfig);
+          
+          // Auto-save
+          if (user) {
+            const userId = (user?.id || user?.user_id) as string;
+            const timerKey = `metrics-config-${widget.id}`;
+            if (filterSaveTimersRef.current[timerKey]) {
+              clearTimeout(filterSaveTimersRef.current[timerKey]);
+            }
+            filterSaveTimersRef.current[timerKey] = setTimeout(() => {
+              updateDashboard(userId, dashboardId, {
+                layout_config: updatedLayoutConfig,
+              }).catch(err => {
+                console.error(`[CustomDashboard] Failed to save metrics config for widget ${widget.id}:`, err);
+              });
+              delete filterSaveTimersRef.current[timerKey];
+            }, 1000);
+          }
+        };
+        
+        return (
+          <ReportFiltersRow>
+            <ReportFilterField label="Team/Group">
+              <TeamGroupFilter
+                value={teamValue}
+                onChange={handleTeamGroupChange}
+                placeholder="Select team or group"
+                allowClear={true}
+              />
+            </ReportFilterField>
+            {metricsConfig.metricsType === 'pi' && (
+              <ReportFilterField label="PI">
+                <PIFilter
+                  selectedPI={metricsConfig.piName || ''}
+                  onPIChange={handlePIChange}
+                />
+              </ReportFilterField>
+            )}
+          </ReportFiltersRow>
+        );
+      };
+      
+      // Build title for the metrics widget
+      const metricsTitle = metricsConfig.metricsType === 'team' 
+        ? `Team Metrics${metricsConfig.teamName ? ` - ${metricsConfig.teamName}` : ''}`
+        : `PI Metrics${metricsConfig.piName ? ` - ${metricsConfig.piName}` : ''}${metricsConfig.teamName ? ` (${metricsConfig.teamName})` : ''}`;
+      
+      // Build filter badges
+      const filterBadges: Array<{ label: string; value: string; filterKey?: string; isPinned?: boolean }> = [];
+      if (metricsConfig.teamName) {
+        filterBadges.push({
+          label: metricsConfig.isGroup ? 'Group' : 'Team',
+          value: metricsConfig.teamName,
+          filterKey: 'team_name',
+        });
+      }
+      if (metricsConfig.piName) {
+        filterBadges.push({
+          label: 'PI',
+          value: metricsConfig.piName,
+          filterKey: 'pi',
+        });
+      }
+      
+      return (
+        <div key={widget.id} className="h-full">
+          <ReportCard
+            title={metricsTitle}
+            reportId={`metrics-${widget.id}`}
+            filters={<MetricsWidgetFilters />}
+            filterBadges={filterBadges}
+            onClose={() => handleRemoveWidget(widget.id)}
+            onAIChat={() => {
+              console.log('[CustomDashboardEditor] Opening AI chat for metrics widget:', widget.id);
+              // Metrics widgets don't support AI chat yet
+            }}
+          >
+            <MetricsWidget metricsConfig={metricsConfig} />
+          </ReportCard>
         </div>
       );
     } else if (widget.type === 'insight_type') {
@@ -1127,18 +1338,20 @@ export default function CustomDashboardEditor({
           </div>
         ) : (
           // Desktop: use draggable and resizable grid
-          <DraggableResizableGrid
-            layout={mergedLayoutConfig}
-            onLayoutChange={handleLayoutChange}
-            renderReport={renderWidget}
-            onRemoveReport={(widgetId) => {
-              // widgetId is the widget's unique ID
-              handleRemoveWidget(widgetId);
-            }}
-            defaultRowHeight={500}
-            minRowHeight={500}
-            emptyRowIds={Array.from(newRowIds)}
-          />
+          <div className="flex-1 px-4 pb-4 overflow-auto">
+            <DraggableResizableGrid
+              layout={mergedLayoutConfig}
+              onLayoutChange={handleLayoutChange}
+              renderReport={renderWidget}
+              onRemoveReport={(widgetId) => {
+                // widgetId is the widget's unique ID
+                handleRemoveWidget(widgetId);
+              }}
+              defaultRowHeight={500}
+              minRowHeight={500}
+              emptyRowIds={Array.from(newRowIds)}
+            />
+          </div>
         )}
       </div>
 
@@ -1152,6 +1365,7 @@ export default function CustomDashboardEditor({
           widget_id: w.widget_id, 
           widget_type: w.type,
           filters: w.filters, // Include filters for insight_type widgets
+          ...(w.type === 'metrics' && w.metricsConfig ? { metricsConfig: w.metricsConfig } : {}), // Include metricsConfig for metrics widgets
         }))} // Pass widget type info
       />
 

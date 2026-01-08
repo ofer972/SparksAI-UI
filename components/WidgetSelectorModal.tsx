@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ApiService } from '@/lib/api';
 import type { ReportDefinition } from '@/lib/config';
 import InsightTypeSelector from './InsightTypeSelector';
+import MetricsSelector, { type MetricsSelection } from './MetricsSelector';
 
 interface InsightTypeSelection {
   insightTypeId: number;
@@ -17,10 +18,10 @@ interface InsightTypeSelection {
 interface WidgetSelectorModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectWidget?: (widgetType: 'report' | 'insight_card' | 'insight_type', widgetId: string) => void; // Single widget selection (legacy)
-  onUpdateWidgets?: (widgets: Array<{ type: 'report' | 'insight_card' | 'insight_type'; id: string; filters?: Record<string, any> }>) => void; // Multiple widget selection (new)
+  onSelectWidget?: (widgetType: 'report' | 'insight_card' | 'insight_type' | 'metrics', widgetId: string) => void; // Single widget selection (legacy)
+  onUpdateWidgets?: (widgets: Array<{ type: 'report' | 'insight_card' | 'insight_type' | 'metrics'; id: string; filters?: Record<string, any>; metricsConfig?: MetricsSelection }>) => void; // Multiple widget selection (new)
   currentWidgetIds?: string[]; // Current widget IDs (can have duplicates) for counting instances
-  currentWidgets?: Array<{ widget_id: string; widget_type: 'report' | 'insight_card' | 'insight_type'; filters?: Record<string, any> }>; // Optional: widget type info to separate reports from insight cards
+  currentWidgets?: Array<{ widget_id: string; widget_type: 'report' | 'insight_card' | 'insight_type' | 'metrics'; filters?: Record<string, any>; metricsConfig?: MetricsSelection }>; // Optional: widget type info to separate reports from insight cards
 }
 
 export default function WidgetSelectorModal({
@@ -31,7 +32,7 @@ export default function WidgetSelectorModal({
   currentWidgetIds = [],
   currentWidgets = [],
 }: WidgetSelectorModalProps) {
-  const [activeTab, setActiveTab] = useState<'reports' | 'insight_cards'>('reports');
+  const [activeTab, setActiveTab] = useState<'reports' | 'insight_cards' | 'metrics'>('reports');
   const [availableReports, setAvailableReports] = useState<ReportDefinition[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -90,6 +91,21 @@ export default function WidgetSelectorModal({
     }
     return selections;
   });
+
+  // Track selected metrics widgets
+  const [metricsSelections, setMetricsSelections] = useState<Map<string, MetricsSelection>>(() => {
+    const selections = new Map<string, MetricsSelection>();
+    if (currentWidgets.length > 0) {
+      currentWidgets
+        .filter(w => w.widget_type === 'metrics')
+        .forEach(w => {
+          if (w.metricsConfig) {
+            selections.set(w.widget_id, w.metricsConfig);
+          }
+        });
+    }
+    return selections;
+  });
   
   // Track if modal was previously open to avoid resetting selection during interaction
   const prevIsOpenRef = useRef(isOpen);
@@ -103,9 +119,15 @@ export default function WidgetSelectorModal({
       // Initialize counts based on current widgets on dashboard
       const reportCountsMap = new Map<string, number>();
       const insightTypeSelectionsMap = new Map<number, InsightTypeSelection>();
+      const metricsSelectionsMap = new Map<string, MetricsSelection>();
+      
+      console.log('[WidgetSelectorModal] Initializing from currentWidgets:', {
+        currentWidgetsLength: currentWidgets.length,
+        currentWidgets: currentWidgets,
+      });
       
       if (currentWidgets.length > 0) {
-        // Use widget type info to separate reports from insight types
+        // Use widget type info to separate reports from insight types and metrics
         currentWidgets.forEach(w => {
           if (w.widget_type === 'report') {
             reportCountsMap.set(w.widget_id, (reportCountsMap.get(w.widget_id) || 0) + 1);
@@ -117,6 +139,12 @@ export default function WidgetSelectorModal({
                 filters: w.filters || {},
               });
             }
+          } else if (w.widget_type === 'metrics' && w.metricsConfig) {
+            console.log('[WidgetSelectorModal] Adding metrics widget to selections:', {
+              widget_id: w.widget_id,
+              metricsConfig: w.metricsConfig,
+            });
+            metricsSelectionsMap.set(w.widget_id, w.metricsConfig);
           }
         });
       } else {
@@ -126,10 +154,17 @@ export default function WidgetSelectorModal({
         });
       }
       
+      console.log('[WidgetSelectorModal] Initialized selections:', {
+        reportCounts: Array.from(reportCountsMap.entries()),
+        insightTypeSelections: Array.from(insightTypeSelectionsMap.entries()),
+        metricsSelections: Array.from(metricsSelectionsMap.entries()),
+      });
+      
       setReportCounts(reportCountsMap);
       setInsightTypeSelections(insightTypeSelectionsMap);
+      setMetricsSelections(metricsSelectionsMap);
     }
-  }, [isOpen, onUpdateWidgets]); // Removed currentWidgetIds/currentWidgets from dependencies to prevent resets during interaction
+  }, [isOpen, onUpdateWidgets, currentWidgets, currentWidgetIds]); // Added currentWidgets and currentWidgetIds back to ensure proper initialization
 
   useEffect(() => {
     if (isOpen && activeTab === 'reports') {
@@ -160,9 +195,9 @@ export default function WidgetSelectorModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-lg shadow-xl w-[90vw] max-w-5xl h-[85vh] flex flex-col">
         {/* Header */}
-        <div className="flex-shrink-0 px-6 py-4 border-b border-gray-200">
+        <div className="flex-shrink-0 px-6 py-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-gray-900">Add Widget</h2>
             <button
@@ -174,34 +209,59 @@ export default function WidgetSelectorModal({
               </svg>
             </button>
           </div>
-          
-          {/* Tabs */}
-          <div className="flex gap-2">
+        </div>
+
+        {/* Tabs - System Settings Style */}
+        <div className="flex-shrink-0 px-6">
+          <nav className="flex space-x-1 bg-white px-0 pt-0">
             <button
               onClick={() => setActiveTab('reports')}
-              className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                activeTab === 'reports'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`
+                flex items-center px-4 py-2.5 text-sm font-medium rounded-t-lg border transition-colors whitespace-nowrap
+                ${activeTab === 'reports' 
+                  ? 'bg-white text-blue-600 border-x border-t border-gray-300 border-b-white -mb-px relative z-10' 
+                  : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'}
+              `}
             >
-              Reports
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>Reports</span>
             </button>
             <button
               onClick={() => setActiveTab('insight_cards')}
-              className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                activeTab === 'insight_cards'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`
+                flex items-center px-4 py-2.5 text-sm font-medium rounded-t-lg border transition-colors whitespace-nowrap
+                ${activeTab === 'insight_cards' 
+                  ? 'bg-white text-blue-600 border-x border-t border-gray-300 border-b-white -mb-px relative z-10' 
+                  : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'}
+              `}
             >
-              Insight Cards
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>Insight Cards</span>
             </button>
-          </div>
+            <button
+              onClick={() => setActiveTab('metrics')}
+              className={`
+                flex items-center px-4 py-2.5 text-sm font-medium rounded-t-lg border transition-colors whitespace-nowrap
+                ${activeTab === 'metrics' 
+                  ? 'bg-white text-blue-600 border-x border-t border-gray-300 border-b-white -mb-px relative z-10' 
+                  : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'}
+              `}
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <span>Metrics</span>
+            </button>
+          </nav>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-auto p-6">
+        {/* Tab Content - System Settings Style */}
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0 bg-white border border-gray-300 rounded-tr-lg rounded-b-lg shadow-sm mx-6 mb-6">
+          <div className="flex-1 overflow-y-auto flex flex-col min-h-0 p-6">
           {activeTab === 'reports' ? (
             <div>
               {/* Search */}
@@ -305,7 +365,7 @@ export default function WidgetSelectorModal({
                 </div>
               )}
             </div>
-          ) : (
+          ) : activeTab === 'insight_cards' ? (
             <InsightTypeSelector
               onUpdateSelections={(selections) => {
                 console.log('[WidgetSelectorModal] InsightTypeSelector onUpdateSelections called with:', {
@@ -316,15 +376,28 @@ export default function WidgetSelectorModal({
               }}
               currentSelections={insightTypeSelections}
             />
+          ) : (
+            <MetricsSelector
+              onUpdateSelections={(selections) => {
+                console.log('[WidgetSelectorModal] MetricsSelector onUpdateSelections called with:', {
+                  selectionsSize: selections.size,
+                  selections: Array.from(selections.entries()),
+                });
+                setMetricsSelections(selections);
+              }}
+              currentSelections={metricsSelections}
+            />
           )}
+          </div>
         </div>
         
         {/* Footer with Apply button for multi-select mode */}
         {onUpdateWidgets && (
-          <div className="flex-shrink-0 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+          <div className="flex-shrink-0 px-6 py-4 border-t border-gray-200 bg-white flex items-center justify-between">
             <div className="text-sm text-gray-600">
               {Array.from(reportCounts.values()).reduce((sum, count) => sum + count, 0) + 
-               insightTypeSelections.size} widget instance(s) total
+               insightTypeSelections.size + 
+               metricsSelections.size} widget instance(s) total
             </div>
             <div className="flex gap-2">
               <button
@@ -337,7 +410,7 @@ export default function WidgetSelectorModal({
                 onClick={() => {
                   if (onUpdateWidgets) {
                     // Create array with each widget_id repeated according to its count
-                    const allWidgets: Array<{ type: 'report' | 'insight_card' | 'insight_type'; id: string; filters?: Record<string, any> }> = [];
+                    const allWidgets: Array<{ type: 'report' | 'insight_card' | 'insight_type' | 'metrics'; id: string; filters?: Record<string, any>; metricsConfig?: MetricsSelection }> = [];
                     
                     // Add reports (repeat each report_id by its count)
                     reportCounts.forEach((count, reportId) => {
@@ -364,17 +437,32 @@ export default function WidgetSelectorModal({
                       });
                     });
                     
+                    // Add metrics widgets
+                    metricsSelections.forEach((selection, widgetId) => {
+                      console.log('[WidgetSelectorModal] Adding metrics widget:', {
+                        widgetId,
+                        metricsConfig: selection,
+                      });
+                      allWidgets.push({
+                        type: 'metrics' as const,
+                        id: widgetId,
+                        metricsConfig: selection,
+                      });
+                    });
+                    
                     console.log('[WidgetSelectorModal] Calling onUpdateWidgets with:', {
                       totalWidgets: allWidgets.length,
                       insightTypeWidgets: allWidgets.filter(w => w.type === 'insight_type').length,
+                      metricsWidgets: allWidgets.filter(w => w.type === 'metrics').length,
                       allWidgets,
                       insightTypeSelectionsSize: insightTypeSelections.size,
+                      metricsSelectionsSize: metricsSelections.size,
                     });
                     
                     onUpdateWidgets(allWidgets);
                   }
                 }}
-                disabled={reportCounts.size === 0 && insightTypeSelections.size === 0}
+                disabled={reportCounts.size === 0 && insightTypeSelections.size === 0 && metricsSelections.size === 0}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
                 Apply
