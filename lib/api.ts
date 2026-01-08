@@ -1171,6 +1171,285 @@ export class ApiService {
     return response.json();
   }
 
+  // PI Goals API
+  async generatePIGoals(piName: string, teamName?: string, isGroup?: boolean): Promise<any> {
+    const url = buildBackendUrl('/pi-goals/generate');
+    const body: any = { pi: piName };
+    
+    if (teamName) {
+      body.team_name = teamName;
+      body.isGroup = isGroup || false;
+    }
+    
+    // Set 90 second timeout for this endpoint only
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 seconds
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.message || errorJson.error || errorMessage;
+        } catch {
+          if (errorText && errorText.length < 200) {
+            errorMessage = errorText;
+          }
+        }
+        throw new Error(`Failed to generate PI goals: ${errorMessage}`);
+      }
+      
+      return response.json();
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new Error('Request timeout: PI goals generation took longer than 90 seconds');
+      }
+      throw err;
+    }
+  }
+
+  // Get PI Goals
+  async getPIGoals(piName: string, teamName?: string, isGroup?: boolean, ai: boolean = true): Promise<any> {
+    const params = new URLSearchParams({
+      pi: piName,
+      ai: ai.toString(),
+    });
+    
+    if (teamName) {
+      params.append('team_name', teamName);
+      params.append('isGroup', (isGroup || false).toString());
+    }
+    
+    const url = `${buildBackendUrl('/pi-goals')}?${params}`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch {
+        if (errorText && errorText.length < 200) {
+          errorMessage = errorText;
+        }
+      }
+      throw new Error(`Failed to fetch PI goals: ${errorMessage}`);
+    }
+    
+    return response.json();
+  }
+
+  // Create PI Goal (POST)
+  async createPIGoal(data: {
+    pi: string;
+    goal_text: string;
+    status?: string;
+    priority_bv?: number | null;
+    team_name?: string;
+    group_name?: string;
+  }): Promise<any> {
+    const url = buildBackendUrl('/pi-goals');
+    const body: any = {
+      pi: data.pi,
+      goal_text: data.goal_text,
+      epic_keys: [], // Empty array for new goals
+      status: data.status || 'Draft',
+    };
+    
+    if (data.priority_bv !== undefined && data.priority_bv !== null) {
+      body.priority_bv = data.priority_bv;
+    }
+    
+    if (data.team_name) {
+      body.team_name = data.team_name;
+    }
+    
+    if (data.group_name) {
+      body.group_name = data.group_name;
+    }
+    
+    const response = await authFetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch {
+        if (errorText && errorText.length < 200) {
+          errorMessage = errorText;
+        }
+      }
+      throw new Error(`Failed to create PI goal: ${errorMessage}`);
+    }
+
+    return response.json();
+  }
+
+  // Update PI Goal (PATCH)
+  async updatePIGoal(goalId: number, updates: {
+    pi?: string;
+    team_name?: string;
+    group_name?: string;
+    goal_text?: string;
+    epic_keys?: string[];
+    status?: string;
+    priority_bv?: number | null;
+  }): Promise<any> {
+    const url = `${buildBackendUrl('/pi-goals')}/${goalId}`;
+    const response = await authFetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updates),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch {
+        if (errorText && errorText.length < 200) {
+          errorMessage = errorText;
+        }
+      }
+      throw new Error(`Failed to update PI goal: ${errorMessage}`);
+    }
+
+    return response.json();
+  }
+
+  // Get Issues (GET)
+  async getIssues(params: {
+    issue_type?: string;
+    team_name?: string;
+    group_name?: string;
+    pi?: string;
+    isGroup?: boolean;
+    limit?: number;
+  }): Promise<any> {
+    const urlParams = new URLSearchParams();
+    
+    if (params.issue_type) {
+      urlParams.append('issue_type', params.issue_type);
+    }
+    if (params.team_name) {
+      urlParams.append('team_name', params.team_name);
+    }
+    if (params.group_name) {
+      urlParams.append('group_name', params.group_name);
+    }
+    if (params.pi) {
+      urlParams.append('pi', params.pi);
+    }
+    if (params.isGroup !== undefined) {
+      urlParams.append('isGroup', params.isGroup.toString());
+    }
+    if (params.limit) {
+      urlParams.append('limit', params.limit.toString());
+    }
+
+    const url = `${buildBackendUrl('/issues')}?${urlParams}`;
+    const response = await authFetch(url, {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch {
+        if (errorText && errorText.length < 200) {
+          errorMessage = errorText;
+        }
+      }
+      throw new Error(`Failed to fetch issues: ${errorMessage}`);
+    }
+
+    return response.json();
+  }
+
+  // Update multiple PI Goals from AI to User (PATCH)
+  async updatePIGoalsAiToUser(goalIds: number[]): Promise<any> {
+    const url = `${buildBackendUrl('/pi-goals/ai-to-user')}`;
+    const response = await authFetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ goal_ids: goalIds }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch {
+        if (errorText && errorText.length < 200) {
+          errorMessage = errorText;
+        }
+      }
+      throw new Error(`Failed to update PI goals: ${errorMessage}`);
+    }
+
+    return response.json();
+  }
+
+  // Delete PI Goal (DELETE)
+  async deletePIGoal(goalId: number): Promise<any> {
+    const url = `${buildBackendUrl('/pi-goals')}/${goalId}`;
+    const response = await authFetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch {
+        if (errorText && errorText.length < 200) {
+          errorMessage = errorText;
+        }
+      }
+      throw new Error(`Failed to delete PI goal: ${errorMessage}`);
+    }
+
+    return response.json();
+  }
+
   // Settings API
   async getSettings(): Promise<any> {
     const url = buildBackendUrl(API_CONFIG.endpoints.settings.get);

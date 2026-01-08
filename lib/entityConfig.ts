@@ -29,6 +29,7 @@ export interface FormFieldConfig<T> {
   disabled?: boolean;
   readonly?: boolean;
   helpText?: string; // Helper text to display below the field
+  hidden?: boolean | ((formData: Partial<T>) => boolean); // Hide field conditionally
 }
 
 export interface FilterConfig {

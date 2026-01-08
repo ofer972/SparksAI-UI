@@ -5,4 +5,7 @@ export * from './usePageSettings';
 export * from './usePIMetrics';
 export * from './useAIChat';
 export * from './useSpeechRecognition';
+export * from './usePIGoals';
+export * from './useAIGoals';
+export * from './useUserGoals';
 export { useUser, useUserId } from '@/contexts/UserContext';

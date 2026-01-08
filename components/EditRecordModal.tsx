@@ -408,7 +408,15 @@ export function EditRecordModal<T extends Record<string, any>>({
             )}
 
             {config.editableFields ? (
-              config.editableFields.map(field => renderField(field))
+              config.editableFields
+                .filter(field => {
+                  // Check if field should be hidden
+                  if (field.hidden === undefined) return true;
+                  if (typeof field.hidden === 'boolean') return !field.hidden;
+                  if (typeof field.hidden === 'function') return !field.hidden(formData);
+                  return true;
+                })
+                .map(field => renderField(field))
             ) : (
               <div className="text-center py-8 text-gray-500">
                 No editable fields configured
