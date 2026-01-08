@@ -14,11 +14,11 @@ import TeamGroupFilter from '../TeamGroupFilter';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 
 const epicScopeColors = {
-  'Issues Planned': '#0066cc',
-  'Issues Added': '#800080',
-  'Issues Completed': '#009900',
-  'Issues Not Completed': '#ff8c00',
-  'Issues Removed': '#00ffff',
+  'Epics Planned': '#0066cc',
+  'Epics Added': '#800080',
+  'Epics Completed': '#009900',
+  'Epics Not Completed': '#ff8c00',
+  'Epics Removed': '#00ffff',
 };
 
 export interface EpicScopeChangesViewProps {
@@ -127,7 +127,7 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
     data.forEach((item) => {
       const quarter = item['Quarter Name'];
       const metricName = item['Metric Name'];
-      const rawIssueKeys = item['Issue Keys'] ?? item.issue_keys ?? item.issueKeys ?? '';
+      const rawIssueKeys = item['Epic Keys'] ?? item['Issue Keys'] ?? item.epic_keys ?? item.issue_keys ?? item.epicKeys ?? item.issueKeys ?? '';
       const issueKeys = parseIssueKeys(rawIssueKeys);
       const value = Number(item.Value) || 0;
       const key: ScopeMetricKey = `${quarter}|${metricName}`;

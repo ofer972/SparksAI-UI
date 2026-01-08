@@ -100,13 +100,18 @@ export default function StackedGroupedBarChart({
     });
     const stackGroups = Array.from(new Set(data.map(d => d.stackGroup))).sort();
     
-    // Define metric order for proper stacking
+    // Define metric order for proper stacking (support both Issues and Epics)
     const metricOrder = [
       'Issues Planned',
       'Issues Added',
       'Issues Completed',
       'Issues Not Completed',
       'Issues Removed',
+      'Epics Planned',
+      'Epics Added',
+      'Epics Completed',
+      'Epics Not Completed',
+      'Epics Removed',
     ];
 
     const stackGroupMap: { [metric: string]: string } = {
@@ -115,6 +120,11 @@ export default function StackedGroupedBarChart({
       'Issues Completed': 'Res/NotRes/Rem',
       'Issues Not Completed': 'Res/NotRes/Rem',
       'Issues Removed': 'Res/NotRes/Rem',
+      'Epics Planned': 'Plan/Add',
+      'Epics Added': 'Plan/Add',
+      'Epics Completed': 'Res/NotRes/Rem',
+      'Epics Not Completed': 'Res/NotRes/Rem',
+      'Epics Removed': 'Res/NotRes/Rem',
     };
 
     // Get metrics in the defined order, then add any others
