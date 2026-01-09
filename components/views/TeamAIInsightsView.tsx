@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import AICards from '@/components/AICards';
 import TeamMetrics from '@/components/TeamMetrics';
 import PIMetrics from '@/components/PIMetrics';
@@ -22,6 +22,19 @@ export default function TeamAIInsightsView({
   isLoading,
   isReady,
 }: TeamAIInsightsViewProps) {
+  const [mobileMetricsTab, setMobileMetricsTab] = useState<'team' | 'pi'>('team');
+  
+  // Auto-switch mobile tabs based on which filters are available
+  React.useEffect(() => {
+    // If only PI is selected (no team), switch to PI tab
+    if (selectedPI && !selectedTeam) {
+      setMobileMetricsTab('pi');
+    }
+    // If team is selected, switch to team tab (prioritize team over PI)
+    else if (selectedTeam) {
+      setMobileMetricsTab('team');
+    }
+  }, [selectedTeam, selectedPI]);
   // Wait for settings to load before rendering to avoid fetching with wrong team
   if (!isReady || isLoading) {
     return (
@@ -69,20 +82,46 @@ export default function TeamAIInsightsView({
           isGroup={selectedTreeType === 'group'}
         />
       </div>
-      {/* Team Metrics on mobile - inline after content (priority: show if team selected) */}
-      {selectedTeam && (
-        <div className="md:hidden mt-4 border-t border-gray-200 bg-white" style={{ zoom: 0.90, overflow: 'visible' }}>
-          <div className="px-3 py-2" style={{ overflow: 'visible' }}>
-            <TeamMetrics teamName={selectedTeam} isGroup={selectedTreeType === 'group'} />
+       {/* Metrics on mobile with tabs - inline after content */}
+       {(selectedTeam || selectedPI) && (
+         <div className="md:hidden mt-4 bg-transparent" style={{ overflow: 'visible' }}>
+           {/* Tabs */}
+           <div className="flex space-x-1 bg-transparent px-3 pt-2">
+            {selectedTeam && (
+              <button
+                onClick={() => setMobileMetricsTab('team')}
+                className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-t-lg border transition-colors whitespace-nowrap ${
+                  mobileMetricsTab === 'team'
+                    ? 'bg-white text-blue-600 border-x border-t border-gray-300 border-b-white -mb-px relative z-10'
+                    : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                Team Metrics
+              </button>
+            )}
+            {selectedPI && (
+              <button
+                onClick={() => setMobileMetricsTab('pi')}
+                className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-t-lg border transition-colors whitespace-nowrap ${
+                  mobileMetricsTab === 'pi'
+                    ? 'bg-white text-blue-600 border-x border-t border-gray-300 border-b-white -mb-px relative z-10'
+                    : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                PI Metrics
+              </button>
+            )}
           </div>
-        </div>
-      )}
-
-      {/* PI Metrics on mobile - inline after content (only if no team selected but PI is selected) */}
-      {!selectedTeam && selectedPI && (
-        <div className="md:hidden mt-4 border-t border-gray-200 bg-white" style={{ zoom: 0.90, overflow: 'visible' }}>
-          <div className="px-3 py-2" style={{ overflow: 'visible' }}>
-            <PIMetrics piName={selectedPI} />
+          
+          {/* Metrics Content */}
+          <div className="border-t border-gray-300" style={{ zoom: 0.90, overflow: 'visible' }}>
+            <div className="px-3 py-2 bg-white" style={{ overflow: 'visible' }}>
+              {mobileMetricsTab === 'team' && selectedTeam ? (
+                <TeamMetrics teamName={selectedTeam} isGroup={selectedTreeType === 'group'} singleRowLayout={true} />
+              ) : mobileMetricsTab === 'pi' && selectedPI ? (
+                <PIMetrics piName={selectedPI} singleRowLayout={true} />
+              ) : null}
+            </div>
           </div>
         </div>
       )}

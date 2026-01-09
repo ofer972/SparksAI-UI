@@ -9,6 +9,7 @@ interface TeamMetricsProps {
   teamName?: string;
   isGroup?: boolean;
   selectedMetrics?: string[]; // Optional: filter which metrics to display
+  singleRowLayout?: boolean; // Optional: use single row layout instead of 2-column grid (default: false)
 }
 
 interface SprintMetricsData {
@@ -254,7 +255,7 @@ const MetricCard = ({ id, icon, value, label, tooltip, className = "", isLeftmos
   );
 };
 
-export default function TeamMetrics({ teamName, isGroup, selectedMetrics }: TeamMetricsProps) {
+export default function TeamMetrics({ teamName, isGroup, selectedMetrics, singleRowLayout = false }: TeamMetricsProps) {
   const { sprintMetrics, completionRate, loading, error } = useTeamMetrics(teamName, isGroup);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
@@ -273,11 +274,11 @@ export default function TeamMetrics({ teamName, isGroup, selectedMetrics }: Team
     return (
       <div className="h-full w-full overflow-hidden">
         <div className="grid gap-2 w-full h-full" style={{ 
-          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+          gridTemplateColumns: singleRowLayout ? 'repeat(auto-fit, minmax(120px, 1fr))' : 'repeat(2, minmax(0, 1fr))',
           gridAutoRows: '1fr'
         }}>
           {[...Array(loadingCount)].map((_, i) => {
-            const isLastItem = i === lastItemIndex && isOdd;
+            const isLastItem = i === lastItemIndex && isOdd && !singleRowLayout;
             return (
               <div 
                 key={i} 
@@ -437,11 +438,11 @@ export default function TeamMetrics({ teamName, isGroup, selectedMetrics }: Team
   return (
     <div className="relative h-full w-full overflow-hidden">
       <div className="grid gap-2 w-full h-full" style={{ 
-        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+        gridTemplateColumns: singleRowLayout ? 'repeat(auto-fit, minmax(120px, 1fr))' : 'repeat(2, minmax(0, 1fr))',
         gridAutoRows: '1fr'
       }}>
         {metricsToDisplay.map((m, index) => {
-          const isLastItem = index === lastItemIndex && isOdd;
+          const isLastItem = index === lastItemIndex && isOdd && !singleRowLayout;
           return (
             <div 
               key={m.id} 

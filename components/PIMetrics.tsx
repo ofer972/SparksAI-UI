@@ -6,6 +6,7 @@ import { usePIMetrics } from '@/hooks';
 interface PIMetricsProps {
   piName?: string;
   selectedMetrics?: string[]; // Optional: filter which metrics to display
+  singleRowLayout?: boolean; // Optional: use single row layout instead of 2-column grid (default: false)
 }
 
 interface MetricCardProps {
@@ -98,8 +99,8 @@ function MetricCard({
         <div className="animate-pulse mb-1 sm:mb-1.5">
           <div className="h-6 sm:h-8 w-12 sm:w-16 bg-gray-200 rounded"></div>
         </div>
-        ) : dependencies && dependencies.length > 0 ? (
-          <div className="w-full max-w-[300px] space-y-1 sm:space-y-1.5 px-0.5 sm:px-1 flex flex-col justify-center mb-1 sm:mb-1.5">
+       ) : dependencies && dependencies.length > 0 ? (
+         <div className="w-full max-w-[300px] space-y-1 sm:space-y-1.5 px-0.5 sm:px-1 flex flex-col justify-center mb-1 sm:mb-1.5 mx-auto">
           {dependencies.map((dep, idx) => {
             // Calculate max value for relative sizing (use the highest value in the list)
             const maxIssues = Math.max(...dependencies.map(d => d.uncompletedIssues), 1);
@@ -152,7 +153,7 @@ function MetricCard({
   );
 }
 
-export default function PIMetrics({ piName, selectedMetrics }: PIMetricsProps) {
+export default function PIMetrics({ piName, selectedMetrics, singleRowLayout = false }: PIMetricsProps) {
   const { metrics, loading, error } = usePIMetrics(piName);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
@@ -171,11 +172,11 @@ export default function PIMetrics({ piName, selectedMetrics }: PIMetricsProps) {
     return (
       <div className="h-full w-full overflow-hidden">
         <div className="grid gap-2 w-full h-full" style={{ 
-          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+          gridTemplateColumns: singleRowLayout ? 'repeat(auto-fit, minmax(120px, 1fr))' : 'repeat(2, minmax(0, 1fr))',
           gridAutoRows: '1fr'
         }}>
           {[...Array(loadingCount)].map((_, i) => {
-            const isLastItem = i === lastItemIndex && isOdd;
+            const isLastItem = i === lastItemIndex && isOdd && !singleRowLayout;
             return (
               <div 
                 key={i} 
@@ -308,11 +309,11 @@ export default function PIMetrics({ piName, selectedMetrics }: PIMetricsProps) {
   return (
     <div className="relative h-full w-full overflow-hidden">
       <div className="grid gap-2 w-full h-full" style={{ 
-        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+        gridTemplateColumns: singleRowLayout ? 'repeat(auto-fit, minmax(120px, 1fr))' : 'repeat(2, minmax(0, 1fr))',
         gridAutoRows: '1fr'
       }}>
         {metricsToDisplay.map((metric, index) => {
-          const isLastItem = index === lastItemIndex && isOdd;
+          const isLastItem = index === lastItemIndex && isOdd && !singleRowLayout;
           return (
             <div 
               key={metric.cardId} 

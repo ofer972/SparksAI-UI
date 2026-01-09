@@ -139,6 +139,7 @@ export default function Home() {
   const prevActiveNavItemRef = useRef<NavItemId>(activeNavItem);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [insightMetricsTab, setInsightMetricsTab] = useState<'team' | 'pi'>('team');
   
   // Function to check if current view has unsaved changes
   const hasUnsavedChanges = () => {
@@ -265,6 +266,20 @@ export default function Home() {
     selectedCategories: [] as string[],
   });
   
+  // Auto-switch tabs based on which filters are available
+  useEffect(() => {
+    if (activeNavItem === 'team-ai-insights') {
+      // If only PI is selected (no team), switch to PI tab
+      if (teamInsightsFilters.selectedPI && !teamInsightsFilters.selectedTeam) {
+        setInsightMetricsTab('pi');
+      }
+      // If team is selected, switch to team tab (prioritize team over PI)
+      else if (teamInsightsFilters.selectedTeam) {
+        setInsightMetricsTab('team');
+      }
+    }
+  }, [activeNavItem, teamInsightsFilters.selectedTeam, teamInsightsFilters.selectedPI]);
+
   const [uploadTranscriptsFilters, setUploadTranscriptsFilters] = useState({
     selectedPI: '',
     selectedTeam: '',
@@ -1784,29 +1799,64 @@ export default function Home() {
           </div>
 
           {/* Main Content Area */}
-          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
 
         {/* Content Area */}
-        <div className="flex-1 p-2 overflow-auto">
+        <div className={`flex-1 p-2 overflow-auto ${
+          activeNavItem === 'team-ai-insights' && (teamInsightsFilters.selectedTeam || teamInsightsFilters.selectedPI)
+            ? 'pb-[200px]'
+            : ''
+        }`}>
           {renderMainContent()}
         </div>
 
-        {/* Team Metrics Bottom Bar - only for team-ai-insights on desktop when team/group is selected */}
-        {activeNavItem === 'team-ai-insights' && teamInsightsFilters.selectedTeam && (
-          <div className="hidden md:flex flex-shrink-0 border-t border-gray-200 bg-white relative z-30" style={{ zoom: 0.90, overflow: 'visible' }}>
-            <div className="px-3 md:px-4 py-2 md:py-2.5 w-full" style={{ overflow: 'visible' }}>
-              <TeamMetrics teamName={teamInsightsFilters.selectedTeam} isGroup={teamInsightsFilters.selectedTreeType === 'group'} />
+        {/* Metrics Bottom Bar with Tabs - only for team-ai-insights on desktop when team/group or PI is selected */}
+        {activeNavItem === 'team-ai-insights' && (teamInsightsFilters.selectedTeam || teamInsightsFilters.selectedPI) && (
+          <div className="hidden md:flex flex-shrink-0 flex-row bg-transparent absolute bottom-0 w-full z-30 items-start" style={{ overflow: 'visible' }}>
+            
+            {/* Metrics Content */}
+            <div className="flex-1 border-t border-r border-gray-300 rounded-tl-lg bg-white" style={{ zoom: 0.90, overflow: 'visible' }}>
+              <div className="px-3 md:px-4 py-2 md:py-2.5 w-full" style={{ overflow: 'visible' }}>
+                {insightMetricsTab === 'team' && teamInsightsFilters.selectedTeam ? (
+                  <TeamMetrics 
+                    teamName={teamInsightsFilters.selectedTeam} 
+                    isGroup={teamInsightsFilters.selectedTreeType === 'group'} 
+                    singleRowLayout={true} 
+                  />
+                ) : insightMetricsTab === 'pi' && teamInsightsFilters.selectedPI ? (
+                  <PIMetrics piName={teamInsightsFilters.selectedPI} singleRowLayout={true} />
+                ) : null}
+              </div>
             </div>
-          </div>
-        )}
 
-        {/* PI Metrics Bottom Bar - only for team-ai-insights on desktop when PI is selected and no team/group is selected */}
-        {activeNavItem === 'team-ai-insights' && 
-         !teamInsightsFilters.selectedTeam && 
-         teamInsightsFilters.selectedPI && (
-          <div className="hidden md:flex flex-shrink-0 border-t border-gray-200 bg-white relative z-30" style={{ zoom: 0.90, overflow: 'visible' }}>
-            <div className="px-3 md:px-4 py-2 md:py-2.5 w-full" style={{ overflow: 'visible' }}>
-              <PIMetrics piName={teamInsightsFilters.selectedPI} />
+            {/* Tabs (Vertical on Right) */}
+            <div className="flex flex-col space-y-1 bg-transparent pl-0 pt-0">
+              {teamInsightsFilters.selectedTeam && (
+                <button
+                  onClick={() => setInsightMetricsTab('team')}
+                  className={`flex items-center justify-center px-2.5 py-4 text-sm font-medium rounded-r-lg border-y border-r border-l-0 transition-colors whitespace-nowrap ${
+                    insightMetricsTab === 'team'
+                      ? 'bg-white text-blue-600 border-gray-300 -ml-px z-10'
+                      : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                  }`}
+                  style={{ writingMode: 'vertical-rl' }}
+                >
+                  Team
+                </button>
+              )}
+              {teamInsightsFilters.selectedPI && (
+                <button
+                  onClick={() => setInsightMetricsTab('pi')}
+                  className={`flex items-center justify-center px-2.5 py-4 text-sm font-medium rounded-r-lg border-y border-r border-l-0 transition-colors whitespace-nowrap ${
+                    insightMetricsTab === 'pi'
+                      ? 'bg-white text-blue-600 border-gray-300 -ml-px z-10'
+                      : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                  }`}
+                  style={{ writingMode: 'vertical-rl' }}
+                >
+                  PI
+                </button>
+              )}
             </div>
           </div>
         )}
