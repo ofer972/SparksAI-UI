@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { useMemo, useCallback, useEffect, useRef, useState } from 'react';
 import BurndownChart from '../BurndownChart';
 import type { BurndownDataPoint } from '@/lib/api';
 import type {
@@ -12,6 +12,11 @@ import ReportFilterField from '../reporting/ReportFilterField';
 import TeamGroupFilter from '../TeamGroupFilter';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 import { getIssueTypes } from '@/lib/issueTypes';
+import { ApiService } from '@/lib/api';
+import type { BurndownIssue } from '@/lib/config';
+import IssuesDialog from './IssuesDialog';
+import DataTable, { Column } from '../DataTable';
+import { API_CONFIG } from '@/lib/config';
 
 interface PIBurndownViewProps {
   data: BurndownDataPoint[];
@@ -47,6 +52,12 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
   const isGroup = (filters.isGroup as boolean) ?? false;
 
   const issueTypeOptions = useMemo(() => getIssueTypes(), []);
+
+  // Dialog state
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedMetricType, setSelectedMetricType] = useState<string | null>(null);
+  const apiService = React.useMemo(() => new ApiService(), []);
 
   // Look up ID from name to construct proper teamValue
   const teamValue = useMemo(() => {
@@ -205,6 +216,97 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
     return badges;
   }, [piName, issueType, project, teamName, isGroup, pinnedFilters]);
 
+  // Handle chart click
+  const handleChartClick = useCallback((clickData: { date: string; metricType: string; dataIndex: number }) => {
+    const pi = meta?.pi || piName;
+    if (!pi) {
+      console.warn('PI name not available in meta or filters');
+      return;
+    }
+    
+    setSelectedDate(clickData.date);
+    setSelectedMetricType(clickData.metricType);
+    setIsDialogOpen(true);
+  }, [meta, piName]);
+
+  // Fetch function for dialog
+  const fetchPIBurndownIssues = useCallback(async () => {
+    if (!selectedDate || !selectedMetricType) {
+      return { success: false, message: 'Missing required parameters' };
+    }
+
+    const pi = meta?.pi || piName;
+    if (!pi) {
+      return { success: false, message: 'PI name not available' };
+    }
+
+    return await apiService.getPIBurndownIssues(
+      selectedDate,
+      pi,
+      selectedMetricType,
+      teamName || undefined,
+      isGroup,
+      issueType !== 'all' ? issueType : undefined
+    );
+  }, [selectedDate, selectedMetricType, meta?.pi, piName, teamName, isGroup, issueType, apiService]);
+
+  // Format metric type for display
+  const formatMetricType = (metricType: string): string => {
+    const labels: Record<string, string> = {
+      'actual_remaining': 'Actual Remaining',
+      'total_scope': 'Total Scope',
+      'wip_in_progress': 'Work In Progress',
+      'issues_completed': 'Issues Completed',
+      'issues_removed': 'Issues Removed',
+    };
+    return labels[metricType] || metricType;
+  };
+
+  // Format date for display
+  const formatDate = (dateStr: string): string => {
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  // Dialog title
+  const dialogTitle = useMemo(() => {
+    if (!selectedDate || !selectedMetricType) return 'Issues';
+    return `${formatMetricType(selectedMetricType)} - ${formatDate(selectedDate)}`;
+  }, [selectedDate, selectedMetricType]);
+
+  // Columns for burndown issues
+  const burndownIssueColumns: Column<BurndownIssue>[] = useMemo(() => [
+    {
+      key: 'issue_key',
+      label: 'ISSUE KEY',
+      width: '12%',
+    },
+    {
+      key: 'summary',
+      label: 'SUMMARY',
+      align: 'left',
+      maxLength: 80,
+    },
+    {
+      key: 'team_name',
+      label: 'TEAM',
+      width: '15%',
+    },
+    {
+      key: 'metric_category',
+      label: 'CATEGORY',
+      width: '12%',
+    },
+  ], []);
+
   return (
     <ReportCard 
       title="PI Burndown" 
@@ -223,6 +325,7 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
             loading={loading}
             error={error}
             title={meta?.pi ? `PI Burndown: ${meta.pi}` : undefined}
+            onChartClick={handleChartClick}
           />
         </div>
         {Array.isArray(data) && data.length > 0 && (
@@ -233,6 +336,22 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
           </div>
         )}
       </div>
+      
+      {/* Issues Dialog */}
+      <IssuesDialog<BurndownIssue>
+        isOpen={isDialogOpen}
+        onClose={() => {
+          setIsDialogOpen(false);
+          setSelectedDate(null);
+          setSelectedMetricType(null);
+        }}
+        title={dialogTitle}
+        columns={burndownIssueColumns}
+        fetchFunction={fetchPIBurndownIssues}
+        jiraUrl={API_CONFIG.jiraUrl}
+        emptyMessage="No issues found for the selected criteria."
+        rowKey={(row, index) => `${row.issue_key}-${index}`}
+      />
     </ReportCard>
   );
 };

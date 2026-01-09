@@ -599,9 +599,6 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
         {((!loading && !error) || (loading && fetchingDetailOnly)) && (
         <div className="space-y-4 h-full flex flex-col">
           <div className="border border-gray-200 rounded-lg p-4 h-full flex flex-col">
-            <h3 className="text-md font-semibold text-gray-900 mb-3">
-              Average Duration by Status
-            </h3>
             <div className="relative flex-1 h-full min-h-[350px]">
               <Bar data={chartData} options={chartOptions} plugins={[ChartDataLabels]} />
             </div>

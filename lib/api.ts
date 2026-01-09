@@ -31,7 +31,8 @@ import {
   TopDependenciesSummaryResponse,
   AverageEpicCycleTimeResponse,
   IssueTypesHierarchyResponse,
-  CycleTimeIssuesResponse
+  CycleTimeIssuesResponse,
+  BurndownIssuesResponse
 } from './config';
 import { getAuthHeaders, refreshAccessToken, clearTokens, getCurrentUser } from './auth';
 
@@ -477,6 +478,76 @@ export class ApiService {
     }
 
     const result: CycleTimeIssuesResponse = await response.json();
+    return result;
+  }
+
+  // Burndown Issues API
+  async getBurndownIssues(
+    date: string,
+    sprintId: number,
+    metricType: string,
+    teamName?: string,
+    isGroup: boolean = false,
+    issueType?: string
+  ): Promise<BurndownIssuesResponse> {
+    const params = new URLSearchParams();
+    params.append('date', date);
+    params.append('sprint_id', sprintId.toString());
+    params.append('metric_type', metricType);
+
+    if (teamName) {
+      params.append('team_name', teamName);
+    }
+    if (isGroup) {
+      params.append('isGroup', 'true');
+    }
+    if (issueType && issueType !== 'all') {
+      params.append('issue_type', issueType);
+    }
+
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.issues.getHistoryInfo)}?${params}`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch burndown issues: ${response.statusText}`);
+    }
+
+    const result: BurndownIssuesResponse = await response.json();
+    return result;
+  }
+
+  // PI Burndown Issues API
+  async getPIBurndownIssues(
+    date: string,
+    piName: string,
+    metricType: string,
+    teamName?: string,
+    isGroup: boolean = false,
+    issueType?: string
+  ): Promise<BurndownIssuesResponse> {
+    const params = new URLSearchParams();
+    params.append('date', date);
+    params.append('pi', piName);
+    params.append('metric_type', metricType);
+
+    if (teamName) {
+      params.append('team_name', teamName);
+    }
+    if (isGroup) {
+      params.append('isGroup', 'true');
+    }
+    if (issueType && issueType !== 'all') {
+      params.append('issue_type', issueType);
+    }
+
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.issues.getPIHistoryInfo)}?${params}`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch PI burndown issues: ${response.statusText}`);
+    }
+
+    const result: BurndownIssuesResponse = await response.json();
     return result;
   }
 

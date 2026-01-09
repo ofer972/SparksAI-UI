@@ -32,13 +32,15 @@ interface BurndownChartProps {
   loading: boolean;
   error: string | null;
   title?: string;
+  onChartClick?: (data: { date: string; metricType: string; dataIndex: number }) => void;
 }
 
 export default function BurndownChart({ 
   data,
   loading,
   error,
-  title
+  title,
+  onChartClick
 }: BurndownChartProps) {
 
   // Memoize chart data preparation to prevent unnecessary recalculations
@@ -121,7 +123,13 @@ export default function BurndownChart({
           backgroundColor: 'rgba(106, 27, 154, 0.1)',
           borderWidth: 1,
           borderDash: [10, 5],
-          pointRadius: 0,
+          pointRadius: 3,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#6a1b9a',
+          pointBorderColor: '#6a1b9a',
+          pointHoverBackgroundColor: '#6a1b9a',
+          pointHoverBorderColor: '#6a1b9a',
+          pointHoverBorderWidth: 1,
           fill: false,
           tension: 0,
           datalabels: {
@@ -156,9 +164,13 @@ export default function BurndownChart({
           backgroundColor: '#00ff00',
           borderWidth: 0,
           pointRadius: 6,
+          pointHoverRadius: 8,
           pointStyle: 'rectRot',
           pointBackgroundColor: '#00ff00',
           pointBorderColor: '#00ff00',
+          pointHoverBackgroundColor: '#00ff00',
+          pointHoverBorderColor: '#00ff00',
+          pointHoverBorderWidth: 1,
           fill: false,
           tension: 0,
           showLine: false,
@@ -169,6 +181,18 @@ export default function BurndownChart({
       ],
     };
   }, [data]);
+
+  // Map dataset label to metric type
+  const getMetricTypeFromDataset = (datasetIndex: number): string | null => {
+    const metricMap: Record<number, string> = {
+      0: 'actual_remaining',
+      2: 'total_scope',
+      3: 'wip_in_progress',
+      4: 'issues_removed',
+      5: 'issues_completed',
+    };
+    return metricMap[datasetIndex] || null;
+  };
 
   const options = React.useMemo(() => ({
     responsive: true,
@@ -297,10 +321,31 @@ export default function BurndownChart({
       },
     },
     interaction: {
-      mode: 'index' as const,
+      mode: 'point' as const,
       intersect: true,
     },
-  }), [data]);
+    onClick: (event: any, elements: any[]) => {
+      if (!onChartClick || elements.length === 0) return;
+      
+      // With mode: 'point', elements array contains only the clicked element
+      const element = elements[0];
+      const dataIndex = element.index;
+      const datasetIndex = element.datasetIndex;
+      
+      // Only allow clicks on clickable datasets (exclude ideal_burndown)
+      const metricType = getMetricTypeFromDataset(datasetIndex);
+      if (!metricType) return;
+      
+      const clickedData = data[dataIndex];
+      if (clickedData && clickedData.snapshot_date) {
+        onChartClick({
+          date: clickedData.snapshot_date,
+          metricType,
+          dataIndex,
+        });
+      }
+    },
+  }), [data, onChartClick]);
 
   if (loading) {
     return (

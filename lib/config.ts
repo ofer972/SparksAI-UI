@@ -45,6 +45,8 @@ export const API_CONFIG = {
     // Issues endpoints
     issues: {
       cycleTimeWithIssueKeys: '/issues/cycle-time-with-issues-keys',
+      getHistoryInfo: '/issues/get-history-info',
+      getPIHistoryInfo: '/issues/get-pi-history-info',
     },
     
     // AI Cards endpoints
@@ -728,4 +730,29 @@ export interface CycleTimeIssuesResponse {
     issues: CycleTimeIssue[];
   };
   message?: string;
+}
+
+// Burndown Issues types
+export interface BurndownIssue {
+  issue_key: string;
+  summary: string;
+  team_name: string;
+  metric_category: string;
+}
+
+export interface BurndownIssuesResponse {
+  success: boolean;
+  data: {
+    issues: BurndownIssue[];
+    count: number;
+    date: string;
+    sprint_id: number;
+    sprint_name: string;
+    metric_type: string;
+    team_name?: string;
+    group_name?: string;
+    teams_in_group?: string[];
+    issue_type?: string;
+  };
+  message: string;
 }

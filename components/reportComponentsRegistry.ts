@@ -52,11 +52,19 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
     mapProps: ({ result, loading, error, meta }) => {
       // Handle new response format where result is an object with burndown_data
       if (result && typeof result === 'object' && 'burndown_data' in result && Array.isArray(result.burndown_data)) {
+        // Extract sprint_id and sprint_name into meta
+        const enhancedMeta = {
+          ...meta,
+          ...(result.sprint_id && { sprint_id: result.sprint_id }),
+          ...(result.sprint_name && { sprint_name: result.sprint_name }),
+          ...(result.start_date && { start_date: result.start_date }),
+          ...(result.end_date && { end_date: result.end_date }),
+        };
         return {
           data: result.burndown_data,
           loading,
           error,
-          meta,
+          meta: enhancedMeta,
         };
       }
       return {

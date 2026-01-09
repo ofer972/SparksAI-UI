@@ -252,12 +252,7 @@ const IssuesTrendChartView: React.FC<IssuesTrendChartViewProps> = ({
         x: {
           display: true,
           title: {
-            display: true,
-            text: 'Month',
-            font: {
-              size: 10,
-              weight: 'bold' as const,
-            },
+            display: false,
           },
           grid: {
             color: 'rgba(0, 0, 0, 0.1)',
