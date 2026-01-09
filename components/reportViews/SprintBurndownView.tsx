@@ -1,21 +1,11 @@
 'use client';
 
-import React, { useMemo, useCallback, useEffect, useRef, useState } from 'react';
-import BurndownChart from '../BurndownChart';
+import React, { useMemo, useCallback, useEffect, useRef } from 'react';
 import type { BurndownDataPoint } from '@/lib/api';
-import type {
-  ReportFiltersUpdater,
-} from '../reportComponentsRegistry';
-import ReportCard from '../reporting/ReportCard';
-import ReportFiltersRow from '../reporting/ReportFiltersRow';
-import ReportFilterField from '../reporting/ReportFilterField';
-import TeamGroupFilter from '../TeamGroupFilter';
-import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
+import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
 import { ApiService } from '@/lib/api';
-import type { BurndownIssue } from '@/lib/config';
-import IssuesDialog from './IssuesDialog';
-import DataTable, { Column } from '../DataTable';
-import { API_CONFIG } from '@/lib/config';
+import BurndownViewBase from './BurndownViewBase';
+import ReportFilterField from '../reporting/ReportFilterField';
 
 interface SprintBurndownViewProps {
   data: BurndownDataPoint[];
@@ -49,35 +39,11 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
   togglePin,
   pinnedFilters = [],
 }) => {
-  // Data should already be extracted as array from the registry mapProps
-  const burndownData = React.useMemo(() => {
-    return Array.isArray(data) ? data : [];
-  }, [data]);
-
   const issueType = (filters.issue_type as string) ?? 'all';
   const sprintName = (filters.sprint_name as string) ?? '';
-  const { groups, teams: allTeams } = useTeamsGroups();
   const teamName = (filters.team_name as string) ?? '';
   const isGroup = (filters.isGroup as boolean) ?? false;
-  
-  // Dialog state
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [selectedMetricType, setSelectedMetricType] = useState<string | null>(null);
   const apiService = React.useMemo(() => new ApiService(), []);
-  
-  // Look up ID from name to construct proper teamValue
-  const teamValue = useMemo(() => {
-    if (!teamName) return null;
-    
-    if (isGroup) {
-      const group = groups.find(g => g.group_name === teamName);
-      return group ? `group:${group.group_key}` : null;
-    } else {
-      const team = allTeams.find(t => t.team_name === teamName);
-      return team ? `team:${team.team_key}` : null;
-    }
-  }, [teamName, isGroup, groups, allTeams]);
 
   const availableTeams = useMemo(() => {
     if (meta && Array.isArray(meta.available_teams)) {
@@ -87,9 +53,7 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
   }, [meta]);
 
   const sprintOptions: Array<{ value: string; label: string }> = useMemo(() => {
-    if (Array.isArray(componentProps?.sprintOptions)) {
-      return componentProps!.sprintOptions;
-    }
+    // Use meta.available_sprints from backend (team-specific)
     if (Array.isArray(meta?.available_sprints)) {
       return meta!.available_sprints.map((name: string) => ({
         value: name,
@@ -97,9 +61,10 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
       }));
     }
     return [];
-  }, [componentProps?.sprintOptions, meta?.available_sprints]);
+  }, [meta?.available_sprints, teamName, isGroup]);
 
   const hasAutoSelectedRef = useRef(false);
+  const prevTeamGroupRef = useRef<{ teamName: string; isGroup: boolean } | null>(null);
 
   const handleIssueTypeChange = (value: string) => {
     setFilters((prev) => ({
@@ -139,46 +104,51 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
     }
   }, [availableTeams, teamName, handleTeamNameChange, loading]);
 
-  const filtersContent = (
-    <ReportFiltersRow>
-      <ReportFilterField label="Team/Group">
-        <TeamGroupFilter
-          value={teamValue}
-          onChange={(value, type, name) => {
-            if (value === null) {
-              setFilters((prev) => ({
-                ...prev,
-                team_name: null,
-                isGroup: false,
-              }));
-            } else {
-              setFilters((prev) => ({
-                ...prev,
-                team_name: name,
-                isGroup: type === 'group',
-              }));
-            }
-          }}
-          placeholder="Select team or group"
-          allowClear={true}
-        />
-      </ReportFilterField>
+  // Clear sprint selection only when team/group actually changes (reset to "Current Sprint")
+  useEffect(() => {
+    const currentTeamGroup = { teamName: teamName || '', isGroup: isGroup || false };
+    const prevTeamGroup = prevTeamGroupRef.current;
 
-      <ReportFilterField label="Issue Type">
-        <select
-          value={issueType}
-          onChange={(event) => handleIssueTypeChange(event.target.value)}
-          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-        >
-          {ISSUE_TYPE_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </ReportFilterField>
+    // Only clear sprint_name if team/group actually changed
+    if (prevTeamGroup !== null) {
+      const teamChanged = prevTeamGroup.teamName !== currentTeamGroup.teamName;
+      const groupChanged = prevTeamGroup.isGroup !== currentTeamGroup.isGroup;
+      
+      if (teamChanged || groupChanged) {
+        setFilters((prev) => ({
+          ...prev,
+          sprint_name: '', // Empty string represents "Current Sprint"
+        }));
+      }
+    }
 
-      {sprintOptions.length > 0 && (
+    // Update ref for next comparison
+    prevTeamGroupRef.current = currentTeamGroup;
+  }, [teamName, isGroup, setFilters]);
+
+  // Custom filters for Sprint Burndown
+  const customFilters = [
+    {
+      type: 'issueType' as const,
+      component: (
+        <ReportFilterField label="Issue Type">
+          <select
+            value={issueType}
+            onChange={(event) => handleIssueTypeChange(event.target.value)}
+            className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            {ISSUE_TYPE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </ReportFilterField>
+      ),
+    },
+    ...(sprintOptions.length > 0 ? [{
+      type: 'other' as const,
+      component: (
         <ReportFilterField label="Sprint">
           <select
             value={sprintName}
@@ -192,11 +162,9 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
             ))}
           </select>
         </ReportFilterField>
-      )}
-    </ReportFiltersRow>
-  );
-
-  const currentSprintName = componentProps?.currentSprintName as string | undefined;
+      ),
+    }] : []),
+  ];
 
   // Generate filter badges for active filters
   const filterBadges = useMemo(() => {
@@ -244,137 +212,59 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
     const sprintId = meta?.sprint_id;
     if (!sprintId) {
       console.warn('Sprint ID not available in meta');
-      return;
     }
-    
-    setSelectedDate(clickData.date);
-    setSelectedMetricType(clickData.metricType);
-    setIsDialogOpen(true);
   }, [meta]);
 
-  // Fetch function for dialog
-  const fetchBurndownIssues = useCallback(async () => {
-    if (!selectedDate || !selectedMetricType || !meta?.sprint_id) {
-      return { success: false, message: 'Missing required parameters' };
-    }
+  // Fetch function factory for dialog
+  const fetchBurndownIssuesFactory = useCallback((selectedDate: string, selectedMetricType: string) => {
+    return async () => {
+      if (!meta?.sprint_id) {
+        return { success: false, message: 'Sprint ID not available' };
+      }
 
-    return await apiService.getBurndownIssues(
-      selectedDate,
-      meta.sprint_id,
-      selectedMetricType,
-      teamName || undefined,
-      isGroup,
-      issueType !== 'all' ? issueType : undefined
-    );
-  }, [selectedDate, selectedMetricType, meta?.sprint_id, teamName, isGroup, issueType, apiService]);
-
-  // Format metric type for display
-  const formatMetricType = (metricType: string): string => {
-    const labels: Record<string, string> = {
-      'actual_remaining': 'Actual Remaining',
-      'total_scope': 'Total Scope',
-      'wip_in_progress': 'Work In Progress',
-      'issues_completed': 'Issues Completed',
-      'issues_removed': 'Issues Removed',
+      return await apiService.getBurndownIssues(
+        selectedDate,
+        meta.sprint_id,
+        selectedMetricType,
+        teamName || undefined,
+        isGroup,
+        issueType !== 'all' ? issueType : undefined
+      );
     };
-    return labels[metricType] || metricType;
-  };
+  }, [meta?.sprint_id, teamName, isGroup, issueType, apiService]);
 
-  // Format date for display
-  const formatDate = (dateStr: string): string => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-    } catch {
-      return dateStr;
-    }
-  };
-
-  // Dialog title
-  const dialogTitle = useMemo(() => {
-    if (!selectedDate || !selectedMetricType) return 'Issues';
-    return `${formatMetricType(selectedMetricType)} - ${formatDate(selectedDate)}`;
-  }, [selectedDate, selectedMetricType]);
-
-  // Columns for burndown issues
-  const burndownIssueColumns: Column<BurndownIssue>[] = useMemo(() => [
-    {
-      key: 'issue_key',
-      label: 'ISSUE KEY',
-      width: '12%',
-    },
-    {
-      key: 'summary',
-      label: 'SUMMARY',
-      align: 'left',
-      maxLength: 80,
-    },
-    {
-      key: 'team_name',
-      label: 'TEAM',
-      width: '15%',
-    },
-    {
-      key: 'metric_category',
-      label: 'CATEGORY',
-      width: '12%',
-    },
-  ], []);
+  // Date display for Sprint
+  const dateDisplay = (meta?.start_date || meta?.end_date) ? (
+    <div className="mt-2 text-xs text-gray-500 text-center">
+      {meta?.start_date && meta?.end_date && (
+        <span>
+          Dates: {meta.start_date} – {meta.end_date}
+        </span>
+      )}
+    </div>
+  ) : undefined;
 
   return (
-    <ReportCard 
-      title="Sprint Burndown" 
-      reportId={componentProps?.reportId} 
-      filters={filtersContent}
+    <BurndownViewBase
+      data={data}
+      loading={loading}
+      error={error}
+      filters={filters}
+      setFilters={setFilters}
+      refresh={refresh}
+      meta={meta}
+      componentProps={componentProps}
+      togglePin={togglePin}
+      pinnedFilters={pinnedFilters}
+      title="Sprint Burndown"
+      customFilters={customFilters}
       filterBadges={filterBadges}
-      onTogglePin={togglePin}
-      onRefresh={refresh}
-      onClose={componentProps?.onClose}
-      onAIChat={componentProps?.onAIChat}
-    >
-      <div className="w-full h-full flex flex-col">
-        <div className="relative flex-1 min-h-[350px]">
-          <BurndownChart
-            data={burndownData}
-            loading={loading}
-            error={error}
-            title={meta?.sprint_name ? `Sprint Burndown: ${meta.sprint_name}` : undefined}
-            onChartClick={handleChartClick}
-          />
-        </div>
-        {(meta?.start_date || meta?.end_date) && (
-          <div className="mt-2 text-xs text-gray-500 text-center">
-            {meta?.start_date && meta?.end_date && (
-              <span>
-                Dates: {meta.start_date} – {meta.end_date}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-      
-      {/* Issues Dialog */}
-      <IssuesDialog<BurndownIssue>
-        isOpen={isDialogOpen}
-        onClose={() => {
-          setIsDialogOpen(false);
-          setSelectedDate(null);
-          setSelectedMetricType(null);
-        }}
-        title={dialogTitle}
-        columns={burndownIssueColumns}
-        fetchFunction={fetchBurndownIssues}
-        jiraUrl={API_CONFIG.jiraUrl}
-        emptyMessage="No issues found for the selected criteria."
-        rowKey={(row, index) => `${row.issue_key}-${index}`}
-      />
-    </ReportCard>
+      chartTitle={meta?.sprint_name ? `Sprint Burndown: ${meta.sprint_name}` : undefined}
+      dateDisplay={dateDisplay}
+      onChartClick={handleChartClick}
+      fetchIssuesFunctionFactory={fetchBurndownIssuesFactory}
+    />
   );
 };
 
 export default SprintBurndownView;
-

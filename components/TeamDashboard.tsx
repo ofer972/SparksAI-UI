@@ -652,7 +652,6 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             controlledFilters={controlledFilters}
             enabled
             componentProps={{
-              sprintOptions: SPRINT_OPTIONS,
               onSprintChange: setSelectedSprint,
               currentSprintName,
               onAIChat: () => handleReportAIChat(reportId),
