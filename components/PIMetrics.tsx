@@ -60,7 +60,7 @@ function MetricCard({
     >
       {/* Tooltip - appears on top */}
       <div 
-        className={`absolute bottom-full mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded shadow-xl pointer-events-none z-[100] max-w-xs left-1/2 transform -translate-x-1/2 transition-opacity duration-200 ${
+        className={`absolute bottom-full mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded shadow-xl pointer-events-none z-50 max-w-xs left-1/2 transform -translate-x-1/2 transition-opacity duration-200 ${
           isTooltipVisible ? 'opacity-100 visible' : 'opacity-0 invisible'
         }`}
         style={{ 

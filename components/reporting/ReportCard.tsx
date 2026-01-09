@@ -26,6 +26,7 @@ interface ReportCardProps {
   className?: string;
   isInsightCard?: boolean; // If true, don't add padding to content area
   priorityColor?: string; // Priority color from card data: "Red", "Yellow", "Green", "Gray"
+  enableContentOverflow?: boolean; // If true, allows content to overflow (for tooltips)
 }
 
 const iconStyles = 'h-5 w-5 text-gray-500';
@@ -95,6 +96,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
   className = '',
   isInsightCard = false,
   priorityColor,
+  enableContentOverflow = false,
 }) => {
   const [collapsed, setCollapsed] = React.useState(defaultCollapsed);
   const [filtersCollapsed, setFiltersCollapsed] = React.useState(true);
@@ -219,7 +221,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
       </div>
 
       {!collapsed && (
-        <div className="flex-1 flex flex-col min-h-0 rounded-b-xl overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0 rounded-b-xl overflow-visible">
           {/* Active Filter Badges */}
           {filterBadges && filterBadges.length > 0 && (
             <div className="flex-shrink-0 px-4 py-1.5 border-b border-gray-200 bg-gradient-to-r from-blue-25 to-indigo-25">
@@ -265,8 +267,8 @@ const ReportCard: React.FC<ReportCardProps> = ({
             </div>
           )}
 
-          <div className={`flex-1 min-h-0 overflow-hidden flex flex-col ${isInsightCard ? 'bg-gradient-to-r from-gray-50 to-blue-50' : 'bg-white'}`}>
-            <div className={`h-full w-full overflow-auto ${isInsightCard ? '' : 'p-4'}`}>
+          <div className={`flex-1 min-h-0 overflow-visible flex flex-col ${isInsightCard ? 'bg-gradient-to-r from-gray-50 to-blue-50' : 'bg-white'}`}>
+            <div className={`h-full w-full ${enableContentOverflow ? 'overflow-visible' : 'overflow-auto'} ${isInsightCard ? '' : 'p-4'}`}>
               {children}
             </div>
           </div>

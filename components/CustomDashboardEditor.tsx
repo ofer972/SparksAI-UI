@@ -1074,15 +1074,15 @@ export default function CustomDashboardEditor({
         
         // Build teamValue for TeamGroupFilter
         const teamValue = React.useMemo(() => {
-          if (!metricsConfig.teamName) return null;
-          if (metricsConfig.isGroup) {
-            const group = groups.find(g => g.group_name === metricsConfig.teamName);
+          if (!displayTeamName) return null;
+          if (displayIsGroup) {
+            const group = groups.find(g => g.group_name === displayTeamName);
             return group ? `group:${group.group_key}` : null;
           } else {
-            const team = teams.find(t => t.team_name === metricsConfig.teamName);
+            const team = teams.find(t => t.team_name === displayTeamName);
             return team ? `team:${team.team_key}` : null;
           }
-        }, [metricsConfig.teamName, metricsConfig.isGroup, groups, teams]);
+        }, [displayTeamName, displayIsGroup, groups, teams]);
         
         const handleTeamGroupChange = (value: string | null, type: 'group' | 'team', name: string) => {
           const updatedConfig = {
@@ -1091,7 +1091,11 @@ export default function CustomDashboardEditor({
             isGroup: value ? type === 'group' : false,
           };
           
-          // Update widget's metricsConfig
+          // Auto-pin the team filter when manually changed
+          const currentPinned = dashboardLayoutConfig.pinnedFilters?.[widget.id] || [];
+          const newPinned = currentPinned.includes('team_name') ? currentPinned : [...currentPinned, 'team_name'];
+          
+          // Update widget's metricsConfig and pin the filter
           const updatedLayoutConfig: DashboardLayoutConfig = {
             ...dashboardLayoutConfig,
             layoutConfig: {
@@ -1104,6 +1108,10 @@ export default function CustomDashboardEditor({
                     : w
                 ),
               })),
+            },
+            pinnedFilters: {
+              ...dashboardLayoutConfig.pinnedFilters,
+              [widget.id]: newPinned,
             },
           };
           setDashboardLayoutConfig(updatedLayoutConfig);
@@ -1132,7 +1140,11 @@ export default function CustomDashboardEditor({
             piName: pi || undefined,
           };
           
-          // Update widget's metricsConfig
+          // Auto-pin the PI filter when manually changed
+          const currentPinned = dashboardLayoutConfig.pinnedFilters?.[widget.id] || [];
+          const newPinned = currentPinned.includes('pi') ? currentPinned : [...currentPinned, 'pi'];
+          
+          // Update widget's metricsConfig and pin the filter
           const updatedLayoutConfig: DashboardLayoutConfig = {
             ...dashboardLayoutConfig,
             layoutConfig: {
@@ -1145,6 +1157,10 @@ export default function CustomDashboardEditor({
                     : w
                 ),
               })),
+            },
+            pinnedFilters: {
+              ...dashboardLayoutConfig.pinnedFilters,
+              [widget.id]: newPinned,
             },
           };
           setDashboardLayoutConfig(updatedLayoutConfig);
@@ -1180,7 +1196,7 @@ export default function CustomDashboardEditor({
             {metricsConfig.metricsType === 'pi' && (
               <ReportFilterField label="PI">
                 <PIFilter
-                  selectedPI={metricsConfig.piName || ''}
+                  selectedPI={displayPIName || ''}
                   onPIChange={handlePIChange}
                 />
               </ReportFilterField>
@@ -1189,25 +1205,71 @@ export default function CustomDashboardEditor({
         );
       };
       
+      // Get pinned filters for metrics widget
+      const widgetPinnedFilters = dashboardLayoutConfig.pinnedFilters?.[widget.id] || [];
+
+      // Determine effective filters (override with global if not pinned)
+      let teamNameOverride: string | undefined;
+      let isGroupOverride: boolean | undefined;
+      let piNameOverride: string | undefined;
+
+      const isTeamPinned = widgetPinnedFilters.includes('team_name');
+      const isPIPinned = widgetPinnedFilters.includes('pi');
+
+      console.log(`[CustomDashboard] Metrics widget ${widget.id} filter check:`, 
+        'reportPanelFilters.team_name:', reportPanelFilters.team_name,
+        'reportPanelFilters.pi:', reportPanelFilters.pi,
+        'reportPanelFilters.isGroup:', reportPanelFilters.isGroup,
+        'metricsConfig.teamName:', metricsConfig.teamName,
+        'metricsConfig.piName:', metricsConfig.piName,
+        'isTeamPinned:', isTeamPinned,
+        'isPIPinned:', isPIPinned
+      );
+
+      if (!isTeamPinned && reportPanelFilters.team_name) {
+        teamNameOverride = reportPanelFilters.team_name;
+        isGroupOverride = reportPanelFilters.isGroup === true;
+        console.log(`[CustomDashboard] Setting teamNameOverride to:`, teamNameOverride, 'isGroup:', isGroupOverride);
+      }
+
+      if (!isPIPinned && reportPanelFilters.pi) {
+        piNameOverride = reportPanelFilters.pi;
+        console.log(`[CustomDashboard] Setting piNameOverride to:`, piNameOverride);
+      }
+
+      const displayTeamName = teamNameOverride ?? metricsConfig.teamName;
+      const displayIsGroup = isGroupOverride ?? metricsConfig.isGroup;
+      const displayPIName = piNameOverride ?? metricsConfig.piName;
+
+      console.log(`[CustomDashboard] Final effective values for metrics widget ${widget.id}:`,
+        'displayTeamName:', displayTeamName,
+        'displayIsGroup:', displayIsGroup,
+        'displayPIName:', displayPIName,
+        'Will pass to MetricsWidget - teamNameOverride:', teamNameOverride,
+        'piNameOverride:', piNameOverride
+      );
+      
       // Build title for the metrics widget
       const metricsTitle = metricsConfig.metricsType === 'team' 
-        ? `Team Metrics${metricsConfig.teamName ? ` - ${metricsConfig.teamName}` : ''}`
-        : `PI Metrics${metricsConfig.piName ? ` - ${metricsConfig.piName}` : ''}${metricsConfig.teamName ? ` (${metricsConfig.teamName})` : ''}`;
+        ? `Team Metrics${displayTeamName ? ` - ${displayTeamName}` : ''}`
+        : `PI Metrics${displayPIName ? ` - ${displayPIName}` : ''}${displayTeamName ? ` (${displayTeamName})` : ''}`;
       
       // Build filter badges
       const filterBadges: Array<{ label: string; value: string; filterKey?: string; isPinned?: boolean }> = [];
-      if (metricsConfig.teamName) {
+      if (displayTeamName) {
         filterBadges.push({
-          label: metricsConfig.isGroup ? 'Group' : 'Team',
-          value: metricsConfig.teamName,
+          label: displayIsGroup ? 'Group' : 'Team',
+          value: displayTeamName,
           filterKey: 'team_name',
+          isPinned: isTeamPinned,
         });
       }
-      if (metricsConfig.piName) {
+      if (displayPIName) {
         filterBadges.push({
           label: 'PI',
-          value: metricsConfig.piName,
+          value: displayPIName,
           filterKey: 'pi',
+          isPinned: isPIPinned,
         });
       }
       
@@ -1218,13 +1280,55 @@ export default function CustomDashboardEditor({
             reportId={`metrics-${widget.id}`}
             filters={<MetricsWidgetFilters />}
             filterBadges={filterBadges}
+            enableContentOverflow={true}
             onClose={() => handleRemoveWidget(widget.id)}
+            onTogglePin={(filterKey) => {
+              const currentPinned = dashboardLayoutConfig.pinnedFilters?.[widget.id] || [];
+              const isPinned = currentPinned.includes(filterKey);
+              let newPinned;
+              if (isPinned) {
+                newPinned = currentPinned.filter(k => k !== filterKey);
+              } else {
+                newPinned = [...currentPinned, filterKey];
+              }
+              
+              const updatedLayoutConfig: DashboardLayoutConfig = {
+                ...dashboardLayoutConfig,
+                pinnedFilters: {
+                  ...dashboardLayoutConfig.pinnedFilters,
+                  [widget.id]: newPinned,
+                },
+              };
+              setDashboardLayoutConfig(updatedLayoutConfig);
+              
+              // Auto-save logic
+              if (user) {
+                const userId = (user?.id || user?.user_id) as string;
+                const timerKey = `pinned-${widget.id}`;
+                if (filterSaveTimersRef.current[timerKey]) {
+                  clearTimeout(filterSaveTimersRef.current[timerKey]);
+                }
+                filterSaveTimersRef.current[timerKey] = setTimeout(() => {
+                  updateDashboard(userId, dashboardId, {
+                    layout_config: updatedLayoutConfig,
+                  }).catch(err => {
+                    console.error(`[CustomDashboard] Failed to save pinned filters for widget ${widget.id}:`, err);
+                  });
+                  delete filterSaveTimersRef.current[timerKey];
+                }, 1000);
+              }
+            }}
             onAIChat={() => {
               console.log('[CustomDashboardEditor] Opening AI chat for metrics widget:', widget.id);
               // Metrics widgets don't support AI chat yet
             }}
           >
-            <MetricsWidget metricsConfig={metricsConfig} />
+            <MetricsWidget 
+              metricsConfig={metricsConfig} 
+              teamNameOverride={teamNameOverride}
+              isGroupOverride={isGroupOverride}
+              piNameOverride={piNameOverride}
+            />
           </ReportCard>
         </div>
       );

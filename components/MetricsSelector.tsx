@@ -94,26 +94,18 @@ export default function MetricsSelector({
 
   // Generate unique widget ID based on configuration
   const generateWidgetId = (): string => {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 9);
     if (metricsType === 'team') {
-      return `team-metrics-${selectedTeamName || 'none'}-${isGroup ? 'group' : 'team'}`;
+      return `team-metrics-${selectedTeamName || 'none'}-${isGroup ? 'group' : 'team'}-${timestamp}-${random}`;
     } else {
-      return `pi-metrics-${selectedPI || 'none'}-${selectedTeamName || 'none'}-${isGroup ? 'group' : 'team'}`;
+      return `pi-metrics-${selectedPI || 'none'}-${selectedTeamName || 'none'}-${isGroup ? 'group' : 'team'}-${timestamp}-${random}`;
     }
   };
 
   const handleAddWidget = () => {
     if (selectedMetrics.length === 0) {
       alert('Please select at least one metric');
-      return;
-    }
-
-    if (metricsType === 'team' && !selectedTeamName) {
-      alert('Please select a team or group');
-      return;
-    }
-
-    if (metricsType === 'pi' && (!selectedPI || !selectedTeamName)) {
-      alert('Please select both PI and team/group');
       return;
     }
 
@@ -255,7 +247,7 @@ export default function MetricsSelector({
       {/* Add Widget Button */}
       <button
         onClick={handleAddWidget}
-        disabled={selectedMetrics.length === 0 || (metricsType === 'team' && !selectedTeamName) || (metricsType === 'pi' && (!selectedPI || !selectedTeamName))}
+        disabled={selectedMetrics.length === 0}
         className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
       >
         Add Metrics Widget
