@@ -202,7 +202,7 @@ export default function PIGoalsTab() {
                 onClick={handleSuggestGoals}
                 disabled={!isButtonEnabled || loading}
                 className={`
-                  px-6 py-2 rounded-lg font-medium transition-colors whitespace-nowrap h-[34px]
+                  px-3 py-1 rounded-lg text-sm font-normal transition-colors whitespace-nowrap h-[26px]
                   ${isButtonEnabled && !loading
                     ? 'bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
