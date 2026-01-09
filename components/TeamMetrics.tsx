@@ -172,7 +172,7 @@ const DaysLeftCard = ({ id, daysLeft, daysInSprint, tooltip, className = "", act
       
       {/* Tooltip */}
       <div 
-        className={`absolute bottom-full mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded transition-opacity duration-200 pointer-events-none z-[100] max-w-xs left-1/2 transform -translate-x-1/2 ${isTooltipVisible ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+        className={`absolute bottom-full mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded transition-opacity duration-200 pointer-events-none z-50 max-w-xs left-1/2 transform -translate-x-1/2 ${isTooltipVisible ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
         style={{ 
           whiteSpace: 'normal',
           wordBreak: 'break-word',
@@ -240,7 +240,7 @@ const MetricCard = ({ id, icon, value, label, tooltip, className = "", isLeftmos
       </div>
       {/* Tooltip */}
       <div 
-        className={`absolute bottom-full mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded transition-opacity duration-200 pointer-events-none z-[100] max-w-xs ${isLeftmost ? 'left-0' : 'left-1/2 transform -translate-x-1/2'} ${isTooltipVisible ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+        className={`absolute bottom-full mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded transition-opacity duration-200 pointer-events-none z-50 max-w-xs ${isLeftmost ? 'left-0' : 'left-1/2 transform -translate-x-1/2'} ${isTooltipVisible ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
         style={{ 
           whiteSpace: 'normal',
           wordBreak: 'break-word',
@@ -272,7 +272,7 @@ export default function TeamMetrics({ teamName, isGroup, selectedMetrics, single
     const isOdd = loadingCount % 2 !== 0;
     const lastItemIndex = loadingCount - 1;
     return (
-      <div className="h-full w-full overflow-hidden">
+      <div className="h-full w-full overflow-visible">
         <div className="grid gap-2 w-full h-full" style={{ 
           gridTemplateColumns: singleRowLayout ? 'repeat(auto-fit, minmax(120px, 1fr))' : 'repeat(2, minmax(0, 1fr))',
           gridAutoRows: '1fr'
@@ -436,7 +436,7 @@ export default function TeamMetrics({ teamName, isGroup, selectedMetrics, single
   const lastItemIndex = metricsToDisplay.length - 1;
 
   return (
-    <div className="relative h-full w-full overflow-hidden">
+    <div className="relative h-full w-full overflow-visible">
       <div className="grid gap-2 w-full h-full" style={{ 
         gridTemplateColumns: singleRowLayout ? 'repeat(auto-fit, minmax(120px, 1fr))' : 'repeat(2, minmax(0, 1fr))',
         gridAutoRows: '1fr'

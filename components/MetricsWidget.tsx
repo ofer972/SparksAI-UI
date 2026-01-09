@@ -7,10 +7,23 @@ import type { MetricsSelection } from './MetricsSelector';
 
 interface MetricsWidgetProps {
   metricsConfig: MetricsSelection;
+  teamNameOverride?: string;
+  piNameOverride?: string;
+  isGroupOverride?: boolean;
 }
 
-export default function MetricsWidget({ metricsConfig }: MetricsWidgetProps) {
-  const { metricsType, teamName, piName, isGroup, selectedMetrics } = metricsConfig;
+export default function MetricsWidget({ 
+  metricsConfig, 
+  teamNameOverride, 
+  piNameOverride, 
+  isGroupOverride 
+}: MetricsWidgetProps) {
+  const { metricsType, selectedMetrics } = metricsConfig;
+  
+  // Use overrides if provided, otherwise fallback to config
+  const teamName = teamNameOverride !== undefined ? teamNameOverride : metricsConfig.teamName;
+  const piName = piNameOverride !== undefined ? piNameOverride : metricsConfig.piName;
+  const isGroup = isGroupOverride !== undefined ? isGroupOverride : metricsConfig.isGroup;
 
   if (metricsType === 'team') {
     if (!teamName) return null;

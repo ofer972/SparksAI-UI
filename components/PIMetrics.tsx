@@ -60,7 +60,7 @@ function MetricCard({
     >
       {/* Tooltip - appears on top */}
       <div 
-        className={`absolute bottom-full mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded shadow-xl pointer-events-none z-[100] max-w-xs left-1/2 transform -translate-x-1/2 transition-opacity duration-200 ${
+        className={`absolute bottom-full mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded shadow-xl pointer-events-none z-50 max-w-xs left-1/2 transform -translate-x-1/2 transition-opacity duration-200 ${
           isTooltipVisible ? 'opacity-100 visible' : 'opacity-0 invisible'
         }`}
         style={{ 
@@ -170,7 +170,7 @@ export default function PIMetrics({ piName, selectedMetrics, singleRowLayout = f
     const isOdd = loadingCount % 2 !== 0;
     const lastItemIndex = loadingCount - 1;
     return (
-      <div className="h-full w-full overflow-hidden">
+      <div className="h-full w-full overflow-visible">
         <div className="grid gap-2 w-full h-full" style={{ 
           gridTemplateColumns: singleRowLayout ? 'repeat(auto-fit, minmax(120px, 1fr))' : 'repeat(2, minmax(0, 1fr))',
           gridAutoRows: '1fr'
@@ -307,7 +307,7 @@ export default function PIMetrics({ piName, selectedMetrics, singleRowLayout = f
   const lastItemIndex = metricsToDisplay.length - 1;
 
   return (
-    <div className="relative h-full w-full overflow-hidden">
+    <div className="relative h-full w-full overflow-visible">
       <div className="grid gap-2 w-full h-full" style={{ 
         gridTemplateColumns: singleRowLayout ? 'repeat(auto-fit, minmax(120px, 1fr))' : 'repeat(2, minmax(0, 1fr))',
         gridAutoRows: '1fr'
