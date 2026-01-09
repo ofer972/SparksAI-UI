@@ -272,7 +272,7 @@ export default function TeamMetrics({ teamName, isGroup, selectedMetrics, single
     const isOdd = loadingCount % 2 !== 0;
     const lastItemIndex = loadingCount - 1;
     return (
-      <div className="h-full w-full overflow-hidden">
+      <div className="h-full w-full overflow-visible">
         <div className="grid gap-2 w-full h-full" style={{ 
           gridTemplateColumns: singleRowLayout ? 'repeat(auto-fit, minmax(120px, 1fr))' : 'repeat(2, minmax(0, 1fr))',
           gridAutoRows: '1fr'
@@ -436,7 +436,7 @@ export default function TeamMetrics({ teamName, isGroup, selectedMetrics, single
   const lastItemIndex = metricsToDisplay.length - 1;
 
   return (
-    <div className="relative h-full w-full overflow-hidden">
+    <div className="relative h-full w-full overflow-visible">
       <div className="grid gap-2 w-full h-full" style={{ 
         gridTemplateColumns: singleRowLayout ? 'repeat(auto-fit, minmax(120px, 1fr))' : 'repeat(2, minmax(0, 1fr))',
         gridAutoRows: '1fr'
