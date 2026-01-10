@@ -182,6 +182,12 @@ export default function InsightTypeWidget({
           filteredControlled.pi = globalFilters.pi;
         }
         
+        // Determine if the current global selection is a team or group
+        const isGlobalGroup = globalFilters.isGroup === true || 
+                              (globalFilters.selectedTreeValue && globalFilters.selectedTreeValue.startsWith('group:'));
+        const isGlobalTeam = globalFilters.isGroup === false || 
+                             (globalFilters.selectedTreeValue && globalFilters.selectedTreeValue.startsWith('team:'));
+        
         // Apply team/group filters based on insight type requirements
         // Only apply if the global filter type matches what the insight requires
         if (insightTypeMetadata.requireTeam && insightTypeMetadata.requireGroup) {
@@ -205,7 +211,7 @@ export default function InsightTypeWidget({
                 }
               }
               // Ignore if it's a group
-            } else if (globalFilters.team_name) {
+            } else if (globalFilters.team_name && isGlobalTeam) {
               filteredControlled.team_name = globalFilters.team_name;
             }
           }
@@ -222,7 +228,7 @@ export default function InsightTypeWidget({
                 }
               }
               // Ignore if it's a team
-            } else if (globalFilters.group_name) {
+            } else if (globalFilters.group_name && isGlobalGroup) {
               filteredControlled.group_name = globalFilters.group_name;
             }
           }
@@ -258,7 +264,7 @@ export default function InsightTypeWidget({
   const hasLoadedRef = React.useRef<boolean>(false);
 
   // Load insight cards matching the type and filters
-  const loadCards = React.useCallback(async () => {
+  const loadCards = React.useCallback(async (bypassCache: boolean = false) => {
     // Don't load if we don't have an insight type yet (unless we have insightTypeName as fallback)
     const effectiveType = insightType || insightTypeName;
     if (!effectiveType) {
@@ -285,10 +291,16 @@ export default function InsightTypeWidget({
         params.append('insight_type', effectiveType);
       }
 
+      console.log('[InsightTypeWidget] Building API params with filters:', {
+        effectiveType,
+        insightFilters,
+        insightTypeMetadata,
+      });
+
       // Add filters based on insight type requirements
       // Only send filters that are required by the insight type to avoid API errors
-      // For group-based insights: only send group_name (not team_name)
-      // For team-based insights: only send team_name (not group_name)
+      // For group-based insights: send group_name and isGroup=true
+      // For team-based insights: send team_name and isGroup=false
       // For PI-based insights: only send pi
       
       if (insightTypeMetadata.requirePI && insightFilters.pi) {
@@ -300,6 +312,7 @@ export default function InsightTypeWidget({
         // Don't add if it requires a group instead
         if (!insightTypeMetadata.requireGroup) {
           params.append('team_name', insightFilters.team_name);
+          params.append('isGroup', 'false');
         }
       }
       
@@ -308,13 +321,36 @@ export default function InsightTypeWidget({
         // Don't add if it requires a team instead
         if (!insightTypeMetadata.requireTeam) {
           params.append('group_name', insightFilters.group_name);
+          params.append('isGroup', 'true');
         }
+      }
+      
+      // If both team and group are required, send both with appropriate parameters
+      if (insightTypeMetadata.requireTeam && insightTypeMetadata.requireGroup) {
+        if (insightFilters.team_name) {
+          params.append('team_name', insightFilters.team_name);
+        }
+        if (insightFilters.group_name) {
+          params.append('group_name', insightFilters.group_name);
+        }
+        // When both are required, determine isGroup based on which one is present/primary
+        if (insightFilters.group_name) {
+          params.append('isGroup', 'true');
+        } else if (insightFilters.team_name) {
+          params.append('isGroup', 'false');
+        }
+      }
+      
+      // Add bypass_cache parameter if requested
+      if (bypassCache === true) {
+        params.append('bypass_cache', 'true');
       }
       
       console.log('[InsightTypeWidget] Built API params:', {
         params: params.toString(),
         insightTypeMetadata,
         insightFilters,
+        bypassCache,
       });
 
       // Fetch insight cards using getTopCardsWithRecommendations endpoint
@@ -752,12 +788,37 @@ export default function InsightTypeWidget({
 
   // Handle filter changes
   const handlePIFilterChange = (pi: string) => {
+    // Explicitly pin the PI filter when manually changed
+    setPinnedFilters((prev) => {
+      const newPinned = new Set(prev);
+      if (pi) {
+        newPinned.add('pi');
+      } else {
+        newPinned.delete('pi');
+      }
+      onPinnedFiltersChange?.(Array.from(newPinned));
+      return newPinned;
+    });
+    
     setFilters({ pi: pi || undefined });
   };
 
   // Handle team-only selection
   const handleTeamSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const teamName = e.target.value;
+    
+    // Explicitly pin the team_name filter when manually changed
+    setPinnedFilters((prev) => {
+      const newPinned = new Set(prev);
+      if (teamName) {
+        newPinned.add('team_name');
+      } else {
+        newPinned.delete('team_name');
+      }
+      onPinnedFiltersChange?.(Array.from(newPinned));
+      return newPinned;
+    });
+    
     if (insightTypeMetadata.requireTeam && insightTypeMetadata.requireGroup) {
       // Both required - update team_name only
       setFilters((prev) => ({
@@ -776,6 +837,19 @@ export default function InsightTypeWidget({
   // Handle group-only selection
   const handleGroupSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const groupName = e.target.value;
+    
+    // Explicitly pin the group_name filter when manually changed
+    setPinnedFilters((prev) => {
+      const newPinned = new Set(prev);
+      if (groupName) {
+        newPinned.add('group_name');
+      } else {
+        newPinned.delete('group_name');
+      }
+      onPinnedFiltersChange?.(Array.from(newPinned));
+      return newPinned;
+    });
+    
     if (insightTypeMetadata.requireTeam && insightTypeMetadata.requireGroup) {
       // Both required - update group_name only
       setFilters((prev) => ({
@@ -910,7 +984,7 @@ export default function InsightTypeWidget({
       title={cardTitle}
       onClose={onClose}
       defaultCollapsed={false}
-      onRefresh={loadCards}
+      onRefresh={() => loadCards(true)} // Pass bypassCache=true for refresh
       onAIChat={showAIChat ? handleAIChat : undefined}
       filters={filtersContent}
       filterBadges={filterBadges}

@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePIMetrics } from '@/hooks';
 
 interface PIMetricsProps {
   piName?: string;
   selectedMetrics?: string[]; // Optional: filter which metrics to display
   singleRowLayout?: boolean; // Optional: use single row layout instead of 2-column grid (default: false)
+  refreshKey?: number; // Trigger refetch with bypass_cache when this changes
 }
 
 interface MetricCardProps {
@@ -153,9 +154,17 @@ function MetricCard({
   );
 }
 
-export default function PIMetrics({ piName, selectedMetrics, singleRowLayout = false }: PIMetricsProps) {
-  const { metrics, loading, error } = usePIMetrics(piName);
+export default function PIMetrics({ piName, selectedMetrics, singleRowLayout = false, refreshKey }: PIMetricsProps) {
+  const { metrics, loading, error, refetch } = usePIMetrics(piName);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+  
+  // Trigger refetch with bypass_cache when refreshKey changes
+  useEffect(() => {
+    if (refreshKey !== undefined && refreshKey > 0) {
+      console.log('[PIMetrics] Refetching metrics with bypass_cache due to refreshKey change:', refreshKey);
+      refetch(true);
+    }
+  }, [refreshKey, refetch]);
 
   // Don't render if no PI name is provided or if it's the placeholder text
   if (!piName || 

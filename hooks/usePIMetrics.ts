@@ -31,7 +31,7 @@ interface UsePIMetricsReturn {
   metrics: PIMetricsData | null;
   loading: boolean;
   error: string | null;
-  refetch: () => Promise<void>;
+  refetch: (bypassCache?: boolean) => Promise<void>;
 }
 
 /**
@@ -45,7 +45,7 @@ export function usePIMetrics(piName?: string): UsePIMetricsReturn {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchMetrics = useCallback(async () => {
+  const fetchMetrics = useCallback(async (bypassCache: boolean = false) => {
     // Check if piName is empty, whitespace, or placeholder text
     const isEmptyOrPlaceholder = !piName || 
       piName.trim() === '' || 
@@ -64,11 +64,13 @@ export function usePIMetrics(piName?: string): UsePIMetricsReturn {
       setError(null);
       const apiService = new ApiService();
       
+      console.log('[usePIMetrics] Fetching metrics with:', { piName, bypassCache });
+      
       // Fetch all metrics in parallel
       const [piStatusResponse, dependenciesResponse, cycleTimeResponse] = await Promise.allSettled([
-        apiService.getPIStatusForToday(piName),
-        apiService.getTopDependenciesSummary(piName),
-        apiService.getAverageEpicCycleTime(6),
+        apiService.getPIStatusForToday(piName, bypassCache),
+        apiService.getTopDependenciesSummary(piName, undefined, false, bypassCache),
+        apiService.getAverageEpicCycleTime(6, bypassCache),
       ]);
       
       // Process PI Status data

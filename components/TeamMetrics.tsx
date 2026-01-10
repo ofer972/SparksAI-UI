@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTeamMetrics } from '@/hooks';
 import { LineChart, Line, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendDataPoint } from '@/lib/config';
@@ -10,6 +10,7 @@ interface TeamMetricsProps {
   isGroup?: boolean;
   selectedMetrics?: string[]; // Optional: filter which metrics to display
   singleRowLayout?: boolean; // Optional: use single row layout instead of 2-column grid (default: false)
+  refreshKey?: number; // Trigger refetch with bypass_cache when this changes
 }
 
 interface SprintMetricsData {
@@ -255,9 +256,17 @@ const MetricCard = ({ id, icon, value, label, tooltip, className = "", isLeftmos
   );
 };
 
-export default function TeamMetrics({ teamName, isGroup, selectedMetrics, singleRowLayout = false }: TeamMetricsProps) {
-  const { sprintMetrics, completionRate, loading, error } = useTeamMetrics(teamName, isGroup);
+export default function TeamMetrics({ teamName, isGroup, selectedMetrics, singleRowLayout = false, refreshKey }: TeamMetricsProps) {
+  const { sprintMetrics, completionRate, loading, error, refetch } = useTeamMetrics(teamName, isGroup);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+  
+  // Trigger refetch with bypass_cache when refreshKey changes
+  useEffect(() => {
+    if (refreshKey !== undefined && refreshKey > 0) {
+      console.log('[TeamMetrics] Refetching metrics with bypass_cache due to refreshKey change:', refreshKey);
+      refetch(true);
+    }
+  }, [refreshKey, refetch]);
 
   // Don't render if no team name is provided or if it's the placeholder text
   if (!teamName || 

@@ -176,11 +176,11 @@ export default function CustomDashboardEditor({
   const effectiveFilters = React.useMemo(() => {
     const topBarFilters = dashboardLayoutConfig.topBarFilters || {};
     const base = { ...commonFilters, ...topBarFilters };
+    
+    let result: any;
     if (externalFilters) {
       // External filters from TopBar take precedence - use them if they exist, otherwise fall back to saved filters
-      // For selectedTreeType, always use externalFilters if it's provided (not undefined)
-      // This ensures the current dropdown selection is used, not the saved default
-      return {
+      result = {
         ...base,
         selectedPI: externalFilters.selectedPI !== undefined && externalFilters.selectedPI !== '' 
           ? externalFilters.selectedPI 
@@ -200,27 +200,44 @@ export default function CustomDashboardEditor({
           ? externalFilters.selectedTreeType 
           : (topBarFilters.selectedTreeType || 'team'),
       };
+    } else {
+      result = base;
     }
-    return base;
+    
+    // CRITICAL FIX: Derive selectedTreeType from selectedTreeValue if not properly set
+    // This handles the case where selectedTreeValue exists but selectedTreeType is missing or wrong
+    if (result.selectedTreeValue && typeof result.selectedTreeValue === 'string') {
+      const derivedType = result.selectedTreeValue.startsWith('group:') ? 'group' : 'team';
+      // Only override if current selectedTreeType doesn't match the derived type
+      if (result.selectedTreeType !== derivedType) {
+        console.log(`[CustomDashboardEditor] Fixing selectedTreeType: was "${result.selectedTreeType}", should be "${derivedType}" based on selectedTreeValue "${result.selectedTreeValue}"`);
+        result.selectedTreeType = derivedType;
+      }
+    }
+    
+    return result;
   }, [externalFilters, dashboardLayoutConfig, commonFilters]);
   
   // Convert effectiveFilters to format expected by ReportPanel (pi, team_name, isGroup, etc.)
+  // MATCHES TeamDashboard pattern: build controlledFilters simply and directly
   const reportPanelFilters = React.useMemo(() => {
-    const filters: Record<string, any> = {};
+    const hasValidTeam = effectiveFilters.selectedTeam && 
+                         typeof effectiveFilters.selectedTeam === 'string' && 
+                         effectiveFilters.selectedTeam.trim().length > 0;
+    
+    const filters: Record<string, any> = {
+      // CRITICAL: Always set isGroup directly from selectedTreeType (matches TeamDashboard line 517)
+      isGroup: effectiveFilters.selectedTreeType === 'group',
+    };
+    
+    // Only include team_name if we have a valid team (matches TeamDashboard line 516)
+    if (hasValidTeam) {
+      filters.team_name = effectiveFilters.selectedTeam;
+    }
     
     // Convert selectedPI to pi
     if (effectiveFilters.selectedPI) {
       filters.pi = effectiveFilters.selectedPI;
-    }
-    
-    // Convert selectedTeam to team_name
-    if (effectiveFilters.selectedTeam) {
-      filters.team_name = effectiveFilters.selectedTeam;
-    }
-    
-    // Convert selectedTreeType to isGroup
-    if (effectiveFilters.selectedTreeType) {
-      filters.isGroup = effectiveFilters.selectedTreeType === 'group';
     }
     
     // Include selectedTreeValue and selectedTreeLabel for InsightTypeWidget
@@ -940,11 +957,20 @@ export default function CustomDashboardEditor({
       // Get pinned filters for this widget
       const widgetPinnedFilters = dashboardLayoutConfig.pinnedFilters?.[widget.id] || [];
       
+      // MATCH TeamDashboard pattern: include team_name and isGroup in initialFilters
+      // to prevent duplicate fetches (see TeamDashboard lines 627-628, 672-673, etc.)
+      const hasValidTeam = reportPanelFilters.team_name && reportPanelFilters.team_name.trim().length > 0;
+      const initialFiltersWithDefaults = {
+        ...(hasValidTeam ? { team_name: reportPanelFilters.team_name } : {}),
+        ...(reportPanelFilters.isGroup !== undefined ? { isGroup: reportPanelFilters.isGroup } : {}),
+        ...widgetFilters,
+      };
+      
       return (
         <div key={widget.id} className="h-full">
           <ReportPanel
             reportId={widget.widget_id}
-            initialFilters={widgetFilters}
+            initialFilters={initialFiltersWithDefaults}
             initialPinnedFilters={widgetPinnedFilters}
             controlledFilters={reportPanelFilters} // Pass global filters as controlled filters
             enabled={true}
@@ -1209,45 +1235,41 @@ export default function CustomDashboardEditor({
       const widgetPinnedFilters = dashboardLayoutConfig.pinnedFilters?.[widget.id] || [];
 
       // Determine effective filters (override with global if not pinned)
-      let teamNameOverride: string | undefined;
-      let isGroupOverride: boolean | undefined;
-      let piNameOverride: string | undefined;
-
+      // MATCH TeamDashboard pattern: simple and direct
       const isTeamPinned = widgetPinnedFilters.includes('team_name');
       const isPIPinned = widgetPinnedFilters.includes('pi');
 
-      console.log(`[CustomDashboard] Metrics widget ${widget.id} filter check:`, 
-        'reportPanelFilters.team_name:', reportPanelFilters.team_name,
-        'reportPanelFilters.pi:', reportPanelFilters.pi,
-        'reportPanelFilters.isGroup:', reportPanelFilters.isGroup,
-        'metricsConfig.teamName:', metricsConfig.teamName,
-        'metricsConfig.piName:', metricsConfig.piName,
-        'isTeamPinned:', isTeamPinned,
-        'isPIPinned:', isPIPinned
-      );
+      console.log(`[CustomDashboard] Metrics widget ${widget.id} filter check:`, {
+        'reportPanelFilters.team_name': reportPanelFilters.team_name,
+        'reportPanelFilters.pi': reportPanelFilters.pi,
+        'reportPanelFilters.isGroup': reportPanelFilters.isGroup,
+        'metricsConfig.teamName': metricsConfig.teamName,
+        'metricsConfig.piName': metricsConfig.piName,
+        'metricsConfig.isGroup': metricsConfig.isGroup,
+        'isTeamPinned': isTeamPinned,
+        'isPIPinned': isPIPinned,
+      });
 
-      if (!isTeamPinned && reportPanelFilters.team_name) {
-        teamNameOverride = reportPanelFilters.team_name;
-        isGroupOverride = reportPanelFilters.isGroup === true;
-        console.log(`[CustomDashboard] Setting teamNameOverride to:`, teamNameOverride, 'isGroup:', isGroupOverride);
-      }
+      // Use global filters if not pinned, otherwise use saved config
+      const displayTeamName = !isTeamPinned && reportPanelFilters.team_name 
+        ? reportPanelFilters.team_name 
+        : metricsConfig.teamName;
+      
+      // CRITICAL: Always get isGroup from reportPanelFilters if team is not pinned
+      // This matches TeamDashboard pattern where isGroup is always in sync with team selection
+      const displayIsGroup = !isTeamPinned 
+        ? reportPanelFilters.isGroup 
+        : (metricsConfig.isGroup ?? false);
+      
+      const displayPIName = !isPIPinned && reportPanelFilters.pi 
+        ? reportPanelFilters.pi 
+        : metricsConfig.piName;
 
-      if (!isPIPinned && reportPanelFilters.pi) {
-        piNameOverride = reportPanelFilters.pi;
-        console.log(`[CustomDashboard] Setting piNameOverride to:`, piNameOverride);
-      }
-
-      const displayTeamName = teamNameOverride ?? metricsConfig.teamName;
-      const displayIsGroup = isGroupOverride ?? metricsConfig.isGroup;
-      const displayPIName = piNameOverride ?? metricsConfig.piName;
-
-      console.log(`[CustomDashboard] Final effective values for metrics widget ${widget.id}:`,
-        'displayTeamName:', displayTeamName,
-        'displayIsGroup:', displayIsGroup,
-        'displayPIName:', displayPIName,
-        'Will pass to MetricsWidget - teamNameOverride:', teamNameOverride,
-        'piNameOverride:', piNameOverride
-      );
+      console.log(`[CustomDashboard] Final effective values for metrics widget ${widget.id}:`, {
+        displayTeamName,
+        displayIsGroup,
+        displayPIName,
+      });
       
       // Build title for the metrics widget
       const metricsTitle = metricsConfig.metricsType === 'team' 
@@ -1282,6 +1304,25 @@ export default function CustomDashboardEditor({
             filterBadges={filterBadges}
             enableContentOverflow={true}
             onClose={() => handleRemoveWidget(widget.id)}
+            onRefresh={() => {
+              // Trigger refresh by updating the refresh key
+              // MetricsWidget will detect this and refetch with bypass_cache=true
+              console.log('[CustomDashboardEditor] Refreshing metrics widget:', widget.id);
+              setDashboardLayoutConfig((prev) => ({
+                ...prev,
+                layoutConfig: {
+                  ...prev.layoutConfig,
+                  rows: prev.layoutConfig.rows.map(row => ({
+                    ...row,
+                    widgets: row.widgets.map(w => 
+                      w.id === widget.id 
+                        ? { ...w, _refreshKey: Date.now() } // Update refresh key
+                        : w
+                    ),
+                  })),
+                },
+              }));
+            }}
             onTogglePin={(filterKey) => {
               const currentPinned = dashboardLayoutConfig.pinnedFilters?.[widget.id] || [];
               const isPinned = currentPinned.includes(filterKey);
@@ -1324,10 +1365,12 @@ export default function CustomDashboardEditor({
             }}
           >
             <MetricsWidget 
+              key={`${widget.id}-${(widget as any)._refreshKey || 0}`}
               metricsConfig={metricsConfig} 
-              teamNameOverride={teamNameOverride}
-              isGroupOverride={isGroupOverride}
-              piNameOverride={piNameOverride}
+              teamNameOverride={!isTeamPinned ? displayTeamName : undefined}
+              isGroupOverride={!isTeamPinned ? displayIsGroup : undefined}
+              piNameOverride={!isPIPinned ? displayPIName : undefined}
+              refreshKey={(widget as any)._refreshKey}
             />
           </ReportCard>
         </div>

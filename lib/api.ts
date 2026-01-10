@@ -389,10 +389,14 @@ export class ApiService {
   }
 
   // PI Status For Today API
-  async getPIStatusForToday(targetPiName: string): Promise<PIStatusForTodayResponse> {
+  async getPIStatusForToday(targetPiName: string, bypassCache?: boolean): Promise<PIStatusForTodayResponse> {
     const params = new URLSearchParams({
       pi: targetPiName,
     });
+    
+    if (bypassCache === true) {
+      params.set('bypass_cache', 'true');
+    }
 
     const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.pis.getPIStatusForToday)}?${params}`);
     
@@ -417,7 +421,7 @@ export class ApiService {
   }
 
   // Top Dependencies Summary API
-  async getTopDependenciesSummary(pi: string, teamName?: string, isGroup: boolean = false): Promise<TopDependenciesSummaryResponse> {
+  async getTopDependenciesSummary(pi: string, teamName?: string, isGroup: boolean = false, bypassCache?: boolean): Promise<TopDependenciesSummaryResponse> {
     const params = new URLSearchParams();
     params.append('pi', pi);
     
@@ -426,6 +430,10 @@ export class ApiService {
     }
     
     params.append('isGroup', isGroup.toString());
+    
+    if (bypassCache === true) {
+      params.append('bypass_cache', 'true');
+    }
     
     const url = `${buildBackendUrl(API_CONFIG.endpoints.pis.getTopDependenciesSummary)}?${params}`;
     const response = await fetch(url);
@@ -438,9 +446,13 @@ export class ApiService {
   }
 
   // Average Epic Cycle Time API
-  async getAverageEpicCycleTime(months: number = 6): Promise<AverageEpicCycleTimeResponse> {
+  async getAverageEpicCycleTime(months: number = 6, bypassCache?: boolean): Promise<AverageEpicCycleTimeResponse> {
     const params = new URLSearchParams();
     params.append('months', months.toString());
+    
+    if (bypassCache === true) {
+      params.append('bypass_cache', 'true');
+    }
     
     const url = `${buildBackendUrl(API_CONFIG.endpoints.pis.getAverageEpicCycleTime)}?${params}`;
     const response = await fetch(url);
@@ -636,10 +648,13 @@ export class ApiService {
   }
 
   // Team Metrics APIs
-  async getSprintMetrics(teamName: string, isGroup?: boolean): Promise<SprintMetrics> {
+  async getSprintMetrics(teamName: string, isGroup?: boolean, bypassCache?: boolean): Promise<SprintMetrics> {
     const params = new URLSearchParams({ team_name: teamName });
     if (isGroup === true) {
       params.set('isGroup', 'true');
+    }
+    if (bypassCache === true) {
+      params.set('bypass_cache', 'true');
     }
     const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.teamMetrics.avgSprintMetrics)}?${params.toString()}`);
     
@@ -651,10 +666,13 @@ export class ApiService {
     return result.data;
   }
 
-  async getCompletionRate(teamName: string, isGroup?: boolean): Promise<CompletionRate> {
+  async getCompletionRate(teamName: string, isGroup?: boolean, bypassCache?: boolean): Promise<CompletionRate> {
     const params = new URLSearchParams({ team_name: teamName });
     if (isGroup === true) {
       params.set('isGroup', 'true');
+    }
+    if (bypassCache === true) {
+      params.set('bypass_cache', 'true');
     }
     const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.teamMetrics.currentSprintProgress)}?${params.toString()}`);
     
@@ -851,10 +869,10 @@ export class ApiService {
   }
 
   // Combined team metrics (for parallel fetching)
-  async getTeamMetrics(teamName: string, isGroup?: boolean) {
+  async getTeamMetrics(teamName: string, isGroup?: boolean, bypassCache?: boolean) {
     const [sprintMetrics, completionRate] = await Promise.all([
-      this.getSprintMetrics(teamName, isGroup),
-      this.getCompletionRate(teamName, isGroup),
+      this.getSprintMetrics(teamName, isGroup, bypassCache),
+      this.getCompletionRate(teamName, isGroup, bypassCache),
     ]);
 
     return {

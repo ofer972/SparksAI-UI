@@ -10,13 +10,15 @@ interface MetricsWidgetProps {
   teamNameOverride?: string;
   piNameOverride?: string;
   isGroupOverride?: boolean;
+  refreshKey?: number; // Trigger refetch with bypass_cache when this changes
 }
 
 export default function MetricsWidget({ 
   metricsConfig, 
   teamNameOverride, 
   piNameOverride, 
-  isGroupOverride 
+  isGroupOverride,
+  refreshKey
 }: MetricsWidgetProps) {
   const { metricsType, selectedMetrics } = metricsConfig;
   
@@ -25,12 +27,23 @@ export default function MetricsWidget({
   const piName = piNameOverride !== undefined ? piNameOverride : metricsConfig.piName;
   const isGroup = isGroupOverride !== undefined ? isGroupOverride : metricsConfig.isGroup;
 
+  console.log('[MetricsWidget] Rendering with:', {
+    metricsType,
+    teamName,
+    piName,
+    isGroup,
+    teamNameOverride,
+    isGroupOverride,
+    configIsGroup: metricsConfig.isGroup,
+    refreshKey,
+  });
+
   if (metricsType === 'team') {
     if (!teamName) return null;
-    return <TeamMetrics teamName={teamName} isGroup={isGroup} selectedMetrics={selectedMetrics} />;
+    return <TeamMetrics teamName={teamName} isGroup={isGroup} selectedMetrics={selectedMetrics} refreshKey={refreshKey} />;
   } else {
     if (!piName || !teamName) return null;
-    return <PIMetrics piName={piName} selectedMetrics={selectedMetrics} />;
+    return <PIMetrics piName={piName} selectedMetrics={selectedMetrics} refreshKey={refreshKey} />;
   }
 }
 

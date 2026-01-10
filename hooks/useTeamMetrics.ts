@@ -7,7 +7,7 @@ interface UseTeamMetricsReturn {
   completionRate: CompletionRate | null;
   loading: boolean;
   error: string | null;
-  refetch: () => Promise<void>;
+  refetch: (bypassCache?: boolean) => Promise<void>;
 }
 
 /**
@@ -23,7 +23,7 @@ export function useTeamMetrics(teamName?: string, isGroup?: boolean): UseTeamMet
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchMetrics = useCallback(async () => {
+  const fetchMetrics = useCallback(async (bypassCache: boolean = false) => {
     // Check if teamName is empty, whitespace, or placeholder text
     const isEmptyOrPlaceholder = !teamName || 
       teamName.trim() === '' || 
@@ -38,15 +38,18 @@ export function useTeamMetrics(teamName?: string, isGroup?: boolean): UseTeamMet
       return;
     }
 
+    console.log('[useTeamMetrics] Fetching metrics with:', { teamName, isGroup, bypassCache });
+
     try {
       setLoading(true);
       setError(null);
       const apiService = new ApiService();
-      const { sprintMetrics, completionRate } = await apiService.getTeamMetrics(teamName, isGroup);
+      const { sprintMetrics, completionRate } = await apiService.getTeamMetrics(teamName, isGroup, bypassCache);
+      console.log('[useTeamMetrics] Successfully fetched metrics');
       setSprintMetrics(sprintMetrics);
       setCompletionRate(completionRate);
     } catch (err) {
-      console.error('Error fetching team metrics:', err);
+      console.error('[useTeamMetrics] Error fetching team metrics:', err);
       const message = err instanceof Error ? err.message : 'Failed to fetch metrics';
       
       // Check if error is related to missing team/group - treat as empty result instead of error
