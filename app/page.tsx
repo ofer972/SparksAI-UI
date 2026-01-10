@@ -266,19 +266,26 @@ export default function Home() {
     selectedCategories: [] as string[],
   });
   
-  // Auto-switch tabs based on which filters are available
+  // Auto-switch metrics tab based ONLY on focus checkboxes (selectedCategories)
   useEffect(() => {
     if (activeNavItem === 'team-ai-insights') {
-      // If only PI is selected (no team), switch to PI tab
-      if (teamInsightsFilters.selectedPI && !teamInsightsFilters.selectedTeam) {
-        setInsightMetricsTab('pi');
+      const hasPI = teamInsightsFilters.selectedCategories.includes('PI Events') || 
+                    teamInsightsFilters.selectedCategories.includes('PI Status');
+      const hasSprint = teamInsightsFilters.selectedCategories.includes('Sprint Status') || 
+                        teamInsightsFilters.selectedCategories.includes('Sprint Events');
+      
+      // If there's a mix of PI and Sprint categories, don't change metrics tab
+      if (hasPI && hasSprint) {
+        return;
       }
-      // If team is selected, switch to team tab (prioritize team over PI)
-      else if (teamInsightsFilters.selectedTeam) {
+      
+      if (hasPI) {
+        setInsightMetricsTab('pi');
+      } else if (hasSprint) {
         setInsightMetricsTab('team');
       }
     }
-  }, [activeNavItem, teamInsightsFilters.selectedTeam, teamInsightsFilters.selectedPI]);
+  }, [activeNavItem, teamInsightsFilters.selectedCategories]);
 
   const [uploadTranscriptsFilters, setUploadTranscriptsFilters] = useState({
     selectedPI: '',
@@ -1841,7 +1848,7 @@ export default function Home() {
                   }`}
                   style={{ writingMode: 'vertical-rl' }}
                 >
-                  Team
+                  Sprint
                 </button>
               )}
               {teamInsightsFilters.selectedPI && (

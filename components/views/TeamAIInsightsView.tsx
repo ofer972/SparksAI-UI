@@ -96,7 +96,7 @@ export default function TeamAIInsightsView({
                     : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
                 }`}
               >
-                Team Metrics
+                Sprint Metrics
               </button>
             )}
             {selectedPI && (
