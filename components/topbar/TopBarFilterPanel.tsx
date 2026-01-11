@@ -26,8 +26,8 @@ export default function TopBarFilterPanel({
   filters,
 }: TopBarFilterPanelProps) {
   // Determine which filters to show based on active nav item
+  // Note: PI filter is hidden for team-ai-insights (auto-selected from current PI)
   const showPIFilter = activeNavItem === 'pi-dashboard' || 
-                       activeNavItem === 'team-ai-insights' ||
                        activeNavItem === 'upload-transcripts' ||
                        activeNavItem === 'custom-dashboard-editor';
   

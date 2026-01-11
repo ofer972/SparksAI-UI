@@ -266,6 +266,9 @@ export default function Home() {
     selectedCategories: [] as string[],
   });
   
+  // Store current PI name for badge display in AI Insights
+  const [currentPIName, setCurrentPIName] = useState<string>('');
+  
   // Auto-switch metrics tab based ONLY on focus checkboxes (selectedCategories)
   useEffect(() => {
     if (activeNavItem === 'team-ai-insights') {
@@ -830,6 +833,9 @@ export default function Home() {
         selectedTreeType: 'team',
         selectedCategories: [],
       });
+      
+      // Clear current PI name
+      setCurrentPIName('');
     } else {
       // Reset when leaving team-ai-insights
       teamInsightsReadyRef.current = false;
@@ -850,15 +856,8 @@ export default function Home() {
         
         if (saved.topBarFilters) {
           const topBarFilters = saved.topBarFilters;
-          // Restore PI if saved
-          if (topBarFilters.selectedPI) {
-            setTeamInsightsFilters(prev => ({
-              ...prev,
-              selectedPI: topBarFilters.selectedPI || '',
-            }));
-            setSelectedPI(topBarFilters.selectedPI || '');
-            console.log('[App] Restored saved PI:', topBarFilters.selectedPI);
-          }
+          // Don't restore saved PI for AI Insights - always use current PI from backend
+          // The current PI will be fetched and set in a separate useEffect
           
           const teamName = topBarFilters.selectedTeam;
           const treeType = topBarFilters.selectedTreeType;
@@ -925,6 +924,44 @@ export default function Home() {
       console.log('[App] Team insights ready!');
     }
   }, [activeNavItem, teamInsightSettings.isLoading, teamInsightSettings.savedState, groups, teams]);
+
+  // Auto-fetch and set current PI for AI Insights - always use current PI from backend
+  useEffect(() => {
+    if (activeNavItem === 'team-ai-insights' && 
+        !teamInsightSettings.isLoading && 
+        teamInsightsReadyRef.current) {
+      
+      const fetchCurrentPI = async () => {
+        try {
+          console.log('[App] Fetching current PI for AI Insights...');
+          const apiService = new ApiService();
+          const piResponse = await apiService.getCurrentAndNextPIs();
+          
+          // The API returns {current_pis: [], next_pis: []} structure
+          const currentPIs = (piResponse as any).current_pis || [];
+          if (currentPIs.length > 0) {
+            // Use the first PI from the current_pis list
+            const currentPINameValue = currentPIs[0].pi_name;
+            console.log('[App] Setting current PI to:', currentPINameValue);
+            
+            // Always set to current PI from backend (overrides any saved PI)
+            setTeamInsightsFilters(prev => ({
+              ...prev,
+              selectedPI: currentPINameValue,
+            }));
+            setSelectedPI(currentPINameValue); // Update legacy state
+            setCurrentPIName(currentPINameValue); // Store for badge display
+          } else {
+            console.warn('[App] No current PIs returned from API');
+          }
+        } catch (err) {
+          console.error('[App] Failed to load current PI:', err);
+        }
+      };
+      
+      fetchCurrentPI();
+    }
+  }, [activeNavItem, teamInsightSettings.isLoading]);
 
   // Fetch custom dashboards
   const loadDashboards = useCallback(async () => {
@@ -1787,6 +1824,7 @@ export default function Home() {
               hasSavedSettings: activeNavItem === 'team-ai-insights'
                 ? !!teamInsightSettings.savedState
                 : false,
+              currentPIName: activeNavItem === 'team-ai-insights' ? currentPIName : undefined,
             }}
             aiChat={(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'custom-dashboard-editor') ? {
               onOpenChat: (dashboardData?: any) => {
