@@ -45,6 +45,7 @@ interface TopBarProps {
     onCategoriesChange?: (categories: string[]) => void;
     settingsLoading?: boolean;
     hasSavedSettings?: boolean;
+    currentPIName?: string; // Current PI name for badge display in AI Insights
   };
   
   // AI Chat & Prompts (for dashboards only)
@@ -128,14 +129,25 @@ export default function TopBar({
 
     // Add PI filter badge if selected AND applicable to current view (shown last, after Team/Group)
     if (filters.selectedPI && showPIFilter) {
-      badges.push({
-        label: 'PI',
-        value: filters.selectedPI,
-      });
+      // For AI Insights, only show badge if currentPIName is set (to avoid showing saved PI before current PI loads)
+      if (activeNavItem === 'team-ai-insights') {
+        if (filters.currentPIName) {
+          badges.push({
+            label: 'Current PI',
+            value: filters.currentPIName,
+          });
+        }
+        // Don't show badge if currentPIName is not set yet (waiting for API response)
+      } else {
+        badges.push({
+          label: 'PI',
+          value: filters.selectedPI,
+        });
+      }
     }
 
     return badges;
-  }, [filters.selectedPI, filters.selectedTreeValue, filters.selectedTreeLabel, activeNavItem]);
+  }, [filters.selectedPI, filters.currentPIName, filters.selectedTreeValue, filters.selectedTreeLabel, activeNavItem]);
 
   return (
     <div className="flex-shrink-0 w-full">
