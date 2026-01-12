@@ -1937,8 +1937,20 @@ export default function Home() {
                   ? 'Custom_dashboard'
                   : ''
           }
-          teamName={activeNavItem === 'team-dashboard' ? selectedTeam : undefined}
-          piName={activeNavItem === 'pi-dashboard' ? selectedPI : undefined}
+          teamName={
+            activeNavItem === 'team-dashboard' 
+              ? selectedTeam 
+              : activeNavItem === 'custom-dashboard-editor' && collectedDashboardData?.topBarFilters?.selectedTeam
+                ? collectedDashboardData.topBarFilters.selectedTeam
+                : undefined
+          }
+          piName={
+            activeNavItem === 'pi-dashboard' 
+              ? selectedPI 
+              : activeNavItem === 'custom-dashboard-editor' && collectedDashboardData?.topBarFilters?.selectedPI
+                ? collectedDashboardData.topBarFilters.selectedPI
+                : undefined
+          }
           promptName={selectedPrompt && selectedPrompt.trim() !== '' && selectedPrompt !== '[use default]' ? selectedPrompt : undefined}
           dashboardData={collectedDashboardData}
         />
