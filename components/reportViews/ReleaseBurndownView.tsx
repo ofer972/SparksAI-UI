@@ -83,7 +83,7 @@ const ReleaseBurndownView: React.FC<ReleaseBurndownViewProps> = ({
   // Custom filters for Release Burndown
   const customFilters = [
     {
-      type: 'release' as const,
+      type: 'other' as const,
       component: (
         <ReportFilterField label="Release">
           <select
