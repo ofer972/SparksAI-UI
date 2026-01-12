@@ -361,6 +361,9 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
       console.log('[PIDashboard] Dashboard data collection requested');
       // Use ref to access latest values
       const latest = latestValuesRef.current;
+      console.log('[PIDashboard] latestValuesRef.current:', latest);
+      console.log('[PIDashboard] latest.reportFilters:', latest.reportFilters);
+      console.log('[PIDashboard] latest.pinnedFilters:', latest.pinnedFilters);
       
       // Merge report filters with controlled filters for each report
       const mergedReportFilters: Record<string, Record<string, any>> = {};
@@ -368,10 +371,13 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
       // Get all report IDs from layout config
       const allReportIds = latest.layoutConfig?.rows?.flatMap((row: any) => row.reportIds || []) || [];
       const uniqueReportIds = Array.from(new Set(allReportIds));
+      console.log('[PIDashboard] uniqueReportIds:', uniqueReportIds);
       
       uniqueReportIds.forEach((reportId: string) => {
         const savedReportFilters = latest.reportFilters[reportId] || {};
         const savedPinnedFilters = latest.pinnedFilters[reportId] || [];
+        
+        console.log(`[PIDashboard] Report ${reportId}:`, { savedReportFilters, savedPinnedFilters });
         
         // Determine which controlled filters to use based on report type
         let controlledFilters: Record<string, any> = {};
@@ -398,6 +404,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
               isGroup: latest.selectedTreeType === 'group',
             };
         }
+        console.log(`[PIDashboard] controlledFilters for ${reportId}:`, controlledFilters);
         
         // Merge: unpinned filters use topbar values, pinned filters use saved values
         const merged: Record<string, any> = { ...savedReportFilters };

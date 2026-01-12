@@ -147,22 +147,24 @@ function DashboardAIMenu({
             
             let displayName = baseName;
             
-            // For unique keys (format: reportId-rowIndex-reportIndex), extract the actual reportId
-            // to look up filters in reportFilters object
+            // Try looking up filters using the unique key first (new format from CustomDashboardEditor)
+            // Then fallback to actual reportId (for team/pi dashboards)
             let filterLookupKey = widgetId;
-            if (widgetId.match(/^(.+)-\d+-\d+$/)) {
-              // Extract the actual reportId from the unique key
+            let reportFilters = data.reportFilters?.[widgetId] || {};
+            
+            // If no filters found with unique key, try extracting the reportId for backwards compatibility
+            if (Object.keys(reportFilters).length === 0 && widgetId.match(/^(.+)-\d+-\d+$/)) {
               const match = widgetId.match(/^(.+)-\d+-\d+$/);
               if (match) {
                 filterLookupKey = match[1];
+                reportFilters = data.reportFilters?.[filterLookupKey] || {};
               }
             }
             
             console.log(`[DashboardAIMenu] Looking up filters for widgetId=${widgetId}, filterLookupKey=${filterLookupKey}`);
+            console.log(`[DashboardAIMenu] Found filters:`, reportFilters);
             
             // Always add filter info for custom dashboards to help distinguish reports
-            const reportFilters = data.reportFilters?.[filterLookupKey] || {};
-            console.log(`[DashboardAIMenu] Found filters:`, reportFilters);
             const filterInfo = getImportantFilters(reportFilters);
             if (filterInfo) {
               displayName = baseName + filterInfo;
@@ -253,20 +255,24 @@ function DashboardAIMenu({
   const filterDashboardData = (data: DashboardData | null): DashboardData | null => {
     if (!data || selectedReports.size === 0) return data;
     
-    // Build a set of selected report IDs (extracting actual report ID from unique keys)
-    const selectedReportIds = new Set<string>();
+    // Build a set of selected unique keys AND extract actual report IDs
     const selectedUniqueKeys = new Set(selectedReports);
+    const selectedActualReportIds = new Set<string>(); // Actual report IDs for filtering reportFilters/pinnedFilters
     
     // Map to track which row/index combinations are selected
     const selectedRowReportIndices = new Map<number, Set<number>>();
     
     selectedUniqueKeys.forEach(key => {
       // Check if it's a unique key format (reportId-rowIndex-reportIndex)
-      const parts = key.split('-');
-      if (parts.length >= 3) {
-        // Extract rowIndex and reportIndex from the end
-        const reportIndex = parseInt(parts[parts.length - 1]);
-        const rowIndex = parseInt(parts[parts.length - 2]);
+      // The format is: actualReportId-rowIndex-reportIndex
+      const match = key.match(/^(.+)-(\d+)-(\d+)$/);
+      if (match) {
+        const actualReportId = match[1];
+        const rowIndex = parseInt(match[2]);
+        const reportIndex = parseInt(match[3]);
+        
+        // Track the actual report ID for filtering reportFilters/pinnedFilters
+        selectedActualReportIds.add(actualReportId);
         
         if (!isNaN(rowIndex) && !isNaN(reportIndex)) {
           if (!selectedRowReportIndices.has(rowIndex)) {
@@ -274,13 +280,18 @@ function DashboardAIMenu({
           }
           selectedRowReportIndices.get(rowIndex)!.add(reportIndex);
         }
+      } else {
+        // For widget format (not unique key), the key IS the actual report ID or widget ID
+        // Also add it as an actual report ID for filtering
+        selectedActualReportIds.add(key);
       }
-      
-      // Also track the actual report ID for widgets format
-      selectedReportIds.add(key);
     });
     
-    console.log('[DashboardAIMenu] selectedRowReportIndices:', Array.from(selectedRowReportIndices.entries()));
+    console.log('[DashboardAIMenu] filterDashboardData - selectedUniqueKeys:', Array.from(selectedUniqueKeys));
+    console.log('[DashboardAIMenu] filterDashboardData - selectedActualReportIds:', Array.from(selectedActualReportIds));
+    console.log('[DashboardAIMenu] filterDashboardData - selectedRowReportIndices:', Array.from(selectedRowReportIndices.entries()));
+    console.log('[DashboardAIMenu] filterDashboardData - data.reportFilters keys:', Object.keys(data.reportFilters || {}));
+    console.log('[DashboardAIMenu] filterDashboardData - data.pinnedFilters keys:', Object.keys(data.pinnedFilters || {}));
     
     // Filter layoutConfig to only include selected reports/widgets
     const filteredLayoutConfig = {
@@ -292,7 +303,7 @@ function DashboardAIMenu({
           // Handle widgets (for custom dashboards with new format)
           if (row.widgets) {
             filteredRow.widgets = row.widgets.filter((widget: any) => 
-              selectedReportIds.has(widget.id)
+              selectedUniqueKeys.has(widget.id)
             );
           }
           
@@ -304,8 +315,10 @@ function DashboardAIMenu({
                 selectedIndices.has(index)
               );
             } else {
-              // No selection for this row, include nothing
-              filteredRow.reportIds = [];
+              // No specific index selection for this row - check if all reports in row are selected by actual ID
+              filteredRow.reportIds = row.reportIds.filter((reportId: string) => 
+                selectedActualReportIds.has(reportId)
+              );
             }
           }
           
@@ -316,23 +329,47 @@ function DashboardAIMenu({
         ) // Remove empty rows
     };
 
-    // Also filter reportFilters and pinnedFilters to only include selected widgets
-    // For reportIds format, we need to match by actual report ID, not unique key
+    // Filter reportFilters and pinnedFilters
+    // Keys can be either:
+    // 1. Unique keys like "team-sprint-burndown-0-0" (from CustomDashboardEditor)
+    // 2. Actual report IDs like "team-sprint-burndown" (from Team/PI dashboards)
     const filteredReportFilters: Record<string, any> = {};
     const filteredPinnedFilters: Record<string, any> = {};
     
-    // Get all actual report IDs (both from reportFilters keys directly)
-    Object.keys(data.reportFilters).forEach(reportId => {
-      if (selectedReportIds.has(reportId)) {
-        filteredReportFilters[reportId] = data.reportFilters[reportId];
+    Object.keys(data.reportFilters || {}).forEach(key => {
+      // Check if key is a selected unique key (new format)
+      if (selectedUniqueKeys.has(key)) {
+        filteredReportFilters[key] = data.reportFilters[key];
+      } else if (selectedActualReportIds.has(key)) {
+        // Backwards compatibility: key is an actual report ID (team/pi dashboards)
+        filteredReportFilters[key] = data.reportFilters[key];
+      } else {
+        // Check if the key is a unique key that matches a selected actual report ID
+        const match = key.match(/^(.+)-\d+-\d+$/);
+        if (match && selectedActualReportIds.has(match[1])) {
+          filteredReportFilters[key] = data.reportFilters[key];
+        }
       }
     });
     
-    Object.keys(data.pinnedFilters).forEach(reportId => {
-      if (selectedReportIds.has(reportId)) {
-        filteredPinnedFilters[reportId] = data.pinnedFilters[reportId];
+    Object.keys(data.pinnedFilters || {}).forEach(key => {
+      // Check if key is a selected unique key (new format)
+      if (selectedUniqueKeys.has(key)) {
+        filteredPinnedFilters[key] = data.pinnedFilters[key];
+      } else if (selectedActualReportIds.has(key)) {
+        // Backwards compatibility: key is an actual report ID (team/pi dashboards)
+        filteredPinnedFilters[key] = data.pinnedFilters[key];
+      } else {
+        // Check if the key is a unique key that matches a selected actual report ID
+        const match = key.match(/^(.+)-\d+-\d+$/);
+        if (match && selectedActualReportIds.has(match[1])) {
+          filteredPinnedFilters[key] = data.pinnedFilters[key];
+        }
       }
     });
+    
+    console.log('[DashboardAIMenu] filterDashboardData - filteredReportFilters:', filteredReportFilters);
+    console.log('[DashboardAIMenu] filterDashboardData - filteredPinnedFilters:', filteredPinnedFilters);
 
     return {
       ...data,

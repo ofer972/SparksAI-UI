@@ -264,56 +264,129 @@ export default function CustomDashboardEditor({
   useEffect(() => {
     const handleCollectDashboardData = () => {
       console.log('[CustomDashboardEditor] Dashboard data collection requested');
+      console.log('[CustomDashboardEditor] dashboardLayoutConfig:', dashboardLayoutConfig);
+      console.log('[CustomDashboardEditor] reportPanelFilters:', reportPanelFilters);
+      
+      // Get all report widgets with their row indices - handle both widgets array and reportIds array formats
+      // Use the format ${reportId}-${rowIndex}-${widgetIndex} for unique keys (matches DashboardAIMenu.tsx)
+      const allWidgetsWithIndices: Array<{
+        id: string;
+        type: string;
+        widget_id: string;
+        filters?: Record<string, any>;
+        rowIndex: number;
+        widgetIndex: number;
+        uniqueKey: string; // Format: ${reportId}-${rowIndex}-${widgetIndex}
+      }> = [];
+      
+      dashboardLayoutConfig.layoutConfig.rows.forEach((row, rowIndex) => {
+        if (row.widgets && Array.isArray(row.widgets)) {
+          // New format with widgets array
+          const reportWidgetsInRow = row.widgets.filter(w => w.type === 'report');
+          reportWidgetsInRow.forEach((widget, widgetIndex) => {
+            const uniqueKey = `${widget.widget_id}-${rowIndex}-${widgetIndex}`;
+            allWidgetsWithIndices.push({
+              ...widget,
+              rowIndex,
+              widgetIndex,
+              uniqueKey,
+            });
+          });
+        } else if ((row as any).reportIds && Array.isArray((row as any).reportIds)) {
+          // Fallback: older format with reportIds array - convert to widget format
+          ((row as any).reportIds as string[]).forEach((reportId: string, widgetIndex: number) => {
+            const uniqueKey = `${reportId}-${rowIndex}-${widgetIndex}`;
+            allWidgetsWithIndices.push({
+              id: uniqueKey,
+              type: 'report',
+              widget_id: reportId,
+              filters: {},
+              rowIndex,
+              widgetIndex,
+              uniqueKey,
+            });
+          });
+        }
+      });
+      
+      const reportWidgets = allWidgetsWithIndices.filter(widget => widget.type === 'report');
+      console.log('[CustomDashboardEditor] reportWidgets with indices:', reportWidgets);
       
       // Convert widgets to reportIds format for layoutConfig
+      // Keep all report IDs including duplicates
       const layoutConfig = {
-        rows: dashboardLayoutConfig.layoutConfig.rows.map(row => ({
+        rows: dashboardLayoutConfig.layoutConfig.rows.map((row, rowIndex) => ({
           id: row.id,
           reportIds: row.widgets
-            .filter(widget => widget.type === 'report')
-            .map(widget => widget.widget_id),
+            ? row.widgets.filter(widget => widget.type === 'report').map(widget => widget.widget_id)
+            : ((row as any).reportIds || []),
         })).filter(row => row.reportIds.length > 0), // Only include rows with reports
       };
       
       // Merge widget filters with reportPanelFilters for each widget
+      // Use unique keys (${reportId}-${rowIndex}-${widgetIndex}) to support multiple reports of the same type
       const mergedReportFilters: Record<string, Record<string, any>> = {};
-      
-      // Get all report widgets
-      const allWidgets = dashboardLayoutConfig.layoutConfig.rows.flatMap(row => row.widgets || []);
-      const reportWidgets = allWidgets.filter(widget => widget.type === 'report');
+      const transformedPinnedFilters: Record<string, string[]> = {};
       
       reportWidgets.forEach(widget => {
         // Use widget.id to get saved filters (widget instance ID)
         const savedWidgetFilters = dashboardLayoutConfig.reportFilters?.[widget.id] || widget.filters || {};
         const savedPinnedFilters = dashboardLayoutConfig.pinnedFilters?.[widget.id] || [];
         
+        console.log(`[CustomDashboardEditor] Widget ${widget.id} (${widget.widget_id}) uniqueKey=${widget.uniqueKey}:`, {
+          savedWidgetFilters,
+          savedPinnedFilters,
+        });
+        
         // Merge: unpinned filters use reportPanelFilters (topbar) values, pinned filters use saved widget values
-        const merged: Record<string, any> = { ...savedWidgetFilters };
-        Object.entries(reportPanelFilters).forEach(([key, value]) => {
-          if (!savedPinnedFilters.includes(key)) {
+        // Exclude selectedTreeLabel and selectedTreeValue as they're not needed for AI chat
+        const excludedKeys = ['selectedTreeLabel', 'selectedTreeValue'];
+        const merged: Record<string, any> = {};
+        
+        // First, copy savedWidgetFilters but exclude unnecessary keys
+        Object.entries(savedWidgetFilters).forEach(([key, value]) => {
+          if (!excludedKeys.includes(key)) {
             merged[key] = value;
           }
         });
         
-        // Use widget.widget_id (report ID) as the key for AI chat, not widget.id (widget instance ID)
-        mergedReportFilters[widget.widget_id] = merged;
+        // Then merge reportPanelFilters, excluding pinned filters and unnecessary keys
+        Object.entries(reportPanelFilters).forEach(([key, value]) => {
+          if (!savedPinnedFilters.includes(key) && !excludedKeys.includes(key)) {
+            merged[key] = value;
+          }
+        });
+        
+        // Use unique key (${reportId}-${rowIndex}-${widgetIndex}) to support multiple reports of same type
+        mergedReportFilters[widget.uniqueKey] = merged;
+        
+        // Also use unique key for pinnedFilters
+        if (savedPinnedFilters.length > 0) {
+          transformedPinnedFilters[widget.uniqueKey] = savedPinnedFilters;
+        }
       });
+      
+      // For AI chat, only send the necessary topBarFilters (exclude selectedTreeValue and selectedTreeLabel)
+      const topBarFiltersSource = dashboardLayoutConfig.topBarFilters || {
+        selectedPI: externalFilters?.selectedPI || '',
+        selectedTeam: externalFilters?.selectedTeam || '',
+        selectedTreeType: externalFilters?.selectedTreeType || 'team',
+      };
       
       const data = {
         layoutConfig,
-        topBarFilters: dashboardLayoutConfig.topBarFilters || {
-          selectedPI: externalFilters?.selectedPI || '',
-          selectedTeam: externalFilters?.selectedTeam || '',
-          selectedTreeValue: externalFilters?.selectedTreeValue || null,
-          selectedTreeLabel: externalFilters?.selectedTreeLabel || '',
-          selectedTreeType: externalFilters?.selectedTreeType || 'team',
+        topBarFilters: {
+          selectedPI: topBarFiltersSource.selectedPI || '',
+          selectedTeam: topBarFiltersSource.selectedTeam || '',
+          selectedTreeType: topBarFiltersSource.selectedTreeType || 'team',
         },
         reportFilters: mergedReportFilters,
-        pinnedFilters: dashboardLayoutConfig.pinnedFilters || {},
+        pinnedFilters: transformedPinnedFilters,
       };
       
       console.log('[CustomDashboardEditor] Collected dashboard data:', data);
-      console.log('[CustomDashboardEditor] Merged report filters (unpinned use topbar):', mergedReportFilters);
+      console.log('[CustomDashboardEditor] Merged report filters (with unique keys):', mergedReportFilters);
+      console.log('[CustomDashboardEditor] Transformed pinned filters (with unique keys):', transformedPinnedFilters);
       window.dispatchEvent(new CustomEvent('dashboard-data-collected', { detail: data }));
     };
     

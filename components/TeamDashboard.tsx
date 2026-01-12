@@ -349,6 +349,9 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
       console.log('[TeamDashboard] Dashboard data collection requested');
       // Use ref to access latest values
       const latest = latestValuesRef.current;
+      console.log('[TeamDashboard] latestValuesRef.current:', latest);
+      console.log('[TeamDashboard] latest.reportFilters:', latest.reportFilters);
+      console.log('[TeamDashboard] latest.pinnedFilters:', latest.pinnedFilters);
       
       // Merge report filters with controlled filters for each report
       const mergedReportFilters: Record<string, Record<string, any>> = {};
@@ -356,16 +359,20 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
       // Get all report IDs from layout config
       const allReportIds = latest.layoutConfig?.rows?.flatMap((row: any) => row.reportIds || []) || [];
       const uniqueReportIds = Array.from(new Set(allReportIds));
+      console.log('[TeamDashboard] uniqueReportIds:', uniqueReportIds);
       
       // Get controlled filters (current topbar values)
       const controlledFilters = {
         ...(latest.selectedTeam ? { team_name: latest.selectedTeam } : {}),
         isGroup: latest.selectedTreeType === 'group',
       };
+      console.log('[TeamDashboard] controlledFilters:', controlledFilters);
       
       uniqueReportIds.forEach((reportId: string) => {
         const savedReportFilters = latest.reportFilters[reportId] || {};
         const savedPinnedFilters = latest.pinnedFilters[reportId] || [];
+        
+        console.log(`[TeamDashboard] Report ${reportId}:`, { savedReportFilters, savedPinnedFilters });
         
         // Merge: unpinned filters use topbar values, pinned filters use saved values
         const merged: Record<string, any> = { ...savedReportFilters };
