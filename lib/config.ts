@@ -47,6 +47,14 @@ export const API_CONFIG = {
       cycleTimeWithIssueKeys: '/issues/cycle-time-with-issues-keys',
       getHistoryInfo: '/issues/get-history-info',
       getPIHistoryInfo: '/issues/get-pi-history-info',
+      getReleaseHistoryInfo: '/issues/get-release-history-info',
+    },
+    
+    // Releases endpoints
+    releases: {
+      getAll: '/releases',
+      getPredictability: '/releases/predictability',
+      getBurndown: '/releases/burndown',
     },
     
     // AI Cards endpoints

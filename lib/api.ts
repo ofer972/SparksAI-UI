@@ -143,6 +143,34 @@ export interface PIBurndownResponse {
   message: string;
 }
 
+export interface ReleaseBurndownResponse {
+  success: boolean;
+  data: {
+    burndown_data: Array<{
+      snapshot_date: string;
+      release_name: string;
+      start_date: string;
+      release_date: string;
+      planned_issues: number;
+      issues_added_on_day: number;
+      issues_removed_on_day: number;
+      issues_completed_on_day: number;
+      remaining_issues: number;
+      ideal_remaining: number;
+      total_issues: number;
+      wip_issues_in_progress: number;
+    }>;
+    count: number;
+    release: string;
+    issue_type: string;
+    isGroup: boolean;
+    team_name?: string;
+    group_name?: string;
+    teams_in_group?: string[];
+  };
+  message: string;
+}
+
 type PrimitiveFilter = string | number | boolean;
 type ReportFilterValue = PrimitiveFilter | null | undefined | PrimitiveFilter[];
 
@@ -573,6 +601,72 @@ export class ApiService {
 
     if (!response.ok) {
       throw new Error(`Failed to fetch PI burndown issues: ${response.statusText}`);
+    }
+
+    const result: BurndownIssuesResponse = await response.json();
+    return result;
+  }
+
+  // Release Burndown Data API
+  async getReleaseBurndownData(
+    releaseName: string,
+    issueType?: string,
+    teamName?: string,
+    isGroup: boolean = false
+  ): Promise<ReleaseBurndownResponse> {
+    const params = new URLSearchParams();
+    params.append('release', releaseName);
+    
+    if (issueType && issueType !== 'all') {
+      params.append('issue_type', issueType);
+    }
+    if (teamName) {
+      params.append('team_name', teamName);
+    }
+    if (isGroup) {
+      params.append('isGroup', 'true');
+    }
+
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.releases.getBurndown)}?${params}`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch release burndown data: ${response.statusText}`);
+    }
+
+    const result: ReleaseBurndownResponse = await response.json();
+    return result;
+  }
+
+  // Release Burndown Issues API (for chart click dialog)
+  async getReleaseBurndownIssues(
+    date: string,
+    releaseName: string,
+    metricType: string,
+    teamName?: string,
+    isGroup: boolean = false,
+    issueType?: string
+  ): Promise<BurndownIssuesResponse> {
+    const params = new URLSearchParams();
+    params.append('date', date);
+    params.append('release', releaseName);
+    params.append('metric_type', metricType);
+
+    if (teamName) {
+      params.append('team_name', teamName);
+    }
+    if (isGroup) {
+      params.append('isGroup', 'true');
+    }
+    if (issueType && issueType !== 'all') {
+      params.append('issue_type', issueType);
+    }
+
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.issues.getReleaseHistoryInfo)}?${params}`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch release burndown issues: ${response.statusText}`);
     }
 
     const result: BurndownIssuesResponse = await response.json();

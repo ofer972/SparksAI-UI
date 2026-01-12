@@ -10,6 +10,7 @@ import FlowStatusDurationView from './reportViews/FlowStatusDurationView';
 import EpicsHierarchyView from './reportViews/EpicsHierarchyView';
 import EpicDependenciesView from './reportViews/EpicDependenciesView';
 import ReleasePredictabilityView from './reportViews/ReleasePredictabilityView';
+import ReleaseBurndownView from './reportViews/ReleaseBurndownView';
 import SprintPredictabilityView from './reportViews/SprintPredictabilityView';
 import PIMetricsSummaryView from './reportViews/PIMetricsSummaryView';
 import CurrentSprintProgressView from './reportViews/CurrentSprintProgressView';
@@ -87,6 +88,34 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
           ...(result.start_date && { start_date: result.start_date }),
           ...(result.end_date && { end_date: result.end_date }),
           ...(result.pi_name && { pi: result.pi_name }),
+        };
+        return {
+          data: result.burndown_data,
+          loading,
+          error,
+          meta: enhancedMeta,
+        };
+      }
+      return {
+        data: [],
+        loading,
+        error,
+        meta,
+      };
+    },
+  },
+  'release-burndown': {
+    component: ReleaseBurndownView,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, meta }) => {
+      // Handle response format where result is an object with burndown_data
+      if (result && typeof result === 'object' && 'burndown_data' in result && Array.isArray(result.burndown_data)) {
+        // Extract dates from result object if they exist
+        const enhancedMeta = {
+          ...meta,
+          ...(result.release_start_date && { release_start_date: result.release_start_date }),
+          ...(result.release_end_date && { release_end_date: result.release_end_date }),
+          ...(result.release_name && { release: result.release_name }),
         };
         return {
           data: result.burndown_data,
