@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { DEFAULT_REPORT_COMPONENT_REGISTRY } from './reportComponentsRegistry';
 
 export interface DashboardData {
   layoutConfig: any;
@@ -13,6 +14,8 @@ export interface DashboardData {
 interface ReportInfo {
   id: string;
   name: string;
+  displayName: string; // Name with filters for display
+  widgetId: string; // The actual widget ID in the layout
 }
 
 interface DashboardAIMenuProps {
@@ -50,31 +53,132 @@ function DashboardAIMenu({
     }
   };
 
+  // Helper function to format filter value for display
+  const formatFilterValue = (key: string, value: any): string => {
+    if (value === null || value === undefined || value === '') return '';
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    if (Array.isArray(value)) return value.join(', ');
+    return String(value);
+  };
+
+  // Helper function to get important filters for display
+  const getImportantFilters = (filters: Record<string, any>): string => {
+    const importantKeys = ['team_name', 'pi', 'sprint_name', 'selectedTeam', 'selectedPI'];
+    const filterParts: string[] = [];
+    
+    for (const key of importantKeys) {
+      if (filters[key]) {
+        const value = formatFilterValue(key, filters[key]);
+        if (value) {
+          const label = key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
+          filterParts.push(`${label}: ${value}`);
+        }
+      }
+    }
+    
+    return filterParts.length > 0 ? ` (${filterParts.join(', ')})` : '';
+  };
+
   // Extract available reports from dashboard data when opened
   useEffect(() => {
     if (isOpen && onCollectDashboardData) {
       const fetchReports = async () => {
         const data = await onCollectDashboardData();
+        console.log('[DashboardAIMenu] Collected dashboard data:', data);
+        console.log('[DashboardAIMenu] reportFilters:', data?.reportFilters);
+        console.log('[DashboardAIMenu] pinnedFilters:', data?.pinnedFilters);
+        
         if (data?.layoutConfig?.rows) {
           const reports: ReportInfo[] = [];
-          const reportIds = new Set<string>();
+          const widgetIdToReportId = new Map<string, string>();
           
-          // Extract all unique report IDs from layout
-          data.layoutConfig.rows.forEach((row: any) => {
+          // Extract all report widgets from layout (for custom dashboards)
+          data.layoutConfig.rows.forEach((row: any, rowIndex: number) => {
+            console.log(`[DashboardAIMenu] Processing row ${rowIndex}:`, row);
+            
+            if (row.widgets) {
+              row.widgets.forEach((widget: any, widgetIndex: number) => {
+                console.log(`[DashboardAIMenu] Processing widget ${widgetIndex}:`, widget);
+                const reportId = widget.widget_id || widget.type;
+                // Only include if it's a report (exists in registry) and type is 'report'
+                if (widget.type === 'report' && reportId && DEFAULT_REPORT_COMPONENT_REGISTRY[reportId]) {
+                  console.log(`[DashboardAIMenu] Adding widget: ${widget.id} -> ${reportId}`);
+                  widgetIdToReportId.set(widget.id, reportId);
+                } else {
+                  console.log(`[DashboardAIMenu] Skipping widget: type=${widget.type}, reportId=${reportId}, inRegistry=${!!DEFAULT_REPORT_COMPONENT_REGISTRY[reportId]}`);
+                }
+              });
+            }
+            // Also handle old format with reportIds (for team/pi dashboards and some custom dashboards)
             if (row.reportIds) {
-              row.reportIds.forEach((id: string) => {
-                if (!reportIds.has(id)) {
-                  reportIds.add(id);
-                  // Convert report ID to readable name
-                  const name = id
-                    .split('-')
-                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                    .join(' ');
-                  reports.push({ id, name });
+              console.log(`[DashboardAIMenu] Row ${rowIndex} reportIds:`, row.reportIds);
+              row.reportIds.forEach((reportId: string, reportIndex: number) => {
+                console.log(`[DashboardAIMenu] Checking reportId ${reportIndex}: ${reportId}, inRegistry: ${!!DEFAULT_REPORT_COMPONENT_REGISTRY[reportId]}`);
+                if (DEFAULT_REPORT_COMPONENT_REGISTRY[reportId]) {
+                  // Generate a unique key for each report instance
+                  const uniqueKey = `${reportId}-${rowIndex}-${reportIndex}`;
+                  console.log(`[DashboardAIMenu] Adding report from reportIds: ${uniqueKey} -> ${reportId}`);
+                  widgetIdToReportId.set(uniqueKey, reportId);
+                } else {
+                  console.log(`[DashboardAIMenu] Skipping reportId ${reportId} - not in registry`);
                 }
               });
             }
           });
+          
+          console.log('[DashboardAIMenu] widgetIdToReportId Map:', Array.from(widgetIdToReportId.entries()));
+          
+          // Count occurrences of each report type
+          const reportTypeCounts = new Map<string, number>();
+          widgetIdToReportId.forEach((reportId) => {
+            reportTypeCounts.set(reportId, (reportTypeCounts.get(reportId) || 0) + 1);
+          });
+          
+          console.log('[DashboardAIMenu] reportTypeCounts:', Array.from(reportTypeCounts.entries()));
+          console.log('[DashboardAIMenu] reportFilters keys:', Object.keys(data.reportFilters || {}));
+          
+          // Build report info with display names - always show filter info for custom dashboards
+          widgetIdToReportId.forEach((reportId, widgetId) => {
+            // Convert report ID to readable name
+            const baseName = reportId
+              .split('-')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ');
+            
+            let displayName = baseName;
+            
+            // For unique keys (format: reportId-rowIndex-reportIndex), extract the actual reportId
+            // to look up filters in reportFilters object
+            let filterLookupKey = widgetId;
+            if (widgetId.match(/^(.+)-\d+-\d+$/)) {
+              // Extract the actual reportId from the unique key
+              const match = widgetId.match(/^(.+)-\d+-\d+$/);
+              if (match) {
+                filterLookupKey = match[1];
+              }
+            }
+            
+            console.log(`[DashboardAIMenu] Looking up filters for widgetId=${widgetId}, filterLookupKey=${filterLookupKey}`);
+            
+            // Always add filter info for custom dashboards to help distinguish reports
+            const reportFilters = data.reportFilters?.[filterLookupKey] || {};
+            console.log(`[DashboardAIMenu] Found filters:`, reportFilters);
+            const filterInfo = getImportantFilters(reportFilters);
+            if (filterInfo) {
+              displayName = baseName + filterInfo;
+            }
+            
+            console.log(`[DashboardAIMenu] Adding report: ${widgetId} - ${displayName}`);
+            
+            reports.push({
+              id: widgetId,
+              name: baseName,
+              displayName,
+              widgetId
+            });
+          });
+          
+          console.log('[DashboardAIMenu] Final reports:', reports);
           
           setAvailableReports(reports);
           // Select all reports by default
@@ -149,20 +253,92 @@ function DashboardAIMenu({
   const filterDashboardData = (data: DashboardData | null): DashboardData | null => {
     if (!data || selectedReports.size === 0) return data;
     
-    // Filter layoutConfig to only include selected reports
+    // Build a set of selected report IDs (extracting actual report ID from unique keys)
+    const selectedReportIds = new Set<string>();
+    const selectedUniqueKeys = new Set(selectedReports);
+    
+    // Map to track which row/index combinations are selected
+    const selectedRowReportIndices = new Map<number, Set<number>>();
+    
+    selectedUniqueKeys.forEach(key => {
+      // Check if it's a unique key format (reportId-rowIndex-reportIndex)
+      const parts = key.split('-');
+      if (parts.length >= 3) {
+        // Extract rowIndex and reportIndex from the end
+        const reportIndex = parseInt(parts[parts.length - 1]);
+        const rowIndex = parseInt(parts[parts.length - 2]);
+        
+        if (!isNaN(rowIndex) && !isNaN(reportIndex)) {
+          if (!selectedRowReportIndices.has(rowIndex)) {
+            selectedRowReportIndices.set(rowIndex, new Set());
+          }
+          selectedRowReportIndices.get(rowIndex)!.add(reportIndex);
+        }
+      }
+      
+      // Also track the actual report ID for widgets format
+      selectedReportIds.add(key);
+    });
+    
+    console.log('[DashboardAIMenu] selectedRowReportIndices:', Array.from(selectedRowReportIndices.entries()));
+    
+    // Filter layoutConfig to only include selected reports/widgets
     const filteredLayoutConfig = {
       ...data.layoutConfig,
       rows: data.layoutConfig.rows
-        .map((row: any) => ({
-          ...row,
-          reportIds: row.reportIds.filter((id: string) => selectedReports.has(id))
-        }))
-        .filter((row: any) => row.reportIds.length > 0) // Remove empty rows
+        .map((row: any, rowIndex: number) => {
+          const filteredRow = { ...row };
+          
+          // Handle widgets (for custom dashboards with new format)
+          if (row.widgets) {
+            filteredRow.widgets = row.widgets.filter((widget: any) => 
+              selectedReportIds.has(widget.id)
+            );
+          }
+          
+          // Handle reportIds (for team/pi dashboards and custom dashboards with old format)
+          if (row.reportIds) {
+            const selectedIndices = selectedRowReportIndices.get(rowIndex);
+            if (selectedIndices) {
+              filteredRow.reportIds = row.reportIds.filter((_: string, index: number) => 
+                selectedIndices.has(index)
+              );
+            } else {
+              // No selection for this row, include nothing
+              filteredRow.reportIds = [];
+            }
+          }
+          
+          return filteredRow;
+        })
+        .filter((row: any) => 
+          (row.widgets && row.widgets.length > 0) || (row.reportIds && row.reportIds.length > 0)
+        ) // Remove empty rows
     };
+
+    // Also filter reportFilters and pinnedFilters to only include selected widgets
+    // For reportIds format, we need to match by actual report ID, not unique key
+    const filteredReportFilters: Record<string, any> = {};
+    const filteredPinnedFilters: Record<string, any> = {};
+    
+    // Get all actual report IDs (both from reportFilters keys directly)
+    Object.keys(data.reportFilters).forEach(reportId => {
+      if (selectedReportIds.has(reportId)) {
+        filteredReportFilters[reportId] = data.reportFilters[reportId];
+      }
+    });
+    
+    Object.keys(data.pinnedFilters).forEach(reportId => {
+      if (selectedReportIds.has(reportId)) {
+        filteredPinnedFilters[reportId] = data.pinnedFilters[reportId];
+      }
+    });
 
     return {
       ...data,
-      layoutConfig: filteredLayoutConfig
+      layoutConfig: filteredLayoutConfig,
+      reportFilters: filteredReportFilters,
+      pinnedFilters: filteredPinnedFilters
     };
   };
 
@@ -214,15 +390,15 @@ function DashboardAIMenu({
               {availableReports.map((report) => (
                 <label
                   key={report.id}
-                  className="flex items-center space-x-2 cursor-pointer hover:bg-white rounded-lg p-2 transition-colors"
+                  className="flex items-start space-x-2 cursor-pointer hover:bg-white rounded-lg p-2 transition-colors"
                 >
                   <input
                     type="checkbox"
                     checked={selectedReports.has(report.id)}
                     onChange={() => toggleReport(report.id)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5 flex-shrink-0"
                   />
-                  <span className="text-sm text-gray-700">{report.name}</span>
+                  <span className="text-sm text-gray-700 break-words">{report.displayName}</span>
                 </label>
               ))}
             </div>
