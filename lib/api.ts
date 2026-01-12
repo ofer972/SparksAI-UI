@@ -389,10 +389,18 @@ export class ApiService {
   }
 
   // PI Status For Today API
-  async getPIStatusForToday(targetPiName: string, bypassCache?: boolean): Promise<PIStatusForTodayResponse> {
+  async getPIStatusForToday(targetPiName: string, teamName?: string, isGroup?: boolean, bypassCache?: boolean): Promise<PIStatusForTodayResponse> {
     const params = new URLSearchParams({
       pi: targetPiName,
     });
+    
+    if (teamName) {
+      params.set('team_name', teamName);
+    }
+    
+    if (isGroup !== undefined) {
+      params.set('isGroup', isGroup.toString());
+    }
     
     if (bypassCache === true) {
       params.set('bypass_cache', 'true');
@@ -446,9 +454,17 @@ export class ApiService {
   }
 
   // Average Epic Cycle Time API
-  async getAverageEpicCycleTime(months: number = 6, bypassCache?: boolean): Promise<AverageEpicCycleTimeResponse> {
+  async getAverageEpicCycleTime(months: number = 6, teamName?: string, isGroup?: boolean, bypassCache?: boolean): Promise<AverageEpicCycleTimeResponse> {
     const params = new URLSearchParams();
     params.append('months', months.toString());
+    
+    if (teamName) {
+      params.append('team_name', teamName);
+    }
+    
+    if (isGroup !== undefined) {
+      params.append('isGroup', isGroup.toString());
+    }
     
     if (bypassCache === true) {
       params.append('bypass_cache', 'true');
@@ -650,8 +666,8 @@ export class ApiService {
   // Team Metrics APIs
   async getSprintMetrics(teamName: string, isGroup?: boolean, bypassCache?: boolean): Promise<SprintMetrics> {
     const params = new URLSearchParams({ team_name: teamName });
-    if (isGroup === true) {
-      params.set('isGroup', 'true');
+    if (isGroup !== undefined) {
+      params.set('isGroup', isGroup.toString());
     }
     if (bypassCache === true) {
       params.set('bypass_cache', 'true');
@@ -668,8 +684,8 @@ export class ApiService {
 
   async getCompletionRate(teamName: string, isGroup?: boolean, bypassCache?: boolean): Promise<CompletionRate> {
     const params = new URLSearchParams({ team_name: teamName });
-    if (isGroup === true) {
-      params.set('isGroup', 'true');
+    if (isGroup !== undefined) {
+      params.set('isGroup', isGroup.toString());
     }
     if (bypassCache === true) {
       params.set('bypass_cache', 'true');

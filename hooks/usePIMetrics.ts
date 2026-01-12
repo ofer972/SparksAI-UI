@@ -38,9 +38,11 @@ interface UsePIMetricsReturn {
  * Custom hook for fetching PI metrics data including epic closure and in-progress epics.
  * 
  * @param piName - The name of the PI to fetch metrics for
+ * @param teamName - Optional team name for filtering dependencies
+ * @param isGroup - Whether the team is a group
  * @returns Object containing PI metrics, loading state, error state, and refetch function
  */
-export function usePIMetrics(piName?: string): UsePIMetricsReturn {
+export function usePIMetrics(piName?: string, teamName?: string, isGroup?: boolean): UsePIMetricsReturn {
   const [metrics, setMetrics] = useState<PIMetricsData | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,13 +66,13 @@ export function usePIMetrics(piName?: string): UsePIMetricsReturn {
       setError(null);
       const apiService = new ApiService();
       
-      console.log('[usePIMetrics] Fetching metrics with:', { piName, bypassCache });
+      console.log('[usePIMetrics] Fetching metrics with:', { piName, teamName, isGroup, bypassCache });
       
       // Fetch all metrics in parallel
       const [piStatusResponse, dependenciesResponse, cycleTimeResponse] = await Promise.allSettled([
-        apiService.getPIStatusForToday(piName, bypassCache),
-        apiService.getTopDependenciesSummary(piName, undefined, false, bypassCache),
-        apiService.getAverageEpicCycleTime(6, bypassCache),
+        apiService.getPIStatusForToday(piName, teamName, isGroup, bypassCache),
+        apiService.getTopDependenciesSummary(piName, teamName, isGroup || false, bypassCache),
+        apiService.getAverageEpicCycleTime(6, teamName, isGroup, bypassCache),
       ]);
       
       // Process PI Status data
@@ -157,7 +159,7 @@ export function usePIMetrics(piName?: string): UsePIMetricsReturn {
     } finally {
       setLoading(false);
     }
-  }, [piName]);
+  }, [piName, teamName, isGroup]);
 
   useEffect(() => {
     fetchMetrics();

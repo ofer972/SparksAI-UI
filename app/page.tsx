@@ -1692,7 +1692,11 @@ export default function Home() {
             <TopBar
             activeNavItem={activeNavItem}
             navigationItems={navigationItems}
-            customViewTitle={activeNavItem === 'custom-dashboard-editor' && customDashboardData ? customDashboardData.name : undefined}
+            customViewTitle={
+              activeNavItem === 'custom-dashboards' 
+                ? 'My Dashboards' 
+                : (activeNavItem === 'custom-dashboard-editor' && customDashboardData ? customDashboardData.name : undefined)
+            }
             onToggleMobileSidebar={() => setMobileSidebarOpen(true)}
             dashboardSettings={(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'custom-dashboard-editor') ? {
               hasChanges: activeNavItem === 'custom-dashboard-editor' ? false : dashboardSettingsState.hasChanges,
@@ -1869,7 +1873,12 @@ export default function Home() {
                     singleRowLayout={true} 
                   />
                 ) : insightMetricsTab === 'pi' && teamInsightsFilters.selectedPI ? (
-                  <PIMetrics piName={teamInsightsFilters.selectedPI} singleRowLayout={true} />
+                  <PIMetrics 
+                    piName={teamInsightsFilters.selectedPI} 
+                    teamName={teamInsightsFilters.selectedTeam} 
+                    isGroup={teamInsightsFilters.selectedTreeType === 'group'} 
+                    singleRowLayout={true} 
+                  />
                 ) : null}
               </div>
             </div>
@@ -1928,8 +1937,20 @@ export default function Home() {
                   ? 'Custom_dashboard'
                   : ''
           }
-          teamName={activeNavItem === 'team-dashboard' ? selectedTeam : undefined}
-          piName={activeNavItem === 'pi-dashboard' ? selectedPI : undefined}
+          teamName={
+            activeNavItem === 'team-dashboard' 
+              ? selectedTeam 
+              : activeNavItem === 'custom-dashboard-editor' && collectedDashboardData?.topBarFilters?.selectedTeam
+                ? collectedDashboardData.topBarFilters.selectedTeam
+                : undefined
+          }
+          piName={
+            activeNavItem === 'pi-dashboard' 
+              ? selectedPI 
+              : activeNavItem === 'custom-dashboard-editor' && collectedDashboardData?.topBarFilters?.selectedPI
+                ? collectedDashboardData.topBarFilters.selectedPI
+                : undefined
+          }
           promptName={selectedPrompt && selectedPrompt.trim() !== '' && selectedPrompt !== '[use default]' ? selectedPrompt : undefined}
           dashboardData={collectedDashboardData}
         />
