@@ -14,6 +14,7 @@ import type { CustomDashboard, CreateDashboardRequest, DashboardLayoutConfig, Da
 import ReportCard from './reporting/ReportCard';
 import ReportPanel from './ReportPanel';
 import InsightTypeWidget from './InsightTypeWidget';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 // Component to render real dashboard snapshot preview
 const DashboardLayoutPreview: React.FC<{ 
@@ -136,6 +137,8 @@ export default function CustomDashboardsView({ onSelectDashboard, onDashboardCre
   const [isCreating, setIsCreating] = useState(false);
   const [newDashboardName, setNewDashboardName] = useState('');
   const [newDashboardDescription, setNewDashboardDescription] = useState('');
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [dashboardToDelete, setDashboardToDelete] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     if (user?.id || user?.user_id) {
@@ -299,22 +302,36 @@ export default function CustomDashboardsView({ onSelectDashboard, onDashboardCre
     }
   };
 
-  const handleDeleteDashboard = async (dashboardId: string, dashboardName: string) => {
-    if (!confirm(`Are you sure you want to delete "${dashboardName}"? This action cannot be undone.`)) {
-      return;
-    }
+  const handleDeleteDashboard = (dashboardId: string, dashboardName: string) => {
+    setDashboardToDelete({ id: dashboardId, name: dashboardName });
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDeleteDashboard = async () => {
+    if (!dashboardToDelete) return;
 
     if (!user?.id && !user?.user_id) {
       setError('User not found');
+      setDeleteModalOpen(false);
+      setDashboardToDelete(null);
       return;
     }
 
     try {
       const userId = (user?.id || user?.user_id) as string;
-      await deleteDashboard(userId, dashboardId);
-      setDashboards(dashboards.filter(d => d.id !== dashboardId));
+      await deleteDashboard(userId, dashboardToDelete.id);
+      setDashboards(dashboards.filter(d => d.id !== dashboardToDelete.id));
+      setDeleteModalOpen(false);
+      setDashboardToDelete(null);
+      
+      // Notify parent to refresh dashboards list (for left menu panel)
+      if (onDashboardCreated) {
+        onDashboardCreated();
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to delete dashboard');
+      setDeleteModalOpen(false);
+      setDashboardToDelete(null);
     }
   };
 
@@ -508,6 +525,17 @@ export default function CustomDashboardsView({ onSelectDashboard, onDashboardCre
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setDashboardToDelete(null);
+        }}
+        itemName={`"${dashboardToDelete?.name}"`}
+        onConfirm={confirmDeleteDashboard}
+      />
     </div>
   );
 }
