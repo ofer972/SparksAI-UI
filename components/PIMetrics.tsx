@@ -5,6 +5,8 @@ import { usePIMetrics } from '@/hooks';
 
 interface PIMetricsProps {
   piName?: string;
+  teamName?: string; // Optional: team name for filtering dependencies
+  isGroup?: boolean; // Optional: whether the team is a group
   selectedMetrics?: string[]; // Optional: filter which metrics to display
   singleRowLayout?: boolean; // Optional: use single row layout instead of 2-column grid (default: false)
   refreshKey?: number; // Trigger refetch with bypass_cache when this changes
@@ -154,8 +156,8 @@ function MetricCard({
   );
 }
 
-export default function PIMetrics({ piName, selectedMetrics, singleRowLayout = false, refreshKey }: PIMetricsProps) {
-  const { metrics, loading, error, refetch } = usePIMetrics(piName);
+export default function PIMetrics({ piName, teamName, isGroup, selectedMetrics, singleRowLayout = false, refreshKey }: PIMetricsProps) {
+  const { metrics, loading, error, refetch } = usePIMetrics(piName, teamName, isGroup);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   
   // Trigger refetch with bypass_cache when refreshKey changes

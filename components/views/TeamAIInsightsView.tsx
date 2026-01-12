@@ -119,7 +119,7 @@ export default function TeamAIInsightsView({
               {mobileMetricsTab === 'team' && selectedTeam ? (
                 <TeamMetrics teamName={selectedTeam} isGroup={selectedTreeType === 'group'} singleRowLayout={true} />
               ) : mobileMetricsTab === 'pi' && selectedPI ? (
-                <PIMetrics piName={selectedPI} singleRowLayout={true} />
+                <PIMetrics piName={selectedPI} teamName={selectedTeam} isGroup={selectedTreeType === 'group'} singleRowLayout={true} />
               ) : null}
             </div>
           </div>
