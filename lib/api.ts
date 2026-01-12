@@ -719,24 +719,39 @@ export class ApiService {
   }
 
   async getIssuesTrend(
-    teamName: string,
+    teamName: string | null,
     issueType: string = 'Bug',
-    months: number = 6
+    months: number = 6,
+    isGroup: boolean = false
   ): Promise<IssuesTrendResponse> {
-    const payload = await this.getReport<IssuesTrendDataPoint[]>('team-issues-trend', {
-      team_name: teamName,
+    const filters: Record<string, any> = {
       issue_type: issueType,
       months,
-    });
+    };
+    
+    if (teamName) {
+      filters.team_name = teamName;
+      filters.isGroup = isGroup;
+    }
 
-    const trendData = Array.isArray(payload.result) ? payload.result : [];
+    const payload = await this.getReport<{ [issueType: string]: IssuesTrendDataPoint[] }>('team-issues-trend', filters);
+
+    // payload.result is now the data dict grouped by issue_type
+    // payload.meta contains metadata
+    const trendData = payload.result || {};
+    const meta = payload.meta || {};
 
     return {
-      team_name: teamName,
-      issue_type: issueType,
-      months,
-      trend_data: trendData,
-      count: trendData.length,
+      data: trendData,
+      meta: {
+        months: meta.months || months,
+        count: meta.count || 0,
+        team_name: meta.team_name,
+        group_name: meta.group_name,
+        teams_in_group: meta.teams_in_group,
+        isGroup: meta.isGroup || isGroup,
+        issue_type: meta.issue_type || issueType,
+      },
     };
   }
 

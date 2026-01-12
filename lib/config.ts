@@ -299,20 +299,25 @@ export interface ClosedSprintsResponse {
 }
 
 export interface IssuesTrendDataPoint {
-  report_month: string;
-  team_name: string;
-  issue_type: string;
-  issues_created: number;
-  issues_resolved: number;
-  cumulative_open_issues: number;
+  report_month: string;  // "YYYY-MM-DD"
+  total_created: number;
+  total_resolved: number;
+  total_cumulative_open: number;
 }
 
 export interface IssuesTrendResponse {
-  team_name: string;
-  months: number;
-  issue_type: string;
-  trend_data: IssuesTrendDataPoint[];
-  count: number;
+  data: {
+    [issueType: string]: IssuesTrendDataPoint[];
+  };
+  meta: {
+    months: number;
+    count: number;
+    team_name?: string;
+    group_name?: string;
+    teams_in_group?: string[];
+    isGroup?: boolean;
+    issue_type?: string;
+  };
 }
 
 export interface PIPredictabilityData {

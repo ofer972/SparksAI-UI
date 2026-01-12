@@ -115,9 +115,9 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
   },
   'team-issues-trend': {
     component: IssuesTrendChartView,
-    requiredFilters: ['team_name'],
+    requiredFilters: [],
     mapProps: ({ result, loading, error }) => ({
-      data: Array.isArray(result) ? result : [],
+      data: result || {},
       loading,
       error,
     }),

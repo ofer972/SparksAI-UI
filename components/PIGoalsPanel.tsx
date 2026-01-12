@@ -1118,20 +1118,6 @@ export default function PIGoalsPanel({
     );
   }
 
-  // Show empty state
-  if (hierarchyData.length === 0) {
-    return (
-      <div className={`flex flex-col h-full bg-white border border-gray-200 rounded-lg ${className}`} style={style}>
-        <div className="p-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
-          <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-        </div>
-        <div className="flex-1 flex items-center justify-center p-8">
-          <p className="text-sm text-gray-500">No goals found.</p>
-        </div>
-      </div>
-    );
-  }
-
   // Show data
   return (
     <>

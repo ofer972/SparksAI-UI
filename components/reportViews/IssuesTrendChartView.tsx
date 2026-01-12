@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -24,6 +24,7 @@ import ReportCard from '../reporting/ReportCard';
 import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
 import TeamGroupFilter from '../TeamGroupFilter';
+import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 
 ChartJS.register(
   CategoryScale,
@@ -39,7 +40,7 @@ ChartJS.register(
 );
 
 export interface IssuesTrendChartViewProps {
-  data: IssuesTrendDataPoint[];
+  data: { [issueType: string]: IssuesTrendDataPoint[] };
   loading: boolean;
   error: string | null;
   filters: Record<string, any>;
@@ -63,32 +64,48 @@ const IssuesTrendChartView: React.FC<IssuesTrendChartViewProps> = ({
 }) => {
   const issueType = (filters.issue_type as string) ?? 'Bug';
   const months = Number(filters.months ?? 6);
+  const { groups, teams } = useTeamsGroups();
+  const teamName = (filters.team_name as string) ?? '';
+  const isGroup = (filters.isGroup as boolean) ?? false;
 
   const availableIssueTypes = useMemo(() => getIssueTypes(), []);
 
+  // Look up ID from name to construct proper teamValue
+  const teamValue = useMemo(() => {
+    if (!teamName) return null;
+    
+    if (isGroup) {
+      const group = groups.find(g => g.group_name === teamName);
+      return group ? `group:${group.group_key}` : null;
+    } else {
+      const team = teams.find(t => t.team_name === teamName);
+      return team ? `team:${team.team_key}` : null;
+    }
+  }, [teamName, isGroup, groups, teams]);
+
+  const handleTeamGroupChange = useCallback((value: string | null, type: 'group' | 'team', name: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      team_name: name || null,
+      isGroup: type === 'group',
+    }));
+  }, [setFilters]);
+
   const chartData = useMemo(() => {
-    if (!data.length) return null;
+    // Data is a dict grouped by issue_type: {"Bug": [...], "Story": [...]}
+    const issueTypeData = data[issueType];
+    
+    if (!issueTypeData || issueTypeData.length === 0) return null;
 
-    const monthlyData: Record<string, { created: number; resolved: number; open: number }> =
-      {};
+    // Sort by month
+    const sortedData = [...issueTypeData].sort((a, b) => 
+      a.report_month.localeCompare(b.report_month)
+    );
 
-    data.forEach((point) => {
-      const month = point.report_month;
-      if (!monthlyData[month]) {
-        monthlyData[month] = { created: 0, resolved: 0, open: 0 };
-      }
-      // Ensure values are numbers to avoid leading zeros
-      monthlyData[month].created += Number(point.issues_created) || 0;
-      monthlyData[month].resolved += Number(point.issues_resolved) || 0;
-      monthlyData[month].open = Number(point.cumulative_open_issues) || 0;
-    });
-
-    const sortedMonths = Object.keys(monthlyData).sort();
-
-    const labels = sortedMonths.map((month) => format(parseISO(month), 'MMM yyyy'));
-    const createdData = sortedMonths.map((month) => monthlyData[month].created);
-    const resolvedData = sortedMonths.map((month) => monthlyData[month].resolved);
-    const openData = sortedMonths.map((month) => monthlyData[month].open);
+    const labels = sortedData.map((d) => format(parseISO(d.report_month), 'MMM yyyy'));
+    const createdData = sortedData.map((d) => d.total_created ?? 0);
+    const resolvedData = sortedData.map((d) => d.total_resolved ?? 0);
+    const openData = sortedData.map((d) => d.total_cumulative_open ?? 0);
 
     return {
       labels,
@@ -134,7 +151,7 @@ const IssuesTrendChartView: React.FC<IssuesTrendChartViewProps> = ({
         },
       ],
     };
-  }, [data]);
+  }, [data, issueType]);
 
   const options = useMemo(() => {
     if (!chartData || !chartData.datasets) {
@@ -318,6 +335,15 @@ const IssuesTrendChartView: React.FC<IssuesTrendChartViewProps> = ({
 
   const filtersContent = (
     <ReportFiltersRow>
+      <ReportFilterField label="Team/Group">
+        <TeamGroupFilter
+          value={teamValue}
+          onChange={handleTeamGroupChange}
+          placeholder="Select team or group"
+          allowClear={true}
+        />
+      </ReportFilterField>
+
       <ReportFilterField label="Issue Type">
         <select
           value={issueType}
@@ -349,13 +375,13 @@ const IssuesTrendChartView: React.FC<IssuesTrendChartViewProps> = ({
           }
           className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
-          <option value="1">1 Month</option>
-          <option value="2">2 Months</option>
-          <option value="3">3 Months</option>
-          <option value="4">4 Months</option>
-          <option value="6">6 Months</option>
-          <option value="9">9 Months</option>
-          <option value="12">12 Months</option>
+          <option value="1">Last 1 Month</option>
+          <option value="2">Last 2 Months</option>
+          <option value="3">Last 3 Months</option>
+          <option value="4">Last 4 Months</option>
+          <option value="6">Last 6 Months</option>
+          <option value="9">Last 9 Months</option>
+          <option value="12">Last 12 Months</option>
         </select>
       </ReportFilterField>
     </ReportFiltersRow>

@@ -8,6 +8,9 @@ import { getIssueTypes } from '@/lib/issueTypes';
 import ReportCard from '../reporting/ReportCard';
 import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
+import TeamGroupFilter from '../TeamGroupFilter';
+import StatusCategoryFilter from '../StatusCategoryFilter';
+import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 
 interface IssuesByTeamResult {
   team_breakdown?: IssuesByTeam[];
@@ -89,8 +92,32 @@ const IssuesByTeamView: React.FC<IssuesByTeamViewProps> = ({
   pinnedFilters = [],
 }) => {
   const issueType = (filters.issue_type as string) ?? 'Bug';
-  const statusCategory = (filters.status_category as string) ?? '';
-  const includeDone = Boolean(filters.include_done);
+  const { groups, teams } = useTeamsGroups();
+  const teamName = (filters.team_name as string) ?? '';
+  const isGroup = (filters.isGroup as boolean) ?? false;
+  const months = (filters.months as number) ?? 6;
+  
+  const statusCategories = useMemo(() => {
+    if (filters.status_category === undefined || filters.status_category === null) {
+      return ['To Do', 'In Progress'];
+    }
+    if (Array.isArray(filters.status_category)) {
+      return filters.status_category;
+    }
+    return [filters.status_category];
+  }, [filters.status_category]);
+
+  const teamValue = useMemo(() => {
+    if (!teamName) return null;
+    
+    if (isGroup) {
+      const group = groups.find(g => g.group_name === teamName);
+      return group ? `group:${group.group_key}` : null;
+    } else {
+      const team = teams.find(t => t.team_name === teamName);
+      return team ? `team:${team.team_key}` : null;
+    }
+  }, [teamName, isGroup, groups, teams]);
 
   const availableIssueTypes = useMemo(() => getIssueTypes(), []);
 
@@ -106,18 +133,7 @@ const IssuesByTeamView: React.FC<IssuesByTeamViewProps> = ({
     return issueType.charAt(0).toUpperCase() + issueType.slice(1) + 's';
   }, [issueType]);
 
-  const availableStatusCategories = useMemo(() => {
-    const categories = new Set<string>();
-    if (Array.isArray(data?.team_breakdown)) {
-      data?.team_breakdown.forEach((team) => {
-        team.priorities?.forEach((priority) => {
-          // Status categories would need to be added to the backend data structure
-          // For now, we'll use common values
-        });
-      });
-    }
-    return ['To Do', 'In Progress', 'Done'];
-  }, [data?.team_breakdown]);
+  const statusCategoryOptions = ['To Do', 'In Progress', 'Done'];
 
   const teamChart = useMemo(() => buildTeamChartData(data?.team_breakdown), [data?.team_breakdown]);
 
@@ -127,6 +143,29 @@ const IssuesByTeamView: React.FC<IssuesByTeamViewProps> = ({
 
   const filtersContent = (
     <ReportFiltersRow>
+      <ReportFilterField label="Team/Group">
+        <TeamGroupFilter
+          value={teamValue}
+          onChange={(value, type, name) => {
+            if (value === null) {
+              setFilters((prev) => ({
+                ...prev,
+                team_name: null,
+                isGroup: false,
+              }));
+            } else {
+              setFilters((prev) => ({
+                ...prev,
+                team_name: name,
+                isGroup: type === 'group',
+              }));
+            }
+          }}
+          placeholder="Select team or group"
+          allowClear={true}
+        />
+      </ReportFilterField>
+
       <ReportFilterField label="Issue Type">
         <select
           value={issueType}
@@ -147,37 +186,46 @@ const IssuesByTeamView: React.FC<IssuesByTeamViewProps> = ({
         </select>
       </ReportFilterField>
 
-      <ReportFilterField label="Status">
+      <ReportFilterField label="Time Period">
         <select
-          value={statusCategory}
+          value={months}
           onChange={(e) =>
             setFilters((prev) => ({
               ...prev,
-              status_category: e.target.value || null,
+              months: Number(e.target.value),
             }))
           }
           className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
-          <option value="">All Statuses</option>
-          {availableStatusCategories.map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
+          <option value={1}>1 Month</option>
+          <option value={2}>2 Months</option>
+          <option value={3}>3 Months</option>
+          <option value={4}>4 Months</option>
+          <option value={6}>6 Months</option>
+          <option value={9}>9 Months</option>
+          <option value={12}>12 Months</option>
         </select>
       </ReportFilterField>
 
-      <ReportFilterField label="Include Done">
-        <input
-          type="checkbox"
-          checked={includeDone}
-          onChange={(e) =>
-            setFilters((prev) => ({
-              ...prev,
-              include_done: e.target.checked,
-            }))
-          }
-          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+      <ReportFilterField label="Status Category">
+        <StatusCategoryFilter
+          value={statusCategories}
+          onChange={(values) => {
+            const allSelected = values.length === statusCategoryOptions.length;
+            const noneSelected = values.length === 0;
+            
+            if (allSelected || noneSelected) {
+              setFilters((prev) => ({
+                ...prev,
+                status_category: [],
+              }));
+            } else {
+              setFilters((prev) => ({
+                ...prev,
+                status_category: values,
+              }));
+            }
+          }}
         />
       </ReportFilterField>
     </ReportFiltersRow>
@@ -186,6 +234,15 @@ const IssuesByTeamView: React.FC<IssuesByTeamViewProps> = ({
   // Generate filter badges for active filters
   const filterBadges = useMemo(() => {
     const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
+    
+    if (teamName) {
+      badges.push({
+        label: isGroup ? 'Group' : 'Team',
+        value: teamName,
+        filterKey: 'team_name',
+        isPinned: pinnedFilters.includes('team_name'),
+      });
+    }
     
     if (issueType) {
       badges.push({
@@ -196,26 +253,26 @@ const IssuesByTeamView: React.FC<IssuesByTeamViewProps> = ({
       });
     }
     
-    if (statusCategory) {
+    if (months !== 6) {
       badges.push({
-        label: 'Status',
-        value: statusCategory,
+        label: 'Time Period',
+        value: `${months} ${months === 1 ? 'Month' : 'Months'}`,
+        filterKey: 'months',
+        isPinned: pinnedFilters.includes('months'),
+      });
+    }
+    
+    if (filters.status_category && Array.isArray(filters.status_category) && filters.status_category.length > 0 && filters.status_category.length < statusCategoryOptions.length) {
+      badges.push({
+        label: 'Status Category',
+        value: filters.status_category.join(', '),
         filterKey: 'status_category',
         isPinned: pinnedFilters.includes('status_category'),
       });
     }
     
-    if (includeDone) {
-      badges.push({
-        label: 'Include Done',
-        value: 'Yes',
-        filterKey: 'include_done',
-        isPinned: pinnedFilters.includes('include_done'),
-      });
-    }
-    
     return badges;
-  }, [issueType, statusCategory, includeDone, pinnedFilters]);
+  }, [teamName, isGroup, issueType, months, filters.status_category, statusCategoryOptions.length, pinnedFilters]);
 
 
   return (
@@ -253,7 +310,7 @@ const IssuesByTeamView: React.FC<IssuesByTeamViewProps> = ({
       {!loading && !error && teamChart.teams.length > 0 && (
         <>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">{issueTypePlural} Breakdown by Team</h3>
+            <h3 className="text-base font-bold text-gray-900">{issueTypePlural} Breakdown by Team</h3>
             <span className="text-sm text-gray-500">Total: {totalIssues}</span>
           </div>
           <div className="relative w-full h-[280px] overflow-visible">

@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ResponsivePie } from '@nivo/pie';
+import { ResponsiveBar } from '@nivo/bar';
 import type { IssueByPriority } from '@/lib/config';
 import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
 import { getIssueTypes } from '@/lib/issueTypes';
@@ -9,6 +10,7 @@ import ReportCard from '../reporting/ReportCard';
 import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
 import TeamGroupFilter from '../TeamGroupFilter';
+import StatusCategoryFilter from '../StatusCategoryFilter';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 
 interface IssuesByPriorityResult {
@@ -41,6 +43,12 @@ const COLOR_PALETTE = [
   '#0ea5e9',
 ];
 
+const STATUS_CATEGORY_COLORS: Record<string, string> = {
+  'To Do': '#4B5563',        // Dark grey
+  'In Progress': '#3B82F6',  // Blue
+  'Done': '#059669',         // Dark green
+};
+
 const normalizePrioritySummary = (summary?: IssueByPriority[]): IssueByPriority[] => {
   if (!Array.isArray(summary)) {
     return [];
@@ -67,6 +75,54 @@ const normalizePrioritySummary = (summary?: IssueByPriority[]): IssueByPriority[
   return Array.from(merged.values()).sort((a, b) => a.priority.localeCompare(b.priority));
 };
 
+const buildBarChartData = (summary?: IssueByPriority[]) => {
+  if (!Array.isArray(summary)) {
+    return { bars: [], statusCategories: [] };
+  }
+
+  // Get all unique priorities
+  const priorities = new Set<string>();
+  summary.forEach((item) => {
+    if (item.priority) priorities.add(item.priority);
+  });
+
+  const sortedPriorities = Array.from(priorities).sort();
+
+  // Group by priority
+  const bars = sortedPriorities.map((priority) => {
+    const entry: any = {
+      priority: priority,
+    };
+
+    // Fill in actual counts (only non-zero values)
+    summary.forEach((item) => {
+      if (item.priority === priority && item.status_category && item.issue_count > 0) {
+        entry[item.status_category] = (entry[item.status_category] || 0) + item.issue_count;
+      }
+    });
+
+    return entry;
+  });
+
+  // Filter out status categories that don't appear in any bar
+  const usedStatusCats = new Set<string>();
+  bars.forEach((bar) => {
+    Object.keys(bar).forEach((key) => {
+      if (key !== 'priority' && bar[key] > 0) {
+        usedStatusCats.add(key);
+      }
+    });
+  });
+  
+  // Order: To Do → In Progress → Done
+  const orderedStatusCats = ['To Do', 'In Progress', 'Done'].filter(cat => usedStatusCats.has(cat));
+
+  return {
+    bars: bars,
+    statusCategories: orderedStatusCats,
+  };
+};
+
 const IssuesByPriorityView: React.FC<IssuesByPriorityViewProps> = ({
   data,
   loading,
@@ -83,8 +139,20 @@ const IssuesByPriorityView: React.FC<IssuesByPriorityViewProps> = ({
   const { groups, teams } = useTeamsGroups();
   const teamName = (filters.team_name as string) ?? '';
   const isGroup = (filters.isGroup as boolean) ?? false;
-  const statusCategory = (filters.status_category as string) ?? '';
-  const includeDone = Boolean(filters.include_done);
+  const months = (filters.months as number) ?? 3;
+  const [viewType, setViewType] = useState<'pie' | 'bar'>('pie');
+  
+  const statusCategories = useMemo(() => {
+    if (filters.status_category === undefined || filters.status_category === null) {
+      return ['To Do', 'In Progress']; // Default: exclude Done
+    }
+    if (Array.isArray(filters.status_category)) {
+      return filters.status_category;
+    }
+    return [filters.status_category]; // Handle legacy single string
+  }, [filters.status_category]);
+  
+  const statusCategoryOptions = ['To Do', 'In Progress', 'Done'];
   
   // Look up ID from name to construct proper teamValue
   const teamValue = useMemo(() => {
@@ -120,18 +188,6 @@ const IssuesByPriorityView: React.FC<IssuesByPriorityViewProps> = ({
     return [];
   }, [meta]);
 
-  const availableStatusCategories = useMemo(() => {
-    const categories = new Set<string>();
-    if (Array.isArray(data?.priority_summary)) {
-      data?.priority_summary.forEach((item) => {
-        const value = item.status_category ?? '';
-        if (value) {
-          categories.add(value);
-        }
-      });
-    }
-    return Array.from(categories).sort();
-  }, [data?.priority_summary]);
 
   const prioritySummary = useMemo(
     () => normalizePrioritySummary(data?.priority_summary),
@@ -150,6 +206,11 @@ const IssuesByPriorityView: React.FC<IssuesByPriorityViewProps> = ({
         color: COLOR_PALETTE[index % COLOR_PALETTE.length],
     }));
   }, [prioritySummary]);
+
+  const barChartData = useMemo(() => {
+    if (viewType !== 'bar') return null;
+    return buildBarChartData(data?.priority_summary);
+  }, [viewType, data?.priority_summary]);
 
   const filtersContent = (
     <ReportFiltersRow>
@@ -196,38 +257,58 @@ const IssuesByPriorityView: React.FC<IssuesByPriorityViewProps> = ({
         </select>
       </ReportFilterField>
 
-      <ReportFilterField label="Status">
+      <ReportFilterField label="Time Period">
         <select
-          value={statusCategory}
+          value={months}
           onChange={(e) =>
             setFilters((prev) => ({
               ...prev,
-              status_category: e.target.value || null,
+              months: Number(e.target.value),
             }))
           }
           className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
-          <option value="">All Statuses</option>
-          {availableStatusCategories.map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
+          <option value={1}>1 Month</option>
+          <option value={2}>2 Months</option>
+          <option value={3}>3 Months</option>
+          <option value={4}>4 Months</option>
+          <option value={6}>6 Months</option>
+          <option value={9}>9 Months</option>
+          <option value={12}>12 Months</option>
         </select>
       </ReportFilterField>
 
-      <ReportFilterField label="Include Done">
-        <input
-          type="checkbox"
-          checked={includeDone}
-          onChange={(e) =>
-            setFilters((prev) => ({
-              ...prev,
-              include_done: e.target.checked,
-            }))
-          }
-          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+      <ReportFilterField label="Status Category">
+        <StatusCategoryFilter
+          value={statusCategories}
+          onChange={(values) => {
+            const allSelected = values.length === statusCategoryOptions.length;
+            const noneSelected = values.length === 0;
+            
+            if (allSelected || noneSelected) {
+              setFilters((prev) => ({
+                ...prev,
+                status_category: [],
+              }));
+            } else {
+              setFilters((prev) => ({
+                ...prev,
+                status_category: values,
+              }));
+            }
+          }}
         />
+      </ReportFilterField>
+
+      <ReportFilterField label="Chart Type">
+        <select
+          value={viewType}
+          onChange={(e) => setViewType(e.target.value as 'pie' | 'bar')}
+          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+        >
+          <option value="pie">Pie Chart</option>
+          <option value="bar">Bar Chart</option>
+        </select>
       </ReportFilterField>
     </ReportFiltersRow>
   );
@@ -254,26 +335,26 @@ const IssuesByPriorityView: React.FC<IssuesByPriorityViewProps> = ({
       });
     }
     
-    if (statusCategory) {
+    if (months !== 3) {
       badges.push({
-        label: 'Status',
-        value: statusCategory,
+        label: 'Time Period',
+        value: `${months} ${months === 1 ? 'Month' : 'Months'}`,
+        filterKey: 'months',
+        isPinned: pinnedFilters.includes('months'),
+      });
+    }
+    
+    if (filters.status_category && Array.isArray(filters.status_category) && filters.status_category.length > 0 && filters.status_category.length < statusCategoryOptions.length) {
+      badges.push({
+        label: 'Status Category',
+        value: filters.status_category.join(', '),
         filterKey: 'status_category',
         isPinned: pinnedFilters.includes('status_category'),
       });
     }
     
-    if (includeDone) {
-      badges.push({
-        label: 'Include Done',
-        value: 'Yes',
-        filterKey: 'include_done',
-        isPinned: pinnedFilters.includes('include_done'),
-      });
-    }
-    
     return badges;
-  }, [teamName, isGroup, issueType, statusCategory, includeDone, pinnedFilters]);
+  }, [teamName, isGroup, issueType, months, filters.status_category, statusCategoryOptions.length, pinnedFilters]);
 
   return (
     <ReportCard
@@ -310,53 +391,190 @@ const IssuesByPriorityView: React.FC<IssuesByPriorityViewProps> = ({
       {!loading && !error && prioritySummary.length > 0 && (
         <>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">{issueTypePlural} by Priority</h3>
+            <h3 className="text-base font-bold text-gray-900">{issueTypePlural} by Priority</h3>
             <span className="text-sm text-gray-500">Total: {totalCount}</span>
           </div>
-          <div className="relative w-full h-[280px] overflow-visible">
-            <ResponsivePie
-              data={pieData}
-              margin={{ top: 30, right: 60, bottom: 30, left: 60 }}
-              innerRadius={0}
-              padAngle={0.7}
-              cornerRadius={3}
-              activeOuterRadiusOffset={8}
-              borderWidth={2}
-              borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
-              colors={{ datum: 'data.color' }}
-              enableArcLinkLabels={true}
-              arcLinkLabelsSkipAngle={10}
-              arcLinkLabelsTextColor="#111827"
-              arcLinkLabelsThickness={2}
-              arcLinkLabelsColor={{ from: 'color' }}
-              arcLinkLabel={(d) => {
-                const percentage = totalCount > 0 ? ((d.value / totalCount) * 100).toFixed(1) : '0.0';
-                return `${d.value} (${percentage}%)`;
-              }}
-              enableArcLabels={false}
-              tooltip={({ datum }) => {
-                const percentage = totalCount > 0 ? ((datum.value / totalCount) * 100).toFixed(1) : '0.0';
-                return (
-                  <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg text-sm">
-                    <p className="font-semibold text-gray-900 mb-1">{datum.label}</p>
-                    <p className="text-gray-600">{datum.value} issues ({percentage}%)</p>
+          {viewType === 'pie' ? (
+            <>
+              <div className="relative w-full h-[280px] overflow-visible">
+                <ResponsivePie
+                  data={pieData}
+                  margin={{ top: 30, right: 60, bottom: 30, left: 60 }}
+                  innerRadius={0}
+                  padAngle={0.7}
+                  cornerRadius={3}
+                  activeOuterRadiusOffset={8}
+                  borderWidth={2}
+                  borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
+                  colors={{ datum: 'data.color' }}
+                  enableArcLinkLabels={true}
+                  arcLinkLabelsSkipAngle={10}
+                  arcLinkLabelsTextColor="#111827"
+                  arcLinkLabelsThickness={2}
+                  arcLinkLabelsColor={{ from: 'color' }}
+                  arcLinkLabel={(d) => {
+                    const percentage = totalCount > 0 ? ((d.value / totalCount) * 100).toFixed(1) : '0.0';
+                    return `${d.value} (${percentage}%)`;
+                  }}
+                  enableArcLabels={false}
+                  tooltip={({ datum }) => {
+                    const percentage = totalCount > 0 ? ((datum.value / totalCount) * 100).toFixed(1) : '0.0';
+                    return (
+                      <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg text-sm">
+                        <p className="font-semibold text-gray-900 mb-1">{datum.label}</p>
+                        <p className="text-gray-600">{datum.value} issues ({percentage}%)</p>
+                      </div>
+                    );
+                  }}
+                  legends={[]}
+                />
+              </div>
+              <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4 px-2">
+                {pieData.map((item) => (
+                  <div key={item.id} className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="text-sm text-gray-700">{item.label}</span>
                   </div>
-                );
-              }}
-              legends={[]}
-            />
+                ))}
               </div>
-          <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4 px-2">
-            {pieData.map((item) => (
-              <div key={item.id} className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: item.color }}
-                  />
-                <span className="text-sm text-gray-700">{item.label}</span>
+            </>
+          ) : barChartData && barChartData.bars.length > 0 ? (
+            <>
+              <div className="relative w-full h-[280px] overflow-visible">
+                <ResponsiveBar
+                  data={barChartData.bars}
+                  keys={barChartData.statusCategories}
+                  indexBy="priority"
+                  margin={{ top: 40, right: 20, bottom: 70, left: 50 }}
+                  padding={0.3}
+                  valueScale={{ type: 'linear' }}
+                  indexScale={{ type: 'band', round: true }}
+                  colors={(bar) => {
+                    const statusCat = bar.id as string;
+                    return STATUS_CATEGORY_COLORS[statusCat] || '#9CA3AF';
+                  }}
+                  borderWidth={2}
+                  borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
+                  axisTop={null}
+                  axisRight={null}
+                  axisBottom={{
+                    tickSize: 5,
+                    tickPadding: 5,
+                    tickRotation: -45,
+                    legend: '',
+                    legendPosition: 'middle',
+                    legendOffset: 60,
+                  }}
+                  axisLeft={{
+                    tickSize: 5,
+                    tickPadding: 5,
+                    tickRotation: 0,
+                    legend: '# of Issues',
+                    legendPosition: 'middle',
+                    legendOffset: -40,
+                  }}
+                  enableLabel={true}
+                  label={(d) => (d.value != null && d.value > 0 ? String(d.value) : '')}
+                  labelSkipWidth={12}
+                  labelSkipHeight={12}
+                  labelTextColor="#FFFFFF"
+                  layers={[
+                    'grid',
+                    'axes',
+                    'bars',
+                    'markers',
+                    'legends',
+                    (props: any) => {
+                      // Custom layer to add total labels at the top of each bar
+                      const { bars } = props;
+                      
+                      // Group bars by priority (indexValue) and calculate totals
+                      const totalsByPriority = new Map<string, { total: number; x: number; y: number }>();
+                      
+                      bars.forEach((bar: any) => {
+                        const priority = bar.data.indexValue || bar.indexValue;
+                        const value = bar.data.value || 0;
+                        
+                        if (!totalsByPriority.has(priority)) {
+                          // First bar for this priority - use its position
+                          totalsByPriority.set(priority, {
+                            total: value,
+                            x: bar.x + bar.width / 2,
+                            y: bar.y, // This will be the topmost bar's y position
+                          });
+                        } else {
+                          // Add to existing total and update y position (use the topmost bar)
+                          const existing = totalsByPriority.get(priority)!;
+                          existing.total += value;
+                          if (bar.y < existing.y) {
+                            existing.y = bar.y;
+                            existing.x = bar.x + bar.width / 2;
+                          }
+                        }
+                      });
+                      
+                      return (
+                        <g>
+                          {Array.from(totalsByPriority.entries()).map(([priority, { total, x, y }]) => {
+                            if (total === 0) return null;
+                            
+                            return (
+                              <text
+                                key={`total-${priority}`}
+                                x={x}
+                                y={y - 5}
+                                textAnchor="middle"
+                                dominantBaseline="auto"
+                                fill="#111827"
+                                fontSize={12}
+                                fontWeight={600}
+                              >
+                                {total}
+                              </text>
+                            );
+                          })}
+                        </g>
+                      );
+                    },
+                  ]}
+                  tooltip={({ id, value, indexValue, color }) => (
+                    <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg text-sm">
+                      <p className="font-semibold text-gray-900 mb-1">{indexValue}</p>
+                      <p className="text-gray-700" style={{ color }}>
+                        {id}: {value}
+                      </p>
+                    </div>
+                  )}
+                  legends={[
+                    {
+                      dataFrom: 'keys',
+                      anchor: 'bottom',
+                      direction: 'row',
+                      justify: false,
+                      translateX: 0,
+                      translateY: 60,
+                      itemsSpacing: 20,
+                      itemWidth: 100,
+                      itemHeight: 20,
+                      itemDirection: 'left-to-right',
+                      itemOpacity: 1,
+                      symbolSize: 12,
+                      symbolShape: 'circle',
+                    },
+                  ]}
+                  role="application"
+                  ariaLabel="Issues by priority bar chart"
+                />
               </div>
-            ))}
-          </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-96">
+              <div className="text-gray-500">No data available for bar chart</div>
+            </div>
+          )}
         </>
       )}
     </ReportCard>
