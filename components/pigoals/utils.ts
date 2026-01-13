@@ -7,7 +7,7 @@ interface Goal {
   team_name: string | null;
   group_name: string | null;
   goal_text: string;
-  epic_keys: Array<{
+  issue_keys: Array<{
     issue_key: string;
     status: string;
     summary: string;
@@ -103,7 +103,7 @@ export function transformGoalsToHierarchy(
       });
 
       // Add epics as children
-      goal.epic_keys?.forEach((epic) => {
+      goal.issue_keys?.forEach((epic) => {
         items.push({
           key: `${prefix}-${epic.issue_key}`,
           parent: goalKey,
@@ -169,7 +169,7 @@ export function transformGoalsToHierarchy(
         });
 
         // Add epics as children
-        goal.epic_keys?.forEach((epic) => {
+        goal.issue_keys?.forEach((epic) => {
           items.push({
             key: `${prefix}-${epic.issue_key}`,
             parent: goalKey,
@@ -225,7 +225,7 @@ export function transformGoalsToHierarchy(
         });
 
         // Add epics as children
-        goal.epic_keys?.forEach((epic) => {
+        goal.issue_keys?.forEach((epic) => {
           items.push({
             key: `${prefix}-${epic.issue_key}`,
             parent: goalKey,

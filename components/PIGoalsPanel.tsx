@@ -234,7 +234,7 @@ export default function PIGoalsPanel({
     
     return {
       endpoints: {
-        list: '/api/v1/pi-goals',
+        list: '/api/v1/goals',
       },
       fetchList: async () => {
         return [];
@@ -440,7 +440,7 @@ export default function PIGoalsPanel({
       // Remove the epic key from the array
       const updatedEpicKeys = currentEpicKeys.filter(key => key !== epicToRemove.epicKey);
 
-      // Update the goal with updated epic_keys
+      // Update the goal with updated issue_keys
       await apiService.updatePIGoal(epicToRemove.goalId, {
         epic_keys: updatedEpicKeys,
       });
@@ -496,7 +496,7 @@ export default function PIGoalsPanel({
       // Merge current epic keys with newly selected ones (avoid duplicates)
       const allEpicKeys = Array.from(new Set([...currentEpicKeys, ...selectedEpicKeys]));
 
-      // Update the goal with merged epic_keys
+      // Update the goal with merged issue_keys
       await apiService.updatePIGoal(goalToConnectEpics.id, {
         epic_keys: allEpicKeys,
       });
@@ -537,9 +537,8 @@ export default function PIGoalsPanel({
         
         try {
           const params: any = {
-            issue_type: 'Epic',
-            pi: piName,
-            limit: 1000,
+            scope_type: 'pi',
+            pi_name: piName,
           };
 
           if (goalToConnectEpics.isGroup && goalToConnectEpics.groupName) {
@@ -551,7 +550,7 @@ export default function PIGoalsPanel({
             params.isGroup = false; // Explicitly set isGroup=false for team goals
           }
 
-          const response = await apiService.getIssues(params);
+          const response = await apiService.getIssuesForScope(params);
           
           // Filter out already connected epics
           const connectedEpicKeys = goalToConnectEpics.connectedEpicKeys || [];

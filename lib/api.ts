@@ -1387,8 +1387,11 @@ export class ApiService {
 
   // PI Goals API
   async generatePIGoals(piName: string, teamName?: string, isGroup?: boolean): Promise<any> {
-    const url = buildBackendUrl('/pi-goals/generate');
-    const body: any = { pi: piName };
+    const url = buildBackendUrl('/goals/generate');
+    const body: any = { 
+      scope_type: 'pi',
+      pi_name: piName 
+    };
     
     if (teamName) {
       body.team_name = teamName;
@@ -1438,7 +1441,8 @@ export class ApiService {
   // Get PI Goals
   async getPIGoals(piName: string, teamName?: string, isGroup?: boolean, ai: boolean = true): Promise<any> {
     const params = new URLSearchParams({
-      pi: piName,
+      scope_type: 'pi',
+      pi_name: piName,
       ai: ai.toString(),
     });
     
@@ -1447,7 +1451,7 @@ export class ApiService {
       params.append('isGroup', (isGroup || false).toString());
     }
     
-    const url = `${buildBackendUrl('/pi-goals')}?${params}`;
+    const url = `${buildBackendUrl('/goals')}?${params}`;
     const response = await fetch(url);
     
     if (!response.ok) {
@@ -1475,12 +1479,14 @@ export class ApiService {
     priority_bv?: number | null;
     team_name?: string;
     group_name?: string;
+    epic_keys?: string[]; // UI may pass epic_keys, we convert to issue_keys
   }): Promise<any> {
-    const url = buildBackendUrl('/pi-goals');
+    const url = buildBackendUrl('/goals');
     const body: any = {
-      pi: data.pi,
+      scope_type: 'pi',
+      pi_name: data.pi,
       goal_text: data.goal_text,
-      epic_keys: [], // Empty array for new goals
+      issue_keys: data.epic_keys || [], // Convert epic_keys to issue_keys
       status: data.status || 'Draft',
     };
     
@@ -1531,13 +1537,19 @@ export class ApiService {
     status?: string;
     priority_bv?: number | null;
   }): Promise<any> {
-    const url = `${buildBackendUrl('/pi-goals')}/${goalId}`;
+    const url = `${buildBackendUrl('/goals')}/${goalId}`;
+    // Convert epic_keys to issue_keys for backend
+    const backendUpdates: any = { ...updates };
+    if (backendUpdates.epic_keys !== undefined) {
+      backendUpdates.issue_keys = backendUpdates.epic_keys;
+      delete backendUpdates.epic_keys;
+    }
     const response = await authFetch(url, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(updates),
+      body: JSON.stringify(backendUpdates),
     });
 
     if (!response.ok) {
@@ -1609,9 +1621,60 @@ export class ApiService {
     return response.json();
   }
 
+  // Get Issues for Scope (for goal selection dialog)
+  async getIssuesForScope(params: {
+    scope_type: 'pi' | 'sprint' | 'release';
+    pi_name?: string;
+    sprint_id?: number;
+    release_id?: number;
+    team_name?: string;
+    isGroup?: boolean;
+  }): Promise<any> {
+    const urlParams = new URLSearchParams({
+      scope_type: params.scope_type,
+    });
+    
+    if (params.pi_name) {
+      urlParams.append('pi_name', params.pi_name);
+    }
+    if (params.sprint_id !== undefined) {
+      urlParams.append('sprint_id', params.sprint_id.toString());
+    }
+    if (params.release_id !== undefined) {
+      urlParams.append('release_id', params.release_id.toString());
+    }
+    if (params.team_name) {
+      urlParams.append('team_name', params.team_name);
+    }
+    if (params.isGroup !== undefined) {
+      urlParams.append('isGroup', params.isGroup.toString());
+    }
+
+    const url = `${buildBackendUrl('/goals/issues-for-scope')}?${urlParams}`;
+    const response = await authFetch(url, {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch {
+        if (errorText && errorText.length < 200) {
+          errorMessage = errorText;
+        }
+      }
+      throw new Error(`Failed to fetch issues for scope: ${errorMessage}`);
+    }
+
+    return response.json();
+  }
+
   // Update multiple PI Goals from AI to User (PATCH)
   async updatePIGoalsAiToUser(goalIds: number[]): Promise<any> {
-    const url = `${buildBackendUrl('/pi-goals/ai-to-user')}`;
+    const url = `${buildBackendUrl('/goals/ai-to-user')}`;
     const response = await authFetch(url, {
       method: 'PATCH',
       headers: {
@@ -1639,7 +1702,7 @@ export class ApiService {
 
   // Delete PI Goal (DELETE)
   async deletePIGoal(goalId: number): Promise<any> {
-    const url = `${buildBackendUrl('/pi-goals')}/${goalId}`;
+    const url = `${buildBackendUrl('/goals')}/${goalId}`;
     const response = await authFetch(url, {
       method: 'DELETE',
       headers: {
