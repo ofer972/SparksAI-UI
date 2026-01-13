@@ -43,7 +43,7 @@ export default function MetricsWidget({
     return <TeamMetrics teamName={teamName} isGroup={isGroup} selectedMetrics={selectedMetrics} refreshKey={refreshKey} />;
   } else {
     if (!piName || !teamName) return null;
-    return <PIMetrics piName={piName} selectedMetrics={selectedMetrics} refreshKey={refreshKey} />;
+    return <PIMetrics piName={piName} teamName={teamName} isGroup={isGroup} selectedMetrics={selectedMetrics} refreshKey={refreshKey} />;
   }
 }
 
