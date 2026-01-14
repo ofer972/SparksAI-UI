@@ -202,7 +202,7 @@ const GoalProgressView: React.FC<GoalProgressViewProps> = ({
   // Handlers
   const handleScopeTypeChange = useCallback((value: string) => {
     setFilters((prev) => {
-      const updated = { ...prev, scope_type: value };
+      const updated: Record<string, any> = { ...prev, scope_type: value };
       // Clear scope-specific filters when switching
       if (value === 'pi') {
         delete updated.sprint_name;
