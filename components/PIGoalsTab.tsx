@@ -154,7 +154,7 @@ export default function PIGoalsTab() {
   }, [selectedPI]);
 
 
-  const isButtonEnabled = !!selectedPI;
+  const isButtonEnabled = !!selectedPI && !!selectedTeamName;
   const teamGroupText = selectedTeamName 
     ? `${selectedTeamType === 'group' ? 'group' : 'team'} ${selectedTeamName}`
     : 'all teams';
@@ -187,13 +187,13 @@ export default function PIGoalsTab() {
           {/* Team/Group Filter - Label and field in one line */}
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-              Team/Group <span className="text-gray-400 text-xs">(optional)</span>
+              Team/Group <span className="text-red-500">*</span>
             </label>
             <div className="w-64">
               <TeamGroupFilter
                 value={selectedTeamValue}
                 onChange={handleTeamGroupChange}
-                placeholder="Select team or group (optional)"
+                placeholder="Select team or group"
                 allowClear={true}
               />
             </div>
@@ -220,8 +220,8 @@ export default function PIGoalsTab() {
       {/* Goals Table Section - Two Panels */}
       {selectedPI && (
         <div className="flex-1 flex flex-col min-h-0">
-          {/* Two Panels Side by Side - AI panel 40% width, User panel takes remaining space */}
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-[40%_1fr] gap-4 min-h-0">
+          {/* Two Panels Side by Side - AI panel 35% width, User panel 65% width */}
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-[35%_65%] gap-4 min-h-0">
             {/* AI Generated Goals Panel */}
             <GoalsPanel
               title="AI Generated Goals"

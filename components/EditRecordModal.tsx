@@ -320,7 +320,7 @@ export function EditRecordModal<T extends Record<string, any>>({
                 error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
               } disabled:bg-gray-100 disabled:cursor-not-allowed`}
             >
-              <option value="">Select {fieldConfig.label}</option>
+              {!fieldConfig.required && <option value="">Select {fieldConfig.label}</option>}
               {fieldConfig.options?.map(option => (
                 <option key={String(option.value)} value={String(option.value)}>
                   {option.label}

@@ -39,7 +39,7 @@ interface GoalForEdit {
   goal_text: string;
   status: string;
   priority_bv?: number | null;
-  goal_type?: string; // 'overall', 'team', 'group'
+  goal_type?: string; // 'team', 'group' (overall is disabled/commented out)
   team_name?: string | null;
   group_name?: string | null;
 }
@@ -109,10 +109,23 @@ export default function GoalsPanel({
   // Create dynamic goal edit config based on filter state and mode
   const getGoalEditConfig = useCallback((mode: 'create' | 'edit' = 'create'): EditableEntityConfig<GoalForEdit> => {
     // Get current goal_type from editGoal if in edit mode
-    const currentGoalType = editGoal?.goal_type || 'overall';
-    const isOverallGoal = currentGoalType === 'overall';
+    const currentGoalType = editGoal?.goal_type || 'team';
+    // const isOverallGoal = currentGoalType === 'overall';
     const isTeamGoal = currentGoalType === 'team';
     const isGroupGoal = currentGoalType === 'group';
+    
+    // Get label prefix based on scope type
+    const getTeamLabel = () => {
+      if (scopeType === 'pi') return 'PI Team Goal';
+      if (scopeType === 'sprint') return 'Sprint Team Goal';
+      return 'Team Goal';
+    };
+    
+    const getGroupLabel = () => {
+      if (scopeType === 'pi') return 'PI Group Goal';
+      if (scopeType === 'sprint') return 'Sprint Group Goal';
+      return 'Group Goal';
+    };
     
     // Base fields that are always shown
     const baseFields: FormFieldConfig<GoalForEdit>[] = [
@@ -125,14 +138,14 @@ export default function GoalsPanel({
           disabled: mode === 'edit', // Also disabled in edit mode
           options: mode === 'create' 
             ? [
-                { value: 'overall', label: scopeType === 'pi' ? 'Overall PI Goals' : scopeType === 'sprint' ? 'Overall Sprint Goals' : 'Overall Goals' },
-                { value: 'team', label: 'Team Goal' },
-                { value: 'group', label: 'Group Goal' },
+                // { value: 'overall', label: scopeType === 'pi' ? 'Overall PI Goals' : scopeType === 'sprint' ? 'Overall Sprint Goals' : 'Overall Goals' },
+                { value: 'team', label: getTeamLabel() },
+                { value: 'group', label: getGroupLabel() },
               ]
             : [
-                { value: 'overall', label: scopeType === 'pi' ? 'Overall PI Goals' : scopeType === 'sprint' ? 'Overall Sprint Goals' : 'Overall Goals' },
-                ...(isTeamGoal ? [{ value: 'team', label: 'Team Goal' }] : []),
-                ...(isGroupGoal ? [{ value: 'group', label: 'Group Goal' }] : []),
+                // { value: 'overall', label: scopeType === 'pi' ? 'Overall PI Goals' : scopeType === 'sprint' ? 'Overall Sprint Goals' : 'Overall Goals' },
+                ...(isTeamGoal ? [{ value: 'team', label: getTeamLabel() }] : []),
+                ...(isGroupGoal ? [{ value: 'group', label: getGroupLabel() }] : []),
               ],
         },
       {
@@ -188,8 +201,9 @@ export default function GoalsPanel({
         options: availableTeams.map(team => ({ value: team, label: team })),
         placeholder: 'Select team',
         hidden: (formData: Partial<GoalForEdit>) => {
-          const goalType = formData.goal_type || 'overall';
-          return goalType === 'overall' || goalType === 'group';
+          const goalType = formData.goal_type || 'team';
+          // return goalType === 'overall' || goalType === 'group';
+          return goalType === 'group';
         },
       });
       
@@ -201,8 +215,9 @@ export default function GoalsPanel({
         options: availableGroups.map(group => ({ value: group, label: group })),
         placeholder: 'Select group',
         hidden: (formData: Partial<GoalForEdit>) => {
-          const goalType = formData.goal_type || 'overall';
-          return goalType === 'overall' || goalType === 'team';
+          const goalType = formData.goal_type || 'team';
+          // return goalType === 'overall' || goalType === 'team';
+          return goalType === 'team';
         },
       });
     } else {
@@ -902,7 +917,7 @@ export default function GoalsPanel({
                 <div className="text-center" style={{ minWidth: '94px', width: '94px' }}>
                   <span className="text-[13px] text-gray-700">
                     {scopeType === 'sprint' 
-                      ? `${childrenPercent}% on stories`
+                      ? `${childrenPercent}%`
                       : `${epicsPercent}% on epics ${childrenPercent}% on stories`
                     }
                   </span>
@@ -983,7 +998,7 @@ export default function GoalsPanel({
           const goalPriorityBv = (item as any)._goalPriorityBv ?? null;
           
           // Determine goal_type, team_name, group_name from parent section
-          let goalType: string = 'overall';
+          let goalType: string = 'team'; // Default to 'team' since 'overall' is disabled
           let teamName: string | null = null;
           let groupName: string | null = null;
           
@@ -997,9 +1012,10 @@ export default function GoalsPanel({
               } else if (parentSection.startsWith('Group Goals:')) {
                 goalType = 'group';
                 groupName = parentSection.replace('Group Goals: ', '').trim() || null;
-              } else if (parentSection === 'Overall PI Goals' || parentSection === 'Overall Sprint Goals' || parentSection === 'Overall Goals') {
-                goalType = 'overall';
               }
+              // else if (parentSection === 'Overall PI Goals' || parentSection === 'Overall Sprint Goals' || parentSection === 'Overall Goals') {
+              //   goalType = 'overall';
+              // }
             }
           }
 
@@ -1163,7 +1179,7 @@ export default function GoalsPanel({
                   }}
                   className="px-3 py-1 rounded-lg font-medium text-xs transition-colors whitespace-nowrap bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-md hover:shadow-lg"
                 >
-                  Create
+                  Add Goal
                 </button>
               )}
               {type === 'ai' && onConfirmGoals && (
@@ -1341,17 +1357,18 @@ export default function GoalsPanel({
               };
               
               // Update team_name or group_name based on goal_type
-              const goalType = (data.goal_type as string) || 'overall';
+              const goalType = (data.goal_type as string) || 'team';
               if (goalType === 'team' && data.team_name !== undefined) {
                 updateData.team_name = data.team_name as string | null;
                 updateData.group_name = null; // Clear group_name if switching to team
               } else if (goalType === 'group' && data.group_name !== undefined) {
                 updateData.group_name = data.group_name as string | null;
                 updateData.team_name = null; // Clear team_name if switching to group
-              } else if (goalType === 'overall') {
-                updateData.team_name = null;
-                updateData.group_name = null;
               }
+              // else if (goalType === 'overall') {
+              //   updateData.team_name = null;
+              //   updateData.group_name = null;
+              // }
               
               await apiService.updatePIGoal(editGoal.id, updateData);
               
