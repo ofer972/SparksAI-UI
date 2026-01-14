@@ -2,7 +2,6 @@ import { useState } from 'react';
 import AgentJobsTab from './AgentJobsTab';
 import TeamAICardsTab from './TeamAICardsTab';
 import TranscriptsTab from './TranscriptsTab';
-import PIGoalsTab from './PIGoalsTab';
 
 interface TabItem {
   id: string;
@@ -38,16 +37,6 @@ const tabs: TabItem[] = [
       </svg>
     )
   },
-  { 
-    id: 'security-logs', 
-    label: 'PI Goals', 
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="10" strokeWidth={2} />
-        <circle cx="12" cy="12" r="2" fill="currentColor" stroke="currentColor" strokeWidth={1} />
-      </svg>
-    )
-  },
 ];
 
 export default function GeneralDataView() {
@@ -61,8 +50,6 @@ export default function GeneralDataView() {
         return <TeamAICardsTab />;
       case 'view-transcripts':
         return <TranscriptsTab />;
-      case 'security-logs':
-        return <PIGoalsTab />;
       default:
         return (
           <div className="bg-white rounded-lg shadow-sm p-6 text-center">

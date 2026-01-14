@@ -1727,6 +1727,223 @@ export class ApiService {
     return response.json();
   }
 
+  // Get Available Sprints (for Sprint Goals selection)
+  async getAvailableSprints(teamName?: string, isGroup?: boolean): Promise<any> {
+    const params = new URLSearchParams();
+    
+    if (teamName) {
+      params.append('team_name', teamName);
+      params.append('isGroup', (isGroup || false).toString());
+    }
+    
+    const url = `${buildBackendUrl('/goals/available-sprints')}?${params}`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch {
+        if (errorText && errorText.length < 200) {
+          errorMessage = errorText;
+        }
+      }
+      throw new Error(`Failed to fetch available sprints: ${errorMessage}`);
+    }
+    
+    return response.json();
+  }
+
+  // Generate Sprint Goals
+  async generateSprintGoals(sprintId: number, teamName?: string, isGroup?: boolean): Promise<any> {
+    const url = buildBackendUrl('/goals/generate');
+    const body: any = { 
+      scope_type: 'sprint',
+      sprint_id: sprintId
+    };
+    
+    if (teamName) {
+      body.team_name = teamName;
+      body.isGroup = isGroup || false;
+    }
+    
+    // Set 90 second timeout for this endpoint only
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 seconds
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.message || errorJson.error || errorMessage;
+        } catch {
+          if (errorText && errorText.length < 200) {
+            errorMessage = errorText;
+          }
+        }
+        throw new Error(`Failed to generate Sprint goals: ${errorMessage}`);
+      }
+      
+      return response.json();
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new Error('Request timeout: Sprint goals generation took longer than 90 seconds');
+      }
+      throw err;
+    }
+  }
+
+  // Get Sprint Goals
+  async getSprintGoals(sprintId: number, teamName?: string, isGroup?: boolean, ai: boolean = true): Promise<any> {
+    const params = new URLSearchParams({
+      scope_type: 'sprint',
+      sprint_id: sprintId.toString(),
+      ai: ai.toString(),
+    });
+    
+    if (teamName) {
+      params.append('team_name', teamName);
+      params.append('isGroup', (isGroup || false).toString());
+    }
+    
+    const url = `${buildBackendUrl('/goals')}?${params}`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch {
+        if (errorText && errorText.length < 200) {
+          errorMessage = errorText;
+        }
+      }
+      throw new Error(`Failed to fetch Sprint goals: ${errorMessage}`);
+    }
+    
+    return response.json();
+  }
+
+  // Create Sprint Goal (POST)
+  async createSprintGoal(data: {
+    sprint_id: number;
+    goal_text: string;
+    status?: string;
+    priority_bv?: number | null;
+    team_name?: string;
+    group_name?: string;
+    issue_keys?: string[];
+  }): Promise<any> {
+    const url = buildBackendUrl('/goals');
+    const body: any = {
+      scope_type: 'sprint',
+      sprint_id: data.sprint_id,
+      goal_text: data.goal_text,
+      issue_keys: data.issue_keys || [],
+      status: data.status || 'Draft',
+    };
+    
+    if (data.priority_bv !== undefined && data.priority_bv !== null) {
+      body.priority_bv = data.priority_bv;
+    }
+    
+    if (data.team_name) {
+      body.team_name = data.team_name;
+    }
+    
+    if (data.group_name) {
+      body.group_name = data.group_name;
+    }
+    
+    const response = await authFetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch {
+        if (errorText && errorText.length < 200) {
+          errorMessage = errorText;
+        }
+      }
+      throw new Error(`Failed to create Sprint goal: ${errorMessage}`);
+    }
+
+    return response.json();
+  }
+
+  // Update Sprint Goal (PATCH) - uses same endpoint as PI goals
+  async updateSprintGoal(goalId: number, updates: {
+    sprint_id?: number;
+    team_name?: string;
+    group_name?: string;
+    goal_text?: string;
+    issue_keys?: string[];
+    status?: string;
+    priority_bv?: number | null;
+  }): Promise<any> {
+    const url = `${buildBackendUrl('/goals')}/${goalId}`;
+    const response = await authFetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updates),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch {
+        if (errorText && errorText.length < 200) {
+          errorMessage = errorText;
+        }
+      }
+      throw new Error(`Failed to update Sprint goal: ${errorMessage}`);
+    }
+
+    return response.json();
+  }
+
+  // Delete Sprint Goal (DELETE) - uses same endpoint as PI goals
+  async deleteSprintGoal(goalId: number): Promise<any> {
+    return this.deletePIGoal(goalId); // Reuse same endpoint
+  }
+
+  // Update multiple Sprint Goals from AI to User (PATCH) - uses same endpoint
+  async updateSprintGoalsAiToUser(goalIds: number[]): Promise<any> {
+    return this.updatePIGoalsAiToUser(goalIds); // Reuse same endpoint
+  }
+
   // Settings API
   async getSettings(): Promise<any> {
     const url = buildBackendUrl(API_CONFIG.endpoints.settings.get);

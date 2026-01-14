@@ -7,13 +7,15 @@ import type { ColumnConfig } from './hierarchyTable/types';
 import type { TreeNode } from './hierarchyTable/types';
 import { API_CONFIG } from '@/lib/config';
 import { buildNodeChildrenMap } from './pigoals/utils';
-import { getStatusCategoryColor } from './hierarchyTable/utils';
+import { getStatusCategoryColor, getTypeColor } from './hierarchyTable/utils';
 import { ApiService } from '@/lib/api';
 import { EditRecordModal } from './EditRecordModal';
 import type { EditableEntityConfig, FormFieldConfig } from '@/lib/entityConfig';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
+import GoalsConfirmationModal from './pigoals/GoalsConfirmationModal';
+import ConnectIssuesDialog from './pigoals/ConnectIssuesDialog';
 
-interface PIGoalsPanelProps {
+interface GoalsPanelProps {
   title: string;
   hierarchyData: HierarchyItem[];
   type: 'ai' | 'user';
@@ -23,7 +25,10 @@ interface PIGoalsPanelProps {
   style?: React.CSSProperties;
   onConfirmGoals?: (goalIds: number[]) => Promise<void>;
   onRefresh?: () => void;
+  scopeType: 'pi' | 'sprint' | 'release';
   piName?: string;
+  sprintId?: number;
+  releaseId?: number;
   teamName?: string;
   isGroup?: boolean;
 }
@@ -41,7 +46,7 @@ interface GoalForEdit {
 
 // Note: goalEditConfig is now created dynamically via getGoalEditConfig() function
 
-export default function PIGoalsPanel({
+export default function GoalsPanel({
   title,
   hierarchyData,
   type,
@@ -51,10 +56,13 @@ export default function PIGoalsPanel({
   style,
   onConfirmGoals,
   onRefresh,
+  scopeType,
   piName,
+  sprintId,
+  releaseId,
   teamName,
   isGroup,
-}: PIGoalsPanelProps) {
+}: GoalsPanelProps) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [checkedGoalIds, setCheckedGoalIds] = useState<Set<number>>(new Set());
   const [isConfirming, setIsConfirming] = useState(false);
@@ -64,12 +72,17 @@ export default function PIGoalsPanel({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [showRemoveEpicModal, setShowRemoveEpicModal] = useState(false);
-  const [epicToRemove, setEpicToRemove] = useState<{ epicKey: string; epicSummary: string; goalId: number; goalText: string } | null>(null);
+  const [epicToRemove, setEpicToRemove] = useState<{ epicKey: string; epicSummary: string; issueType?: string | null; goalId: number; goalText: string } | null>(null);
   const [isDisconnectingEpic, setIsDisconnectingEpic] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteGoalModal, setShowDeleteGoalModal] = useState(false);
-  const [goalToDelete, setGoalToDelete] = useState<{ id: number; text: string } | null>(null);
+  const [goalToDelete, setGoalToDelete] = useState<{ 
+    id: number; 
+    text: string;
+    teamName?: string | null;
+    groupName?: string | null;
+  } | null>(null);
   const [isDeletingGoal, setIsDeletingGoal] = useState(false);
   const [showConnectEpicsModal, setShowConnectEpicsModal] = useState(false);
   const [goalToConnectEpics, setGoalToConnectEpics] = useState<{ 
@@ -80,10 +93,6 @@ export default function PIGoalsPanel({
     isGroup?: boolean;
     connectedEpicKeys?: string[];
   } | null>(null);
-  const [availableEpics, setAvailableEpics] = useState<Array<{ issue_key: string; summary: string }>>([]);
-  const [selectedEpicKeys, setSelectedEpicKeys] = useState<string[]>([]);
-  const [epicSearchQuery, setEpicSearchQuery] = useState('');
-  const [loadingEpics, setLoadingEpics] = useState(false);
   
   // Use TeamsGroupsContext to get teams and groups (already in memory)
   const { teams: contextTeams, groups: contextGroups } = useTeamsGroups();
@@ -116,12 +125,12 @@ export default function PIGoalsPanel({
           disabled: mode === 'edit', // Also disabled in edit mode
           options: mode === 'create' 
             ? [
-                { value: 'overall', label: 'Overall PI Goals' },
+                { value: 'overall', label: scopeType === 'pi' ? 'Overall PI Goals' : scopeType === 'sprint' ? 'Overall Sprint Goals' : 'Overall Goals' },
                 { value: 'team', label: 'Team Goal' },
                 { value: 'group', label: 'Group Goal' },
               ]
             : [
-                { value: 'overall', label: 'Overall PI Goals' },
+                { value: 'overall', label: scopeType === 'pi' ? 'Overall PI Goals' : scopeType === 'sprint' ? 'Overall Sprint Goals' : 'Overall Goals' },
                 ...(isTeamGoal ? [{ value: 'team', label: 'Team Goal' }] : []),
                 ...(isGroupGoal ? [{ value: 'group', label: 'Group Goal' }] : []),
               ],
@@ -240,10 +249,10 @@ export default function PIGoalsPanel({
         return [];
       },
       primaryKey: 'id',
-      title: 'PI Goal',
+      title: scopeType === 'pi' ? 'PI Goal' : scopeType === 'sprint' ? 'Sprint Goal' : 'Goal',
       editableFields,
     };
-  }, [isGroup, availableTeams, availableGroups, editGoal]);
+  }, [isGroup, availableTeams, availableGroups, editGoal, scopeType]);
 
   // Initialize expanded state for root nodes when data changes
   useEffect(() => {
@@ -339,7 +348,7 @@ export default function PIGoalsPanel({
     try {
       // Delete all selected goals using Promise.allSettled to handle partial failures
       const results = await Promise.allSettled(
-        goalIdsArray.map(goalId => apiService.deletePIGoal(goalId))
+        goalIdsArray.map(goalId => apiService.deletePIGoal(goalId)) // Reuse deletePIGoal for all scope types
       );
 
       // Count successes and failures
@@ -388,7 +397,7 @@ export default function PIGoalsPanel({
     const apiService = new ApiService();
     
     try {
-      await apiService.deletePIGoal(goalToDelete.id);
+      await apiService.deletePIGoal(goalToDelete.id); // Reuse deletePIGoal for all scope types
 
       // Show success toast message
       setToastType('success');
@@ -443,7 +452,7 @@ export default function PIGoalsPanel({
       // Update the goal with updated issue_keys
       await apiService.updatePIGoal(epicToRemove.goalId, {
         epic_keys: updatedEpicKeys,
-      });
+      }); // Reuse updatePIGoal for all scope types
 
       // Show success toast message
       setToastType('success');
@@ -471,19 +480,16 @@ export default function PIGoalsPanel({
   }, [epicToRemove, hierarchyData, onRefresh]);
 
   // Handle connect epics to goal
-  const handleConnectEpics = useCallback(async () => {
+  const handleConnectEpics = useCallback(async (selectedEpicKeys: string[]) => {
     if (!goalToConnectEpics || selectedEpicKeys.length === 0) return;
 
-    setLoadingEpics(true);
     const apiService = new ApiService();
     
     try {
       // Get current epic_keys from the goal and merge with new ones
-      // Find the goal in hierarchy data to get current epic_keys
       const goalItem = hierarchyData.find(item => (item as any)._goalId === goalToConnectEpics.id);
       const currentEpicKeys: string[] = [];
       
-      // Get all epic children of this goal
       if (goalItem) {
         const goalKey = goalItem.key;
         hierarchyData.forEach(item => {
@@ -504,8 +510,6 @@ export default function PIGoalsPanel({
       // Show success toast message
       setToastType('success');
       setToastMessage(`${selectedEpicKeys.length} epic(s) connected successfully`);
-
-      // Auto-hide toast after 3 seconds
       setTimeout(() => setToastMessage(null), 3000);
 
       // Refresh the User goals panel after successful connection
@@ -516,62 +520,13 @@ export default function PIGoalsPanel({
       // Close modal and clear state
       setShowConnectEpicsModal(false);
       setGoalToConnectEpics(null);
-      setSelectedEpicKeys([]);
-      setEpicSearchQuery('');
     } catch (err) {
       console.error('Error connecting epics:', err);
       setToastType('error');
       setToastMessage('Failed to connect epics');
       setTimeout(() => setToastMessage(null), 3000);
-    } finally {
-      setLoadingEpics(false);
     }
-  }, [goalToConnectEpics, selectedEpicKeys, hierarchyData, onRefresh]);
-
-  // Fetch epics when modal opens
-  useEffect(() => {
-    if (showConnectEpicsModal && goalToConnectEpics && piName) {
-      const fetchEpics = async () => {
-        setLoadingEpics(true);
-        const apiService = new ApiService();
-        
-        try {
-          const params: any = {
-            scope_type: 'pi',
-            pi_name: piName,
-          };
-
-          if (goalToConnectEpics.isGroup && goalToConnectEpics.groupName) {
-            // For groups, pass group name as team_name with isGroup=true
-            params.team_name = goalToConnectEpics.groupName;
-            params.isGroup = true;
-          } else if (goalToConnectEpics.teamName) {
-            params.team_name = goalToConnectEpics.teamName;
-            params.isGroup = false; // Explicitly set isGroup=false for team goals
-          }
-
-          const response = await apiService.getIssuesForScope(params);
-          
-          // Filter out already connected epics
-          const connectedEpicKeys = goalToConnectEpics.connectedEpicKeys || [];
-          // Response structure: { success: true, data: { issues: [...] } }
-          const allEpics = (response.data?.issues || []) as Array<{ issue_key: string; summary: string }>;
-          const filteredEpics = allEpics.filter((epic: any) => 
-            !connectedEpicKeys.includes(epic.issue_key)
-          );
-
-          setAvailableEpics(filteredEpics);
-        } catch (err) {
-          console.error('Error fetching epics:', err);
-          setAvailableEpics([]);
-        } finally {
-          setLoadingEpics(false);
-        }
-      };
-
-      fetchEpics();
-    }
-  }, [showConnectEpicsModal, goalToConnectEpics, piName]);
+  }, [goalToConnectEpics, hierarchyData, onRefresh]);
 
   // Helper function to create columns with specific map and expanded state
   const createColumns = useCallback((
@@ -587,13 +542,13 @@ export default function PIGoalsPanel({
     isSelectAllIndeterminate: boolean,
     onEditGoal: (goal: GoalForEdit) => void,
     hierarchyData: HierarchyItem[],
-    onRemoveEpic: (epic: { epicKey: string; epicSummary: string; goalId: number; goalText: string }) => void
+    onRemoveEpic: (epic: { epicKey: string; epicSummary: string; issueType?: string | null; goalId: number; goalText: string }) => void
   ): ColumnConfig[] => {
-    // Base column: Section / Goal / Epic (always included)
+    // Base column: Section / Goal / Issues (always included)
     const hierarchyColumn: ColumnConfig = {
-      id: 'Section / Goal / Epic',
-      header: 'Section / Goal / Epic',
-      accessorKey: 'Section / Goal / Epic',
+      id: 'Section / Goal / Issues',
+      header: 'Section / Goal / Issues',
+      accessorKey: 'Section / Goal / Issues',
       minWidth: 400,
       cell: ({ getValue, row }) => {
         const value = getValue();
@@ -607,6 +562,7 @@ export default function PIGoalsPanel({
         // Access epic data from the item
         const epicKey = (item as any)._epicKey || '';
         const epicSummary = (item as any)._epicSummary || '';
+        const issueType = (item as any)._issueType || '';
         const jiraUrl = API_CONFIG.jiraUrl;
 
         // Epic rows: level 2 (section=0, goal=1, epic=2) AND key matches epic pattern (e.g., IDPSCAN-20963)
@@ -644,7 +600,7 @@ export default function PIGoalsPanel({
           if (parentGoalId && item.parent) {
             const parentItem = hierarchyData.find(h => h.key === item.parent);
             if (parentItem) {
-              parentGoalText = String(parentItem['Section / Goal / Epic'] || '');
+              parentGoalText = String(parentItem['Section / Goal / Issues'] || '');
             }
           }
         }
@@ -675,7 +631,7 @@ export default function PIGoalsPanel({
             {/* Content */}
             <div className="flex-1">
               {isEpicRow && displayEpicKey ? (
-                // Epic row: show key as link + summary (matching hierarchy table style)
+                // Epic row: show key as link + issue type + summary (format: IDPSCAN-20963 [Epic] Summary)
                 <span className="text-[13px]">
                   {jiraUrl ? (
                     <a
@@ -701,7 +657,15 @@ export default function PIGoalsPanel({
                       {displayEpicKey}
                     </span>
                   )}
-                  {' - '}
+                  {issueType && (
+                    <>
+                      {' '}
+                      <span className={`px-1.5 py-0.5 rounded text-[11px] font-medium border ${getTypeColor(issueType)}`}>
+                        [{issueType}]
+                      </span>
+                    </>
+                  )}
+                  {' '}
                   <span style={{ color: '#374151' }}>{displaySummary}</span>
                 </span>
               ) : (
@@ -748,7 +712,7 @@ export default function PIGoalsPanel({
                   if (item.parent) {
                     const parentItem = hierarchyData.find(h => h.key === item.parent);
                     if (parentItem) {
-                      const parentSection = String(parentItem['Section / Goal / Epic'] || '');
+                      const parentSection = String(parentItem['Section / Goal / Issues'] || '');
                       if (parentSection.startsWith('Team Goals:')) {
                         teamName = parentSection.replace('Team Goals: ', '').trim();
                       } else if (parentSection.startsWith('Group Goals:')) {
@@ -769,7 +733,7 @@ export default function PIGoalsPanel({
                   setShowConnectEpicsModal(true);
                 }}
                 className="p-0.5 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
-                title="Connect epics to goal"
+                title="Connect issues to goal"
               >
                 <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -785,12 +749,13 @@ export default function PIGoalsPanel({
                   onRemoveEpic({
                     epicKey: displayEpicKey,
                     epicSummary: displaySummary,
+                    issueType: issueType || null,
                     goalId: parentGoalId!,
                     goalText: parentGoalText,
                   });
                 }}
                 className="p-0.5 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
-                title="Disconnect epic from goal"
+                title="Disconnect issue from goal"
               >
                 <svg className="w-3.5 h-3.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -860,7 +825,7 @@ export default function PIGoalsPanel({
     return [
       hierarchyColumn,
       {
-        id: 'PI Goal Status',
+        id: 'Goal Status',
         header: 'Status',
         accessorKey: 'Status',
         minWidth: 120,
@@ -876,7 +841,29 @@ export default function PIGoalsPanel({
           }
           // For goals and epics, render badge
           let badgeClass = 'px-2 py-1 rounded text-[13px] font-medium border';
-          const statusCategory = (item as any).status_category || (item as any)['Status Category'] || '';
+          
+          // Check if this is a goal row (has _goalId and level 1)
+          const goalId = (item as any)._goalId;
+          const isGoalRow = goalId && typeof goalId === 'number' && level === 1;
+          
+          let statusCategory = '';
+          if (isGoalRow) {
+            // For goals: use the status value directly and map to status_category
+            const goalStatus = String(value || '').toLowerCase().trim();
+            if (goalStatus === 'done') {
+              statusCategory = 'Done';
+            } else if (goalStatus === 'in progress') {
+              statusCategory = 'In Progress';
+            } else if (goalStatus === 'blocked') {
+              statusCategory = 'Blocked';
+            } else {
+              statusCategory = goalStatus; // Use as-is for other statuses
+            }
+          } else {
+            // For issues/epics: use status_category from the item
+            statusCategory = (item as any).status_category || (item as any)['Status Category'] || '';
+          }
+          
           badgeClass += ` ${getStatusCategoryColor(String(statusCategory || ''))}`;
           return (
             <div>
@@ -888,7 +875,7 @@ export default function PIGoalsPanel({
         },
       },
         {
-          id: 'PI Goal Progress',
+          id: 'Goal Progress',
           header: 'Progress',
           accessorKey: 'Progress',
           minWidth: 85, // 10% wider than 77 (77 * 1.1 = 84.7, rounded to 85)
@@ -914,7 +901,10 @@ export default function PIGoalsPanel({
               return (
                 <div className="text-center" style={{ minWidth: '94px', width: '94px' }}>
                   <span className="text-[13px] text-gray-700">
-                    {epicsPercent}% on epics {childrenPercent}% on stories
+                    {scopeType === 'sprint' 
+                      ? `${childrenPercent}% on stories`
+                      : `${epicsPercent}% on epics ${childrenPercent}% on stories`
+                    }
                   </span>
                 </div>
               );
@@ -988,7 +978,7 @@ export default function PIGoalsPanel({
             return <div></div>;
           }
 
-          const goalText = item['Section / Goal / Epic'] || '';
+          const goalText = item['Section / Goal / Issues'] || '';
           const goalStatus = item['Status'] || '';
           const goalPriorityBv = (item as any)._goalPriorityBv ?? null;
           
@@ -1000,14 +990,14 @@ export default function PIGoalsPanel({
           if (item.parent) {
             const parentItem = hierarchyData.find(h => h.key === item.parent);
             if (parentItem) {
-              const parentSection = String(parentItem['Section / Goal / Epic'] || '');
+              const parentSection = String(parentItem['Section / Goal / Issues'] || '');
               if (parentSection.startsWith('Team Goals:')) {
                 goalType = 'team';
                 teamName = parentSection.replace('Team Goals: ', '').trim() || null;
               } else if (parentSection.startsWith('Group Goals:')) {
                 goalType = 'group';
                 groupName = parentSection.replace('Group Goals: ', '').trim() || null;
-              } else if (parentSection === 'Overall PI Goals') {
+              } else if (parentSection === 'Overall PI Goals' || parentSection === 'Overall Sprint Goals' || parentSection === 'Overall Goals') {
                 goalType = 'overall';
               }
             }
@@ -1041,7 +1031,12 @@ export default function PIGoalsPanel({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setGoalToDelete({ id: goalId, text: String(goalText) });
+                    setGoalToDelete({ 
+                      id: goalId, 
+                      text: String(goalText),
+                      teamName: teamName || null,
+                      groupName: groupName || null,
+                    });
                     setShowDeleteGoalModal(true);
                   }}
                   className="p-1.5 rounded-md hover:bg-red-50 text-red-600 transition-all duration-150 border border-transparent hover:border-red-200"
@@ -1058,7 +1053,7 @@ export default function PIGoalsPanel({
         },
       },
     ];
-  }, []);
+  }, [scopeType]);
 
   // Calculate select all state
   const isSelectAllChecked = allGoalIds.length > 0 && checkedGoalIds.size === allGoalIds.length;
@@ -1265,18 +1260,32 @@ export default function PIGoalsPanel({
             
             if (isCreateModalOpen) {
               // Create new goal
-              if (!piName) {
-                throw new Error('PI name is required to create a goal');
+              if (scopeType === 'pi' && !piName) {
+                throw new Error('PI name is required to create a PI goal');
+              }
+              if (scopeType === 'sprint' && !sprintId) {
+                throw new Error('Sprint ID is required to create a Sprint goal');
+              }
+              if (scopeType === 'release' && !releaseId) {
+                throw new Error('Release ID is required to create a Release goal');
               }
               
               const goalType = (data.goal_type as string) || (isGroup ? 'group' : 'team');
               
               const createData: any = {
-                pi: piName,
                 goal_text: data.goal_text as string,
                 status: (data.status as string) || 'Draft',
-                epic_keys: [],
+                issue_keys: [],
               };
+              
+              // Set scope-specific context
+              if (scopeType === 'pi' && piName) {
+                createData.pi = piName;
+              } else if (scopeType === 'sprint' && sprintId) {
+                createData.sprint_id = sprintId;
+              } else if (scopeType === 'release' && releaseId) {
+                createData.release_id = releaseId;
+              }
               
               if (data.priority_bv !== undefined && data.priority_bv !== null) {
                 // Convert to number if it's a string (from select dropdown)
@@ -1294,7 +1303,15 @@ export default function PIGoalsPanel({
                 createData.group_name = data.group_name as string;
               }
               
-              await apiService.createPIGoal(createData);
+              // Use appropriate API method based on scope type
+              if (scopeType === 'pi') {
+                await apiService.createPIGoal(createData);
+              } else if (scopeType === 'sprint') {
+                await apiService.createSprintGoal(createData);
+              } else {
+                // For release, we can use createPIGoal as it's generic now
+                await apiService.createPIGoal(createData);
+              }
               
               // Refresh the goals data
               if (onRefresh) {
@@ -1359,329 +1376,181 @@ export default function PIGoalsPanel({
       )}
 
       {/* Disconnect Epic Confirmation Modal */}
-      {showRemoveEpicModal && epicToRemove && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
-            {/* Header */}
-            <div className="px-4 py-3 border-b border-gray-200 bg-red-50">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-bold text-gray-900">Disconnect Epic from Goal</h3>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-4">
-              <p className="text-sm text-gray-700 mb-3">
-                Do you want to disconnect this epic from the goal?
+      <GoalsConfirmationModal
+        isOpen={showRemoveEpicModal}
+        onClose={() => {
+          setShowRemoveEpicModal(false);
+          setEpicToRemove(null);
+        }}
+        onConfirm={handleDisconnectEpic}
+        title="Disconnect Issue from Goal"
+        message={
+          epicToRemove ? (
+            <>
+              <p className="mb-3">
+                Do you want to disconnect this issue from the goal?
               </p>
-              
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
-                <div className="flex items-start gap-2">
-                  <span className="text-xs font-semibold text-gray-600 min-w-[80px]">Epic Key:</span>
-                  <span className="text-xs font-bold text-gray-900">{epicToRemove.epicKey}</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-xs font-semibold text-gray-600 min-w-[80px]">Epic Summary:</span>
-                  <span className="text-xs text-gray-900 break-words">{epicToRemove.epicSummary}</span>
-                </div>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2 mb-3">
+                {scopeType === 'pi' && piName && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-xs font-semibold text-gray-600 min-w-[80px]">PI:</span>
+                    <span className="text-xs text-gray-900">{piName}</span>
+                  </div>
+                )}
+                {scopeType === 'sprint' && sprintId && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-xs font-semibold text-gray-600 min-w-[80px]">Sprint:</span>
+                    <span className="text-xs text-gray-900">Sprint ID {sprintId}</span>
+                  </div>
+                )}
+                {isGroup && teamName && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-xs font-semibold text-gray-600 min-w-[80px]">Group:</span>
+                    <span className="text-xs text-gray-900">{teamName}</span>
+                  </div>
+                )}
+                {!isGroup && teamName && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-xs font-semibold text-gray-600 min-w-[80px]">Team:</span>
+                    <span className="text-xs text-gray-900">{teamName}</span>
+                  </div>
+                )}
                 <div className="flex items-start gap-2">
                   <span className="text-xs font-semibold text-gray-600 min-w-[80px]">Goal:</span>
                   <span className="text-xs text-gray-900 break-words">{epicToRemove.goalText}</span>
                 </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-xs font-semibold text-gray-600 min-w-[80px]">Issue Key:</span>
+                  <span className="text-xs font-bold text-gray-900">{epicToRemove.epicKey}</span>
+                </div>
+                {epicToRemove.issueType && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-xs font-semibold text-gray-600 min-w-[80px]">Issue Type:</span>
+                    <span className="text-xs text-gray-900">{epicToRemove.issueType}</span>
+                  </div>
+                )}
+                <div className="flex items-start gap-2">
+                  <span className="text-xs font-semibold text-gray-600 min-w-[80px]">Issue Summary:</span>
+                  <span className="text-xs text-gray-900 break-words">{epicToRemove.epicSummary}</span>
+                </div>
               </div>
-
-              <p className="text-xs text-gray-600 mt-3">
-                The epic will be disconnected from this goal and can be reconnected later.
+              <p className="text-xs text-gray-600">
+                The issue will be disconnected from this goal and can be reconnected later.
               </p>
-            </div>
-
-            {/* Footer */}
-            <div className="px-4 py-3 bg-gray-50 rounded-b-xl flex gap-2">
-              <button
-                onClick={() => {
-                  setShowRemoveEpicModal(false);
-                  setEpicToRemove(null);
-                }}
-                className="flex-1 bg-white text-gray-700 text-sm border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDisconnectEpic}
-                disabled={isDisconnectingEpic}
-                className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm py-2 rounded-lg hover:from-red-600 hover:to-red-700 transition-all shadow-md hover:shadow-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-md"
-              >
-                {isDisconnectingEpic ? 'Disconnecting...' : 'Disconnect Epic'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            </>
+          ) : (
+            ''
+          )
+        }
+        confirmButtonText="Disconnect Issue"
+        variant="danger"
+        isLoading={isDisconnectingEpic}
+      />
 
       {/* Delete Goals Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
-            {/* Header */}
-            <div className="px-4 py-3 border-b border-gray-200 bg-red-50">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-bold text-gray-900">Delete Goals</h3>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-4">
-              <p className="text-sm text-gray-700 mb-3">
-                You are about to delete <span className="font-bold">{checkedGoalIds.size}</span> goal(s). Do you want to continue?
-              </p>
-              <p className="text-xs text-gray-600">
-                This action cannot be undone.
-              </p>
-            </div>
-
-            {/* Footer */}
-            <div className="px-4 py-3 bg-gray-50 rounded-b-xl flex gap-2">
-              <button
-                onClick={() => {
-                  setShowDeleteModal(false);
-                }}
-                className="flex-1 bg-white text-gray-700 text-sm border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteGoals}
-                disabled={isDeleting}
-                className={`flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm py-2 rounded-lg hover:from-red-600 hover:to-red-700 transition-all shadow-md hover:shadow-lg font-medium ${
-                  isDeleting ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                {isDeleting ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <GoalsConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteGoals}
+        title="Delete Goals"
+        message={
+          <>
+            <p className="mb-2">
+              You are about to delete <span className="font-bold">{checkedGoalIds.size}</span> goal(s). Do you want to continue?
+            </p>
+            <p className="text-xs text-gray-600">
+              This action cannot be undone.
+            </p>
+          </>
+        }
+        confirmButtonText="Delete"
+        variant="danger"
+        isLoading={isDeleting}
+      />
 
       {/* Delete Single Goal Confirmation Modal (User panel) */}
-      {showDeleteGoalModal && goalToDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
-            {/* Header */}
-            <div className="px-4 py-3 border-b border-gray-200 bg-red-50">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-bold text-gray-900">Delete Goal</h3>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-4">
-              <p className="text-sm text-gray-700 mb-3">
+      <GoalsConfirmationModal
+        isOpen={showDeleteGoalModal}
+        onClose={() => {
+          setShowDeleteGoalModal(false);
+          setGoalToDelete(null);
+        }}
+        onConfirm={handleDeleteGoal}
+        title="Delete Goal"
+        message={
+          goalToDelete ? (
+            <>
+              <p className="mb-3">
                 Are you sure you want to delete this goal?
               </p>
-              
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3 space-y-2">
+                {scopeType === 'pi' && piName && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-xs font-semibold text-gray-600 min-w-[50px]">PI:</span>
+                    <span className="text-xs text-gray-900">{piName}</span>
+                  </div>
+                )}
+                {scopeType === 'sprint' && sprintId && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-xs font-semibold text-gray-600 min-w-[50px]">Sprint:</span>
+                    <span className="text-xs text-gray-900">Sprint ID {sprintId}</span>
+                  </div>
+                )}
+                {goalToDelete.groupName && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-xs font-semibold text-gray-600 min-w-[50px]">Group:</span>
+                    <span className="text-xs text-gray-900">{goalToDelete.groupName}</span>
+                  </div>
+                )}
+                {goalToDelete.teamName && !goalToDelete.groupName && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-xs font-semibold text-gray-600 min-w-[50px]">Team:</span>
+                    <span className="text-xs text-gray-900">{goalToDelete.teamName}</span>
+                  </div>
+                )}
                 <div className="flex items-start gap-2">
                   <span className="text-xs font-semibold text-gray-600 min-w-[50px]">Goal:</span>
                   <span className="text-xs text-gray-900 break-words">{goalToDelete.text}</span>
                 </div>
               </div>
-
-              <p className="text-xs text-gray-600 mt-3">
+              <p className="text-xs text-gray-600">
                 This action cannot be undone.
               </p>
-            </div>
+            </>
+          ) : (
+            ''
+          )
+        }
+        confirmButtonText="Delete"
+        variant="danger"
+        isLoading={isDeletingGoal}
+      />
 
-            {/* Footer */}
-            <div className="px-4 py-3 bg-gray-50 rounded-b-xl flex gap-2">
-              <button
-                onClick={() => {
-                  setShowDeleteGoalModal(false);
-                  setGoalToDelete(null);
-                }}
-                className="flex-1 bg-white text-gray-700 text-sm border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteGoal}
-                disabled={isDeletingGoal}
-                className={`flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm py-2 rounded-lg hover:from-red-600 hover:to-red-700 transition-all shadow-md hover:shadow-lg font-medium ${
-                  isDeletingGoal ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                {isDeletingGoal ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Connect Issues to Goal Modal */}
+      {goalToConnectEpics && (
+        <ConnectIssuesDialog
+          isOpen={showConnectEpicsModal}
+          onClose={() => {
+            setShowConnectEpicsModal(false);
+            setGoalToConnectEpics(null);
+          }}
+          goal={{
+            id: goalToConnectEpics.id,
+            text: goalToConnectEpics.text,
+            teamName: goalToConnectEpics.teamName,
+            groupName: goalToConnectEpics.groupName,
+            isGroup: goalToConnectEpics.isGroup,
+          }}
+          scopeType={scopeType}
+          scopeContext={{
+            piName,
+            sprintId,
+            releaseId,
+          }}
+          connectedEpicKeys={goalToConnectEpics.connectedEpicKeys || []}
+          onConnect={handleConnectEpics}
+        />
       )}
-
-      {/* Connect Epics to Goal Modal */}
-      {showConnectEpicsModal && goalToConnectEpics && (() => {
-        // Filter epics based on search query
-        const filteredEpics = availableEpics.filter(epic => {
-          if (!epicSearchQuery) return true;
-          const query = epicSearchQuery.toLowerCase();
-          return (
-            epic.issue_key.toLowerCase().includes(query) ||
-            (epic.summary && epic.summary.toLowerCase().includes(query))
-          );
-        });
-
-        const selectAll = () => {
-          setSelectedEpicKeys(filteredEpics.map(epic => epic.issue_key));
-        };
-
-        const clearAll = () => {
-          setSelectedEpicKeys([]);
-        };
-
-        const toggleEpic = (epicKey: string) => {
-          setSelectedEpicKeys(prev => {
-            if (prev.includes(epicKey)) {
-              return prev.filter(key => key !== epicKey);
-            } else {
-              return [...prev, epicKey];
-            }
-          });
-        };
-
-        return (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full flex flex-col" style={{ height: '550px' }}>
-              <div className="px-4 py-2.5 border-b border-gray-200">
-                <h3 className="text-lg font-bold text-gray-900">
-                  Connect Epics to Goal
-                  {goalToConnectEpics.isGroup && goalToConnectEpics.groupName && (
-                    <span className="text-sm font-normal text-gray-600 ml-2">({goalToConnectEpics.groupName})</span>
-                  )}
-                  {!goalToConnectEpics.isGroup && goalToConnectEpics.teamName && (
-                    <span className="text-sm font-normal text-gray-600 ml-2">({goalToConnectEpics.teamName})</span>
-                  )}
-                </h3>
-                <p className="text-xs text-gray-600 mt-0.5">
-                  Goal: <span className="font-semibold">{goalToConnectEpics.text}</span>
-                </p>
-              </div>
-
-              <div className="p-3 flex-1 overflow-hidden flex flex-col min-h-0">
-                {/* Description */}
-                <p className="text-xs text-gray-500 mb-2 flex-shrink-0">
-                  Showing {filteredEpics.length} epic{filteredEpics.length !== 1 ? 's' : ''}
-                </p>
-
-                {/* Search box */}
-                <div className="mb-2 flex-shrink-0">
-                  <input
-                    type="text"
-                    value={epicSearchQuery}
-                    onChange={(e) => setEpicSearchQuery(e.target.value)}
-                    placeholder="Search epics..."
-                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
-                </div>
-
-                {/* Select All / Clear All buttons */}
-                <div className="flex gap-2 mb-2 flex-shrink-0">
-                  <button
-                    onClick={selectAll}
-                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    Select All
-                  </button>
-                  <span className="text-gray-400">|</span>
-                  <button
-                    onClick={clearAll}
-                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    Clear All
-                  </button>
-                </div>
-
-                {/* Scrollable checkbox list - fixed height container */}
-                <div className="flex-1 overflow-y-auto border border-gray-200 rounded-lg min-h-0">
-                  {loadingEpics ? (
-                    <div className="p-3 text-center text-gray-500 text-xs">
-                      Loading epics...
-                    </div>
-                  ) : filteredEpics.length === 0 ? (
-                    <div className="p-3 text-center text-gray-500 text-xs">
-                      {epicSearchQuery 
-                        ? 'No epics found matching your search' 
-                        : 'No epics available'
-                      }
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-gray-200">
-                      {filteredEpics.map(epic => (
-                        <label
-                          key={epic.issue_key}
-                          className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedEpicKeys.includes(epic.issue_key)}
-                            onChange={() => toggleEpic(epic.issue_key)}
-                            className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-400"
-                          />
-                          <div className="flex-1 flex items-center gap-2">
-                            <span className="text-xs font-semibold text-gray-900">{epic.issue_key}</span>
-                            <span className="text-xs text-gray-700">{epic.summary || ''}</span>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Selection count */}
-                <div className="mt-2 text-xs text-gray-600 flex-shrink-0 h-4">
-                  {selectedEpicKeys.length > 0 && (
-                    <span>{selectedEpicKeys.length} epic{selectedEpicKeys.length !== 1 ? 's' : ''} selected</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="px-4 py-2.5 bg-gray-50 rounded-b-xl flex gap-2 flex-shrink-0">
-                <button
-                  onClick={() => {
-                    setShowConnectEpicsModal(false);
-                    setGoalToConnectEpics(null);
-                    setSelectedEpicKeys([]);
-                    setEpicSearchQuery('');
-                  }}
-                  className="flex-1 bg-white text-gray-700 text-sm border border-gray-300 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConnectEpics}
-                  disabled={selectedEpicKeys.length === 0 || loadingEpics}
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm py-1.5 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-md"
-                >
-                  Connect {selectedEpicKeys.length} Epic{selectedEpicKeys.length !== 1 ? 's' : ''}
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
     </>
   );
 }

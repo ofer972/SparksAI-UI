@@ -10,7 +10,9 @@ interface Goal {
   issue_keys: Array<{
     issue_key: string;
     status: string;
+    status_category?: string | null;
     summary: string;
+    issue_type?: string | null;
     progress_percent: number;
   }>;
   status: string;
@@ -71,7 +73,7 @@ export function transformGoalsToHierarchy(
       items.push({
         key: sectionKey,
         parent: null,
-        'Section / Goal / Epic': 'Overall PI Goals',
+        'Section / Goal / Issues': 'Overall PI Goals',
         'Status': '',
         'Progress': '',
         'AI': '',
@@ -87,7 +89,7 @@ export function transformGoalsToHierarchy(
       items.push({
         key: goalKey,
         parent: sectionKey,
-        'Section / Goal / Epic': goal.goal_text,
+        'Section / Goal / Issues': goal.goal_text,
         'Status': goal.status,
         'Progress': '',
         'AI': goal.ai,
@@ -107,15 +109,17 @@ export function transformGoalsToHierarchy(
         items.push({
           key: `${prefix}-${epic.issue_key}`,
           parent: goalKey,
-          'Section / Goal / Epic': epic.summary,
+          'Section / Goal / Issues': epic.summary,
           'Status': epic.status,
           'Progress': epic.progress_percent,
           'AI': '',
           'Last Update': '',
-          // Store epic key and summary for link rendering
+          // Store epic key, summary, and issue type for link rendering
           _epicKey: epic.issue_key,
           _epicSummary: epic.summary,
+          _issueType: epic.issue_type || null,
           _parentGoalId: goal.id, // Store parent goal ID directly on epic for reliable access
+          status_category: epic.status_category || null, // Preserve status_category for color coding
         });
       });
     });
@@ -138,7 +142,7 @@ export function transformGoalsToHierarchy(
       items.push({
         key: sectionKey,
         parent: null,
-        'Section / Goal / Epic': `Group Goals: ${groupName}`,
+        'Section / Goal / Issues': `Group Goals: ${groupName}`,
         'Status': '',
         'Progress': '',
         'AI': '',
@@ -153,7 +157,7 @@ export function transformGoalsToHierarchy(
         items.push({
           key: goalKey,
           parent: sectionKey,
-          'Section / Goal / Epic': goal.goal_text,
+          'Section / Goal / Issues': goal.goal_text,
           'Status': goal.status,
           'Progress': '',
           'AI': goal.ai,
@@ -173,14 +177,16 @@ export function transformGoalsToHierarchy(
           items.push({
             key: `${prefix}-${epic.issue_key}`,
             parent: goalKey,
-            'Section / Goal / Epic': epic.summary,
+            'Section / Goal / Issues': epic.summary,
             'Status': epic.status,
             'Progress': epic.progress_percent,
             'AI': '',
             'Last Update': '',
             _epicKey: epic.issue_key,
             _epicSummary: epic.summary,
+            _issueType: epic.issue_type || null,
             _parentGoalId: goal.id, // Store parent goal ID directly on epic for reliable access
+            status_category: epic.status_category || null, // Preserve status_category for color coding
           });
         });
       });
@@ -194,7 +200,7 @@ export function transformGoalsToHierarchy(
       items.push({
         key: sectionKey,
         parent: null,
-        'Section / Goal / Epic': `Team Goals: ${teamGoal.team_name}`,
+        'Section / Goal / Issues': `Team Goals: ${teamGoal.team_name}`,
         'Status': '',
         'Progress': '',
         'AI': '',
@@ -209,7 +215,7 @@ export function transformGoalsToHierarchy(
         items.push({
           key: goalKey,
           parent: sectionKey,
-          'Section / Goal / Epic': goal.goal_text,
+          'Section / Goal / Issues': goal.goal_text,
           'Status': goal.status,
           'Progress': '',
           'AI': goal.ai,
@@ -229,14 +235,16 @@ export function transformGoalsToHierarchy(
           items.push({
             key: `${prefix}-${epic.issue_key}`,
             parent: goalKey,
-            'Section / Goal / Epic': epic.summary,
+            'Section / Goal / Issues': epic.summary,
             'Status': epic.status,
             'Progress': epic.progress_percent,
             'AI': '',
             'Last Update': '',
             _epicKey: epic.issue_key,
             _epicSummary: epic.summary,
+            _issueType: epic.issue_type || null,
             _parentGoalId: goal.id, // Store parent goal ID directly on epic for reliable access
+            status_category: epic.status_category || null, // Preserve status_category for color coding
           });
         });
       });

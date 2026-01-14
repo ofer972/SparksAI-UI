@@ -5,7 +5,7 @@ import PIFilter from '@/components/PIFilter';
 import TreeSelect from '@/components/TreeSelect';
 import InsightCategoryFilter from '@/components/InsightCategoryFilter';
 
-type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'custom-dashboards' | 'custom-dashboard-editor' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings' | 'user-settings';
+type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'custom-dashboards' | 'custom-dashboard-editor' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings' | 'user-settings' | 'pi-goals' | 'sprint-goals';
 
 interface MobileControlsPanelProps {
   activeNavItem: NavItemId;

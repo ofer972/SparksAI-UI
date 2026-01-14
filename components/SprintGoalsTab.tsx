@@ -3,15 +3,23 @@
 import { useState, useEffect, useRef } from 'react';
 import TeamGroupFilter from './TeamGroupFilter';
 import { ApiService } from '@/lib/api';
-import { useAIGoals } from '@/hooks/useAIGoals';
-import { useUserGoals } from '@/hooks/useUserGoals';
+import { useAISprintGoals } from '@/hooks/useAISprintGoals';
+import { useUserSprintGoals } from '@/hooks/useUserSprintGoals';
 import GoalsPanel from './GoalsPanel';
 import GoalsConfirmationModal from './pigoals/GoalsConfirmationModal';
 
-export default function PIGoalsTab() {
-  const [selectedPI, setSelectedPI] = useState<string>('');
-  const [availablePIs, setAvailablePIs] = useState<string[]>([]);
-  const [loadingPIs, setLoadingPIs] = useState(true);
+interface Sprint {
+  sprint_id: number;
+  sprint_name: string;
+  start_date: string | null;
+  end_date: string | null;
+  team_name?: string; // Optional - not always returned from backend
+}
+
+export default function SprintGoalsTab() {
+  const [selectedSprintId, setSelectedSprintId] = useState<number | null>(null);
+  const [availableSprints, setAvailableSprints] = useState<Sprint[]>([]);
+  const [loadingSprints, setLoadingSprints] = useState(true);
   const [selectedTeamValue, setSelectedTeamValue] = useState<string | null>(null);
   const [selectedTeamType, setSelectedTeamType] = useState<'team' | 'group' | null>(null);
   const [selectedTeamName, setSelectedTeamName] = useState<string | null>(null);
@@ -20,7 +28,6 @@ export default function PIGoalsTab() {
 
   const apiService = new ApiService();
   const hasInitializedRef = useRef(false);
-  const isAutoSelectingRef = useRef(false);
 
   // Use separate hooks for AI and User goals
   const {
@@ -28,11 +35,11 @@ export default function PIGoalsTab() {
     loading: aiLoading,
     error: aiGoalsError,
     refetch: refetchAIGoals,
-  } = useAIGoals(
-    selectedPI,
+  } = useAISprintGoals(
+    selectedSprintId || undefined,
     selectedTeamName || undefined,
     selectedTeamType === 'group',
-    !!selectedPI // enabled only when PI is selected
+    !!selectedSprintId // enabled only when sprint is selected
   );
 
   const {
@@ -40,84 +47,96 @@ export default function PIGoalsTab() {
     loading: userLoading,
     error: nonAiGoalsError,
     refetch: refetchUserGoals,
-  } = useUserGoals(
-    selectedPI,
+  } = useUserSprintGoals(
+    selectedSprintId || undefined,
     selectedTeamName || undefined,
     selectedTeamType === 'group',
-    !!selectedPI // enabled only when PI is selected
+    !!selectedSprintId // enabled only when sprint is selected
   );
 
   const loadingGoals = aiLoading || userLoading;
 
-  // Fetch available PIs
+  // Fetch available sprints
   useEffect(() => {
-    const fetchPIs = async () => {
+    const fetchSprints = async () => {
       try {
-        setLoadingPIs(true);
-        const response = await apiService.getPIs();
-        if (response.pis && Array.isArray(response.pis)) {
-          const piNames = response.pis.map((pi: any) => pi.pi_name);
-          setAvailablePIs(piNames);
+        setLoadingSprints(true);
+        const response = await apiService.getAvailableSprints(
+          selectedTeamName || undefined,
+          selectedTeamType === 'group'
+        );
+        if (response.success && response.data?.sprints) {
+          // Filter sprints based on date criteria:
+          // - Current: start_date <= today <= end_date
+          // - Upcoming: start_date - 14 days <= today < start_date
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          const filteredSprints = response.data.sprints.filter((sprint: Sprint) => {
+            if (!sprint.start_date || !sprint.end_date) return false;
+            
+            const startDate = new Date(sprint.start_date);
+            startDate.setHours(0, 0, 0, 0);
+            const endDate = new Date(sprint.end_date);
+            endDate.setHours(0, 0, 0, 0);
+            
+            // Current sprint: today between start and end
+            const isCurrent = startDate <= today && today <= endDate;
+            
+            // Upcoming sprint: today is up to 14 days before start
+            const fourteenDaysBeforeStart = new Date(startDate);
+            fourteenDaysBeforeStart.setDate(fourteenDaysBeforeStart.getDate() - 14);
+            const isUpcoming = today >= fourteenDaysBeforeStart && today < startDate;
+            
+            return isCurrent || isUpcoming;
+          });
+          
+          // Sort by start_date ascending
+          filteredSprints.sort((a: Sprint, b: Sprint) => {
+            if (!a.start_date || !b.start_date) return 0;
+            return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+          });
+          
+          setAvailableSprints(filteredSprints);
+          
+          // Preserve selected sprint if it exists in new list, otherwise select first sprint
+          setSelectedSprintId((currentSprintId) => {
+            if (currentSprintId !== null) {
+              const sprintExists = filteredSprints.some((s: Sprint) => s.sprint_id === currentSprintId);
+              if (sprintExists) {
+                // Selected sprint exists in new list - preserve it
+                return currentSprintId;
+              } else if (filteredSprints.length > 0) {
+                // Selected sprint not in new list - auto-select first sprint
+                return filteredSprints[0].sprint_id;
+              }
+              // No sprints available - clear selection
+              return null;
+            } else if (filteredSprints.length > 0) {
+              // No sprint selected - auto-select first sprint
+              return filteredSprints[0].sprint_id;
+            }
+            return null;
+          });
         }
       } catch (err) {
-        console.error('Error fetching PIs:', err);
+        console.error('Error fetching sprints:', err);
       } finally {
-        setLoadingPIs(false);
+        setLoadingSprints(false);
       }
     };
-    fetchPIs();
-  }, []);
-
-  // Auto-fetch current PI on mount if no PI is selected
-  useEffect(() => {
-    const fetchCurrentPI = async () => {
-      // Only run once on mount
-      if (hasInitializedRef.current) return;
-      
-      // Check if PI is already selected (shouldn't happen on mount, but just in case)
-      if (selectedPI) {
-        hasInitializedRef.current = true;
-        return;
-      }
-      
-      hasInitializedRef.current = true;
-      
-      try {
-        console.log('[PIGoalsTab] Fetching current PI...');
-        isAutoSelectingRef.current = true;
-        const piResponse = await apiService.getCurrentAndNextPIs();
-        console.log('[PIGoalsTab] PI response:', piResponse);
-        
-        // The API returns {current_pis: [], next_pis: []} structure
-        const currentPIs = (piResponse as any).current_pis || [];
-        if (currentPIs.length > 0) {
-          // Use the first PI from the current_pis list
-          const currentPIName = currentPIs[0].pi_name;
-          console.log('[PIGoalsTab] Setting current PI to:', currentPIName);
-          setSelectedPI(currentPIName);
-        } else {
-          console.warn('[PIGoalsTab] No current PIs returned from API');
-          isAutoSelectingRef.current = false;
-        }
-      } catch (piErr) {
-        console.error('[PIGoalsTab] Failed to load current PI:', piErr);
-        // Continue without PI - user can select one manually
-        isAutoSelectingRef.current = false;
-      }
-    };
-    
-    fetchCurrentPI();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
+    fetchSprints();
+  }, [selectedTeamName, selectedTeamType]);
 
   const handleTeamGroupChange = (value: string | null, type: 'group' | 'team', name: string) => {
     setSelectedTeamValue(value);
     setSelectedTeamType(type);
     setSelectedTeamName(name);
+    // Don't clear sprint - it will be preserved or auto-selected in useEffect
   };
 
   const handleSuggestGoals = () => {
-    if (!selectedPI) return;
+    if (!selectedSprintId) return;
     setShowConfirmModal(true);
   };
 
@@ -126,8 +145,8 @@ export default function PIGoalsTab() {
     setLoading(true);
 
     try {
-      await apiService.generatePIGoals(
-        selectedPI,
+      await apiService.generateSprintGoals(
+        selectedSprintId!,
         selectedTeamName || undefined,
         selectedTeamType === 'group'
       );
@@ -135,7 +154,7 @@ export default function PIGoalsTab() {
       refetchAIGoals();
       refetchUserGoals();
     } catch (err) {
-      console.error('Error generating PI goals:', err);
+      console.error('Error generating Sprint goals:', err);
     } finally {
       setLoading(false);
     }
@@ -145,40 +164,35 @@ export default function PIGoalsTab() {
     setShowConfirmModal(false);
   };
 
-  // Clear auto-selecting flag when PI is set (after state update)
-  useEffect(() => {
-    if (selectedPI && isAutoSelectingRef.current) {
-      // PI was just set from auto-select, clear the flag
-      isAutoSelectingRef.current = false;
-    }
-  }, [selectedPI]);
-
-
-  const isButtonEnabled = !!selectedPI;
+  const isButtonEnabled = !!selectedSprintId;
   const teamGroupText = selectedTeamName 
     ? `${selectedTeamType === 'group' ? 'group' : 'team'} ${selectedTeamName}`
     : 'all teams';
+
+  const selectedSprint = availableSprints.find(s => s.sprint_id === selectedSprintId);
 
   return (
     <div className="h-full flex flex-col space-y-4">
       {/* Filters and Button Section - Same Row */}
       <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
         <div className="flex flex-col md:flex-row gap-4 items-center">
-          {/* PI Filter - Label and field in one line */}
+          {/* Sprint Filter - Label and field in one line */}
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-              PI <span className="text-red-500">*</span>
+              Sprint <span className="text-red-500">*</span>
             </label>
             <select
-              value={selectedPI}
-              onChange={(e) => setSelectedPI(e.target.value)}
-              disabled={loadingPIs}
-              className="w-32 md:w-40 px-2 py-1 border border-gray-300 rounded text-xs bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed h-[34px]"
+              value={selectedSprintId || ''}
+              onChange={(e) => setSelectedSprintId(e.target.value ? parseInt(e.target.value, 10) : null)}
+              disabled={loadingSprints}
+              className="w-64 md:w-80 px-2 py-1 border border-gray-300 rounded text-xs bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed h-[34px]"
             >
-              <option value="">Select PI</option>
-              {availablePIs.map((pi) => (
-                <option key={pi} value={pi}>
-                  {pi}
+              <option value="">Select Sprint</option>
+              {availableSprints.map((sprint) => (
+                <option key={sprint.sprint_id} value={sprint.sprint_id}>
+                  {sprint.sprint_name} {sprint.start_date && sprint.end_date 
+                    ? `(${new Date(sprint.start_date).toLocaleDateString()} - ${new Date(sprint.end_date).toLocaleDateString()})`
+                    : ''}
                 </option>
               ))}
             </select>
@@ -218,7 +232,7 @@ export default function PIGoalsTab() {
       </div>
 
       {/* Goals Table Section - Two Panels */}
-      {selectedPI && (
+      {selectedSprintId && (
         <div className="flex-1 flex flex-col min-h-0">
           {/* Two Panels Side by Side - AI panel 40% width, User panel takes remaining space */}
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-[40%_1fr] gap-4 min-h-0">
@@ -238,8 +252,8 @@ export default function PIGoalsTab() {
                 refetchUserGoals();
               }}
               onRefresh={refetchAIGoals}
-              scopeType="pi"
-              piName={selectedPI}
+              scopeType="sprint"
+              sprintId={selectedSprintId}
               teamName={selectedTeamName || undefined}
               isGroup={selectedTeamType === 'group'}
             />
@@ -252,8 +266,8 @@ export default function PIGoalsTab() {
               loading={loadingGoals}
               error={nonAiGoalsError}
               onRefresh={refetchUserGoals}
-              scopeType="pi"
-              piName={selectedPI}
+              scopeType="sprint"
+              sprintId={selectedSprintId}
               teamName={selectedTeamName || undefined}
               isGroup={selectedTeamType === 'group'}
             />
@@ -270,7 +284,7 @@ export default function PIGoalsTab() {
         message={
           <>
             <p className="mb-2">
-              Do you want to suggest goals for PI <span className="font-semibold">{selectedPI}</span>
+              Do you want to suggest goals for Sprint <span className="font-semibold">{selectedSprint?.sprint_name || selectedSprintId}</span>
               {selectedTeamName && (
                 <> and {teamGroupText}</>
               )}

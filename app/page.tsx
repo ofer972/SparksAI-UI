@@ -31,6 +31,8 @@ import CustomDashboardsView from '@/components/CustomDashboardsView';
 import CustomDashboardEditor from '@/components/CustomDashboardEditor';
 import { getUserDashboards, getUserPreferences } from '@/lib/api';
 import type { CustomDashboard } from '@/lib/config';
+import PIGoalsTab from '@/components/PIGoalsTab';
+import SprintGoalsTab from '@/components/SprintGoalsTab';
 
 export default function Home() {
   const router = useRouter();
@@ -134,7 +136,7 @@ export default function Home() {
     }
   };
 
-  type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'custom-dashboards' | 'custom-dashboard-editor' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings' | 'user-settings';
+  type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'custom-dashboards' | 'custom-dashboard-editor' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings' | 'user-settings' | 'pi-goals' | 'sprint-goals';
   const [activeNavItem, setActiveNavItem] = useState<NavItemId>('team-ai-insights');
   const prevActiveNavItemRef = useRef<NavItemId>(activeNavItem);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -997,6 +999,8 @@ export default function Home() {
     { id: 'general-data', label: 'View General Data', icon: '📁' },
     { id: 'create-agent-job', label: 'Create Agent Job', icon: '➕' },
     { id: 'upload-transcripts', label: 'Upload Transcripts', icon: '⬆️' },
+    { id: 'pi-goals', label: 'PI Goals', icon: '🎯' },
+    { id: 'sprint-goals', label: 'Sprint Goals', icon: '▶️' },
     ...(isAdmin ? [
       { id: 'users-admin', label: 'Users', icon: '👥' },
       { id: 'teams-and-meetings', label: 'Teams & Meetings', icon: '📅' },
@@ -1027,6 +1031,14 @@ export default function Home() {
         <circle cx="12" cy="12" r="10" strokeLinecap="round" strokeLinejoin="round" />
         <circle cx="12" cy="12" r="6" strokeLinecap="round" strokeLinejoin="round" />
         <circle cx="12" cy="12" r="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </SidebarIcon>
+  );
+
+  const IconFlag = () => (
+    <SidebarIcon>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 3l14 9-14 9V3z" />
       </svg>
     </SidebarIcon>
   );
@@ -1140,6 +1152,13 @@ export default function Home() {
       ],
     },
     {
+      title: 'Goals',
+      items: [
+        { id: 'pi-goals', label: 'PI Goals', icon: <IconTarget /> },
+        { id: 'sprint-goals', label: 'Sprint Goals', icon: <IconFlag /> },
+      ],
+    },
+    {
       title: 'My Dashboards',
       items: customDashboards.map((dashboard) => ({
         id: `custom-dashboard-${dashboard.id}`,
@@ -1180,6 +1199,7 @@ export default function Home() {
   // Track which accordion groups are expanded
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     'System Dashboards': true,
+    'Goals': true,
     'My Dashboards': true,
     Management: true,
     Administration: true,
@@ -1310,6 +1330,10 @@ export default function Home() {
         return <DataSyncView activeSubView="settings" />;
       case 'user-settings':
         return <UserSettingsView />;
+      case 'pi-goals':
+        return <PIGoalsTab />;
+      case 'sprint-goals':
+        return <SprintGoalsTab />;
       case 'custom-dashboards':
         return (
           <CustomDashboardsView
