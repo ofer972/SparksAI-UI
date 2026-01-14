@@ -7,6 +7,7 @@ import { useAISprintGoals } from '@/hooks/useAISprintGoals';
 import { useUserSprintGoals } from '@/hooks/useUserSprintGoals';
 import GoalsPanel from './GoalsPanel';
 import GoalsConfirmationModal from './pigoals/GoalsConfirmationModal';
+import { useDefaultTeamGroup } from '@/hooks/useDefaultTeamGroup';
 
 interface Sprint {
   sprint_id: number;
@@ -127,6 +128,14 @@ export default function SprintGoalsTab() {
     };
     fetchSprints();
   }, [selectedTeamName, selectedTeamType]);
+
+  // Load default team/group from user preferences
+  useDefaultTeamGroup({
+    selectedTeamValue,
+    setSelectedTeamValue,
+    setSelectedTeamType,
+    setSelectedTeamName,
+  });
 
   const handleTeamGroupChange = (value: string | null, type: 'group' | 'team', name: string) => {
     setSelectedTeamValue(value);

@@ -31,6 +31,7 @@ import CustomDashboardsView from '@/components/CustomDashboardsView';
 import CustomDashboardEditor from '@/components/CustomDashboardEditor';
 import { getUserDashboards, getUserPreferences } from '@/lib/api';
 import type { CustomDashboard } from '@/lib/config';
+import GoalProgressTab from '@/components/GoalProgressTab';
 import PIGoalsTab from '@/components/PIGoalsTab';
 import SprintGoalsTab from '@/components/SprintGoalsTab';
 
@@ -136,7 +137,7 @@ export default function Home() {
     }
   };
 
-  type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'custom-dashboards' | 'custom-dashboard-editor' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings' | 'user-settings' | 'pi-goals' | 'sprint-goals';
+  type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'custom-dashboards' | 'custom-dashboard-editor' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings' | 'user-settings' | 'goal-progress' | 'pi-goals' | 'sprint-goals';
   const [activeNavItem, setActiveNavItem] = useState<NavItemId>('team-ai-insights');
   const prevActiveNavItemRef = useRef<NavItemId>(activeNavItem);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -999,8 +1000,9 @@ export default function Home() {
     { id: 'general-data', label: 'View General Data', icon: '📁' },
     { id: 'create-agent-job', label: 'Create Agent Job', icon: '➕' },
     { id: 'upload-transcripts', label: 'Upload Transcripts', icon: '⬆️' },
-    { id: 'pi-goals', label: 'PI Goals', icon: '🎯' },
-    { id: 'sprint-goals', label: 'Sprint Goals', icon: '▶️' },
+    { id: 'goal-progress', label: 'Goal Progress', icon: '📊' },
+    { id: 'pi-goals', label: 'Define PI Goals', icon: '🎯' },
+    { id: 'sprint-goals', label: 'Define Sprint Goals', icon: '▶️' },
     ...(isAdmin ? [
       { id: 'users-admin', label: 'Users', icon: '👥' },
       { id: 'teams-and-meetings', label: 'Teams & Meetings', icon: '📅' },
@@ -1154,8 +1156,9 @@ export default function Home() {
     {
       title: 'Goals',
       items: [
-        { id: 'pi-goals', label: 'PI Goals', icon: <IconTarget /> },
-        { id: 'sprint-goals', label: 'Sprint Goals', icon: <IconFlag /> },
+        { id: 'goal-progress', label: 'Goal Progress', icon: <IconChartBar /> },
+        { id: 'pi-goals', label: 'Define PI Goals', icon: <IconTarget /> },
+        { id: 'sprint-goals', label: 'Define Sprint Goals', icon: <IconFlag /> },
       ],
     },
     {
@@ -1330,6 +1333,8 @@ export default function Home() {
         return <DataSyncView activeSubView="settings" />;
       case 'user-settings':
         return <UserSettingsView />;
+      case 'goal-progress':
+        return <GoalProgressTab />;
       case 'pi-goals':
         return <PIGoalsTab />;
       case 'sprint-goals':

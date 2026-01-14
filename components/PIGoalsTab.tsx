@@ -7,6 +7,7 @@ import { useAIGoals } from '@/hooks/useAIGoals';
 import { useUserGoals } from '@/hooks/useUserGoals';
 import GoalsPanel from './GoalsPanel';
 import GoalsConfirmationModal from './pigoals/GoalsConfirmationModal';
+import { useDefaultTeamGroup } from '@/hooks/useDefaultTeamGroup';
 
 export default function PIGoalsTab() {
   const [selectedPI, setSelectedPI] = useState<string>('');
@@ -109,6 +110,14 @@ export default function PIGoalsTab() {
     fetchCurrentPI();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
+
+  // Load default team/group from user preferences
+  useDefaultTeamGroup({
+    selectedTeamValue,
+    setSelectedTeamValue,
+    setSelectedTeamType,
+    setSelectedTeamName,
+  });
 
   const handleTeamGroupChange = (value: string | null, type: 'group' | 'team', name: string) => {
     setSelectedTeamValue(value);
