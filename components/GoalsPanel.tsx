@@ -222,7 +222,7 @@ export default function GoalsPanel({
       });
     } else {
       // In edit mode, only show relevant field based on current goal type
-      if (!isOverallGoal) {
+      // if (!isOverallGoal) {
         if (isTeamGoal) {
           teamGroupFields.push({
             key: 'team_name',
@@ -246,7 +246,7 @@ export default function GoalsPanel({
             placeholder: 'Select group',
           });
         }
-      }
+      // }
     }
     
     // Insert Team/Group fields after Goal Type
