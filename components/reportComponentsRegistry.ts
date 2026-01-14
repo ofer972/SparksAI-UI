@@ -18,6 +18,7 @@ import TeamVelocityView from './reportViews/TeamVelocityView';
 import ActiveSprintSummaryView from './reportViews/ActiveSprintSummaryView';
 import WIPOverTimeView from './reportViews/WIPOverTimeView';
 import CycleTimeView from './reportViews/CycleTimeView';
+import GoalProgressView from './reportViews/GoalProgressView';
 import type { ReportDefinition } from '@/lib/config';
 
 export interface ReportRenderContext {
@@ -324,6 +325,43 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
       error,
       meta,
     }),
+  },
+  'goal-progress': {
+    component: GoalProgressView,
+    requiredFilters: ['scope_type'],
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => {
+      // The backend returns { data: {...}, meta: {...} }
+      // Handle both cases: result might be the full response or just the data
+      let goalsData = null;
+      
+      if (result) {
+        // If result has a 'data' property, extract it (full response format)
+        if (result.data && typeof result.data === 'object') {
+          goalsData = result.data;
+        } 
+        // Otherwise, result might already be the data (if report system extracted it)
+        else if (result.scope_type || result.overall_goals || result.team_goals || result.group_goals) {
+          goalsData = result;
+        }
+      }
+      
+      // Wrap in the format expected by transformGoalsToHierarchy
+      // which expects { success: boolean, data: {...}, message: string }
+      const wrappedData = goalsData ? {
+        success: true,
+        data: goalsData,
+        message: 'Goal progress data retrieved successfully'
+      } : null;
+      
+      return {
+        data: wrappedData,
+        loading,
+        error,
+        meta,
+        filters,
+        refresh,
+      };
+    },
   },
 };
 

@@ -14,6 +14,8 @@ interface Goal {
     summary: string;
     issue_type?: string | null;
     progress_percent: number;
+    number_of_children?: number;
+    number_of_completed_children?: number;
   }>;
   status: string;
   priority_bv: number | null;
@@ -120,6 +122,8 @@ export function transformGoalsToHierarchy(
           _issueType: epic.issue_type || null,
           _parentGoalId: goal.id, // Store parent goal ID directly on epic for reliable access
           status_category: epic.status_category || null, // Preserve status_category for color coding
+          _numberOfChildren: epic.number_of_children || 0, // Store number of children for progress tooltip
+          _numberOfCompletedChildren: epic.number_of_completed_children || 0, // Store completed children for progress tooltip
         });
       });
     });
@@ -187,6 +191,8 @@ export function transformGoalsToHierarchy(
             _issueType: epic.issue_type || null,
             _parentGoalId: goal.id, // Store parent goal ID directly on epic for reliable access
             status_category: epic.status_category || null, // Preserve status_category for color coding
+            _numberOfChildren: epic.number_of_children || 0, // Store number of children for progress tooltip
+            _numberOfCompletedChildren: epic.number_of_completed_children || 0, // Store completed children for progress tooltip
           });
         });
       });
@@ -245,6 +251,8 @@ export function transformGoalsToHierarchy(
             _issueType: epic.issue_type || null,
             _parentGoalId: goal.id, // Store parent goal ID directly on epic for reliable access
             status_category: epic.status_category || null, // Preserve status_category for color coding
+            _numberOfChildren: epic.number_of_children || 0, // Store number of children for progress tooltip
+            _numberOfCompletedChildren: epic.number_of_completed_children || 0, // Store completed children for progress tooltip
           });
         });
       });
