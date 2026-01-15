@@ -3,8 +3,8 @@ import './globals.css';
 import { Providers } from '@/contexts/Providers';
 
 export const metadata: Metadata = {
-  title: 'SparksAI Burndown Chart',
-  description: 'Sprint burndown chart visualization for SparksAI',
+  title: 'SparksAI Insights & Dasboards',
+  description: 'Agile and SAFe metrics, insights with recommendations  and dashboards',
 };
 
 export default function RootLayout({
