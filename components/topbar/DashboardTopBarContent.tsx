@@ -157,7 +157,9 @@ export default function DashboardTopBarContent({
  />
  
         {/* Mobile User Menu */}
-        <UserDropdownMenu onOpenSettings={onNavigateToSettings} />
+        <div className="mr-2">
+          <UserDropdownMenu onOpenSettings={onNavigateToSettings} />
+        </div>
  </div>
  </div>
 
@@ -340,7 +342,9 @@ export default function DashboardTopBarContent({
  />
  
           {/* User Dropdown Menu */}
-          <UserDropdownMenu onOpenSettings={onNavigateToSettings} />
+          <div className="mr-3">
+            <UserDropdownMenu onOpenSettings={onNavigateToSettings} />
+          </div>
  </div>
  </div>
  </div>

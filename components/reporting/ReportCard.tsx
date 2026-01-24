@@ -232,51 +232,47 @@ const ReportCard: React.FC<ReportCardProps> = ({
 
     {(hideHeader || !collapsed) && (
       <div className="flex-1 flex flex-col min-h-0 rounded-b-xl overflow-visible">
-        {/* Inline Title when header is hidden */}
-        {hideHeader && title && (
-          <div className="flex-shrink-0 px-4 py-2 border-b border-outline">
-            <h3 className="text-sm font-semibold text-content-primary">{title}</h3>
+        {/* Title bar with optional filter badges - shown when header is hidden OR when there are filter badges */}
+        {(hideHeader || (filterBadges && filterBadges.length > 0)) && (
+          <div className="flex-shrink-0 px-4 py-1.5 border-b border-outline bg-gradient-to-r from-blue-25 to-indigo-25">
+            <div className="flex flex-wrap gap-1.5 items-center">
+              {/* Show report title when header is hidden, otherwise show "Active Filters:" */}
+              <span className={`text-xs mr-0.5 ${hideHeader ? 'font-bold text-content-primary' : 'font-semibold text-content-tertiary'}`}>
+                {hideHeader ? title : 'Active Filters:'}
+              </span>
+              {filterBadges && filterBadges.map((badge, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => badge.filterKey && onTogglePin?.(badge.filterKey)}
+                  disabled={!badge.filterKey || !onTogglePin}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border transition-all ${
+                    badge.isPinned
+                      ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-300 border-amber-300 dark:border-amber-700 hover:bg-amber-200 dark:hover:bg-amber-900/60 cursor-pointer'
+                      : onTogglePin && badge.filterKey
+                      ? 'bg-brand/20 text-blue-800 dark:text-blue-300 border-blue-200 border-blue-700 hover:bg-blue-200 dark:hover:bg-blue-900/60 cursor-pointer'
+                      : 'bg-brand/20 text-blue-800 dark:text-blue-300 border-blue-200 border-blue-700 cursor-default'
+                  }`}
+                  title={
+                    badge.isPinned
+                      ? 'Click to unpin - filter will sync with top bar'
+                      : onTogglePin && badge.filterKey
+                      ? 'Click to pin - filter will be locked to this value'
+                      : undefined
+                  }
+                >
+                  {badge.isPinned && (
+                    <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />
+                    </svg>
+                  )}
+                  <span className="font-semibold">{badge.label}:</span>
+                  <span className="ml-0.5">{badge.value}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
-
-        {/* Active Filter Badges */}
-        {filterBadges && filterBadges.length > 0 && (
- <div className="flex-shrink-0 px-4 py-1.5 border-b border-outline bg-gradient-to-r from-blue-25 to-indigo-25">
- <div className="flex flex-wrap gap-1.5 items-center">
- <span className="text-xs font-semibold text-content-tertiary mr-0.5">Active Filters:</span>
- {filterBadges.map((badge, index) => (
- <button
- key={index}
- type="button"
- onClick={() => badge.filterKey && onTogglePin?.(badge.filterKey)}
- disabled={!badge.filterKey || !onTogglePin}
- className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border transition-all ${
- badge.isPinned
- ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-300 border-amber-300 dark:border-amber-700 hover:bg-amber-200 dark:hover:bg-amber-900/60 cursor-pointer'
- : onTogglePin && badge.filterKey
- ? 'bg-brand/20 text-blue-800 dark:text-blue-300 border-blue-200 border-blue-700 hover:bg-blue-200 dark:hover:bg-blue-900/60 cursor-pointer'
- : 'bg-brand/20 text-blue-800 dark:text-blue-300 border-blue-200 border-blue-700 cursor-default'
- }`}
- title={
- badge.isPinned
- ? 'Click to unpin - filter will sync with top bar'
- : onTogglePin && badge.filterKey
- ? 'Click to pin - filter will be locked to this value'
- : undefined
- }
- >
- {badge.isPinned && (
- <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
- <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />
- </svg>
- )}
- <span className="font-semibold">{badge.label}:</span>
- <span className="ml-0.5">{badge.value}</span>
- </button>
- ))}
- </div>
- </div>
- )}
  
  {filters && !filtersCollapsed && (
  <div className="flex-shrink-0 px-4 py-3 border-b-2 border-outline bg-gradient-to-r from-surface to-surface-elevated">
