@@ -53,7 +53,8 @@ export default function DORAMetricCard({
   children,
 }: DORAMetricCardProps) {
   return (
-    <MetricCard
+    <div className="h-full flex flex-col min-h-0">
+      <MetricCard
       title={title}
       metricName={metricName}
       tier={tier}
@@ -76,9 +77,10 @@ export default function DORAMetricCard({
           availableEnvironments={availableEnvironments}
         />
       }
-    >
-      {children}
-    </MetricCard>
+      >
+        {children}
+      </MetricCard>
+    </div>
   );
 }
 

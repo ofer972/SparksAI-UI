@@ -8,14 +8,16 @@ import GitHubMetricsTab from './GitHubMetricsTab';
 
 export default function DORAAnalysisTab() {
   return (
-    <GitHubMetricsTab
-      cards={[
-        <DeploymentFrequencyCard key="deployment-frequency" />,
-        <RecoveryTimeCard key="recovery-time" />,
-        <ChangeFailureRateCard key="change-failure-rate" />,
-        <LeadTimeCard key="lead-time" />,
-      ]}
-    />
+    <div className="h-full flex flex-col min-h-0 overflow-hidden">
+      <GitHubMetricsTab
+        cards={[
+          <DeploymentFrequencyCard key="deployment-frequency" />,
+          <RecoveryTimeCard key="recovery-time" />,
+          <ChangeFailureRateCard key="change-failure-rate" />,
+          <LeadTimeCard key="lead-time" />,
+        ]}
+      />
+    </div>
   );
 }
 

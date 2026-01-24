@@ -51,31 +51,33 @@ export default function PRWorkflowMetricCard({
   children,
 }: PRWorkflowMetricCardProps) {
   return (
-    <MetricCard
-      title={title}
-      metricName={metricName}
-      tier={tier}
-      tierLabel={tierLabel}
-      filterBadges={filterBadges}
-      onRefresh={onRefresh}
-      loading={loading}
-      error={error}
-      loadingText={loadingText}
-      summaryContent={summaryContent}
-      filters={
-        <PRWorkflowFilters
-          githubRepoIds={githubRepoIds}
-          months={months}
-          prState={prState}
-          onGithubRepoIdsChange={onGithubRepoIdsChange}
-          onMonthsChange={onMonthsChange}
-          onPrStateChange={onPrStateChange}
-          availableRepositories={repositories}
-        />
-      }
-    >
-      {children}
-    </MetricCard>
+    <div className="h-full flex flex-col min-h-0">
+      <MetricCard
+        title={title}
+        metricName={metricName}
+        tier={tier}
+        tierLabel={tierLabel}
+        filterBadges={filterBadges}
+        onRefresh={onRefresh}
+        loading={loading}
+        error={error}
+        loadingText={loadingText}
+        summaryContent={summaryContent}
+        filters={
+          <PRWorkflowFilters
+            githubRepoIds={githubRepoIds}
+            months={months}
+            prState={prState}
+            onGithubRepoIdsChange={onGithubRepoIdsChange}
+            onMonthsChange={onMonthsChange}
+            onPrStateChange={onPrStateChange}
+            availableRepositories={repositories}
+          />
+        }
+      >
+        {children}
+      </MetricCard>
+    </div>
   );
 }
 
