@@ -12,24 +12,27 @@ interface SparksAILogoProps {
 export default function SparksAILogo({ collapsed = false, size = 'medium' }: SparksAILogoProps) {
   const { theme } = useTheme();
   const sizeClasses = {
-    small: 'w-16 h-16',    // 64px
-    medium: 'w-[80px] h-[32px]',   // 80px x 32px
-    large: 'w-32 h-32'     // 128px
+    small: 'w-20 h-20',    // 80px (was 64px)
+    medium: 'w-[100px] h-[40px]',   // 100px x 40px (was 80x32)
+    large: 'w-40 h-40'     // 160px (was 128px)
   };
 
   // Determine which logo to use based on theme
   const isDarkTheme = theme === 'midnight' || theme === 'dark';
   const logoSource = isDarkTheme ? '/SparksAIBlack.png' : '/SparksAI.png';
 
+  // Determine which collapsed icon to use based on theme
+  const collapsedLogoSource = isDarkTheme ? '/logoblack.png' : '/logowhite.png';
+
   // Show icon logo when sidebar is collapsed
   if (collapsed) {
     return (
-      <div className="w-12 h-12 relative">
+      <div className="w-10 h-10 relative">
         <Image
-          src="/logo.png"
+          src={collapsedLogoSource}
           alt="SparksAI"
-          width={48}
-          height={48}
+          width={40}
+          height={40}
           className="w-full h-full object-contain"
           quality={100}
           priority
@@ -43,8 +46,8 @@ export default function SparksAILogo({ collapsed = false, size = 'medium' }: Spa
         <Image
           src={logoSource}
           alt="SparksAI Logo"
-          width={size === 'small' ? 64 : size === 'medium' ? 80 : 128}
-          height={size === 'small' ? 64 : size === 'medium' ? 32 : 128}
+          width={size === 'small' ? 80 : size === 'medium' ? 100 : 160}
+          height={size === 'small' ? 80 : size === 'medium' ? 40 : 160}
           className="w-full h-full object-contain"
           quality={100}
           priority
