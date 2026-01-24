@@ -27,12 +27,12 @@ export default function SparksAILogo({ collapsed = false, size = 'medium' }: Spa
   // Show icon logo when sidebar is collapsed
   if (collapsed) {
     return (
-      <div className="w-10 h-10 relative">
+      <div className="w-8 h-8 relative">
         <Image
           src={collapsedLogoSource}
           alt="SparksAI"
-          width={40}
-          height={40}
+          width={32}
+          height={32}
           className="w-full h-full object-contain"
           quality={100}
           priority

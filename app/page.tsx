@@ -1739,40 +1739,55 @@ sidebarCollapsed ? 'w-16' : 'w-56'
               <nav className={`flex-1 overflow-y-auto px-3 bg-gradient-to-b from-surface to-surface-elevated border border-outline rounded-tl-2xl ${
  sidebarCollapsed ? 'pt-3 pb-0' : 'pt-3 pb-3'
  }`}>
- {sidebarCollapsed ? (
- <div className="space-y-1">
- {/* Home Button - Collapsed */}
- <button
- onClick={() => handleNavigation('home')}
- className={`w-full flex items-center justify-center px-2 py-2.5 rounded-lg transition-colors duration-200 border ${
- activeNavItem === 'home'
- ? 'bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 dark:from-indigo-900/40 dark:via-indigo-900/40 dark:to-purple-900/40 text-indigo-700 dark:text-indigo-300 shadow-md border-indigo-200/60 dark:border-indigo-700/60'
- : 'text-content-tertiary border-transparent hover:bg-surface-elevated hover:text-content-primary'
- }`}
- title="Home"
- >
- <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
- <path strokeLinecap="round" strokeLinejoin="round" d="M3 10.5L12 3l9 7.5V21a1.5 1.5 0 01-1.5 1.5H15a1.5 1.5 0 01-1.5-1.5v-6h-3v6A1.5 1.5 0 019 22.5H4.5A1.5 1.5 0 013 21v-10.5z" />
- </svg>
- </button>
- <div className="border-b border-outline my-2"></div>
- {navigationGroups.flatMap((g) => g.items.flatMap(item => 
- item.children ? [item, ...item.children] : [item]
- )).map((item) => (
- <button
- key={item.id}
- onClick={() => handleNavigation(item.id as NavItemId)}
- className={`w-full flex items-center justify-center px-2 py-2.5 rounded-lg transition-colors duration-200 border ${
- activeNavItem === item.id || (item.id.startsWith('custom-dashboard-') && selectedCustomDashboardId === item.id.replace('custom-dashboard-', '') && activeNavItem === 'custom-dashboard-editor')
- ? 'bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 dark:from-indigo-900/40 dark:via-indigo-900/40 dark:to-purple-900/40 text-indigo-700 dark:text-indigo-300 shadow-md border-indigo-200/60 dark:border-indigo-700/60'
- : 'text-content-tertiary border-transparent hover:bg-surface-elevated hover:text-content-primary'
- }`}
- title={item.label}
- >
- <span className="flex items-center justify-center">{item.icon}</span>
- </button>
- ))}
- </div>
+      {sidebarCollapsed ? (
+        <div className="space-y-1">
+          {/* Home Button - Collapsed */}
+          <button
+            onClick={() => handleNavigation('home')}
+            className={`w-full flex items-center justify-center px-2 py-2.5 rounded-lg transition-colors duration-200 border ${
+              activeNavItem === 'home'
+                ? 'bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 dark:from-indigo-900/40 dark:via-indigo-900/40 dark:to-purple-900/40 text-indigo-700 dark:text-indigo-300 shadow-md border-indigo-200/60 dark:border-indigo-700/60'
+                : 'text-content-tertiary border-transparent hover:bg-surface-elevated hover:text-content-primary'
+            }`}
+            title="Home"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 10.5L12 3l9 7.5V21a1.5 1.5 0 01-1.5 1.5H15a1.5 1.5 0 01-1.5-1.5v-6h-3v6A1.5 1.5 0 019 22.5H4.5A1.5 1.5 0 013 21v-10.5z" />
+            </svg>
+          </button>
+          <div className="border-b border-outline my-2"></div>
+          {navigationGroups.flatMap((g) => {
+            // For "My Dashboards" group, show only a single "My Dashboards" icon when collapsed
+            if (g.title === 'My Dashboards') {
+              return [{
+                id: 'custom-dashboards',
+                label: 'My Dashboards',
+                icon: <IconDashboard />
+              }];
+            }
+            // For other groups, flatten items normally but exclude custom dashboard items
+            return g.items.flatMap(item => {
+              // Skip individual custom dashboard items
+              if (item.id.startsWith('custom-dashboard-')) {
+                return [];
+              }
+              return item.children ? [item, ...item.children] : [item];
+            });
+          }).map((item) => (
+            <button
+              key={item.id}
+              onClick={() => handleNavigation(item.id as NavItemId)}
+              className={`w-full flex items-center justify-center px-2 py-2.5 rounded-lg transition-colors duration-200 border ${
+                activeNavItem === item.id || (item.id === 'custom-dashboards' && activeNavItem === 'custom-dashboards') || (item.id.startsWith('custom-dashboard-') && selectedCustomDashboardId === item.id.replace('custom-dashboard-', '') && activeNavItem === 'custom-dashboard-editor')
+                  ? 'bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 dark:from-indigo-900/40 dark:via-indigo-900/40 dark:to-purple-900/40 text-indigo-700 dark:text-indigo-300 shadow-md border-indigo-200/60 dark:border-indigo-700/60'
+                  : 'text-content-tertiary border-transparent hover:bg-surface-elevated hover:text-content-primary'
+              }`}
+              title={item.label}
+            >
+              <span className="flex items-center justify-center">{item.icon}</span>
+            </button>
+          ))}
+        </div>
  ) : (
  <div className="space-y-3">
  {/* Home Button - Expanded */}
