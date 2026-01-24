@@ -91,8 +91,8 @@ export default function ResizableGrid({
             <div
               className={`h-1 cursor-row-resize transition-all relative group ${
                 isDraggingVertical && activeVerticalResizer === index
-                  ? 'bg-blue-500'
-                  : 'bg-transparent hover:bg-blue-500'
+                  ? 'bg-brand'
+                  : 'bg-transparent hover:bg-brand'
               }`}
               onMouseDown={handleVerticalMouseDown(index)}
               style={{ cursor: 'row-resize' }}
@@ -101,7 +101,7 @@ export default function ResizableGrid({
                 <div
                   className={`h-0.5 w-full transition-colors ${
                     isDraggingVertical && activeVerticalResizer === index
-                      ? 'bg-blue-500'
+                      ? 'bg-brand'
                       : 'bg-transparent group-hover:bg-blue-400'
                   }`}
                 ></div>

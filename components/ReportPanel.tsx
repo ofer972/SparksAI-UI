@@ -274,7 +274,7 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
             refresh,
             togglePin,
             pinnedFilters: Array.from(pinnedFilters),
-            componentProps: { ...componentProps, reportId },
+            componentProps: { hideCollapse: true, ...componentProps, reportId },
             missingFilters: context.missingFilters,
             requiredFilters: context.requiredFilters,
           };

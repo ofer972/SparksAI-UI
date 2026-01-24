@@ -47,13 +47,13 @@ export default function FieldsDialog({ settings, customFields, onClose, onSaved 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+      <div className="bg-surface rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
         <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">🔧 Select Fields</h2>
             <button
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 text-2xl"
+              className="text-content-tertiary hover:text-content-secondary text-2xl"
             >
               ×
             </button>
@@ -68,7 +68,7 @@ export default function FieldsDialog({ settings, customFields, onClose, onSaved 
 
         {Object.keys(customFields).length === 0 ? (
           <div className="flex-1 p-6 flex items-center justify-center">
-            <div className="text-gray-600">Loading JIRA custom fields...</div>
+            <div className="text-content-secondary">Loading JIRA custom fields...</div>
           </div>
         ) : (
           <>
@@ -78,13 +78,13 @@ export default function FieldsDialog({ settings, customFields, onClose, onSaved 
                 <h3 className="font-semibold mb-3">Core Fields</h3>
                 <div className="space-y-2">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-                    <label className="text-sm font-medium text-gray-700 w-full sm:w-48 flex-shrink-0">
+                    <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
                       Program Increment (PI) Field:
                     </label>
                     <select
                       value={piField}
                       onChange={(e) => setPiField(e.target.value)}
-                      className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm"
+                      className="flex-1 border border-outline rounded px-3 py-1.5 text-sm"
                     >
                       <option value="">--- Not Set ---</option>
                       {Object.entries(customFields).map(([id, name]) => (
@@ -96,13 +96,13 @@ export default function FieldsDialog({ settings, customFields, onClose, onSaved 
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-                    <label className="text-sm font-medium text-gray-700 w-full sm:w-48 flex-shrink-0">
+                    <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
                       Sprint Field:
                     </label>
                     <select
                       value={sprintField}
                       onChange={(e) => setSprintField(e.target.value)}
-                      className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm"
+                      className="flex-1 border border-outline rounded px-3 py-1.5 text-sm"
                     >
                       <option value="sprint">Sprint (System Default)</option>
                       {Object.entries(customFields).map(([id, name]) => (
@@ -114,13 +114,13 @@ export default function FieldsDialog({ settings, customFields, onClose, onSaved 
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-                    <label className="text-sm font-medium text-gray-700 w-full sm:w-48 flex-shrink-0">
+                    <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
                       Sizing Field (e.g., Story Points):
                     </label>
                     <select
                       value={sizingField}
                       onChange={(e) => setSizingField(e.target.value)}
-                      className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm"
+                      className="flex-1 border border-outline rounded px-3 py-1.5 text-sm"
                     >
                       <option value="">--- Not Set ---</option>
                       {Object.entries(customFields).map(([id, name]) => (
@@ -132,13 +132,13 @@ export default function FieldsDialog({ settings, customFields, onClose, onSaved 
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-                    <label className="text-sm font-medium text-gray-700 w-full sm:w-48 flex-shrink-0">
+                    <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
                       Team Name Field:
                     </label>
                     <select
                       value={teamNameField}
                       onChange={(e) => setTeamNameField(e.target.value)}
-                      className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm"
+                      className="flex-1 border border-outline rounded px-3 py-1.5 text-sm"
                     >
                       <option value="">--- Not Set ---</option>
                       {Object.entries(customFields).map(([id, name]) => (
@@ -150,13 +150,13 @@ export default function FieldsDialog({ settings, customFields, onClose, onSaved 
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-                    <label className="text-sm font-medium text-gray-700 w-full sm:w-48 flex-shrink-0">
+                    <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
                       Flagged (Impediment) Field:
                     </label>
                     <select
                       value={flaggedField}
                       onChange={(e) => setFlaggedField(e.target.value)}
-                      className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm"
+                      className="flex-1 border border-outline rounded px-3 py-1.5 text-sm"
                     >
                       <option value="">--- Not Set ---</option>
                       {Object.entries(customFields).map(([id, name]) => (
@@ -170,7 +170,7 @@ export default function FieldsDialog({ settings, customFields, onClose, onSaved 
               </div>
 
               {/* Separator */}
-              <div className="border-t border-gray-200 my-2"></div>
+              <div className="border-t border-outline my-2"></div>
 
               {/* Custom Fields to Store Section */}
               <div>
@@ -183,12 +183,12 @@ export default function FieldsDialog({ settings, customFields, onClose, onSaved 
                     placeholder="Search fields..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full border border-outline rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
                   />
                 </div>
 
                 {/* Filtered Fields List */}
-                <div className="border border-gray-300 rounded p-2 pb-2 max-h-[230px] overflow-y-auto mb-2">
+                <div className="border border-outline rounded p-2 pb-2 max-h-[230px] overflow-y-auto mb-2">
                   {Object.entries(customFields)
                     .filter(([id, name]) => {
                       if (!searchTerm) return true;
@@ -198,7 +198,7 @@ export default function FieldsDialog({ settings, customFields, onClose, onSaved 
                     .map(([id, name]) => (
                       <label
                         key={id}
-                        className="flex items-center space-x-2 py-0.5 px-2 hover:bg-gray-50 rounded cursor-pointer"
+                        className="flex items-center space-x-2 py-0.5 px-2 hover:bg-surface-elevated rounded cursor-pointer"
                       >
                         <input
                           type="checkbox"
@@ -210,9 +210,9 @@ export default function FieldsDialog({ settings, customFields, onClose, onSaved 
                               setSelectedCustomFields(selectedCustomFields.filter(f => f !== id));
                             }
                           }}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          className="w-4 h-4 text-brand border-outline rounded focus:ring-brand"
                         />
-                        <span className="text-sm text-gray-700">
+                        <span className="text-sm text-content-secondary">
                           {name} ({id})
                         </span>
                       </label>
@@ -222,7 +222,7 @@ export default function FieldsDialog({ settings, customFields, onClose, onSaved 
                     const searchLower = searchTerm.toLowerCase();
                     return id.toLowerCase().includes(searchLower) || name.toLowerCase().includes(searchLower);
                   }).length === 0 && searchTerm && (
-                    <div className="text-sm text-gray-500 py-4 text-center">
+                    <div className="text-sm text-content-tertiary py-4 text-center">
                       No fields found matching &quot;{searchTerm}&quot;
                     </div>
                   )}
@@ -234,13 +234,13 @@ export default function FieldsDialog({ settings, customFields, onClose, onSaved 
               <button
                 onClick={handleSave}
                 disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
+                className="px-4 py-2 bg-brand text-white rounded hover:bg-brand-hover disabled:bg-gray-400"
               >
                 {loading ? 'Saving...' : '💾 Save'}
               </button>
               <button
                 onClick={onClose}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                className="px-4 py-2 bg-gray-300 text-content-secondary rounded hover:bg-gray-400"
                 disabled={loading}
               >
                 Cancel

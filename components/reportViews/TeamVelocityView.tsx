@@ -47,8 +47,8 @@ const TeamVelocityView: React.FC<TeamVelocityViewProps> = ({
 }) => {
   const { groups, teams } = useTeamsGroups();
   const months = Number(filters.months ?? 2);
-  const teamName = (filters.team_name as string) ?? '';
-  const isGroup = (filters.isGroup as boolean) ?? false;
+  const teamName = (filters?.team_name as string) ?? '';
+  const isGroup = (filters?.isGroup as boolean) ?? false;
   
   // Look up ID from name to construct proper teamValue
   const teamValue = useMemo(() => {
@@ -65,7 +65,7 @@ const TeamVelocityView: React.FC<TeamVelocityViewProps> = ({
 
   const handleTimePeriodChange = useCallback(
     (value: number) => {
-      setFilters((prev) => ({
+      setFilters?.((prev) => ({
         ...prev,
         months: value,
       }));
@@ -76,13 +76,13 @@ const TeamVelocityView: React.FC<TeamVelocityViewProps> = ({
   const handleTeamGroupChange = useCallback(
     (value: string | null, type: 'group' | 'team', name: string) => {
       if (value === null) {
-        setFilters((prev) => ({
+        setFilters?.((prev) => ({
           ...prev,
           team_name: null,
           isGroup: false,
         }));
       } else {
-        setFilters((prev) => ({
+        setFilters?.((prev) => ({
           ...prev,
           team_name: name,
           isGroup: type === 'group',
@@ -206,7 +206,7 @@ const TeamVelocityView: React.FC<TeamVelocityViewProps> = ({
         <select
           value={months}
           onChange={(e) => handleTimePeriodChange(Number(e.target.value))}
-          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand"
         >
           {timePeriodOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -256,13 +256,16 @@ const TeamVelocityView: React.FC<TeamVelocityViewProps> = ({
       onRefresh={refresh}
       onClose={componentProps?.onClose}
       onAIChat={componentProps?.onAIChat}
+      readOnly={componentProps?.readOnly}
+      hideHeader={componentProps?.hideHeader}
+      hideCollapse={componentProps?.hideCollapse}
     >
       <div className="h-full w-full flex flex-col">
         {loading && (
           <div className="flex-1 flex items-center justify-center">
             <div className="flex flex-col items-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-              <div className="text-sm text-gray-600">Loading Velocity Chart...</div>
+              <div className="text-sm text-content-secondary">Loading Velocity Chart...</div>
             </div>
           </div>
         )}
@@ -274,7 +277,7 @@ const TeamVelocityView: React.FC<TeamVelocityViewProps> = ({
         )}
 
         {!loading && !error && !teamName && (
-          <div className="flex-1 flex items-center justify-center text-gray-500">
+          <div className="flex-1 flex items-center justify-center text-content-tertiary">
             Please select a team or group to view velocity chart.
           </div>
         )}
@@ -296,7 +299,7 @@ const TeamVelocityView: React.FC<TeamVelocityViewProps> = ({
         )}
 
         {!loading && !error && teamName && chartData.length === 0 && (
-          <div className="flex-1 flex items-center justify-center text-gray-500">
+          <div className="flex-1 flex items-center justify-center text-content-tertiary">
             No closed sprints found for the selected team and time period.
           </div>
         )}

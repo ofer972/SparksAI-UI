@@ -39,8 +39,8 @@ export default function TeamFilter({ selectedTeam, onTeamChange, className = '' 
   if (loading) {
     return (
       <div className={`flex items-center space-x-1 ${className}`}>
-        <span className="text-xs font-medium text-gray-700">Team:</span>
-        <select className="border border-gray-300 rounded px-2 py-1 text-xs" disabled>
+        <span className="text-xs font-medium text-content-secondary">Team:</span>
+        <select className="border border-outline rounded px-2 py-1 text-xs" disabled>
           <option>Loading...</option>
         </select>
       </div>
@@ -50,8 +50,8 @@ export default function TeamFilter({ selectedTeam, onTeamChange, className = '' 
   if (error) {
     return (
       <div className={`flex items-center space-x-1 ${className}`}>
-        <span className="text-xs font-medium text-gray-700">Team:</span>
-        <select className="border border-gray-300 rounded px-2 py-1 text-xs" disabled>
+        <span className="text-xs font-medium text-content-secondary">Team:</span>
+        <select className="border border-outline rounded px-2 py-1 text-xs" disabled>
           <option>Error loading teams</option>
         </select>
       </div>
@@ -60,11 +60,11 @@ export default function TeamFilter({ selectedTeam, onTeamChange, className = '' 
 
   return (
     <div className={`relative z-10 flex items-center space-x-1 ${className}`}>
-      <span className="text-sm font-medium text-gray-700">Team:</span>
+      <span className="text-sm font-medium text-content-secondary">Team:</span>
       <select
         value={selectedTeam}
         onChange={(e) => onTeamChange(e.target.value)}
-        className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
+        className="border border-outline rounded px-2 py-1 text-sm bg-surface"
       >
         {teams.map((team) => (
           <option key={team} value={team}>

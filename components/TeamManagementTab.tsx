@@ -493,7 +493,7 @@ export default function TeamManagementTab() {
       return (
         <div key={node.id}>
           <div
-            className={`flex items-center gap-1.5 px-2 py-1 rounded hover:bg-gray-50 transition-all group cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2 py-1 rounded hover:bg-surface-elevated transition-all group cursor-pointer ${
               dropTargetGroup === group.group_key ? 'bg-blue-100 ring-2 ring-blue-400' : ''
             }`}
             style={{ paddingLeft: `${depth * 20 + 8}px` }}
@@ -510,7 +510,7 @@ export default function TeamManagementTab() {
             >
               {hasChildren && (
                 <svg
-                  className={`w-3.5 h-3.5 text-gray-600 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                  className={`w-3.5 h-3.5 text-content-secondary transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -524,7 +524,7 @@ export default function TeamManagementTab() {
             <span className="text-base">📁</span>
 
             {/* Group name */}
-            <span className={`flex-1 font-semibold text-sm ${depth === 0 ? 'text-gray-900' : 'text-gray-800'}`}>
+            <span className={`flex-1 font-semibold text-sm ${depth === 0 ? 'text-content-primary' : 'text-content-primary'}`}>
               {group.group_name}
             </span>
 
@@ -563,7 +563,7 @@ export default function TeamManagementTab() {
                 className="p-1 hover:bg-blue-50 rounded transition-colors"
                 title="Assign teams"
               >
-                <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
               </button>
@@ -610,7 +610,7 @@ export default function TeamManagementTab() {
       return (
         <div
           key={node.id}
-          className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-gray-50 transition-all group cursor-pointer"
+          className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-surface-elevated transition-all group cursor-pointer"
           style={{ paddingLeft: `${depth * 20 + 34}px` }}
           onClick={() => handleEditTeam(team)}
         >
@@ -618,11 +618,11 @@ export default function TeamManagementTab() {
           <span className="text-sm">👥</span>
 
           {/* Team name */}
-          <span className="flex-1 text-xs text-gray-700">{team.team_name}</span>
+          <span className="flex-1 text-xs text-content-secondary">{team.team_name}</span>
 
           {/* Members count */}
           {team.number_of_team_members > 0 && (
-            <span className="text-xs text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">
+            <span className="text-xs text-content-secondary bg-surface-secondary px-1.5 py-0.5 rounded">
               {team.number_of_team_members} members
             </span>
           )}
@@ -659,7 +659,7 @@ export default function TeamManagementTab() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading team management...</p>
+          <p className="text-content-secondary">Loading team management...</p>
         </div>
       </div>
     );
@@ -682,26 +682,26 @@ export default function TeamManagementTab() {
   return (
     <div className="h-full flex flex-col min-h-0 space-y-3">
       {/* Header */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-3 flex-shrink-0">
+      <div className="bg-surface rounded-lg border border-outline shadow-sm p-3 flex-shrink-0">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Team Management</h2>
-          <p className="text-sm text-gray-600">Organize your teams into groups with a hierarchical structure</p>
+          <h2 className="text-xl font-bold text-content-primary">Team Management</h2>
+          <p className="text-sm text-content-secondary">Organize your teams into groups with a hierarchical structure</p>
         </div>
       </div>
 
       {/* Tree Structure and Unassigned Teams - Side by Side */}
       <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
         {/* Team Hierarchy */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col min-h-0">
-          <div className="flex items-center justify-between p-3 border-b border-gray-200 flex-shrink-0 bg-gradient-to-r from-gray-50 to-white">
-            <h3 className="text-base font-semibold text-gray-900">Team Hierarchy</h3>
+        <div className="bg-surface rounded-lg border border-outline shadow-sm flex flex-col min-h-0">
+          <div className="flex items-center justify-between p-3 border-b border-outline flex-shrink-0 bg-gradient-to-r from-gray-50 to-white">
+            <h3 className="text-base font-semibold text-content-primary">Team Hierarchy</h3>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
                   setParentGroupId(null);
                   setShowCreateGroupModal(true);
                 }}
-                className="inline-flex items-center gap-1.5 px-2 md:px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-all"
+                className="inline-flex items-center gap-1.5 px-2 md:px-3 py-1.5 text-sm font-medium text-brand bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-all"
                 title="New Group"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -723,7 +723,7 @@ export default function TeamManagementTab() {
                     setExpandedGroups(new Set(allGroupIds));
                   }
                 }}
-                className="inline-flex items-center gap-1 px-2 md:px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-all"
+                className="inline-flex items-center gap-1 px-2 md:px-2.5 py-1.5 text-xs font-medium text-content-secondary hover:text-content-primary hover:bg-surface-secondary rounded-md transition-all"
                 title={groups.length > 0 && groups.every(g => expandedGroups.has(g.group_key)) ? 'Collapse All' : 'Expand All'}
               >
                 {groups.length > 0 && groups.every(g => expandedGroups.has(g.group_key)) ? (
@@ -751,11 +751,11 @@ export default function TeamManagementTab() {
             <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
             </svg>
-            <p className="text-gray-600 mb-2">No groups yet</p>
-            <p className="text-sm text-gray-500 mb-4">Create your first group to start organizing teams</p>
+            <p className="text-content-secondary mb-2">No groups yet</p>
+            <p className="text-sm text-content-tertiary mb-4">Create your first group to start organizing teams</p>
             <button
               onClick={() => setShowCreateGroupModal(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              className="bg-brand text-white px-4 py-2 rounded-lg hover:bg-brand-hover transition-colors"
             >
               Create First Group
             </button>
@@ -769,17 +769,17 @@ export default function TeamManagementTab() {
       </div>
 
         {/* Teams Panel with Tabs */}
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col min-h-0">
+        <div className="bg-surface border border-outline rounded-lg shadow-sm flex flex-col min-h-0">
           {/* Header - matching Team Hierarchy style */}
-          <div className="flex items-center justify-between p-3 border-b border-gray-200 flex-shrink-0 bg-gradient-to-r from-gray-50 to-white">
-            <h3 className="text-base font-semibold text-gray-900">Teams</h3>
+          <div className="flex items-center justify-between p-3 border-b border-outline flex-shrink-0 bg-gradient-to-r from-gray-50 to-white">
+            <h3 className="text-base font-semibold text-content-primary">Teams</h3>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setTeamViewTab('unassigned')}
                 className={`inline-flex items-center gap-1.5 px-2 md:px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
                   teamViewTab === 'unassigned'
-                    ? 'text-blue-600 bg-blue-50 border border-blue-200'
-                    : 'text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                    ? 'text-brand bg-blue-50 border border-blue-200'
+                    : 'text-content-secondary bg-surface border border-outline hover:bg-surface-elevated hover:border-outline'
                 }`}
                 title="Unassigned Teams"
               >
@@ -792,13 +792,13 @@ export default function TeamManagementTab() {
                 onClick={() => setTeamViewTab('all')}
                 className={`inline-flex items-center gap-1.5 px-2 md:px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
                   teamViewTab === 'all'
-                    ? 'text-blue-600 bg-blue-50 border border-blue-200'
-                    : 'text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                    ? 'text-brand bg-blue-50 border border-blue-200'
+                    : 'text-content-secondary bg-surface border border-outline hover:bg-surface-elevated hover:border-outline'
                 }`}
                 title="All Teams"
               >
                 <span className="hidden md:inline">All Teams</span>
-                <span className="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full font-semibold">
+                <span className="text-xs bg-blue-100 text-brand px-1.5 py-0.5 rounded-full font-semibold">
                   {teams.length}
                 </span>
               </button>
@@ -812,8 +812,8 @@ export default function TeamManagementTab() {
                   <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <p className="text-gray-600 mb-2">All teams assigned</p>
-                  <p className="text-sm text-gray-500">All teams are currently in groups</p>
+                  <p className="text-content-secondary mb-2">All teams assigned</p>
+                  <p className="text-sm text-content-tertiary">All teams are currently in groups</p>
                 </div>
               ) : (
                 <div className="space-y-1">
@@ -824,15 +824,15 @@ export default function TeamManagementTab() {
                       onDragStart={() => handleDragStart(team)}
                       onDragEnd={handleDragEnd}
                       onClick={() => handleEditTeam(team)}
-                      className={`px-2 py-1.5 flex items-center gap-2 hover:bg-gray-50 transition-colors rounded cursor-pointer ${
+                      className={`px-2 py-1.5 flex items-center gap-2 hover:bg-surface-elevated transition-colors rounded cursor-pointer ${
                         draggedTeam?.team_key === team.team_key ? 'opacity-50' : ''
                       }`}
                       title="Click to edit team details or drag to assign to a group"
                     >
                       <span className="text-sm">👥</span>
-                <span className="flex-1 text-xs font-medium text-gray-700">{team.team_name}</span>
+                <span className="flex-1 text-xs font-medium text-content-secondary">{team.team_name}</span>
                       {team.number_of_team_members > 0 && (
-                        <span className="text-xs text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">
+                        <span className="text-xs text-content-secondary bg-surface-secondary px-1.5 py-0.5 rounded">
                           {team.number_of_team_members} members
                         </span>
                       )}
@@ -855,16 +855,16 @@ export default function TeamManagementTab() {
                       onDragStart={() => handleDragStart(team)}
                       onDragEnd={handleDragEnd}
                       onClick={() => handleEditTeam(team)}
-                      className={`px-2 py-1.5 flex items-center gap-2 hover:bg-gray-50 transition-colors rounded cursor-pointer ${
+                      className={`px-2 py-1.5 flex items-center gap-2 hover:bg-surface-elevated transition-colors rounded cursor-pointer ${
                         draggedTeam?.team_key === team.team_key ? 'opacity-50' : ''
                       }`}
                       title="Click to edit team details or drag to assign to a group"
                     >
                       <span className="text-sm">👥</span>
-                      <span className="flex-1 text-xs font-medium text-gray-700">{team.team_name}</span>
+                      <span className="flex-1 text-xs font-medium text-content-secondary">{team.team_name}</span>
                       <div className="flex items-center gap-1">
                         {team.number_of_team_members > 0 && (
-                          <span className="text-xs text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">
+                          <span className="text-xs text-content-secondary bg-surface-secondary px-1.5 py-0.5 rounded">
                             {team.number_of_team_members} members
                           </span>
                         )}
@@ -874,7 +874,7 @@ export default function TeamManagementTab() {
                           </span>
                         )}
                         {team.group_keys && team.group_keys.length > 0 && (
-                          <span className="text-xs text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">
+                          <span className="text-xs text-brand bg-blue-100 px-1.5 py-0.5 rounded">
                             {team.group_keys.length} group{team.group_keys.length !== 1 ? 's' : ''}
                           </span>
                         )}
@@ -891,37 +891,37 @@ export default function TeamManagementTab() {
       {/* Stats - Bottom */}
       <div className="grid grid-cols-3 gap-3 flex-shrink-0">
         {/* Total Groups */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col">
+        <div className="bg-surface rounded-lg border border-outline shadow-sm flex flex-col">
           <div className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-white">
             <div className="flex items-center gap-3 flex-1">
               <div className="w-10 h-10 flex items-center justify-center">
                 <span className="text-2xl">📁</span>
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{groups.length}</p>
-                <p className="text-sm text-gray-600">Total Groups</p>
+                <p className="text-2xl font-bold text-content-primary">{groups.length}</p>
+                <p className="text-sm text-content-secondary">Total Groups</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Total Teams */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col">
+        <div className="bg-surface rounded-lg border border-outline shadow-sm flex flex-col">
           <div className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-white">
             <div className="flex items-center gap-3 flex-1">
               <div className="w-10 h-10 flex items-center justify-center">
                 <span className="text-2xl">👥</span>
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{teams.length}</p>
-                <p className="text-sm text-gray-600">Total Teams</p>
+                <p className="text-2xl font-bold text-content-primary">{teams.length}</p>
+                <p className="text-sm text-content-secondary">Total Teams</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Unassigned Teams */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col">
+        <div className="bg-surface rounded-lg border border-outline shadow-sm flex flex-col">
           <div className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-white">
             <div className="flex items-center gap-3 flex-1">
               <div className="w-10 h-10 flex items-center justify-center">
@@ -930,8 +930,8 @@ export default function TeamManagementTab() {
                 </svg>
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{unassignedTeams.length}</p>
-                <p className="text-sm text-gray-600">Unassigned Teams</p>
+                <p className="text-2xl font-bold text-content-primary">{unassignedTeams.length}</p>
+                <p className="text-sm text-content-secondary">Unassigned Teams</p>
               </div>
             </div>
           </div>
@@ -941,29 +941,29 @@ export default function TeamManagementTab() {
       {/* Create Group Modal */}
       {showCreateGroupModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
-            <div className="px-4 py-2.5 border-b border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900">Create New Group</h3>
+          <div className="bg-surface rounded-xl shadow-2xl max-w-md w-full">
+            <div className="px-4 py-2.5 border-b border-outline">
+              <h3 className="text-lg font-bold text-content-primary">Create New Group</h3>
             </div>
 
             <div className="p-4 space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-900 mb-1">
+                <label className="block text-xs font-medium text-content-primary mb-1">
                   Group Name
                 </label>
                 <input
                   type="text"
                   value={newGroupName}
                   onChange={(e) => setNewGroupName(e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-1.5 text-sm border border-outline rounded-lg focus:outline-none focus:ring-2 focus:ring-brand"
                   placeholder="Enter group name"
                   autoFocus
                 />
               </div>
 
               {parentGroupId && (
-                <div className="bg-gray-100 border border-gray-300 rounded-lg p-2">
-                  <p className="text-xs text-gray-700">
+                <div className="bg-surface-secondary border border-outline rounded-lg p-2">
+                  <p className="text-xs text-content-secondary">
                     This will be a subgroup of:{' '}
                     <span className="font-semibold">
                       {groups.find(g => g.group_key === parentGroupId)?.group_name}
@@ -973,14 +973,14 @@ export default function TeamManagementTab() {
               )}
             </div>
 
-            <div className="px-4 py-2.5 bg-gray-50 rounded-b-xl flex gap-2">
+            <div className="px-4 py-2.5 bg-surface-elevated rounded-b-xl flex gap-2">
               <button
                 onClick={() => {
                   setShowCreateGroupModal(false);
                   setNewGroupName('');
                   setParentGroupId(null);
                 }}
-                className="flex-1 bg-white text-gray-700 text-sm border border-gray-300 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex-1 bg-surface text-content-secondary text-sm border border-outline py-1.5 rounded-lg hover:bg-surface-elevated transition-colors"
               >
                 Cancel
               </button>
@@ -1025,16 +1025,16 @@ export default function TeamManagementTab() {
 
         return (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full flex flex-col" style={{ height: '550px' }}>
-              <div className="px-4 py-2.5 border-b border-gray-200">
-                <h3 className="text-lg font-bold text-gray-900">Assign Teams to Group</h3>
-                <p className="text-xs text-gray-600 mt-0.5">
+            <div className="bg-surface rounded-xl shadow-2xl max-w-lg w-full flex flex-col" style={{ height: '550px' }}>
+              <div className="px-4 py-2.5 border-b border-outline">
+                <h3 className="text-lg font-bold text-content-primary">Assign Teams to Group</h3>
+                <p className="text-xs text-content-secondary mt-0.5">
                   Group: <span className="font-semibold">{selectedGroup.group_name}</span>
                 </p>
               </div>
 
               {/* Tabs */}
-              <div className="flex border-b border-gray-200 px-4 flex-shrink-0">
+              <div className="flex border-b border-outline px-4 flex-shrink-0">
                 <button
                   onClick={() => {
                     setActiveTeamTab('unassigned');
@@ -1042,13 +1042,13 @@ export default function TeamManagementTab() {
                   }}
                   className={`px-4 py-2 text-sm font-medium transition-colors relative ${
                     activeTeamTab === 'unassigned'
-                      ? 'text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'text-brand border-b-2 border-blue-600'
+                      : 'text-content-secondary hover:text-content-primary'
                   }`}
                 >
                   Unassigned Teams
                   {activeTeamTab === 'unassigned' && (
-                    <span className="ml-2 text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
+                    <span className="ml-2 text-xs bg-blue-100 text-brand px-2 py-0.5 rounded-full">
                       {unassignedTeams.length}
                     </span>
                   )}
@@ -1060,13 +1060,13 @@ export default function TeamManagementTab() {
                   }}
                   className={`px-4 py-2 text-sm font-medium transition-colors relative ${
                     activeTeamTab === 'all'
-                      ? 'text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'text-brand border-b-2 border-blue-600'
+                      : 'text-content-secondary hover:text-content-primary'
                   }`}
                 >
                   All Teams
                   {activeTeamTab === 'all' && (
-                    <span className="ml-2 text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
+                    <span className="ml-2 text-xs bg-blue-100 text-brand px-2 py-0.5 rounded-full">
                       {teams.filter(t => !t.group_keys || !t.group_keys.includes(selectedGroup.group_key)).length}
                     </span>
                   )}
@@ -1075,7 +1075,7 @@ export default function TeamManagementTab() {
 
               <div className="p-3 flex-1 overflow-hidden flex flex-col min-h-0">
                 {/* Tab description */}
-                <p className="text-xs text-gray-500 mb-2 flex-shrink-0">
+                <p className="text-xs text-content-tertiary mb-2 flex-shrink-0">
                   {activeTeamTab === 'unassigned' 
                     ? `Showing ${teamsToShow.length} team${teamsToShow.length !== 1 ? 's' : ''} not assigned to any group`
                     : `Showing ${teamsToShow.length} team${teamsToShow.length !== 1 ? 's' : ''} not in this group (can be in other groups)`
@@ -1089,7 +1089,7 @@ export default function TeamManagementTab() {
                     value={teamSearchQuery}
                     onChange={(e) => setTeamSearchQuery(e.target.value)}
                     placeholder="Search teams..."
-                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="w-full px-3 py-1.5 text-sm border border-outline rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
                 </div>
 
@@ -1097,23 +1097,23 @@ export default function TeamManagementTab() {
                 <div className="flex gap-2 mb-2 flex-shrink-0">
                   <button
                     onClick={selectAll}
-                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                    className="text-xs text-brand hover:text-blue-700 font-medium"
                   >
                     Select All
                   </button>
-                  <span className="text-gray-400">|</span>
+                  <span className="text-content-muted">|</span>
                   <button
                     onClick={clearAll}
-                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                    className="text-xs text-brand hover:text-blue-700 font-medium"
                   >
                     Clear All
                   </button>
                 </div>
 
                 {/* Scrollable checkbox list - fixed height container */}
-                <div className="flex-1 overflow-y-auto border border-gray-200 rounded-lg min-h-0">
+                <div className="flex-1 overflow-y-auto border border-outline rounded-lg min-h-0">
                   {filteredTeams.length === 0 ? (
-                    <div className="p-3 text-center text-gray-500 text-xs">
+                    <div className="p-3 text-center text-content-tertiary text-xs">
                       {teamSearchQuery 
                         ? 'No teams found matching your search' 
                         : activeTeamTab === 'unassigned' 
@@ -1126,18 +1126,18 @@ export default function TeamManagementTab() {
                       {filteredTeams.map(team => (
                         <label
                           key={team.team_key}
-                          className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors"
+                          className="flex items-center gap-2 px-3 py-2 hover:bg-surface-elevated cursor-pointer transition-colors"
                         >
                           <input
                             type="checkbox"
                             checked={selectedTeamIds.includes(`${team.team_key}`)}
                             onChange={() => toggleTeam(`${team.team_key}`)}
-                            className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-400"
+                            className="w-3.5 h-3.5 text-brand border-outline rounded focus:ring-blue-400"
                           />
                           <div className="flex-1 flex items-center justify-between">
-                            <span className="text-xs text-gray-700">{team.team_name}</span>
+                            <span className="text-xs text-content-secondary">{team.team_name}</span>
                             {activeTeamTab === 'all' && team.group_keys && team.group_keys.length > 0 && (
-                              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                              <span className="text-xs text-content-tertiary bg-surface-secondary px-2 py-0.5 rounded">
                                 In {team.group_keys.length} group{team.group_keys.length !== 1 ? 's' : ''}
                               </span>
                             )}
@@ -1149,14 +1149,14 @@ export default function TeamManagementTab() {
                 </div>
 
                 {/* Selection count */}
-                <div className="mt-2 text-xs text-gray-600 flex-shrink-0 h-4">
+                <div className="mt-2 text-xs text-content-secondary flex-shrink-0 h-4">
                   {selectedTeamIds.length > 0 && (
                     <span>{selectedTeamIds.length} team{selectedTeamIds.length !== 1 ? 's' : ''} selected</span>
                   )}
                 </div>
               </div>
 
-              <div className="px-4 py-2.5 bg-gray-50 rounded-b-xl flex gap-2 flex-shrink-0">
+              <div className="px-4 py-2.5 bg-surface-elevated rounded-b-xl flex gap-2 flex-shrink-0">
                 <button
                   onClick={() => {
                     setShowAssignTeamsModal(false);
@@ -1165,7 +1165,7 @@ export default function TeamManagementTab() {
                     setTeamSearchQuery('');
                     setActiveTeamTab('unassigned');
                   }}
-                  className="flex-1 bg-white text-gray-700 text-sm border border-gray-300 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 bg-surface text-content-secondary text-sm border border-outline py-1.5 rounded-lg hover:bg-surface-elevated transition-colors"
                 >
                   Cancel
                 </button>
@@ -1185,49 +1185,49 @@ export default function TeamManagementTab() {
       {/* Remove Team Confirmation Modal */}
       {showRemoveTeamModal && teamToRemove && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+          <div className="bg-surface rounded-xl shadow-2xl max-w-md w-full">
             {/* Header */}
-            <div className="px-4 py-3 border-b border-gray-200 bg-red-50">
+            <div className="px-4 py-3 border-b border-outline bg-red-50">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
                   <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-bold text-gray-900">Remove Team from Group</h3>
+                <h3 className="text-lg font-bold text-content-primary">Remove Team from Group</h3>
               </div>
             </div>
 
             {/* Content */}
             <div className="p-4">
-              <p className="text-sm text-gray-700 mb-3">
+              <p className="text-sm text-content-secondary mb-3">
                 Are you sure you want to remove the following team from its group?
               </p>
               
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
+              <div className="bg-surface-elevated border border-outline rounded-lg p-3 space-y-2">
                 <div className="flex items-start gap-2">
-                  <span className="text-xs font-semibold text-gray-600 min-w-[60px]">Team:</span>
-                  <span className="text-xs font-bold text-gray-900">{teamToRemove.teamName}</span>
+                  <span className="text-xs font-semibold text-content-secondary min-w-[60px]">Team:</span>
+                  <span className="text-xs font-bold text-content-primary">{teamToRemove.teamName}</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="text-xs font-semibold text-gray-600 min-w-[60px]">Group:</span>
-                  <span className="text-xs font-bold text-gray-900">{teamToRemove.groupName}</span>
+                  <span className="text-xs font-semibold text-content-secondary min-w-[60px]">Group:</span>
+                  <span className="text-xs font-bold text-content-primary">{teamToRemove.groupName}</span>
                 </div>
               </div>
 
-              <p className="text-xs text-gray-600 mt-3">
+              <p className="text-xs text-content-secondary mt-3">
                 The team will become unassigned and can be reassigned to another group later.
               </p>
             </div>
 
             {/* Footer */}
-            <div className="px-4 py-3 bg-gray-50 rounded-b-xl flex gap-2">
+            <div className="px-4 py-3 bg-surface-elevated rounded-b-xl flex gap-2">
               <button
                 onClick={() => {
                   setShowRemoveTeamModal(false);
                   setTeamToRemove(null);
                 }}
-                className="flex-1 bg-white text-gray-700 text-sm border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                className="flex-1 bg-surface text-content-secondary text-sm border border-outline py-2 rounded-lg hover:bg-surface-elevated transition-colors font-medium"
               >
                 Cancel
               </button>
@@ -1245,33 +1245,33 @@ export default function TeamManagementTab() {
       {/* Delete Group Confirmation Modal */}
       {showDeleteGroupModal && groupToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+          <div className="bg-surface rounded-xl shadow-2xl max-w-md w-full">
             {/* Header */}
-            <div className="px-4 py-3 border-b border-gray-200 bg-red-50">
+            <div className="px-4 py-3 border-b border-outline bg-red-50">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
                   <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-bold text-gray-900">Delete Group</h3>
+                <h3 className="text-lg font-bold text-content-primary">Delete Group</h3>
               </div>
             </div>
 
             {/* Content */}
             <div className="p-4">
-              <p className="text-sm text-gray-700 mb-3">
+              <p className="text-sm text-content-secondary mb-3">
                 Are you sure you want to delete the following group?
               </p>
               
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
+              <div className="bg-surface-elevated border border-outline rounded-lg p-3 space-y-2">
                 <div className="flex items-start gap-2">
-                  <span className="text-xs font-semibold text-gray-600 min-w-[60px]">Group:</span>
-                  <span className="text-xs font-bold text-gray-900">{groupToDelete.groupName}</span>
+                  <span className="text-xs font-semibold text-content-secondary min-w-[60px]">Group:</span>
+                  <span className="text-xs font-bold text-content-primary">{groupToDelete.groupName}</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="text-xs font-semibold text-gray-600 min-w-[60px]">Teams:</span>
-                  <span className="text-xs font-bold text-gray-900">{groupToDelete.teamCount} team{groupToDelete.teamCount !== 1 ? 's' : ''}</span>
+                  <span className="text-xs font-semibold text-content-secondary min-w-[60px]">Teams:</span>
+                  <span className="text-xs font-bold text-content-primary">{groupToDelete.teamCount} team{groupToDelete.teamCount !== 1 ? 's' : ''}</span>
                 </div>
               </div>
 
@@ -1286,13 +1286,13 @@ export default function TeamManagementTab() {
             </div>
 
             {/* Footer */}
-            <div className="px-4 py-3 bg-gray-50 rounded-b-xl flex gap-2">
+            <div className="px-4 py-3 bg-surface-elevated rounded-b-xl flex gap-2">
               <button
                 onClick={() => {
                   setShowDeleteGroupModal(false);
                   setGroupToDelete(null);
                 }}
-                className="flex-1 bg-white text-gray-700 text-sm border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                className="flex-1 bg-surface text-content-secondary text-sm border border-outline py-2 rounded-lg hover:bg-surface-elevated transition-colors font-medium"
               >
                 Cancel
               </button>
@@ -1310,34 +1310,34 @@ export default function TeamManagementTab() {
       {/* Duplicate Group Error Modal */}
       {showDuplicateGroupError && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+          <div className="bg-surface rounded-xl shadow-2xl max-w-md w-full">
             {/* Header */}
-            <div className="px-4 py-3 border-b border-gray-200 bg-orange-50">
+            <div className="px-4 py-3 border-b border-outline bg-orange-50">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
                   <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-bold text-gray-900">Duplicate Group Name</h3>
+                <h3 className="text-lg font-bold text-content-primary">Duplicate Group Name</h3>
               </div>
             </div>
 
             {/* Content */}
             <div className="p-4">
-              <p className="text-sm text-gray-700 mb-3">
+              <p className="text-sm text-content-secondary mb-3">
                 A group with this name already exists:
               </p>
               
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3">
+              <div className="bg-surface-elevated border border-outline rounded-lg p-3 mb-3">
                 <div className="flex items-center gap-2">
                   <span className="text-base">📁</span>
-                  <span className="text-sm font-bold text-gray-900">{duplicateGroupName}</span>
+                  <span className="text-sm font-bold text-content-primary">{duplicateGroupName}</span>
                 </div>
               </div>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-2.5 flex items-start gap-2">
-                <svg className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-brand flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <p className="text-xs text-blue-800">
@@ -1347,7 +1347,7 @@ export default function TeamManagementTab() {
             </div>
 
             {/* Footer */}
-            <div className="px-4 py-3 bg-gray-50 rounded-b-xl flex justify-end">
+            <div className="px-4 py-3 bg-surface-elevated rounded-b-xl flex justify-end">
               <button
                 onClick={() => {
                   setShowDuplicateGroupError(false);
@@ -1365,24 +1365,24 @@ export default function TeamManagementTab() {
       {/* Edit Team Modal */}
       {showEditTeamModal && teamToEdit && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
-            <div className="px-4 py-2.5 border-b border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900">Edit Team</h3>
-              <p className="text-xs text-gray-600 mt-0.5">
+          <div className="bg-surface rounded-xl shadow-2xl max-w-md w-full">
+            <div className="px-4 py-2.5 border-b border-outline">
+              <h3 className="text-lg font-bold text-content-primary">Edit Team</h3>
+              <p className="text-xs text-content-secondary mt-0.5">
                 Team: <span className="font-semibold">{teamToEdit.team_name}</span>
               </p>
             </div>
 
             <div className="p-4 space-y-4">
               <div>
-                <label className="block text-xs font-medium text-gray-900 mb-1">
+                <label className="block text-xs font-medium text-content-primary mb-1">
                   Number of Team Members
                 </label>
                 <input
                   type="number"
                   value={editTeamMembers}
                   onChange={(e) => setEditTeamMembers(Math.max(0, parseInt(e.target.value) || 0))}
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-1.5 text-sm border border-outline rounded-lg focus:outline-none focus:ring-2 focus:ring-brand"
                   min="0"
                   placeholder="Enter number of team members"
                 />
@@ -1394,25 +1394,25 @@ export default function TeamManagementTab() {
                     type="checkbox"
                     checked={editTeamAIInsight}
                     onChange={(e) => setEditTeamAIInsight(e.target.checked)}
-                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    className="w-4 h-4 text-purple-600 border-outline rounded focus:ring-purple-500"
                   />
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-sm font-medium text-content-primary">
                     Include in Team Insights Schedule
                   </span>
                 </label>
-                <p className="text-xs text-gray-500 mt-1 ml-6">
+                <p className="text-xs text-content-tertiary mt-1 ml-6">
                   When enabled, this team will receive automated AI-powered insights and recommendations
                 </p>
               </div>
             </div>
 
-            <div className="px-4 py-2.5 bg-gray-50 rounded-b-xl flex gap-2">
+            <div className="px-4 py-2.5 bg-surface-elevated rounded-b-xl flex gap-2">
               <button
                 onClick={() => {
                   setShowEditTeamModal(false);
                   setTeamToEdit(null);
                 }}
-                className="flex-1 bg-white text-gray-700 text-sm border border-gray-300 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex-1 bg-surface text-content-secondary text-sm border border-outline py-1.5 rounded-lg hover:bg-surface-elevated transition-colors"
               >
                 Cancel
               </button>
@@ -1430,24 +1430,24 @@ export default function TeamManagementTab() {
       {/* Edit Group Modal */}
       {showEditGroupModal && groupToEdit && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
-            <div className="px-4 py-2.5 border-b border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900">Edit Group</h3>
-              <p className="text-xs text-gray-600 mt-0.5">
+          <div className="bg-surface rounded-xl shadow-2xl max-w-md w-full">
+            <div className="px-4 py-2.5 border-b border-outline">
+              <h3 className="text-lg font-bold text-content-primary">Edit Group</h3>
+              <p className="text-xs text-content-secondary mt-0.5">
                 Group: <span className="font-semibold">{groupToEdit.group_name}</span>
               </p>
             </div>
 
             <div className="p-4 space-y-4">
               <div>
-                <label className="block text-xs font-medium text-gray-900 mb-1">
+                <label className="block text-xs font-medium text-content-primary mb-1">
                   Group Name
                 </label>
                 <input
                   type="text"
                   value={editGroupName}
                   onChange={(e) => setEditGroupName(e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-1.5 text-sm border border-outline rounded-lg focus:outline-none focus:ring-2 focus:ring-brand"
                   placeholder="Enter group name"
                 />
               </div>
@@ -1458,26 +1458,26 @@ export default function TeamManagementTab() {
                     type="checkbox"
                     checked={editGroupAIInsight}
                     onChange={(e) => setEditGroupAIInsight(e.target.checked)}
-                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    className="w-4 h-4 text-purple-600 border-outline rounded focus:ring-purple-500"
                   />
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-sm font-medium text-content-primary">
                     Include in Group AI Scheduling
                   </span>
                 </label>
-                <p className="text-xs text-gray-500 mt-1 ml-6">
+                <p className="text-xs text-content-tertiary mt-1 ml-6">
                   When enabled, this group will receive automated AI-powered insights and recommendations
                 </p>
               </div>
             </div>
 
-            <div className="px-4 py-2.5 bg-gray-50 rounded-b-xl flex gap-2">
+            <div className="px-4 py-2.5 bg-surface-elevated rounded-b-xl flex gap-2">
               <button
                 onClick={() => {
                   setShowEditGroupModal(false);
                   setGroupToEdit(null);
                   setEditGroupName('');
                 }}
-                className="flex-1 bg-white text-gray-700 text-sm border border-gray-300 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex-1 bg-surface text-content-secondary text-sm border border-outline py-1.5 rounded-lg hover:bg-surface-elevated transition-colors"
               >
                 Cancel
               </button>

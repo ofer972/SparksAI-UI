@@ -55,7 +55,7 @@ export default function TimeSeriesFilters({
         <select
           value={months}
           onChange={(e) => onMonthsChange(Number(e.target.value))}
-          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand"
         >
           {timePeriodOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -84,12 +84,12 @@ export default function TimeSeriesFilters({
       </ReportFilterField>
 
       <ReportFilterField label="Aggregate">
-        <label className="flex items-center gap-1 text-xs text-gray-700 cursor-pointer">
+        <label className="flex items-center gap-1 text-xs text-content-secondary cursor-pointer">
           <input
             type="checkbox"
             checked={aggregate}
             onChange={(e) => onAggregateChange(e.target.checked)}
-            className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            className="w-3 h-3 text-brand border-outline rounded focus:ring-brand"
           />
           <span>Aggregate</span>
         </label>
@@ -99,7 +99,7 @@ export default function TimeSeriesFilters({
         <select
           value={groupBy}
           onChange={(e) => onGroupByChange(e.target.value as 'day' | 'week' | 'month')}
-          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand"
         >
           <option value="day">Per Day</option>
           <option value="week">Per Week</option>
@@ -111,7 +111,7 @@ export default function TimeSeriesFilters({
         <select
           value={chartType}
           onChange={(e) => onChartTypeChange(e.target.value as 'line' | 'bar')}
-          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand"
         >
           <option value="line">Line Chart</option>
           <option value="bar">Bar Chart</option>

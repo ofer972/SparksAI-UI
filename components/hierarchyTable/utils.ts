@@ -95,7 +95,7 @@ export function getStatusCategoryColor(statusCategory: string): string {
     categoryLower === 'completed' ||
     categoryLower === 'complete'
   ) {
-    return 'bg-green-100 text-green-800 border-green-200';
+    return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-200 dark:border-green-700';
   }
 
   // In Progress statuses - Blue
@@ -109,7 +109,7 @@ export function getStatusCategoryColor(statusCategory: string): string {
     categoryLower === 'development' ||
     categoryLower === 'review'
   ) {
-    return 'bg-blue-100 text-blue-800 border-blue-200';
+    return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-700';
   }
 
   // Testing/QA statuses - Yellow
@@ -121,7 +121,7 @@ export function getStatusCategoryColor(statusCategory: string): string {
     categoryLower === 'ready for testing' ||
     categoryLower === 'ready for qa'
   ) {
-    return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border-yellow-200 dark:border-yellow-700';
   }
 
   // Blocked/On Hold statuses - Red/Orange
@@ -131,7 +131,7 @@ export function getStatusCategoryColor(statusCategory: string): string {
     categoryLower === 'paused' ||
     categoryLower === 'waiting'
   ) {
-    return 'bg-red-100 text-red-800 border-red-200';
+    return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-700';
   }
 
   // Cancelled/Won't Do statuses - Gray
@@ -142,7 +142,7 @@ export function getStatusCategoryColor(statusCategory: string): string {
     categoryLower === 'wont do' ||
     categoryLower === 'rejected'
   ) {
-    return 'bg-gray-100 text-gray-600 border-gray-300';
+    return 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 border-gray-300 dark:border-slate-600';
   }
 
   // To Do/Open/Backlog statuses - Light Blue/Gray
@@ -154,25 +154,25 @@ export function getStatusCategoryColor(statusCategory: string): string {
     categoryLower === 'new' ||
     categoryLower === 'ready'
   ) {
-    return 'bg-slate-100 text-slate-700 border-slate-200';
+    return 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600';
   }
 
   // Default - Gray
-  return 'bg-gray-100 text-gray-800 border-gray-200';
+  return 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-slate-300 border-gray-200 dark:border-slate-600';
 }
 
 export function getTypeColor(type: string): string {
   const typeLower = (type || '').toLowerCase();
 
   const colorMap: Record<string, string> = {
-    epic: 'bg-purple-100 text-purple-800 border-purple-200',
-    story: 'bg-blue-100 text-blue-800 border-blue-200',
+    epic: 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-700',
+    story: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-700',
     // Task should be gray (not green) per new implementation
-    task: 'bg-gray-100 text-gray-800 border-gray-200',
-    bug: 'bg-red-100 text-red-800 border-red-200',
+    task: 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-slate-300 border-gray-200 dark:border-slate-600',
+    bug: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-700',
   };
 
-  return colorMap[typeLower] || 'bg-gray-100 text-gray-800 border-gray-200';
+  return colorMap[typeLower] || 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-slate-300 border-gray-200 dark:border-slate-600';
 }
 
 export function getProgressColor(progress: number | string | null | undefined): string {
@@ -180,9 +180,9 @@ export function getProgressColor(progress: number | string | null | undefined): 
     typeof progress === 'number' ? progress : typeof progress === 'string' ? parseFloat(progress) : 0;
 
   if (progressNum === 100) {
-    return 'text-green-600 font-semibold';
+    return 'text-green-600 dark:text-green-400 font-semibold';
   }
 
-  return 'text-gray-700';
+  return 'text-gray-700 dark:text-slate-300';
 }
 

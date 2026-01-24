@@ -109,15 +109,15 @@ export default function ResizablePanels({
           </div>
           {index < childArray.length - 1 && (
             <div
-              className={`flex-shrink-0 w-1 hover:bg-blue-500 cursor-col-resize transition-all relative group ${
-                isDragging && activeResizer === index ? 'bg-blue-500' : 'bg-transparent'
+              className={`flex-shrink-0 w-1 hover:bg-brand cursor-col-resize transition-all relative group ${
+                isDragging && activeResizer === index ? 'bg-brand' : 'bg-transparent'
               }`}
               onMouseDown={handleMouseDown(index)}
               style={{ cursor: 'col-resize' }}
             >
               <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 w-1 flex items-center justify-center">
                 <div className={`w-0.5 h-full transition-colors ${
-                  isDragging && activeResizer === index ? 'bg-blue-500' : 'bg-transparent group-hover:bg-blue-400'
+                  isDragging && activeResizer === index ? 'bg-brand' : 'bg-transparent group-hover:bg-blue-400'
                 }`}></div>
               </div>
             </div>

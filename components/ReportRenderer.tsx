@@ -29,6 +29,8 @@ export interface ReportRendererProps {
   refreshKey?: number;
   bypassCache?: boolean;
   onBypassCacheUsed?: () => void;
+  onFiltersChange?: (filters: Record<string, FilterValue>) => void;
+  componentProps?: Record<string, any>;
 }
 
 const valueProvided = (value: FilterValue): boolean => {
@@ -128,6 +130,8 @@ const ReportRenderer: React.FC<ReportRendererProps> = ({
   refreshKey = 0,
   bypassCache = false,
   onBypassCacheUsed,
+  onFiltersChange,
+  componentProps: additionalComponentProps,
 }) => {
   const registry = React.useMemo<ReportComponentRegistry>(() => {
     if (!componentOverrides) {
@@ -273,6 +277,18 @@ const ReportRenderer: React.FC<ReportRendererProps> = ({
 
   const Component = reportConfig.component;
 
+  // Create setFilters handler that calls onFiltersChange if provided
+  const setFilters = React.useCallback((updater: ((prev: Record<string, any>) => Record<string, any>) | Record<string, any>) => {
+    if (!onFiltersChange) return;
+    
+    if (typeof updater === 'function') {
+      const newFilters = updater(sanitizedFilters as Record<string, any>);
+      onFiltersChange(newFilters);
+    } else {
+      onFiltersChange(updater);
+    }
+  }, [onFiltersChange, sanitizedFilters]);
+
   const context: ReportRenderContext = {
     loading,
     error,
@@ -285,8 +301,11 @@ const ReportRenderer: React.FC<ReportRendererProps> = ({
     refresh,
   };
 
-  const componentProps =
-    reportConfig.mapProps?.(context) ?? defaultMapProps(context);
+  const componentProps = {
+    ...(reportConfig.mapProps?.(context) ?? defaultMapProps(context)),
+    setFilters: onFiltersChange ? setFilters : undefined,
+    ...additionalComponentProps,
+  };
 
   return <Component {...componentProps} />;
 };

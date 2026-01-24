@@ -11,294 +11,297 @@ import TeamGroupFilter from '../TeamGroupFilter';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 
 interface SprintPredictabilityViewProps {
-  data: SprintPredictabilityItem[] | null | undefined;
-  loading: boolean;
-  error: string | null;
-  filters: Record<string, any>;
-  setFilters: (updater: ReportFiltersUpdater) => void;
-  refresh: () => void;
-  meta?: Record<string, any> | null;
-  componentProps?: Record<string, any>;
-  togglePin?: (filterKey: string) => void;
-  pinnedFilters?: string[];
+ data: SprintPredictabilityItem[] | null | undefined;
+ loading: boolean;
+ error: string | null;
+ filters: Record<string, any>;
+ setFilters: (updater: ReportFiltersUpdater) => void;
+ refresh: () => void;
+ meta?: Record<string, any> | null;
+ componentProps?: Record<string, any>;
+ togglePin?: (filterKey: string) => void;
+ pinnedFilters?: string[];
 }
 
 const getJiraSearchLink = (keys: string[], jiraUrl: string) => {
-  if (!keys || keys.length === 0) {
-    return '#';
-  }
-  const keysParam = keys.join(',');
-  const jql = encodeURIComponent(`key IN (${keysParam})`);
-  return `${jiraUrl}/issues/?jql=${jql}`;
+ if (!keys || keys.length === 0) {
+ return '#';
+ }
+ const keysParam = keys.join(',');
+ const jql = encodeURIComponent(`key IN (${keysParam})`);
+ return `${jiraUrl}/issues/?jql=${jql}`;
 };
 
 const buildColumns = (jiraUrl: string): Column<SprintPredictabilityItem>[] => [
-  {
-    key: 'team_name',
-    label: 'Team Name',
-    align: 'left',
-  },
-  {
-    key: 'sprint_name',
-    label: 'Sprint Name',
-    align: 'left',
-  },
-  {
-    key: 'sprint_actual_complete_date',
-    label: 'Complete Date',
-    render: (value) => {
-      if (!value) {
-        return <span className="text-sm text-gray-500">-</span>;
-      }
-      const date = new Date(value);
-      return (
-        <span className="text-sm text-gray-700">
-          {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-        </span>
-      );
-    },
-  },
-  {
-    key: 'sprint_predictability',
-    label: 'Predictability %',
-    render: (value) => {
-      // Handle both number and string values
-      const numValue = typeof value === 'string' ? parseFloat(value) : (typeof value === 'number' ? value : 0);
-      const percent = numValue * 100;
-      const formatted = Math.round(percent);
-      const isGreen = percent >= 75;
-      return (
-        <span className={`text-sm font-semibold ${isGreen ? 'text-green-600' : 'text-gray-900'}`}>
-          {formatted}%
-        </span>
-      );
-    },
-  },
-  {
-    key: 'avg_story_cycle_time',
-    label: 'Avg Cycle Time',
-    render: (value) => {
-      // Handle both number and string values
-      const num = typeof value === 'string' ? parseFloat(value) : (typeof value === 'number' ? value : 0);
-      let color = 'text-gray-900';
-      if (num > 15) {
-        color = 'text-red-600';
-      } else if (num >= 10) {
-        color = 'text-yellow-600';
-      } else if (num > 0) {
-        color = 'text-green-600';
-      }
-      return (
-        <span className={`text-sm font-semibold ${color}`}>{num.toFixed(1)}</span>
-      );
-    },
-  },
-  {
-    key: 'completed_issue_keys',
-    label: 'Completed',
-    render: (_value, row) => {
-      const issues = row.completed_issue_keys ?? [];
-      if (issues.length === 0) {
-        return <span className="text-sm text-gray-500">0</span>;
-      }
-      const link = getJiraSearchLink(issues, jiraUrl);
-      return (
-        <a
-          href={link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline"
-          title={issues.join(', ')}
-        >
-          {issues.length}
-        </a>
-      );
-    },
-  },
-  {
-    key: 'total_committed_issue_keys',
-    label: 'Committed',
-    render: (_value, row) => {
-      const issues = row.total_committed_issue_keys ?? [];
-      if (issues.length === 0) {
-        return <span className="text-sm text-gray-500">0</span>;
-      }
-      const link = getJiraSearchLink(issues, jiraUrl);
-      return (
-        <a
-          href={link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline"
-          title={issues.join(', ')}
-        >
-          {issues.length}
-        </a>
-      );
-    },
-  },
-  {
-    key: 'issues_not_completed_keys',
-    label: 'Not Completed',
-    render: (_value, row) => {
-      const issues = row.issues_not_completed_keys ?? [];
-      if (issues.length === 0) {
-        return <span className="text-sm text-gray-500">0</span>;
-      }
-      const link = getJiraSearchLink(issues, jiraUrl);
-      return (
-        <a
-          href={link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm font-semibold text-red-600 hover:text-red-800 hover:underline"
-          title={issues.join(', ')}
-        >
-          {issues.length}
-        </a>
-      );
-    },
-  },
+ {
+ key: 'team_name',
+ label: 'Team Name',
+ align: 'left',
+ },
+ {
+ key: 'sprint_name',
+ label: 'Sprint Name',
+ align: 'left',
+ },
+ {
+ key: 'sprint_actual_complete_date',
+ label: 'Complete Date',
+ render: (value) => {
+ if (!value) {
+ return <span className="text-sm text-content-muted">-</span>;
+ }
+ const date = new Date(value);
+ return (
+ <span className="text-sm text-content-secondary">
+ {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+ </span>
+ );
+ },
+ },
+ {
+ key: 'sprint_predictability',
+ label: 'Predictability %',
+ render: (value) => {
+ // Handle both number and string values
+ const numValue = typeof value === 'string' ? parseFloat(value) : (typeof value === 'number' ? value : 0);
+ const percent = numValue * 100;
+ const formatted = Math.round(percent);
+ const isGreen = percent >= 75;
+ return (
+ <span className={`text-sm font-semibold ${isGreen ? 'text-positive-text' : 'text-content-primary'}`}>
+ {formatted}%
+ </span>
+ );
+ },
+ },
+ {
+ key: 'avg_story_cycle_time',
+ label: 'Avg Cycle Time',
+ render: (value) => {
+ // Handle both number and string values
+ const num = typeof value === 'string' ? parseFloat(value) : (typeof value === 'number' ? value : 0);
+ let color = 'text-content-primary';
+ if (num > 15) {
+ color = 'text-danger-text';
+ } else if (num >= 10) {
+ color = 'text-yellow-600 text-yellow-400';
+ } else if (num > 0) {
+ color = 'text-positive-text';
+ }
+ return (
+ <span className={`text-sm font-semibold ${color}`}>{num.toFixed(1)}</span>
+ );
+ },
+ },
+ {
+ key: 'completed_issue_keys',
+ label: 'Completed',
+ render: (_value, row) => {
+ const issues = row.completed_issue_keys ?? [];
+ if (issues.length === 0) {
+ return <span className="text-sm text-content-muted">0</span>;
+ }
+ const link = getJiraSearchLink(issues, jiraUrl);
+ return (
+ <a
+ href={link}
+ target="_blank"
+ rel="noopener noreferrer"
+ className="text-sm font-semibold text-brand hover:text-blue-800 hover:text-blue-300 hover:underline"
+ title={issues.join(', ')}
+ >
+ {issues.length}
+ </a>
+ );
+ },
+ },
+ {
+ key: 'total_committed_issue_keys',
+ label: 'Committed',
+ render: (_value, row) => {
+ const issues = row.total_committed_issue_keys ?? [];
+ if (issues.length === 0) {
+ return <span className="text-sm text-content-muted">0</span>;
+ }
+ const link = getJiraSearchLink(issues, jiraUrl);
+ return (
+ <a
+ href={link}
+ target="_blank"
+ rel="noopener noreferrer"
+ className="text-sm font-semibold text-brand hover:text-blue-800 hover:text-blue-300 hover:underline"
+ title={issues.join(', ')}
+ >
+ {issues.length}
+ </a>
+ );
+ },
+ },
+ {
+ key: 'issues_not_completed_keys',
+ label: 'Not Completed',
+ render: (_value, row) => {
+ const issues = row.issues_not_completed_keys ?? [];
+ if (issues.length === 0) {
+ return <span className="text-sm text-content-muted">0</span>;
+ }
+ const link = getJiraSearchLink(issues, jiraUrl);
+ return (
+ <a
+ href={link}
+ target="_blank"
+ rel="noopener noreferrer"
+ className="text-sm font-semibold text-danger-text hover:text-red-800 hover:text-red-300 hover:underline"
+ title={issues.join(', ')}
+ >
+ {issues.length}
+ </a>
+ );
+ },
+ },
 ];
 
 const SprintPredictabilityView: React.FC<SprintPredictabilityViewProps> = ({
-  data,
-  loading,
-  error,
-  filters,
-  setFilters,
-  refresh,
-  meta,
-  componentProps,
-  togglePin,
-  pinnedFilters = [],
+ data,
+ loading,
+ error,
+ filters,
+ setFilters,
+ refresh,
+ meta,
+ componentProps,
+ togglePin,
+ pinnedFilters = [],
 }) => {
-  const months = Number(filters.months ?? 3);
-  const jiraUrl = meta?.jira_url;
-  const rows = Array.isArray(data) ? data : [];
+ const months = Number(filters.months ?? 3);
+ const jiraUrl = meta?.jira_url;
+ const rows = Array.isArray(data) ? data : [];
 
-  const { groups, teams } = useTeamsGroups();
-  const teamName = (filters.team_name as string) ?? '';
-  const isGroup = (filters.isGroup as boolean) ?? false;
+ const { groups, teams } = useTeamsGroups();
+ const teamName = (filters?.team_name as string) ?? '';
+ const isGroup = (filters?.isGroup as boolean) ?? false;
 
-  const teamValue = useMemo(() => {
-    if (!teamName) return null;
-    
-    if (isGroup) {
-      const group = groups.find(g => g.group_name === teamName);
-      return group ? `group:${group.group_key}` : null;
-    } else {
-      const team = teams.find(t => t.team_name === teamName);
-      return team ? `team:${team.team_key}` : null;
-    }
-  }, [teamName, isGroup, groups, teams]);
+ const teamValue = useMemo(() => {
+ if (!teamName) return null;
+ 
+ if (isGroup) {
+ const group = groups.find(g => g.group_name === teamName);
+ return group ? `group:${group.group_key}` : null;
+ } else {
+ const team = teams.find(t => t.team_name === teamName);
+ return team ? `team:${team.team_key}` : null;
+ }
+ }, [teamName, isGroup, groups, teams]);
 
-  const columns = useMemo(() => buildColumns(jiraUrl || ''), [jiraUrl]);
+ const columns = useMemo(() => buildColumns(jiraUrl || ''), [jiraUrl]);
 
-  const handleTeamGroupChange = useCallback(
-    (value: string | null, type: 'group' | 'team', name: string) => {
-      if (value === null) {
-        setFilters((prev) => ({
-          ...prev,
-          team_name: null,
-          isGroup: false,
-        }));
-      } else {
-        setFilters((prev) => ({
-          ...prev,
-          team_name: name,
-          isGroup: type === 'group',
-        }));
-      }
-    },
-    [setFilters]
-  );
+ const handleTeamGroupChange = useCallback(
+ (value: string | null, type: 'group' | 'team', name: string) => {
+ if (value === null) {
+ setFilters?.((prev) => ({
+ ...prev,
+ team_name: null,
+ isGroup: false,
+ }));
+ } else {
+ setFilters?.((prev) => ({
+ ...prev,
+ team_name: name,
+ isGroup: type === 'group',
+ }));
+ }
+ },
+ [setFilters]
+ );
 
-  const filtersContent = (
-    <ReportFiltersRow>
-      <ReportFilterField label="Months">
-        <select
-          value={months}
-          onChange={(event) =>
-            setFilters((prev) => ({
-              ...prev,
-              months: Number(event.target.value),
-            }))
-          }
-          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-        >
-          {[1, 2, 3, 4, 6, 9].map((option) => (
-            <option key={option} value={option}>
-              Last {option} month{option === 1 ? '' : 's'}
-            </option>
-          ))}
-        </select>
-      </ReportFilterField>
+ const filtersContent = (
+ <ReportFiltersRow>
+ <ReportFilterField label="Months">
+ <select
+ value={months}
+ onChange={(event) =>
+ setFilters?.((prev) => ({
+ ...prev,
+ months: Number(event.target.value),
+ }))
+ }
+ className="px-2 py-1 border border-outline-strong bg-surface-elevated text-content-primary rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand"
+ >
+ {[1, 2, 3, 4, 6, 9].map((option) => (
+ <option key={option} value={option}>
+ Last {option} month{option === 1 ? '' : 's'}
+ </option>
+ ))}
+ </select>
+ </ReportFilterField>
 
-      <ReportFilterField label="Team/Group">
-        <TeamGroupFilter
-          value={teamValue}
-          onChange={handleTeamGroupChange}
-          placeholder="Select team or group"
-          allowClear={true}
-        />
-      </ReportFilterField>
-    </ReportFiltersRow>
-  );
+ <ReportFilterField label="Team/Group">
+ <TeamGroupFilter
+ value={teamValue}
+ onChange={handleTeamGroupChange}
+ placeholder="Select team or group"
+ allowClear={true}
+ />
+ </ReportFilterField>
+ </ReportFiltersRow>
+ );
 
-  // Generate filter badges for active filters
-  const filterBadges = useMemo(() => {
-    const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
-    
-    if (months) {
-      badges.push({
-        label: 'Time Period',
-        value: `${months} month${months !== 1 ? 's' : ''}`,
-        filterKey: 'months',
-        isPinned: pinnedFilters.includes('months'),
-      });
-    }
-    
-    if (teamName) {
-      badges.push({
-        label: isGroup ? 'Group' : 'Team',
-        value: teamName,
-        filterKey: 'team_name',
-        isPinned: pinnedFilters.includes('team_name'),
-      });
-    }
-    
-    return badges;
-  }, [months, teamName, isGroup, pinnedFilters]);
+ // Generate filter badges for active filters
+ const filterBadges = useMemo(() => {
+ const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
+ 
+ if (months) {
+ badges.push({
+ label: 'Time Period',
+ value: `${months} month${months !== 1 ? 's' : ''}`,
+ filterKey: 'months',
+ isPinned: pinnedFilters.includes('months'),
+ });
+ }
+ 
+ if (teamName) {
+ badges.push({
+ label: isGroup ? 'Group' : 'Team',
+ value: teamName,
+ filterKey: 'team_name',
+ isPinned: pinnedFilters.includes('team_name'),
+ });
+ }
+ 
+ return badges;
+ }, [months, teamName, isGroup, pinnedFilters]);
 
-  return (
-    <ReportCard 
-      title="Sprint Predictability" 
-      reportId={componentProps?.reportId}
-      filters={filtersContent} 
-      filterBadges={filterBadges}
-      onTogglePin={togglePin}
-      onRefresh={refresh}
-      onClose={componentProps?.onClose}
-      onAIChat={componentProps?.onAIChat}
-    >
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
-          {error}
-        </div>
-      )}
+ return (
+ <ReportCard 
+ title="Sprint Predictability" 
+ reportId={componentProps?.reportId}
+ filters={filtersContent} 
+ filterBadges={filterBadges}
+ onTogglePin={togglePin}
+ onRefresh={refresh}
+ onClose={componentProps?.onClose}
+ onAIChat={componentProps?.onAIChat}
+ readOnly={componentProps?.readOnly}
+ hideHeader={componentProps?.hideHeader}
+ hideCollapse={componentProps?.hideCollapse}
+ >
+ {error && (
+ <div className="bg-danger-bg border border-danger-border rounded-lg p-4 text-sm text-danger-text">
+ {error}
+ </div>
+ )}
 
-      {!error && (
-        <DataTable<SprintPredictabilityItem>
-          data={rows}
-          columns={columns}
-          loading={loading}
-          emptyMessage="No sprint predictability data available."
-          rowKey={(row, index) => `${row.sprint_name || 'sprint'}-${index}`}
-        />
-      )}
-    </ReportCard>
-  );
+ {!error && (
+ <DataTable<SprintPredictabilityItem>
+ data={rows}
+ columns={columns}
+ loading={loading}
+ emptyMessage="No sprint predictability data available."
+ rowKey={(row, index) => `${row.sprint_name || 'sprint'}-${index}`}
+ />
+ )}
+ </ReportCard>
+ );
 };
 
 export default SprintPredictabilityView;

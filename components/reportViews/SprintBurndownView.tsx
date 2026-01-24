@@ -11,9 +11,9 @@ interface SprintBurndownViewProps {
   data: BurndownDataPoint[];
   loading: boolean;
   error: string | null;
-  filters: Record<string, any>;
-  setFilters: (updater: ReportFiltersUpdater) => void;
-  refresh: () => void;
+  filters?: Record<string, any>;
+  setFilters?: (updater: ReportFiltersUpdater) => void;
+  refresh?: () => void;
   meta?: Record<string, any>;
   componentProps?: Record<string, any>;
   togglePin?: (filterKey: string) => void;
@@ -39,10 +39,10 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
   togglePin,
   pinnedFilters = [],
 }) => {
-  const issueType = (filters.issue_type as string) ?? 'all';
-  const sprintName = (filters.sprint_name as string) ?? '';
-  const teamName = (filters.team_name as string) ?? '';
-  const isGroup = (filters.isGroup as boolean) ?? false;
+  const issueType = (filters?.issue_type as string) ?? 'all';
+  const sprintName = (filters?.sprint_name as string) ?? '';
+  const teamName = (filters?.team_name as string) ?? '';
+  const isGroup = (filters?.isGroup as boolean) ?? false;
   const apiService = React.useMemo(() => new ApiService(), []);
 
   const availableTeams = useMemo(() => {
@@ -67,21 +67,21 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
   const prevTeamGroupRef = useRef<{ teamName: string; isGroup: boolean } | null>(null);
 
   const handleIssueTypeChange = (value: string) => {
-    setFilters((prev) => ({
+    setFilters?.((prev) => ({
       ...prev,
       issue_type: value,
     }));
   };
 
   const handleTeamNameChange = useCallback((value: string) => {
-    setFilters((prev) => ({
+    setFilters?.((prev) => ({
       ...prev,
       team_name: value || null,
     }));
   }, [setFilters]);
 
   const handleSprintChange = (value: string) => {
-    setFilters((prev) => ({
+    setFilters?.((prev) => ({
       ...prev,
       sprint_name: value || null,
     }));
@@ -115,7 +115,7 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
       const groupChanged = prevTeamGroup.isGroup !== currentTeamGroup.isGroup;
       
       if (teamChanged || groupChanged) {
-        setFilters((prev) => ({
+        setFilters?.((prev) => ({
           ...prev,
           sprint_name: '', // Empty string represents "Current Sprint"
         }));
@@ -135,7 +135,7 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
           <select
             value={issueType}
             onChange={(event) => handleIssueTypeChange(event.target.value)}
-            className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand"
           >
             {ISSUE_TYPE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -153,7 +153,7 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
           <select
             value={sprintName}
             onChange={(event) => handleSprintChange(event.target.value)}
-            className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand"
           >
             {sprintOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -235,7 +235,7 @@ const SprintBurndownView: React.FC<SprintBurndownViewProps> = ({
 
   // Date display for Sprint
   const dateDisplay = (meta?.start_date || meta?.end_date) ? (
-    <div className="mt-2 text-xs text-gray-500 text-center">
+    <div className="mt-2 text-xs text-content-tertiary text-center">
       {meta?.start_date && meta?.end_date && (
         <span>
           Dates: {meta.start_date} – {meta.end_date}

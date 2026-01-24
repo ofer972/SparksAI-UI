@@ -126,18 +126,18 @@ export function ViewRecordModal<T extends Record<string, any>>({
     
     return (
       <div key={String(key)} className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-1 items-start">
-        <span className="text-sm font-medium text-gray-700">
+        <span className="text-sm font-medium text-content-secondary">
           {String(key).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:
         </span>
         {isLinkField && value !== null && value !== undefined && formattedValue !== '-' ? (
           <button
             onClick={handleLinkClick}
-            className="text-sm text-blue-600 hover:text-blue-800 underline cursor-pointer text-left"
+            className="text-sm text-brand hover:text-blue-800 underline cursor-pointer text-left"
           >
             {formattedValue}
           </button>
         ) : (
-          <span className="text-sm text-gray-900">{formattedValue}</span>
+          <span className="text-sm text-content-primary">{formattedValue}</span>
         )}
       </div>
     );
@@ -162,27 +162,27 @@ export function ViewRecordModal<T extends Record<string, any>>({
     
     return (
       <div key={String(key)} className="mb-4">
-        <div className="text-sm font-medium text-gray-700 mb-2">
+        <div className="text-sm font-medium text-content-secondary mb-2">
           {String(key).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:
         </div>
-        <div className="bg-gray-50 p-3 rounded text-sm text-gray-900 max-h-64 overflow-y-auto">
+        <div className="bg-surface-elevated p-3 rounded text-sm text-content-primary max-h-64 overflow-y-auto">
           {isMarkdown ? (
             <div className="prose prose-sm max-w-none">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkBreaks]}
                 components={{
-                  p: ({ children }) => <p className="text-sm text-gray-900 mb-2">{children}</p>,
+                  p: ({ children }) => <p className="text-sm text-content-primary mb-2">{children}</p>,
                   strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
                   em: ({ children }) => <em className="italic">{children}</em>,
-                  ul: ({ children }) => <ul className="list-disc list-inside text-sm text-gray-900 mb-2">{children}</ul>,
-                  ol: ({ children }) => <ol className="list-decimal list-inside text-sm text-gray-900 mb-2">{children}</ol>,
-                  li: ({ children }) => <li className="text-sm text-gray-900">{children}</li>,
-                  code: ({ children }) => <code className="bg-gray-100 px-1 rounded text-xs">{children}</code>,
-                  pre: ({ children }) => <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto whitespace-pre-wrap">{children}</pre>,
-                  h1: ({ children }) => <h1 className="text-lg font-bold text-gray-900 mb-2">{children}</h1>,
-                  h2: ({ children }) => <h2 className="text-base font-bold text-gray-900 mb-2">{children}</h2>,
-                  h3: ({ children }) => <h3 className="text-sm font-semibold text-gray-900 mb-2">{children}</h3>,
-                  blockquote: ({ children }) => <blockquote className="border-l-2 border-gray-300 pl-2 italic text-gray-600 mb-2">{children}</blockquote>,
+                  ul: ({ children }) => <ul className="list-disc list-inside text-sm text-content-primary mb-2">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal list-inside text-sm text-content-primary mb-2">{children}</ol>,
+                  li: ({ children }) => <li className="text-sm text-content-primary">{children}</li>,
+                  code: ({ children }) => <code className="bg-surface-secondary px-1 rounded text-xs">{children}</code>,
+                  pre: ({ children }) => <pre className="bg-surface-secondary p-2 rounded text-xs overflow-x-auto whitespace-pre-wrap">{children}</pre>,
+                  h1: ({ children }) => <h1 className="text-lg font-bold text-content-primary mb-2">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-base font-bold text-content-primary mb-2">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-sm font-semibold text-content-primary mb-2">{children}</h3>,
+                  blockquote: ({ children }) => <blockquote className="border-l-2 border-outline pl-2 italic text-content-secondary mb-2">{children}</blockquote>,
                 }}
               >
                 {String(displayValue)}
@@ -198,15 +198,15 @@ export function ViewRecordModal<T extends Record<string, any>>({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+      <div className="bg-surface rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">
+        <div className="flex items-center justify-between p-4 border-b border-outline">
+          <h3 className="text-lg font-semibold text-content-primary">
             {config.title} Details
           </h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-content-muted hover:text-content-secondary transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -219,18 +219,18 @@ export function ViewRecordModal<T extends Record<string, any>>({
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span className="ml-2 text-gray-600">Loading details...</span>
+              <span className="ml-2 text-content-secondary">Loading details...</span>
             </div>
           ) : error ? (
             <div className="text-center py-8">
               <div className="text-red-600 mb-2">Error loading details</div>
-              <div className="text-sm text-gray-500">{error}</div>
+              <div className="text-sm text-content-tertiary">{error}</div>
             </div>
           ) : (
             <div className="space-y-6">
               {/* Normal Fields Section */}
               <div>
-                <h4 className="text-md font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">
+                <h4 className="text-md font-semibold text-content-primary mb-3 border-b border-outline pb-2">
                   Overview
                 </h4>
                 <div className="grid grid-cols-2 gap-4">
@@ -259,7 +259,7 @@ export function ViewRecordModal<T extends Record<string, any>>({
               {/* Long Text Fields Section */}
               {Object.entries(displayData).some(([key, value]) => isLongTextField(key as keyof T, value)) && (
                 <div>
-                  <h4 className="text-md font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">
+                  <h4 className="text-md font-semibold text-content-primary mb-3 border-b border-outline pb-2">
                     Details
                   </h4>
                   <div className="space-y-4">
@@ -290,7 +290,7 @@ export function ViewRecordModal<T extends Record<string, any>>({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end px-3 pt-3 pb-4 border-t border-gray-200">
+        <div className="flex justify-end px-3 pt-3 pb-4 border-t border-outline">
           <button
             onClick={onClose}
             className="bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors font-medium"

@@ -19,7 +19,7 @@ export default function ETLJobStatus({
 }: ETLJobStatusProps) {
   const renderContent = () => {
     if (!jobStatus) {
-      return <div className="text-gray-600">Loading status...</div>;
+      return <div className="text-content-secondary">Loading status...</div>;
     }
 
     const { current_job, last_finished_job } = jobStatus;
@@ -38,11 +38,11 @@ export default function ETLJobStatus({
               {isStale ? (
                 <span className="text-yellow-600 font-semibold">⏳ Stale</span>
               ) : current_job.status === 'RUNNING' ? (
-                <span className="text-blue-600 font-semibold">⚙️ Running</span>
+                <span className="text-brand font-semibold">⚙️ Running</span>
               ) : (
-                <span className="text-gray-600 font-semibold">⏳ Queued</span>
+                <span className="text-content-secondary font-semibold">⏳ Queued</span>
               )}
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-content-secondary">
                 {current_job.job_type} (ID: ...{current_job.job_id.slice(-8)})
               </span>
             </div>
@@ -51,15 +51,15 @@ export default function ETLJobStatus({
           <div className="mb-2">
             <div className="w-full bg-gray-200 rounded-full h-2.5">
               <div
-                className="bg-blue-600 h-2.5 rounded-full transition-all"
+                className="bg-brand h-2.5 rounded-full transition-all"
                 style={{ width: `${Math.min(100, Math.max(0, progressPercent * 100))}%` }}
               />
             </div>
           </div>
 
-          <div className="text-sm text-gray-700 mb-2">{progress.message}</div>
+          <div className="text-sm text-content-secondary mb-2">{progress.message}</div>
 
-          <div className="flex flex-wrap gap-2 sm:gap-4 text-xs text-gray-600">
+          <div className="flex flex-wrap gap-2 sm:gap-4 text-xs text-content-secondary">
             {typeof progress.processed_count === 'number' && (
               <span>Processed: {progress.processed_count.toLocaleString()}</span>
             )}
@@ -112,19 +112,19 @@ export default function ETLJobStatus({
       );
     }
 
-    return <div className="text-gray-600">System Idle. Ready to start.</div>;
+    return <div className="text-content-secondary">System Idle. Ready to start.</div>;
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4">
+    <div className="bg-surface rounded-lg shadow-sm p-4">
       {showHeader && (
         <div className="flex items-center gap-3 mb-3">
-          <h3 className="text-sm font-semibold text-gray-900">Data Sync Job Status</h3>
+          <h3 className="text-sm font-semibold text-content-primary">Data Sync Job Status</h3>
           {onRefresh && (
             <button
               onClick={onRefresh}
               disabled={refreshingStatus}
-              className="px-2.5 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+              className="px-2.5 py-1 bg-brand text-white text-xs rounded hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
               <span className={refreshingStatus ? 'animate-spin' : ''}>🔄</span>
               <span>Refresh</span>

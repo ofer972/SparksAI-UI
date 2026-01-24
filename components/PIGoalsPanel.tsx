@@ -664,26 +664,26 @@ export default function GoalsPanel({
 
         return (
           <div className="flex items-center gap-1 text-[13px] group" style={{ paddingLeft: `${paddingLeft}px` }}>
-            {/* Expand/Collapse Icon */}
-            {hasChildren ? (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  if (key) {
-                    toggleExpanded(key);
-                  }
-                }}
-                className="text-xs text-gray-600 hover:text-gray-900 flex items-center justify-center w-6 h-6 flex-shrink-0 cursor-pointer"
-                title={isExpanded ? 'Collapse' : 'Expand'}
-                style={{ minWidth: '24px', width: '24px', height: '24px' }}
-              >
-                {isExpanded ? '▼' : '▶'}
-              </button>
-            ) : (
-              <span className="inline-block w-6 h-6 flex-shrink-0" style={{ minWidth: '24px', width: '24px' }} />
-            )}
+          {/* Expand/Collapse Icon */}
+          {hasChildren ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                if (key) {
+                  toggleExpanded(key);
+                }
+              }}
+              className="text-xs text-content-tertiary hover:text-content-primary flex items-center justify-center w-6 h-6 flex-shrink-0 cursor-pointer"
+              title={isExpanded ? 'Collapse' : 'Expand'}
+              style={{ minWidth: '24px', width: '24px', height: '24px' }}
+            >
+              {isExpanded ? '▼' : '▶'}
+            </button>
+          ) : (
+            <span className="inline-block w-6 h-6 flex-shrink-0" style={{ minWidth: '24px', width: '24px' }} />
+          )}
 
             {/* Content */}
             <div className="flex-1">
@@ -713,31 +713,31 @@ export default function GoalsPanel({
                     >
                       {displayEpicKey}
                     </span>
-                  )}
-                  {' - '}
-                  <span style={{ color: '#374151' }}>{displaySummary}</span>
-                </span>
-              ) : (
-                // Section or Goal row: show value
-                (() => {
-                  const valueStr = String(value || '');
-                  // Check if this is a section header with "Group Goals:" or "Team Goals:"
-                  if (valueStr.startsWith('Group Goals:') || valueStr.startsWith('Team Goals:')) {
-                    const parts = valueStr.split(':');
-                    if (parts.length === 2) {
-                      const prefix = parts[0] + ':';
-                      const name = parts[1].trim();
-                      return (
-                        <span className="text-[13px]" style={{ color: '#374151' }}>
-                          {prefix} <span className="font-bold">{name}</span>
-                        </span>
-                      );
-                    }
+                )}
+                {' - '}
+                <span className="text-content-secondary">{displaySummary}</span>
+              </span>
+            ) : (
+              // Section or Goal row: show value
+              (() => {
+                const valueStr = String(value || '');
+                // Check if this is a section header with "Group Goals:" or "Team Goals:"
+                if (valueStr.startsWith('Group Goals:') || valueStr.startsWith('Team Goals:')) {
+                  const parts = valueStr.split(':');
+                  if (parts.length === 2) {
+                    const prefix = parts[0] + ':';
+                    const name = parts[1].trim();
+                    return (
+                      <span className="text-[13px] text-content-secondary">
+                        {prefix} <span className="font-bold">{name}</span>
+                      </span>
+                    );
                   }
-                  // Regular value (not a section header)
-                  return <span className="text-[13px]" style={{ color: '#374151' }}>{valueStr}</span>;
-                })()
-              )}
+                }
+                // Regular value (not a section header)
+                return <span className="text-[13px] text-content-secondary">{valueStr}</span>;
+              })()
+            )}
             </div>
 
             {/* Connect Epics Button - Only for goal rows in User panel */}
@@ -784,7 +784,7 @@ export default function GoalsPanel({
                 className="p-0.5 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
                 title="Connect issues to goal"
               >
-                <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
               </button>
@@ -831,7 +831,7 @@ export default function GoalsPanel({
                 e.stopPropagation();
                 toggleSelectAll();
               }}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+              className="w-4 h-4 text-brand border-outline rounded focus:ring-brand cursor-pointer"
               title="Select all goals"
             />
           </div>
@@ -860,7 +860,7 @@ export default function GoalsPanel({
                   e.stopPropagation();
                   toggleGoalCheck(goalId);
                 }}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                className="w-4 h-4 text-brand border-outline rounded focus:ring-brand cursor-pointer"
               />
             </div>
           );
@@ -926,7 +926,7 @@ export default function GoalsPanel({
               
               return (
                 <div className="text-center" style={{ minWidth: '94px', width: '94px' }}>
-                  <span className="text-[13px] text-gray-700">
+                  <span className="text-[13px] text-content-secondary">
                     {epicsPercent}% on epics {childrenPercent}% on stories
                   </span>
                 </div>
@@ -947,7 +947,7 @@ export default function GoalsPanel({
               if (progressInt === 100) {
                 progressColor = 'text-green-600 font-semibold';
               } else {
-                progressColor = 'text-gray-700';
+                progressColor = 'text-content-secondary';
               }
               
               return (
@@ -979,7 +979,7 @@ export default function GoalsPanel({
           // For goals (level 1), display the priority BV value
           return (
             <div className="text-center">
-              <span className="text-[13px] text-gray-700">{String(value || '')}</span>
+              <span className="text-[13px] text-content-secondary">{String(value || '')}</span>
             </div>
           );
         },
@@ -1102,12 +1102,12 @@ export default function GoalsPanel({
   // Show loading state
   if (loading && hierarchyData.length === 0) {
     return (
-      <div className={`flex flex-col h-full bg-white border border-gray-200 rounded-lg ${className}`} style={style}>
-        <div className="p-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
-          <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+      <div className={`flex flex-col h-full bg-surface border border-outline rounded-lg ${className}`} style={style}>
+        <div className="p-4 border-b border-outline bg-surface-elevated flex-shrink-0">
+          <h3 className="text-sm font-semibold text-content-primary">{title}</h3>
         </div>
         <div className="flex-1 flex items-center justify-center p-8">
-          <p className="text-sm text-gray-500">Loading...</p>
+          <p className="text-sm text-content-tertiary">Loading...</p>
         </div>
       </div>
     );
@@ -1159,10 +1159,10 @@ export default function GoalsPanel({
         </div>
       )}
 
-      <div className={`flex flex-col h-full bg-white border border-gray-200 rounded-lg overflow-hidden ${className}`} style={style}>
-        <div className="p-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+      <div className={`flex flex-col h-full bg-surface border border-outline rounded-lg overflow-hidden ${className}`} style={style}>
+        <div className="p-4 border-b border-outline bg-surface-elevated flex-shrink-0">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+            <h3 className="text-sm font-semibold text-content-primary">{title}</h3>
             <div className="flex items-center gap-1.5">
               {type === 'user' && (
                 <button
@@ -1192,8 +1192,8 @@ export default function GoalsPanel({
                     className={`
                       px-3 py-1 rounded-lg font-medium text-xs transition-colors whitespace-nowrap
                       ${checkedGoalIds.size > 0 && !isConfirming
-                        ? 'bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        ? 'bg-brand text-white hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2'
+                        : 'bg-gray-300 text-content-tertiary cursor-not-allowed'
                       }
                     `}
                   >
@@ -1206,7 +1206,7 @@ export default function GoalsPanel({
                       p-1 rounded-md transition-all duration-150 border flex-shrink-0
                       ${checkedGoalIds.size > 0 && !isDeleting
                         ? 'hover:bg-red-50 text-red-600 border-transparent hover:border-red-200'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
+                        : 'bg-surface-secondary text-content-muted cursor-not-allowed border-outline'
                       }
                     `}
                     title="Delete selected goals"
@@ -1396,53 +1396,53 @@ export default function GoalsPanel({
       {/* Disconnect Epic Confirmation Modal */}
       {showRemoveEpicModal && epicToRemove && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+          <div className="bg-surface rounded-xl shadow-2xl max-w-md w-full">
             {/* Header */}
-            <div className="px-4 py-3 border-b border-gray-200 bg-red-50">
+            <div className="px-4 py-3 border-b border-outline bg-red-50">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
                   <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-bold text-gray-900">Disconnect Epic from Goal</h3>
+                <h3 className="text-lg font-bold text-content-primary">Disconnect Epic from Goal</h3>
               </div>
             </div>
 
             {/* Content */}
             <div className="p-4">
-              <p className="text-sm text-gray-700 mb-3">
+              <p className="text-sm text-content-secondary mb-3">
                 Do you want to disconnect this epic from the goal?
               </p>
               
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
+              <div className="bg-surface-elevated border border-outline rounded-lg p-3 space-y-2">
                 <div className="flex items-start gap-2">
-                  <span className="text-xs font-semibold text-gray-600 min-w-[80px]">Epic Key:</span>
-                  <span className="text-xs font-bold text-gray-900">{epicToRemove.epicKey}</span>
+                  <span className="text-xs font-semibold text-content-secondary min-w-[80px]">Epic Key:</span>
+                  <span className="text-xs font-bold text-content-primary">{epicToRemove.epicKey}</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="text-xs font-semibold text-gray-600 min-w-[80px]">Epic Summary:</span>
-                  <span className="text-xs text-gray-900 break-words">{epicToRemove.epicSummary}</span>
+                  <span className="text-xs font-semibold text-content-secondary min-w-[80px]">Epic Summary:</span>
+                  <span className="text-xs text-content-primary break-words">{epicToRemove.epicSummary}</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="text-xs font-semibold text-gray-600 min-w-[80px]">Goal:</span>
-                  <span className="text-xs text-gray-900 break-words">{epicToRemove.goalText}</span>
+                  <span className="text-xs font-semibold text-content-secondary min-w-[80px]">Goal:</span>
+                  <span className="text-xs text-content-primary break-words">{epicToRemove.goalText}</span>
                 </div>
               </div>
 
-              <p className="text-xs text-gray-600 mt-3">
+              <p className="text-xs text-content-secondary mt-3">
                 The epic will be disconnected from this goal and can be reconnected later.
               </p>
             </div>
 
             {/* Footer */}
-            <div className="px-4 py-3 bg-gray-50 rounded-b-xl flex gap-2">
+            <div className="px-4 py-3 bg-surface-elevated rounded-b-xl flex gap-2">
               <button
                 onClick={() => {
                   setShowRemoveEpicModal(false);
                   setEpicToRemove(null);
                 }}
-                className="flex-1 bg-white text-gray-700 text-sm border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                className="flex-1 bg-surface text-content-secondary text-sm border border-outline py-2 rounded-lg hover:bg-surface-elevated transition-colors font-medium"
               >
                 Cancel
               </button>
@@ -1461,36 +1461,36 @@ export default function GoalsPanel({
       {/* Delete Goals Confirmation Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+          <div className="bg-surface rounded-xl shadow-2xl max-w-md w-full">
             {/* Header */}
-            <div className="px-4 py-3 border-b border-gray-200 bg-red-50">
+            <div className="px-4 py-3 border-b border-outline bg-red-50">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
                   <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-bold text-gray-900">Delete Goals</h3>
+                <h3 className="text-lg font-bold text-content-primary">Delete Goals</h3>
               </div>
             </div>
 
             {/* Content */}
             <div className="p-4">
-              <p className="text-sm text-gray-700 mb-3">
+              <p className="text-sm text-content-secondary mb-3">
                 You are about to delete <span className="font-bold">{checkedGoalIds.size}</span> goal(s). Do you want to continue?
               </p>
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-content-secondary">
                 This action cannot be undone.
               </p>
             </div>
 
             {/* Footer */}
-            <div className="px-4 py-3 bg-gray-50 rounded-b-xl flex gap-2">
+            <div className="px-4 py-3 bg-surface-elevated rounded-b-xl flex gap-2">
               <button
                 onClick={() => {
                   setShowDeleteModal(false);
                 }}
-                className="flex-1 bg-white text-gray-700 text-sm border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                className="flex-1 bg-surface text-content-secondary text-sm border border-outline py-2 rounded-lg hover:bg-surface-elevated transition-colors font-medium"
               >
                 Cancel
               </button>
@@ -1511,45 +1511,45 @@ export default function GoalsPanel({
       {/* Delete Single Goal Confirmation Modal (User panel) */}
       {showDeleteGoalModal && goalToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+          <div className="bg-surface rounded-xl shadow-2xl max-w-md w-full">
             {/* Header */}
-            <div className="px-4 py-3 border-b border-gray-200 bg-red-50">
+            <div className="px-4 py-3 border-b border-outline bg-red-50">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
                   <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-bold text-gray-900">Delete Goal</h3>
+                <h3 className="text-lg font-bold text-content-primary">Delete Goal</h3>
               </div>
             </div>
 
             {/* Content */}
             <div className="p-4">
-              <p className="text-sm text-gray-700 mb-3">
+              <p className="text-sm text-content-secondary mb-3">
                 Are you sure you want to delete this goal?
               </p>
               
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+              <div className="bg-surface-elevated border border-outline rounded-lg p-3">
                 <div className="flex items-start gap-2">
-                  <span className="text-xs font-semibold text-gray-600 min-w-[50px]">Goal:</span>
-                  <span className="text-xs text-gray-900 break-words">{goalToDelete.text}</span>
+                  <span className="text-xs font-semibold text-content-secondary min-w-[50px]">Goal:</span>
+                  <span className="text-xs text-content-primary break-words">{goalToDelete.text}</span>
                 </div>
               </div>
 
-              <p className="text-xs text-gray-600 mt-3">
+              <p className="text-xs text-content-secondary mt-3">
                 This action cannot be undone.
               </p>
             </div>
 
             {/* Footer */}
-            <div className="px-4 py-3 bg-gray-50 rounded-b-xl flex gap-2">
+            <div className="px-4 py-3 bg-surface-elevated rounded-b-xl flex gap-2">
               <button
                 onClick={() => {
                   setShowDeleteGoalModal(false);
                   setGoalToDelete(null);
                 }}
-                className="flex-1 bg-white text-gray-700 text-sm border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                className="flex-1 bg-surface text-content-secondary text-sm border border-outline py-2 rounded-lg hover:bg-surface-elevated transition-colors font-medium"
               >
                 Cancel
               </button>
@@ -1599,25 +1599,25 @@ export default function GoalsPanel({
 
         return (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full flex flex-col" style={{ height: '550px' }}>
-              <div className="px-4 py-2.5 border-b border-gray-200">
-                <h3 className="text-lg font-bold text-gray-900">
+            <div className="bg-surface rounded-xl shadow-2xl max-w-lg w-full flex flex-col" style={{ height: '550px' }}>
+              <div className="px-4 py-2.5 border-b border-outline">
+                <h3 className="text-lg font-bold text-content-primary">
                   Connect Issues to Goal
                   {goalToConnectEpics.isGroup && goalToConnectEpics.groupName && (
-                    <span className="text-sm font-normal text-gray-600 ml-2">({goalToConnectEpics.groupName})</span>
+                    <span className="text-sm font-normal text-content-secondary ml-2">({goalToConnectEpics.groupName})</span>
                   )}
                   {!goalToConnectEpics.isGroup && goalToConnectEpics.teamName && (
-                    <span className="text-sm font-normal text-gray-600 ml-2">({goalToConnectEpics.teamName})</span>
+                    <span className="text-sm font-normal text-content-secondary ml-2">({goalToConnectEpics.teamName})</span>
                   )}
                 </h3>
-                <p className="text-xs text-gray-600 mt-0.5">
+                <p className="text-xs text-content-secondary mt-0.5">
                   Goal: <span className="font-semibold">{goalToConnectEpics.text}</span>
                 </p>
               </div>
 
               <div className="p-3 flex-1 overflow-hidden flex flex-col min-h-0">
                 {/* Description */}
-                <p className="text-xs text-gray-500 mb-2 flex-shrink-0">
+                <p className="text-xs text-content-tertiary mb-2 flex-shrink-0">
                   Showing {filteredEpics.length} issue{filteredEpics.length !== 1 ? 's' : ''}
                 </p>
 
@@ -1628,7 +1628,7 @@ export default function GoalsPanel({
                     value={epicSearchQuery}
                     onChange={(e) => setEpicSearchQuery(e.target.value)}
                     placeholder="Search issues..."
-                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="w-full px-3 py-1.5 text-sm border border-outline rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
                 </div>
 
@@ -1636,27 +1636,27 @@ export default function GoalsPanel({
                 <div className="flex gap-2 mb-2 flex-shrink-0">
                   <button
                     onClick={selectAll}
-                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                    className="text-xs text-brand hover:text-blue-700 font-medium"
                   >
                     Select All
                   </button>
-                  <span className="text-gray-400">|</span>
+                  <span className="text-content-muted">|</span>
                   <button
                     onClick={clearAll}
-                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                    className="text-xs text-brand hover:text-blue-700 font-medium"
                   >
                     Clear All
                   </button>
                 </div>
 
                 {/* Scrollable checkbox list - fixed height container */}
-                <div className="flex-1 overflow-y-auto border border-gray-200 rounded-lg min-h-0">
+                <div className="flex-1 overflow-y-auto border border-outline rounded-lg min-h-0">
                   {loadingEpics ? (
-                    <div className="p-3 text-center text-gray-500 text-xs">
+                    <div className="p-3 text-center text-content-tertiary text-xs">
                       Loading issues...
                     </div>
                   ) : filteredEpics.length === 0 ? (
-                    <div className="p-3 text-center text-gray-500 text-xs">
+                    <div className="p-3 text-center text-content-tertiary text-xs">
                       {epicSearchQuery 
                         ? 'No issues found matching your search' 
                         : 'No issues available'
@@ -1667,17 +1667,17 @@ export default function GoalsPanel({
                       {filteredEpics.map(epic => (
                         <label
                           key={epic.issue_key}
-                          className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors"
+                          className="flex items-center gap-2 px-3 py-2 hover:bg-surface-elevated cursor-pointer transition-colors"
                         >
                           <input
                             type="checkbox"
                             checked={selectedEpicKeys.includes(epic.issue_key)}
                             onChange={() => toggleEpic(epic.issue_key)}
-                            className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-400"
+                            className="w-3.5 h-3.5 text-brand border-outline rounded focus:ring-blue-400"
                           />
                           <div className="flex-1 flex items-center gap-2">
-                            <span className="text-xs font-semibold text-gray-900">{epic.issue_key}</span>
-                            <span className="text-xs text-gray-700">{epic.summary || ''}</span>
+                            <span className="text-xs font-semibold text-content-primary">{epic.issue_key}</span>
+                            <span className="text-xs text-content-secondary">{epic.summary || ''}</span>
                           </div>
                         </label>
                       ))}
@@ -1686,14 +1686,14 @@ export default function GoalsPanel({
                 </div>
 
                 {/* Selection count */}
-                <div className="mt-2 text-xs text-gray-600 flex-shrink-0 h-4">
+                <div className="mt-2 text-xs text-content-secondary flex-shrink-0 h-4">
                   {selectedEpicKeys.length > 0 && (
                     <span>{selectedEpicKeys.length} issue{selectedEpicKeys.length !== 1 ? 's' : ''} selected</span>
                   )}
                 </div>
               </div>
 
-              <div className="px-4 py-2.5 bg-gray-50 rounded-b-xl flex gap-2 flex-shrink-0">
+              <div className="px-4 py-2.5 bg-surface-elevated rounded-b-xl flex gap-2 flex-shrink-0">
                 <button
                   onClick={() => {
                     setShowConnectEpicsModal(false);
@@ -1701,7 +1701,7 @@ export default function GoalsPanel({
                     setSelectedEpicKeys([]);
                     setEpicSearchQuery('');
                   }}
-                  className="flex-1 bg-white text-gray-700 text-sm border border-gray-300 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 bg-surface text-content-secondary text-sm border border-outline py-1.5 rounded-lg hover:bg-surface-elevated transition-colors"
                 >
                   Cancel
                 </button>

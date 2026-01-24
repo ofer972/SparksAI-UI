@@ -66,15 +66,25 @@ export default function CycleTimeView({
 }: CycleTimeViewProps) {
   const { groups, teams } = useTeamsGroups();
   const months = Number(filters.months ?? 6);
-  const teamName = (filters.team_name as string) ?? null;
-  const isGroup = (filters.isGroup as boolean) ?? false;
+  const teamName = (filters?.team_name as string) ?? null;
+  const isGroup = (filters?.isGroup as boolean) ?? false;
+
+  // Dark mode detection
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const checkDark = () => setIsDark(document.documentElement.classList.contains('dark'));
+    checkDark();
+    const observer = new MutationObserver(checkDark);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
   
   // Internal filters (client-side only)
   const [selectedIssueTypes, setSelectedIssueTypes] = useState<string[]>(() => 
     (filters.selectedIssueTypes as string[]) ?? []
   );
   const [aggregate, setAggregate] = useState<boolean>(() => 
-    (filters.aggregate as boolean) ?? false
+    (filters?.aggregate as boolean) ?? false
   );
   const [groupBy, setGroupBy] = useState<'day' | 'week' | 'month'>(() => 
     (filters.groupBy as 'day' | 'week' | 'month') ?? 'month'
@@ -176,21 +186,22 @@ export default function CycleTimeView({
     selectedIssueTypesCount: selectedIssueTypes.length || availableIssueTypes.length,
     aggregate,
     valueDecimals: 1,
+    isDark,
   });
 
   const handleTimePeriodChange = useCallback((months: number) => {
-    setFilters(prev => ({ ...prev, months }));
+    setFilters?.(prev => ({ ...prev, months }));
   }, [setFilters]);
 
   const handleTeamChange = useCallback((value: string | null, type: 'group' | 'team', name: string) => {
     if (value === null) {
-      setFilters(prev => ({
+      setFilters?.(prev => ({
         ...prev,
         team_name: null,
         isGroup: false,
       }));
     } else {
-      setFilters(prev => ({
+      setFilters?.(prev => ({
         ...prev,
         team_name: name,  // Use 'name', not 'value'
         isGroup: type === 'group',
@@ -393,6 +404,9 @@ export default function CycleTimeView({
         onRefresh={refresh}
         onClose={componentProps?.onClose}
         onAIChat={componentProps?.onAIChat}
+        readOnly={componentProps?.readOnly}
+        hideHeader={componentProps?.hideHeader}
+        hideCollapse={componentProps?.hideCollapse}
         defaultCollapsed={false}
       >
         <TimeSeriesChartContainer

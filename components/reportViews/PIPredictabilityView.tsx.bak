@@ -1,0 +1,445 @@
+'use client';
+
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { PIPredictabilityData } from '@/lib/config';
+import DataTable, { Column, SortConfig } from '../DataTable';
+import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
+import ReportCard from '../reporting/ReportCard';
+import ReportFiltersRow from '../reporting/ReportFiltersRow';
+import ReportFilterField from '../reporting/ReportFilterField';
+import TeamGroupFilter from '../TeamGroupFilter';
+import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
+import MultiPIFilter from '../MultiPIFilter';
+
+export interface PIPredictabilityViewProps {
+  data: PIPredictabilityData[];
+  loading: boolean;
+  error: string | null;
+  filters: Record<string, any>;
+  setFilters: (updater: ReportFiltersUpdater) => void;
+  refresh: () => void;
+  meta?: Record<string, any> | null;
+  componentProps?: { isDashboard?: boolean; reportId?: string; onClose?: () => void; onAIChat?: () => void };
+  togglePin?: (filterKey: string) => void;
+  pinnedFilters?: string[];
+}
+
+const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
+  data,
+  loading,
+  error,
+  filters,
+  setFilters,
+  refresh,
+  meta,
+  componentProps,
+  togglePin,
+  pinnedFilters = [],
+}) => {
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
+    key: null,
+    direction: 'asc',
+  });
+  const [filterText, setFilterText] = useState('');
+
+  const formatDate = useCallback((dateString: string) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }, []);
+
+  const filteredData = useMemo(() => {
+    const rows = Array.isArray(data) ? data : [];
+    const query = filterText.trim().toLowerCase();
+    if (!query) {
+      return rows;
+    }
+    return rows.filter((row) =>
+      Object.values(row).some((value) =>
+        value !== null &&
+        value !== undefined &&
+        String(value).toLowerCase().includes(query)
+      )
+    );
+  }, [data, filterText]);
+
+  // Pre-process data to add metadata for team name hiding
+  // Note: This only works if data is sorted by team_name first
+  // If user sorts by other columns, team name hiding won't work correctly
+  const processedData = useMemo(() => {
+    if (!filteredData || filteredData.length === 0) {
+      return filteredData;
+    }
+    
+    // Add a flag to indicate if team name should be shown
+    return filteredData.map((row, index) => {
+      const shouldShowTeamName = index === 0 || filteredData[index - 1].team_name !== row.team_name;
+      return {
+        ...row,
+        _showTeamName: shouldShowTeamName,
+      };
+    });
+  }, [filteredData]);
+
+  const columns: Column<PIPredictabilityData>[] = useMemo(() => {
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      return [];
+    }
+
+    const firstRow = data[0];
+
+    if (!firstRow || typeof firstRow !== 'object') {
+      return [];
+    }
+
+    const preferredOrder = [
+      'team_name',
+      'pi_name',
+      'pi_predictability_percentage',
+      'avg_cycle_time_completed_epics_days',
+      'total_issues_in_scope',
+      'issues_completed_within_pi_dates',
+    ];
+
+    const filteredKeys = Object.keys(firstRow).filter((key) => {
+      const label = key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+      return (
+        label !== 'Issues In Scope Keys' &&
+        !key.toLowerCase().includes('issues_in_scope_keys') &&
+        label !== 'Completed Issues Keys' &&
+        !key.toLowerCase().includes('completed_issues_keys')
+      );
+    });
+
+    const cols = filteredKeys.map((key) => {
+      let label = key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+
+      if (label === 'Pi Predictability Percentage') {
+        label = 'PI\nPredictability\nPercent';
+      }
+
+      if (label === 'Avg Cycle Time Completed Epics Days') {
+        label = 'Average\ncycle time\n(days)';
+      }
+
+      if (label === 'Total Issues In Scope') {
+        label = 'Total\nepics\nin scope';
+      }
+
+      if (label === 'Issues Completed Within Pi Dates') {
+        label = 'Epics\nCompleted\nduring PI';
+      }
+
+      const order = preferredOrder.indexOf(key);
+      const isLeftAlign = key === 'pi_name' || key === 'team_name';
+
+      // Set minimal widths for columns
+      let columnWidth = 'auto';
+      if (key === 'team_name') {
+        columnWidth = '120px';
+      } else if (key === 'pi_name') {
+        columnWidth = '90px'; // 25% smaller than 120px (120 * 0.75 = 90)
+      } else if (key === 'pi_predictability_percentage') {
+        columnWidth = '100px';
+      } else if (key === 'avg_cycle_time_completed_epics_days') {
+        columnWidth = '110px';
+      } else if (key === 'total_issues_in_scope' || key === 'issues_completed_within_pi_dates') {
+        columnWidth = '100px';
+      }
+
+      return {
+        key,
+        label,
+        align: (isLeftAlign ? 'left' : 'center') as 'left' | 'center' | 'right',
+        sortable: true,
+        order,
+        width: columnWidth,
+        render: (value: any, row: any, index: number) => {
+          // Special handling for team_name: hide if same as previous row
+          // LIMITATION: This only works if data is sorted by team_name
+          // If user sorts by other columns, team name hiding won't work correctly
+          // This requires DataTable modification to work reliably
+          if (key === 'team_name') {
+            // Check the _showTeamName flag if it exists
+            if ((row as any)._showTeamName === false) {
+              return ''; // Hide team name
+            }
+            return value || '-';
+          }
+
+          if (value === null || value === undefined) return '-';
+
+          if (key.includes('date') && typeof value === 'string') {
+            return formatDate(value);
+          }
+
+          if (
+            key === 'pi_predictability_percentage' ||
+            key.includes('pi_predictability_percentage')
+          ) {
+            const num = Math.round(Number(value));
+            return (
+              <span
+                className={`font-semibold ${
+                  num >= 80 ? 'text-green-600 dark:text-green-400' : num >= 60 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'
+                }`}
+              >
+                {num}%
+              </span>
+            );
+          }
+
+          if (
+            key === 'avg_cycle_time_completed_epics_days' ||
+            key.includes('avg_cycle_time_completed_epics_days')
+          ) {
+            const num = Number(value);
+            const colorClass =
+              num < 5
+                ? 'text-gray-900 dark:text-slate-100'
+                : num <= 50
+                ? 'text-green-600 dark:text-green-400'
+                : num <= 95
+                ? 'text-yellow-600 dark:text-yellow-400'
+                : 'text-red-600 dark:text-red-400';
+            return <span className={`font-semibold ${colorClass}`}>{num.toFixed(1)}</span>;
+          }
+
+          if (key.includes('percentage') || key.includes('predictability')) {
+            const num = Number(value);
+            return (
+              <span
+                className={`font-semibold ${
+                  num >= 80 ? 'text-green-600 dark:text-green-400' : num >= 60 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'
+                }`}
+              >
+                {num}%
+              </span>
+            );
+          }
+
+          if (typeof value === 'number') {
+            return <span className="text-gray-900 dark:text-slate-100">{value}</span>;
+          }
+
+          return value;
+        },
+      };
+    });
+
+    cols.sort((a, b) => {
+      const orderA = (a as any).order >= 0 ? (a as any).order : 999;
+      const orderB = (b as any).order >= 0 ? (b as any).order : 999;
+
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+
+      return a.label.localeCompare(b.label);
+    });
+
+    return cols.map(({ order, ...col }) => col);
+  }, [data, formatDate]);
+
+  const handleSort = useCallback((key: string) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        return {
+          key,
+          direction: prev.direction === 'asc' ? 'desc' : 'asc',
+        };
+      }
+      return { key, direction: 'asc' };
+    });
+  }, []);
+
+  const handlePIsChange = useCallback(
+    (values: string[]) => {
+      setFilters((prev) => ({
+        ...prev,
+        pi_names: values,
+      }));
+    },
+    [setFilters]
+  );
+
+  const handleTeamNameChange = useCallback(
+    (value: string) => {
+      setFilters((prev) => ({
+        ...prev,
+        team_name: value.trim() || null,
+      }));
+    },
+    [setFilters]
+  );
+
+
+  const piNames = Array.isArray(filters.pi_names) ? filters.pi_names : [];
+  const { groups, teams } = useTeamsGroups();
+  const teamName = (filters.team_name as string) ?? '';
+  const isGroup = (filters.isGroup as boolean) ?? false;
+  const isDashboard = componentProps?.isDashboard;
+  
+  // Look up ID from name to construct proper teamValue
+  const teamValue = useMemo(() => {
+    if (!teamName) return null;
+    
+    if (isGroup) {
+      const group = groups.find(g => g.group_name === teamName);
+      return group ? `group:${group.group_key}` : null;
+    } else {
+      const team = teams.find(t => t.team_name === teamName);
+      return team ? `team:${team.team_key}` : null;
+    }
+  }, [teamName, isGroup, groups, teams]);
+
+  const availableTeams = useMemo(() => {
+    if (meta && Array.isArray(meta.available_teams)) {
+      return meta.available_teams as string[];
+    }
+    return [];
+  }, [meta]);
+
+  const availablePIs = useMemo(() => {
+    if (meta && Array.isArray(meta.available_pis)) {
+      return meta.available_pis as string[];
+    }
+    return [];
+  }, [meta]);
+
+  const hasAutoSelectedRef = useRef(false);
+
+  // Auto-select all PIs if none selected
+  useEffect(() => {
+    // Skip if still loading or no available PIs
+    if (loading || availablePIs.length === 0) {
+      return;
+    }
+
+    // Auto-select all PIs if no PI is selected and we haven't auto-selected yet
+    if (piNames.length === 0 && !hasAutoSelectedRef.current) {
+      hasAutoSelectedRef.current = true;
+      handlePIsChange(availablePIs); // Select ALL PIs
+    }
+  }, [availablePIs, piNames.length, handlePIsChange, loading]);
+
+  const filtersContent = (
+    <ReportFiltersRow>
+      <ReportFilterField label="PIs">
+          <MultiPIFilter
+            selectedPIs={piNames}
+            onPIsChange={handlePIsChange}
+          maxSelections={100}
+          autoSelectFirst={false}
+          pis={availablePIs}
+          />
+      </ReportFilterField>
+      <ReportFilterField label="Team/Group">
+        <TeamGroupFilter
+          value={teamValue}
+          onChange={(value, type, name) => {
+            if (value === null) {
+              setFilters((prev) => ({
+                ...prev,
+                team_name: null,
+                isGroup: false,
+              }));
+            } else {
+              setFilters((prev) => ({
+                ...prev,
+                team_name: name,
+                isGroup: type === 'group',
+              }));
+            }
+          }}
+          placeholder="Select team or group"
+          allowClear={true}
+        />
+      </ReportFilterField>
+      <ReportFilterField label="Search">
+        <input
+          type="text"
+          value={filterText}
+          onChange={(event) => setFilterText(event.target.value)}
+          placeholder="Filter by PI, team..."
+          className="w-56 px-2 py-1 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
+      </ReportFilterField>
+    </ReportFiltersRow>
+  );
+
+  // Generate filter badges for active filters
+  const filterBadges = useMemo(() => {
+    const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
+    
+    if (piNames.length > 0) {
+      badges.push({
+        label: 'PIs',
+        value: `${piNames.length} selected`,
+        filterKey: 'pi_names',
+        isPinned: pinnedFilters.includes('pi_names'),
+      });
+    }
+    
+    if (teamName) {
+      badges.push({
+        label: isGroup ? 'Group' : 'Team',
+        value: teamName,
+        filterKey: 'team_name',
+        isPinned: pinnedFilters.includes('team_name'),
+      });
+    }
+    
+    return badges;
+  }, [piNames, teamName, isGroup, pinnedFilters]);
+
+  return (
+    <ReportCard 
+      title="PI Predictability" 
+      reportId={componentProps?.reportId}
+      filters={filtersContent}
+      filterBadges={filterBadges}
+      onTogglePin={togglePin}
+      onRefresh={refresh}
+      onClose={componentProps?.onClose}
+      onAIChat={componentProps?.onAIChat}
+    >
+      {loading && (
+        <div className="flex-1 flex items-center justify-center h-64">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400 mb-2"></div>
+            <div className="text-sm text-gray-600 dark:text-slate-400">Loading PI predictability data...</div>
+          </div>
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="flex items-center justify-center bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4 text-sm text-red-700 dark:text-red-300 h-64">
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && (
+        <DataTable<PIPredictabilityData>
+          data={processedData as PIPredictabilityData[]}
+          columns={columns}
+          sortConfig={sortConfig}
+          onSort={handleSort}
+          loading={false}
+          error={undefined}
+          emptyMessage="No data found matching the filter criteria."
+          rowKey={(row, index) => `${row.pi_name || 'pi'}-${row.team_name || 'team'}-${index}`}
+          striped={true}
+          hoverable
+        />
+      )}
+    </ReportCard>
+  );
+};
+
+export default PIPredictabilityView;
+

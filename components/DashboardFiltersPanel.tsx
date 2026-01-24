@@ -60,13 +60,13 @@ export default function DashboardFiltersPanel({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-        <div className="px-6 py-4 border-b border-gray-200">
+      <div className="bg-surface rounded-lg shadow-xl w-full max-w-md">
+        <div className="px-6 py-4 border-b border-outline">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-gray-900">Dashboard Filters</h2>
+            <h2 className="text-xl font-bold text-content-primary">Dashboard Filters</h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-content-muted hover:text-content-secondary transition-colors"
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -77,7 +77,7 @@ export default function DashboardFiltersPanel({
 
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-content-secondary mb-2">
               Team / Group
             </label>
             <TreeSelect
@@ -88,7 +88,7 @@ export default function DashboardFiltersPanel({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-content-secondary mb-2">
               PI (optional)
             </label>
             <input
@@ -96,20 +96,20 @@ export default function DashboardFiltersPanel({
               value={selectedPI}
               onChange={(e) => handlePIChange(e.target.value)}
               placeholder="Enter PI name"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-outline rounded-md focus:outline-none focus:ring-2 focus:ring-brand"
             />
           </div>
 
-          <div className="flex gap-2 pt-4 border-t border-gray-200">
+          <div className="flex gap-2 pt-4 border-t border-outline">
             <button
               onClick={handleClear}
-              className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+              className="flex-1 px-4 py-2 bg-surface-secondary text-content-secondary rounded-md hover:bg-gray-200 transition-colors"
             >
               Clear
             </button>
             <button
               onClick={handleApply}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              className="flex-1 px-4 py-2 bg-brand text-white rounded-md hover:bg-brand-hover transition-colors"
             >
               Apply
             </button>

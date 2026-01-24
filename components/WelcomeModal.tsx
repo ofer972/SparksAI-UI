@@ -67,11 +67,11 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+      <div className="bg-surface rounded-2xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
         {/* Header with gradient */}
         <div className="bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-500 px-8 py-10 text-white">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-surface/20 backdrop-blur flex items-center justify-center">
               <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
@@ -88,10 +88,10 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
         {/* Content */}
         <div className="px-8 py-6">
           <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-2">
+            <h2 className="text-lg font-semibold text-content-primary mb-2">
               Set your default team or group
             </h2>
-            <p className="text-gray-600 text-sm mb-4">
+            <p className="text-content-secondary text-sm mb-4">
               Choose a team or group to see by default when you open the app. 
               You can always change this later in your settings.
             </p>
@@ -130,7 +130,7 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
             <button
               onClick={handleSkip}
               disabled={saving || preferencesLoading}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 text-sm font-medium transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-content-secondary hover:text-content-primary text-sm font-medium transition-colors disabled:opacity-50"
             >
               Skip for now
             </button>

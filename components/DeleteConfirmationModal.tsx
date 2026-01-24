@@ -17,7 +17,7 @@ export default function DeleteConfirmationModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+      <div className="bg-surface rounded-lg shadow-xl max-w-md w-full mx-4">
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-center mb-4">
@@ -30,10 +30,10 @@ export default function DeleteConfirmationModal({
 
           {/* Content */}
           <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="text-lg font-semibold text-content-primary mb-2">
               Confirm Delete
             </h3>
-            <p className="text-sm text-gray-600 mb-6">
+            <p className="text-sm text-content-secondary mb-6">
               Are you sure you want to delete {itemName}{itemId && <> with ID <span className="font-bold">{itemId}</span></>}? This action cannot be undone.
             </p>
 

@@ -550,7 +550,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           // Return empty state instead of error
           return (
             <div className="flex items-center justify-center h-96">
-              <div className="text-gray-500 text-sm">No data available</div>
+              <div className="text-content-tertiary text-sm">No data available</div>
             </div>
           );
         }
@@ -603,7 +603,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
         <div className="flex items-center justify-center h-full min-h-[400px]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-            <div className="text-sm text-gray-600">Loading...</div>
+            <div className="text-sm text-content-secondary">Loading...</div>
           </div>
         </div>
       );
@@ -763,7 +763,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
       <div className="flex items-center justify-center h-96">
         <div className="flex flex-col items-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-          <div className="text-sm text-gray-600">Loading dashboard configuration...</div>
+          <div className="text-sm text-content-secondary">Loading dashboard configuration...</div>
         </div>
       </div>
     );
@@ -793,7 +793,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
       <div className="flex items-center justify-center h-96">
         <div className="flex flex-col items-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-content-secondary">
             {dashboardSettings.isLoading ? 'Loading dashboard settings...' : 
              isRestoringWithExpectedPI ? 'Restoring saved filters...' : 
              needsPIInFilters ? 'Preparing filters...' :
@@ -810,8 +810,8 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
       <div className="flex items-center justify-center h-full min-h-[400px]">
         <div className="text-center px-4">
           <div className="text-6xl mb-4">🎯</div>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-2">Select a PI</h2>
-          <p className="text-gray-600 max-w-md mx-auto">
+          <h2 className="text-2xl font-semibold text-content-primary mb-2">Select a PI</h2>
+          <p className="text-content-secondary max-w-md mx-auto">
             Please select a PI from the dropdown above to view dashboard insights and reports.
           </p>
         </div>
@@ -827,7 +827,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
       <div className="flex items-center justify-center h-96">
         <div className="flex flex-col items-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-content-secondary">
               {restoringFiltersRef.current ? 'Restoring saved filters...' : 'Loading...'}
             </div>
         </div>
@@ -983,7 +983,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
       <div className="flex items-center justify-center h-96">
         <div className="flex flex-col items-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-content-secondary">
             {restoringFiltersRef.current ? 'Restoring saved filters...' : 'Loading...'}
           </div>
         </div>
@@ -995,7 +995,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-auto p-4">
         {reportOrder.length === 0 ? (
-          <div className="p-4 text-gray-500">
+          <div className="p-4 text-content-tertiary">
             No reports are configured for the PI dashboard yet.
           </div>
         ) : (

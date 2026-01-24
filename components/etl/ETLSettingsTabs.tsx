@@ -105,7 +105,7 @@ export default function ETLSettingsTabs({ settings, customFields, onSaved }: ETL
       )}
 
       {/* Tab Navigation */}
-      <nav className="flex-shrink-0 flex space-x-1 bg-white px-4 pt-4">
+      <nav className="flex-shrink-0 flex space-x-1 bg-surface px-4 pt-4">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -115,8 +115,8 @@ export default function ETLSettingsTabs({ settings, customFields, onSaved }: ETL
               className={`
                 flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg border transition-colors
                 ${isActive 
-                  ? 'bg-white text-blue-600 border-x border-t border-gray-300 border-b-white -mb-px relative z-10' 
-                  : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'}
+                  ? 'bg-surface text-brand border-x border-t border-outline border-b-white -mb-px relative z-10' 
+                  : 'bg-surface-elevated text-content-secondary border border-outline hover:bg-surface-secondary'}
               `}
             >
                 {tab.icon}
@@ -127,7 +127,7 @@ export default function ETLSettingsTabs({ settings, customFields, onSaved }: ETL
       </nav>
 
       {/* Tab Content Area with Border */}
-      <div className="flex-1 overflow-y-auto bg-white border border-gray-300 rounded-tr-lg rounded-b-lg shadow-sm p-6">
+      <div className="flex-1 overflow-y-auto bg-surface border border-outline rounded-tr-lg rounded-b-lg shadow-sm p-6">
         {activeTab === 'jira-connection' && (
           <div className="w-full max-w-[50%]">
             <JiraConnectionTab settings={settings} onSaved={onSaved} onShowToast={showToast} />
@@ -212,9 +212,9 @@ function GeneralSettingsTab({ settings, onSaved, onShowToast }: { settings: ETLS
           id="enable_sync"
           checked={enableSync}
           onChange={(e) => setEnableSync(e.target.checked)}
-          className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          className="w-5 h-5 text-brand border-outline rounded focus:ring-brand"
         />
-        <label htmlFor="enable_sync" className="text-lg font-bold text-gray-900 cursor-pointer">
+        <label htmlFor="enable_sync" className="text-lg font-bold text-content-primary cursor-pointer">
           Enable Sync
         </label>
       </div>
@@ -222,7 +222,7 @@ function GeneralSettingsTab({ settings, onSaved, onShowToast }: { settings: ETLS
         <button
           onClick={handleSave}
           disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
+          className="px-4 py-2 bg-brand text-white rounded hover:bg-brand-hover disabled:bg-gray-400"
         >
           {loading ? 'Saving...' : '💾 Save'}
         </button>
@@ -274,7 +274,7 @@ function ProjectsTab({ settings, onSaved, onShowToast }: { settings: ETLSettings
   };
 
   if (loadingMetadata) {
-    return <div className="text-gray-600">Loading JIRA projects...</div>;
+    return <div className="text-content-secondary">Loading JIRA projects...</div>;
   }
 
   return (
@@ -286,7 +286,7 @@ function ProjectsTab({ settings, onSaved, onShowToast }: { settings: ETLSettings
       )}
       <div>
         <h3 className="font-semibold mb-2">Project Scope</h3>
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-content-secondary mb-4">
           Select which Jira projects to include in the ETL sync. If none are selected, ALL accessible projects will be synced.
         </p>
         
@@ -296,11 +296,11 @@ function ProjectsTab({ settings, onSaved, onShowToast }: { settings: ETLSettings
             placeholder="Search projects..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full border border-outline rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
           />
         </div>
 
-        <div className="border border-gray-300 rounded p-2 pb-2 max-h-[400px] overflow-y-auto mb-2">
+        <div className="border border-outline rounded p-2 pb-2 max-h-[400px] overflow-y-auto mb-2">
           {Object.entries(projects)
             .filter(([key, name]) => {
               if (!searchTerm) return true;
@@ -310,7 +310,7 @@ function ProjectsTab({ settings, onSaved, onShowToast }: { settings: ETLSettings
             .map(([key, name]) => (
               <label
                 key={key}
-                className="flex items-center space-x-2 py-0.5 px-2 hover:bg-gray-50 rounded cursor-pointer"
+                className="flex items-center space-x-2 py-0.5 px-2 hover:bg-surface-elevated rounded cursor-pointer"
               >
                 <input
                   type="checkbox"
@@ -322,9 +322,9 @@ function ProjectsTab({ settings, onSaved, onShowToast }: { settings: ETLSettings
                       setSelectedProjects(selectedProjects.filter(p => p !== key));
                     }
                   }}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  className="w-4 h-4 text-brand border-outline rounded focus:ring-brand"
                 />
-                <span className="text-sm text-gray-700">
+                <span className="text-sm text-content-secondary">
                   {name} ({key})
                 </span>
               </label>
@@ -334,7 +334,7 @@ function ProjectsTab({ settings, onSaved, onShowToast }: { settings: ETLSettings
             const searchLower = searchTerm.toLowerCase();
             return key.toLowerCase().includes(searchLower) || name.toLowerCase().includes(searchLower);
           }).length === 0 && searchTerm && (
-            <div className="text-sm text-gray-500 py-4 text-center">
+            <div className="text-sm text-content-tertiary py-4 text-center">
               No projects found matching &quot;{searchTerm}&quot;
             </div>
           )}
@@ -344,7 +344,7 @@ function ProjectsTab({ settings, onSaved, onShowToast }: { settings: ETLSettings
         <button
           onClick={handleSave}
           disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
+          className="px-4 py-2 bg-brand text-white rounded hover:bg-brand-hover disabled:bg-gray-400"
         >
           {loading ? 'Saving...' : '💾 Save'}
         </button>
@@ -448,7 +448,7 @@ function JQLScopeTab({ settings, onSaved, onShowToast }: { settings: ETLSettings
       )}
       <div>
         <h3 className="font-semibold mb-2">JQL Scope</h3>
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-content-secondary mb-4">
           Enter a JQL (Jira Query Language) query to define the scope of issues to sync. Use the Validate button to validate the JQL before saving.
         </p>
         
@@ -457,7 +457,7 @@ function JQLScopeTab({ settings, onSaved, onShowToast }: { settings: ETLSettings
             value={jql}
             onChange={(e) => handleJqlChange(e.target.value)}
             placeholder="Enter JQL query (e.g., project = TEST AND status = Open)"
-            className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm font-mono min-h-[100px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 border border-outline rounded px-3 py-2 text-sm font-mono min-h-[100px] focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
           />
           <button
             onClick={handleValidate}
@@ -490,7 +490,7 @@ function JQLScopeTab({ settings, onSaved, onShowToast }: { settings: ETLSettings
         <button
           onClick={handleSave}
           disabled={loading || !isValidated}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-brand text-white rounded hover:bg-brand-hover disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           {loading ? 'Saving...' : '💾 Save'}
         </button>
@@ -556,7 +556,7 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
   };
 
   if (loadingMetadata || Object.keys(localCustomFields).length === 0) {
-    return <div className="text-gray-600">Loading JIRA custom fields...</div>;
+    return <div className="text-content-secondary">Loading JIRA custom fields...</div>;
   }
 
   return (
@@ -571,13 +571,13 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
         <h3 className="font-semibold mb-3">Core Fields</h3>
         <div className="space-y-2">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-            <label className="text-sm font-medium text-gray-700 w-full sm:w-48 flex-shrink-0">
+            <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
               Program Increment (PI) Field:
             </label>
             <select
               value={piField}
               onChange={(e) => setPiField(e.target.value)}
-              className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm"
+              className="flex-1 border border-outline rounded px-3 py-1.5 text-sm"
             >
               <option value="">--- Not Set ---</option>
               {Object.entries(localCustomFields).map(([id, name]) => (
@@ -589,13 +589,13 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
           </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-            <label className="text-sm font-medium text-gray-700 w-full sm:w-48 flex-shrink-0">
+            <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
               Sprint Field:
             </label>
             <select
               value={sprintField}
               onChange={(e) => setSprintField(e.target.value)}
-              className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm"
+              className="flex-1 border border-outline rounded px-3 py-1.5 text-sm"
             >
               <option value="sprint">Sprint (System Default)</option>
               {Object.entries(localCustomFields).map(([id, name]) => (
@@ -607,13 +607,13 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
           </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-            <label className="text-sm font-medium text-gray-700 w-full sm:w-48 flex-shrink-0">
+            <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
               Sizing Field (e.g., Story Points):
             </label>
             <select
               value={sizingField}
               onChange={(e) => setSizingField(e.target.value)}
-              className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm"
+              className="flex-1 border border-outline rounded px-3 py-1.5 text-sm"
             >
               <option value="">--- Not Set ---</option>
               {Object.entries(localCustomFields).map(([id, name]) => (
@@ -625,13 +625,13 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
           </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-            <label className="text-sm font-medium text-gray-700 w-full sm:w-48 flex-shrink-0">
+            <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
               Team Name Field:
             </label>
             <select
               value={teamNameField}
               onChange={(e) => setTeamNameField(e.target.value)}
-              className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm"
+              className="flex-1 border border-outline rounded px-3 py-1.5 text-sm"
             >
               <option value="">--- Not Set ---</option>
               {Object.entries(localCustomFields).map(([id, name]) => (
@@ -643,13 +643,13 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
           </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-            <label className="text-sm font-medium text-gray-700 w-full sm:w-48 flex-shrink-0">
+            <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
               Flagged (Impediment) Field:
             </label>
             <select
               value={flaggedField}
               onChange={(e) => setFlaggedField(e.target.value)}
-              className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm"
+              className="flex-1 border border-outline rounded px-3 py-1.5 text-sm"
             >
               <option value="">--- Not Set ---</option>
               {Object.entries(localCustomFields).map(([id, name]) => (
@@ -662,7 +662,7 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
         </div>
       </div>
 
-      <div className="border-t border-gray-200 my-2"></div>
+      <div className="border-t border-outline my-2"></div>
 
       <div>
         <h3 className="font-semibold mb-1">Custom Fields to Store</h3>
@@ -673,11 +673,11 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
             placeholder="Search fields..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full border border-outline rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
           />
         </div>
 
-        <div className="border border-gray-300 rounded p-2 pb-2 max-h-[230px] overflow-y-auto mb-2">
+        <div className="border border-outline rounded p-2 pb-2 max-h-[230px] overflow-y-auto mb-2">
           {Object.entries(localCustomFields)
             .filter(([id, name]) => {
               if (!searchTerm) return true;
@@ -687,7 +687,7 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
             .map(([id, name]) => (
               <label
                 key={id}
-                className="flex items-center space-x-2 py-0.5 px-2 hover:bg-gray-50 rounded cursor-pointer"
+                className="flex items-center space-x-2 py-0.5 px-2 hover:bg-surface-elevated rounded cursor-pointer"
               >
                 <input
                   type="checkbox"
@@ -699,9 +699,9 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
                       setSelectedCustomFields(selectedCustomFields.filter(f => f !== id));
                     }
                   }}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  className="w-4 h-4 text-brand border-outline rounded focus:ring-brand"
                 />
-                <span className="text-sm text-gray-700">
+                <span className="text-sm text-content-secondary">
                   {name} ({id})
                 </span>
               </label>
@@ -711,7 +711,7 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
             const searchLower = searchTerm.toLowerCase();
             return id.toLowerCase().includes(searchLower) || name.toLowerCase().includes(searchLower);
           }).length === 0 && searchTerm && (
-            <div className="text-sm text-gray-500 py-4 text-center">
+            <div className="text-sm text-content-tertiary py-4 text-center">
               No fields found matching &quot;{searchTerm}&quot;
             </div>
           )}
@@ -722,7 +722,7 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
         <button
           onClick={handleSave}
           disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
+          className="px-4 py-2 bg-brand text-white rounded hover:bg-brand-hover disabled:bg-gray-400"
         >
           {loading ? 'Saving...' : '💾 Save'}
         </button>
@@ -772,7 +772,7 @@ function HistoryScopeTab({ settings, onSaved, onShowToast }: { settings: ETLSett
       
       <div>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 mb-1">
-          <label className="text-sm font-medium text-gray-700 w-full sm:w-48 flex-shrink-0">
+          <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
             History Retention Period (Months):
           </label>
           <input
@@ -780,17 +780,17 @@ function HistoryScopeTab({ settings, onSaved, onShowToast }: { settings: ETLSett
             min="1"
             value={historyRetention}
             onChange={(e) => setHistoryRetention(parseInt(e.target.value) || 6)}
-            className="flex-1 border border-gray-300 rounded px-3 py-2"
+            className="flex-1 border border-outline rounded px-3 py-2"
           />
         </div>
-        <p className="text-xs text-gray-500 mt-1 ml-0 sm:ml-[208px]">
+        <p className="text-xs text-content-tertiary mt-1 ml-0 sm:ml-[208px]">
           Snapshots older than this will be automatically deleted.
         </p>
       </div>
 
       <div>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 mb-1">
-          <label className="text-sm font-medium text-gray-700 w-full sm:w-48 flex-shrink-0">
+          <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
             Default History Backfill Depth (Days):
           </label>
           <input
@@ -799,17 +799,17 @@ function HistoryScopeTab({ settings, onSaved, onShowToast }: { settings: ETLSett
             max="730"
             value={defaultBackfillDays}
             onChange={(e) => setDefaultBackfillDays(parseInt(e.target.value) || 30)}
-            className="flex-1 border border-gray-300 rounded px-3 py-2"
+            className="flex-1 border border-outline rounded px-3 py-2"
           />
         </div>
-        <p className="text-xs text-gray-500 mt-1 ml-0 sm:ml-[208px]">
+        <p className="text-xs text-content-tertiary mt-1 ml-0 sm:ml-[208px]">
           Default number of days to backfill issue history.
         </p>
       </div>
 
       <div>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 mb-1">
-          <label className="text-sm font-medium text-gray-700 w-full sm:w-48 flex-shrink-0">
+          <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
             Global Sync Lookback (Months):
           </label>
           <input
@@ -817,17 +817,17 @@ function HistoryScopeTab({ settings, onSaved, onShowToast }: { settings: ETLSett
             min="1"
             value={etlStartMonthsBack}
             onChange={(e) => setEtlStartMonthsBack(parseInt(e.target.value) || 9)}
-            className="flex-1 border border-gray-300 rounded px-3 py-2"
+            className="flex-1 border border-outline rounded px-3 py-2"
           />
         </div>
-        <p className="text-xs text-gray-500 mt-1 ml-0 sm:ml-[208px]">
+        <p className="text-xs text-content-tertiary mt-1 ml-0 sm:ml-[208px]">
           Sync issues CREATED or UPDATED within this period from today.
         </p>
       </div>
 
       <div>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 mb-1">
-          <label className="text-sm font-medium text-gray-700 w-full sm:w-48 flex-shrink-0">
+          <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
             Periodic Sync of Data (Minutes):
           </label>
           <input
@@ -835,10 +835,10 @@ function HistoryScopeTab({ settings, onSaved, onShowToast }: { settings: ETLSett
             min="1"
             value={periodicSyncOfDataMinutes}
             onChange={(e) => setPeriodicSyncOfDataMinutes(parseInt(e.target.value) || 60)}
-            className="flex-1 border border-gray-300 rounded px-3 py-2"
+            className="flex-1 border border-outline rounded px-3 py-2"
           />
         </div>
-        <p className="text-xs text-gray-500 mt-1 ml-0 sm:ml-[208px]">
+        <p className="text-xs text-content-tertiary mt-1 ml-0 sm:ml-[208px]">
           Sync Issues/Sprint/Projects etc that were updated since last sync.
         </p>
       </div>
@@ -847,7 +847,7 @@ function HistoryScopeTab({ settings, onSaved, onShowToast }: { settings: ETLSett
         <button
           onClick={handleSave}
           disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
+          className="px-4 py-2 bg-brand text-white rounded hover:bg-brand-hover disabled:bg-gray-400"
         >
           {loading ? 'Saving...' : '💾 Save'}
         </button>
@@ -888,13 +888,13 @@ function DerivedFieldsTab({ settings, onSaved, onShowToast }: { settings: ETLSet
       )}
       <div>
         <h3 className="font-semibold mb-2">Field Definitions (YAML)</h3>
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-content-secondary mb-4">
           Define <code>derived_fields</code> for main issues table and/or <code>history_table_fields</code> for history table.
         </p>
         <textarea
           value={fieldDefinitionsYaml}
           onChange={(e) => setFieldDefinitionsYaml(e.target.value)}
-          className="w-full h-96 border border-gray-300 rounded p-3 font-mono text-sm"
+          className="w-full h-96 border border-outline rounded p-3 font-mono text-sm"
           placeholder="derived_fields:&#10;  - db_column: ...&#10;history_table_fields:&#10;  - db_column_name: ..."
         />
       </div>
@@ -902,7 +902,7 @@ function DerivedFieldsTab({ settings, onSaved, onShowToast }: { settings: ETLSet
         <button
           onClick={handleSave}
           disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
+          className="px-4 py-2 bg-brand text-white rounded hover:bg-brand-hover disabled:bg-gray-400"
         >
           {loading ? 'Saving...' : '💾 Save'}
         </button>
@@ -1011,7 +1011,7 @@ function PITab({ onSaved }: { onSaved: () => void }) {
   };
 
   if (loading) {
-    return <div className="text-gray-600">Loading PIs...</div>;
+    return <div className="text-content-secondary">Loading PIs...</div>;
   }
 
   return (
@@ -1026,7 +1026,7 @@ function PITab({ onSaved }: { onSaved: () => void }) {
         <div className="mb-6 overflow-x-auto">
           <table className="w-full border-collapse min-w-[600px]">
             <thead>
-              <tr className="border-b border-gray-200">
+              <tr className="border-b border-outline">
                 <th className="text-left px-1.5 py-2 font-semibold">PI Name</th>
                 <th className="text-left px-1.5 py-2 font-semibold">Start Date</th>
                 <th className="text-left px-1.5 py-2 font-semibold">End Date</th>
@@ -1057,7 +1057,7 @@ function PITab({ onSaved }: { onSaved: () => void }) {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEdit(name)}
-                        className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded text-sm"
+                        className="px-2 py-1 text-brand hover:bg-blue-50 rounded text-sm"
                       >
                         ✏️ Edit
                       </button>
@@ -1075,78 +1075,78 @@ function PITab({ onSaved }: { onSaved: () => void }) {
           </table>
         </div>
       ) : (
-        <div className="mb-6 p-4 bg-gray-50 rounded text-gray-600">
+        <div className="mb-6 p-4 bg-surface-elevated rounded text-content-secondary">
           No PI definitions found. Add new PIs below.
         </div>
       )}
 
       {editMode && (
-        <div className="pt-6 bg-gray-50 rounded-lg p-4 w-full max-w-[50%]">
+        <div className="pt-6 bg-surface-elevated rounded-lg p-4 w-full max-w-[50%]">
           <h3 className="font-semibold mb-4">
             {editMode === 'add' ? 'Add New PI' : `Edit PI: ${formData.name}`}
           </h3>
           <div className="space-y-3">
             {editMode === 'add' && (
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-                <label className="text-sm font-medium text-gray-700 w-full sm:w-40 flex-shrink-0">
+                <label className="text-sm font-medium text-content-secondary w-full sm:w-40 flex-shrink-0">
                   PI Name *:
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="flex-1 border border-gray-300 rounded px-3 py-2"
+                  className="flex-1 border border-outline rounded px-3 py-2"
                 />
               </div>
             )}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-              <label className="text-sm font-medium text-gray-700 w-full sm:w-40 flex-shrink-0">
+              <label className="text-sm font-medium text-content-secondary w-full sm:w-40 flex-shrink-0">
                 Dates *:
               </label>
               <div className="flex-1 flex gap-3">
                 <div className="flex-1">
-                  <label className="text-xs text-gray-600 mb-1 block">Start Date</label>
+                  <label className="text-xs text-content-secondary mb-1 block">Start Date</label>
                   <input
                     type="date"
                     value={formData.start_date}
                     onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="w-full border border-outline rounded px-3 py-2"
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs text-gray-600 mb-1 block">End Date</label>
+                  <label className="text-xs text-content-secondary mb-1 block">End Date</label>
                   <input
                     type="date"
                     value={formData.end_date}
                     onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="w-full border border-outline rounded px-3 py-2"
                   />
                 </div>
               </div>
             </div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-              <label className="text-sm font-medium text-gray-700 w-full sm:w-40 flex-shrink-0">
+              <label className="text-sm font-medium text-content-secondary w-full sm:w-40 flex-shrink-0">
                 Grace Periods (Days) *:
               </label>
               <div className="flex-1 flex gap-3">
                 <div className="flex-1">
-                  <label className="text-xs text-gray-600 mb-1 block">Planning Grace</label>
+                  <label className="text-xs text-content-secondary mb-1 block">Planning Grace</label>
                   <input
                     type="number"
                     min="0"
                     value={formData.planning_grace_days}
                     onChange={(e) => setFormData({ ...formData, planning_grace_days: parseInt(e.target.value) || 0 })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="w-full border border-outline rounded px-3 py-2"
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs text-gray-600 mb-1 block">Prep Grace</label>
+                  <label className="text-xs text-content-secondary mb-1 block">Prep Grace</label>
                   <input
                     type="number"
                     min="0"
                     value={formData.prep_grace_days}
                     onChange={(e) => setFormData({ ...formData, prep_grace_days: parseInt(e.target.value) || 0 })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="w-full border border-outline rounded px-3 py-2"
                   />
                 </div>
               </div>
@@ -1155,13 +1155,13 @@ function PITab({ onSaved }: { onSaved: () => void }) {
           <div className="flex gap-2 mt-4">
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="px-4 py-2 bg-brand text-white rounded hover:bg-brand-hover"
             >
               💾 Save PI
             </button>
             <button
               onClick={() => setEditMode(null)}
-              className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+              className="px-4 py-2 bg-gray-300 text-content-secondary rounded hover:bg-gray-400"
             >
               Cancel
             </button>
@@ -1172,7 +1172,7 @@ function PITab({ onSaved }: { onSaved: () => void }) {
       {!editMode && (
         <button
           onClick={handleAdd}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="px-4 py-2 bg-brand text-white rounded hover:bg-brand-hover"
         >
           ➕ Add New PI
         </button>
@@ -1181,9 +1181,9 @@ function PITab({ onSaved }: { onSaved: () => void }) {
       {/* Delete Confirmation */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-2 sm:p-4">
-          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full">
+          <div className="bg-surface rounded-lg p-4 sm:p-6 max-w-md w-full">
             <h3 className="font-semibold text-lg mb-4">⚠️ Confirm Delete</h3>
-            <p className="text-sm text-gray-700 mb-4">
+            <p className="text-sm text-content-secondary mb-4">
               Are you sure you want to delete PI &apos;{deleteConfirm}&apos;?
             </p>
             <div className="flex gap-2">
@@ -1195,7 +1195,7 @@ function PITab({ onSaved }: { onSaved: () => void }) {
               </button>
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                className="flex-1 px-4 py-2 bg-gray-300 text-content-secondary rounded hover:bg-gray-400"
               >
                 ❌ Cancel
               </button>

@@ -35,13 +35,13 @@ export default function GeneralSettingsDialog({ settings, onClose, onSaved }: Ge
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <div className="p-4 sm:p-6 border-b border-gray-200">
+      <div className="bg-surface rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="p-4 sm:p-6 border-b border-outline">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">⚙️ General Settings</h2>
             <button
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 text-2xl"
+              className="text-content-tertiary hover:text-content-secondary text-2xl"
             >
               ×
             </button>
@@ -57,7 +57,7 @@ export default function GeneralSettingsDialog({ settings, onClose, onSaved }: Ge
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-content-secondary mb-2">
                 Periodic Sync Interval (minutes)
               </label>
               <input
@@ -65,24 +65,24 @@ export default function GeneralSettingsDialog({ settings, onClose, onSaved }: Ge
                 value={periodicSyncMinutes}
                 onChange={(e) => setPeriodicSyncMinutes(parseInt(e.target.value) || 60)}
                 min="1"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
+                className="w-full px-3 py-2 border border-outline rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
               />
-              <p className="text-xs text-gray-500 mt-1">How often to automatically sync data (in minutes)</p>
+              <p className="text-xs text-content-tertiary mt-1">How often to automatically sync data (in minutes)</p>
             </div>
           </div>
         </div>
 
-        <div className="p-4 sm:p-6 border-t border-gray-200 flex flex-col sm:flex-row justify-end gap-2">
+        <div className="p-4 sm:p-6 border-t border-outline flex flex-col sm:flex-row justify-end gap-2">
           <button
             onClick={handleSave}
             disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
+            className="px-4 py-2 bg-brand text-white rounded hover:bg-brand-hover disabled:bg-gray-400"
           >
             {loading ? 'Saving...' : '💾 Save'}
           </button>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+            className="px-4 py-2 bg-gray-300 text-content-secondary rounded hover:bg-gray-400"
             disabled={loading}
           >
             Cancel

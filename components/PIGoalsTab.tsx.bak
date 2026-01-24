@@ -1,0 +1,302 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import TeamGroupFilter from './TeamGroupFilter';
+import { ApiService } from '@/lib/api';
+import { useAIGoals } from '@/hooks/useAIGoals';
+import { useUserGoals } from '@/hooks/useUserGoals';
+import GoalsPanel from './GoalsPanel';
+import GoalsConfirmationModal from './pigoals/GoalsConfirmationModal';
+import { useDefaultTeamGroup } from '@/hooks/useDefaultTeamGroup';
+
+export default function PIGoalsTab() {
+  const [selectedPI, setSelectedPI] = useState<string>('');
+  const [availablePIs, setAvailablePIs] = useState<string[]>([]);
+  const [loadingPIs, setLoadingPIs] = useState(true);
+  const [selectedTeamValue, setSelectedTeamValue] = useState<string | null>(null);
+  const [selectedTeamType, setSelectedTeamType] = useState<'team' | 'group' | null>(null);
+  const [selectedTeamName, setSelectedTeamName] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const apiService = new ApiService();
+  const hasInitializedRef = useRef(false);
+  const isAutoSelectingRef = useRef(false);
+
+  // Use separate hooks for AI and User goals
+  const {
+    hierarchyData: aiHierarchyData,
+    loading: aiLoading,
+    error: aiGoalsError,
+    refetch: refetchAIGoals,
+  } = useAIGoals(
+    selectedPI,
+    selectedTeamName || undefined,
+    selectedTeamType === 'group',
+    !!selectedPI // enabled only when PI is selected
+  );
+
+  const {
+    hierarchyData: userHierarchyData,
+    loading: userLoading,
+    error: nonAiGoalsError,
+    refetch: refetchUserGoals,
+  } = useUserGoals(
+    selectedPI,
+    selectedTeamName || undefined,
+    selectedTeamType === 'group',
+    !!selectedPI // enabled only when PI is selected
+  );
+
+  const loadingGoals = aiLoading || userLoading;
+
+  // Fetch available PIs
+  useEffect(() => {
+    const fetchPIs = async () => {
+      try {
+        setLoadingPIs(true);
+        const response = await apiService.getPIs();
+        if (response.pis && Array.isArray(response.pis)) {
+          const piNames = response.pis.map((pi: any) => pi.pi_name);
+          setAvailablePIs(piNames);
+        }
+      } catch (err) {
+        console.error('Error fetching PIs:', err);
+      } finally {
+        setLoadingPIs(false);
+      }
+    };
+    fetchPIs();
+  }, []);
+
+  // Auto-fetch current PI on mount if no PI is selected
+  useEffect(() => {
+    const fetchCurrentPI = async () => {
+      // Only run once on mount
+      if (hasInitializedRef.current) return;
+      
+      // Check if PI is already selected (shouldn't happen on mount, but just in case)
+      if (selectedPI) {
+        hasInitializedRef.current = true;
+        return;
+      }
+      
+      hasInitializedRef.current = true;
+      
+      try {
+        console.log('[PIGoalsTab] Fetching current PI...');
+        isAutoSelectingRef.current = true;
+        const piResponse = await apiService.getCurrentAndNextPIs();
+        console.log('[PIGoalsTab] PI response:', piResponse);
+        
+        // The API returns {current_pis: [], next_pis: []} structure
+        const currentPIs = (piResponse as any).current_pis || [];
+        if (currentPIs.length > 0) {
+          // Use the first PI from the current_pis list
+          const currentPIName = currentPIs[0].pi_name;
+          console.log('[PIGoalsTab] Setting current PI to:', currentPIName);
+          setSelectedPI(currentPIName);
+        } else {
+          console.warn('[PIGoalsTab] No current PIs returned from API');
+          isAutoSelectingRef.current = false;
+        }
+      } catch (piErr) {
+        console.error('[PIGoalsTab] Failed to load current PI:', piErr);
+        // Continue without PI - user can select one manually
+        isAutoSelectingRef.current = false;
+      }
+    };
+    
+    fetchCurrentPI();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
+
+  // Load default team/group from user preferences
+  useDefaultTeamGroup({
+    selectedTeamValue,
+    setSelectedTeamValue,
+    setSelectedTeamType,
+    setSelectedTeamName,
+  });
+
+  const handleTeamGroupChange = (value: string | null, type: 'group' | 'team', name: string) => {
+    setSelectedTeamValue(value);
+    setSelectedTeamType(type);
+    setSelectedTeamName(name);
+  };
+
+  const handleSuggestGoals = () => {
+    if (!selectedPI) return;
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirm = async () => {
+    setShowConfirmModal(false);
+    setLoading(true);
+
+    try {
+      await apiService.generatePIGoals(
+        selectedPI,
+        selectedTeamName || undefined,
+        selectedTeamType === 'group'
+      );
+      // Refresh both AI and User goals after successful generation
+      refetchAIGoals();
+      refetchUserGoals();
+    } catch (err) {
+      console.error('Error generating PI goals:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setShowConfirmModal(false);
+  };
+
+  // Clear auto-selecting flag when PI is set (after state update)
+  useEffect(() => {
+    if (selectedPI && isAutoSelectingRef.current) {
+      // PI was just set from auto-select, clear the flag
+      isAutoSelectingRef.current = false;
+    }
+  }, [selectedPI]);
+
+
+  const isButtonEnabled = !!selectedPI && !!selectedTeamName;
+  const teamGroupText = selectedTeamName 
+    ? `${selectedTeamType === 'group' ? 'group' : 'team'} ${selectedTeamName}`
+    : 'all teams';
+
+  return (
+    <div className="h-full flex flex-col space-y-4">
+      {/* Filters and Button Section - Same Row */}
+      <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+        <div className="flex flex-col md:flex-row gap-4 items-center">
+          {/* PI Filter - Label and field in one line */}
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-300 whitespace-nowrap">
+              PI <span className="text-red-500 dark:text-red-400">*</span>
+            </label>
+            <select
+              value={selectedPI}
+              onChange={(e) => setSelectedPI(e.target.value)}
+              disabled={loadingPIs}
+              className="w-32 md:w-40 px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-700 dark:text-slate-100 hover:bg-gray-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 disabled:bg-gray-100 dark:disabled:bg-slate-600 disabled:cursor-not-allowed h-[34px]"
+            >
+              <option value="">Select PI</option>
+              {availablePIs.map((pi) => (
+                <option key={pi} value={pi}>
+                  {pi}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Team/Group Filter - Label and field in one line */}
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-300 whitespace-nowrap">
+              Team/Group <span className="text-red-500 dark:text-red-400">*</span>
+            </label>
+            <div className="w-64">
+              <TeamGroupFilter
+                value={selectedTeamValue}
+                onChange={handleTeamGroupChange}
+                placeholder="Select team or group"
+                allowClear={true}
+              />
+            </div>
+            {/* Suggest Goals Button - With padding after team/group filter */}
+            <div className="flex-shrink-0 ml-4">
+              <button
+                onClick={handleSuggestGoals}
+                disabled={!isButtonEnabled || loading}
+                className={`
+                  px-3 py-1 rounded-lg text-sm font-normal transition-colors whitespace-nowrap h-[26px]
+                  ${isButtonEnabled && !loading
+                    ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:ring-offset-2'
+                    : 'bg-gray-300 dark:bg-slate-600 text-gray-500 dark:text-slate-400 cursor-not-allowed'
+                  }
+                `}
+              >
+                {loading ? 'Generating...' : 'Suggest Goals'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Goals Table Section - Two Panels */}
+      {selectedPI && (
+        <div className="flex-1 flex flex-col min-h-0">
+          {/* Two Panels Side by Side - AI panel 35% width, User panel 65% width */}
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-[35%_65%] gap-4 min-h-0">
+            {/* AI Generated Goals Panel */}
+            <GoalsPanel
+              title="AI Generated Goals"
+              hierarchyData={aiHierarchyData}
+              type="ai"
+              loading={loadingGoals}
+              error={aiGoalsError}
+              onConfirmGoals={async (goalIds: number[]) => {
+                const apiService = new ApiService();
+                // Call single endpoint with all goal IDs
+                await apiService.updatePIGoalsAiToUser(goalIds);
+                // Refresh both panels after moving goals
+                refetchAIGoals();
+                refetchUserGoals();
+              }}
+              onRefresh={refetchAIGoals}
+              scopeType="pi"
+              piName={selectedPI}
+              teamName={selectedTeamName || undefined}
+              isGroup={selectedTeamType === 'group'}
+            />
+
+            {/* User-Confirmed Goals Panel */}
+            <GoalsPanel
+              title="User-Confirmed Goals"
+              hierarchyData={userHierarchyData}
+              type="user"
+              loading={loadingGoals}
+              error={nonAiGoalsError}
+              onRefresh={refetchUserGoals}
+              scopeType="pi"
+              piName={selectedPI}
+              teamName={selectedTeamName || undefined}
+              isGroup={selectedTeamType === 'group'}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      <GoalsConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={handleCancel}
+        onConfirm={handleConfirm}
+        title="Confirm Generate Goals"
+        message={
+          <>
+            <p className="mb-2">
+              Do you want to suggest goals for PI <span className="font-semibold">{selectedPI}</span>
+              {selectedTeamName && (
+                <> and {teamGroupText}</>
+              )}
+              {!selectedTeamName && (
+                <> and all teams</>
+              )}
+              ?
+            </p>
+            <p className="text-xs text-gray-500 italic">
+              This may take a minute or so to complete.
+            </p>
+          </>
+        }
+        variant="info"
+        isLoading={loading}
+      />
+    </div>
+  );
+}
+

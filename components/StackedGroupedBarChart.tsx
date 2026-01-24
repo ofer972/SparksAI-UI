@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef, useEffect } from 'react';
+import React, { useMemo, useRef, useEffect, useState } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -70,6 +70,16 @@ export default function StackedGroupedBarChart({
 }: StackedGroupedBarChartProps) {
   
   const chartRef = useRef<ChartJS>(null);
+
+  // Dark mode detection
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const checkDark = () => setIsDark(document.documentElement.classList.contains('dark'));
+    checkDark();
+    const observer = new MutationObserver(checkDark);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   // Create lookup map for issue_keys: (quarter, metricName) -> issue_keys[]
   const issueKeysMap = useMemo(() => {
@@ -164,8 +174,8 @@ export default function StackedGroupedBarChart({
         type: 'line' as const,
         label: `Average Velocity: ${averageVelocity.toFixed(1)}`,
         data: quarters.map(() => averageVelocity),
-        borderColor: '#000000',
-        backgroundColor: '#000000',
+        borderColor: isDark ? '#f1f5f9' : '#000000',
+        backgroundColor: isDark ? '#f1f5f9' : '#000000',
         borderWidth: 2, // Thinner line
         borderDash: [5, 5], // Dashed line pattern
         pointRadius: 0,
@@ -183,7 +193,7 @@ export default function StackedGroupedBarChart({
       labels: quarters,
       datasets,
     };
-  }, [data, colorScheme, defaultColors, averageVelocity]);
+  }, [data, colorScheme, defaultColors, averageVelocity, isDark]);
 
   // Build Jira search URL with issue keys
   const buildJiraUrl = (issueKeys: string[]): string => {
@@ -301,6 +311,7 @@ export default function StackedGroupedBarChart({
             font: {
               size: 9,
             },
+            color: isDark ? '#cbd5e1' : '#374151',
           },
           padding: {
             top: 0,
@@ -314,14 +325,15 @@ export default function StackedGroupedBarChart({
             size: 14,
             weight: 'bold' as const,
           },
+          color: isDark ? '#cbd5e1' : '#374151',
         },
         tooltip: {
           mode: 'index' as const,
           intersect: false,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          backgroundColor: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(0, 0, 0, 0.8)',
           titleColor: '#fff',
           bodyColor: '#fff',
-          borderColor: '#333',
+          borderColor: isDark ? '#475569' : '#333',
           borderWidth: 1,
           cornerRadius: 6,
           displayColors: true,
@@ -344,9 +356,9 @@ export default function StackedGroupedBarChart({
           display: true, // Enable labels by default
           color: function(context: any) {
             const dataset = context.dataset;
-            // Black color for average velocity line
+            // Black/white color for average velocity line
             if (dataset.type === 'line') {
-              return '#000000';
+              return isDark ? '#f1f5f9' : '#000000';
             }
             // White text for bars for better visibility
             return '#ffffff';
@@ -419,9 +431,13 @@ export default function StackedGroupedBarChart({
               size: 10,
               weight: 'bold' as const,
             },
+            color: isDark ? '#cbd5e1' : '#374151',
+          },
+          ticks: {
+            color: isDark ? '#cbd5e1' : '#374151',
           },
           grid: {
-            color: 'rgba(0, 0, 0, 0.1)',
+            color: isDark ? 'rgba(148, 163, 184, 0.2)' : 'rgba(0, 0, 0, 0.1)',
           },
           barPercentage: 0.4,
           categoryPercentage: 0.7,
@@ -435,14 +451,16 @@ export default function StackedGroupedBarChart({
               size: 10,
               weight: 'bold' as const,
             },
+            color: isDark ? '#cbd5e1' : '#374151',
           },
           beginAtZero: true,
           max: suggestedMax,
           ticks: {
             stepSize: Math.ceil(maxValue / 8), // Smaller step size for more ticks
+            color: isDark ? '#cbd5e1' : '#374151',
           },
           grid: {
-            color: 'rgba(0, 0, 0, 0.1)',
+            color: isDark ? 'rgba(148, 163, 184, 0.2)' : 'rgba(0, 0, 0, 0.1)',
           },
         },
       },
@@ -451,7 +469,7 @@ export default function StackedGroupedBarChart({
         intersect: false,
       },
     };
-  }, [chartData, title, xAxisLabel, yAxisLabel, issueKeysMap, averageVelocity]);
+  }, [chartData, title, xAxisLabel, yAxisLabel, issueKeysMap, averageVelocity, isDark]);
 
   // Add direct click handler as fallback
   // MUST be called before any early returns to follow Rules of Hooks
@@ -537,7 +555,7 @@ export default function StackedGroupedBarChart({
       <div className="flex items-center justify-center h-96">
         <div className="flex flex-col items-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-          <div className="text-sm text-gray-600">Loading chart...</div>
+          <div className="text-sm text-content-secondary">Loading chart...</div>
         </div>
       </div>
     );
@@ -546,7 +564,7 @@ export default function StackedGroupedBarChart({
   if (error) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-red-500">Error: {error}</div>
+        <div className="text-danger-text">Error: {error}</div>
       </div>
     );
   }
@@ -554,7 +572,7 @@ export default function StackedGroupedBarChart({
   if (!data.length || !chartData) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-gray-500">No data available</div>
+        <div className="text-content-muted">No data available</div>
       </div>
     );
   }
@@ -563,7 +581,7 @@ export default function StackedGroupedBarChart({
   if (!chartData || !chartData.labels || !chartData.datasets) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-gray-500">Invalid chart data</div>
+        <div className="text-content-muted">Invalid chart data</div>
       </div>
     );
   }
@@ -572,6 +590,7 @@ export default function StackedGroupedBarChart({
     <div className="w-full h-full min-h-[350px]">
       <Chart 
         ref={chartRef}
+        key={isDark ? 'dark' : 'light'}
         type="bar" 
         data={chartData} 
         options={options}

@@ -40,18 +40,18 @@ const GoalProgressView: React.FC<GoalProgressViewProps> = ({
   const { teams, groups } = useTeamsGroups();
   const apiService = useMemo(() => new ApiService(), []);
   
-  const scopeType = (filters.scope_type as string) || 'pi';
+  const scopeType = (filters?.scope_type as string) || 'pi';
   const piName = (filters.pi_name || filters.pi) as string | undefined;
-  const sprintName = (filters.sprint_name as string) || undefined;
-  const teamName = (filters.team_name as string) || undefined;
-  const isGroup = (filters.isGroup as boolean) || false;
+  const sprintName = (filters?.sprint_name as string) || undefined;
+  const teamName = (filters?.team_name as string) || undefined;
+  const isGroup = (filters?.isGroup as boolean) || false;
 
   // State for fetched sprints
   const [fetchedSprints, setFetchedSprints] = useState<Array<{value: string, label: string}>>([]);
   const [loadingSprints, setLoadingSprints] = useState(false);
   
   // Track previous scopeType to detect changes (initialize with current scopeType)
-  const prevScopeTypeRef = useRef<string>((filters.scope_type as string) || 'pi');
+  const prevScopeTypeRef = useRef<string>((filters?.scope_type as string) || 'pi');
 
   // Get sprint ID from meta if available
   const sprintId = meta?.sprint_id as number | undefined;
@@ -160,7 +160,7 @@ const GoalProgressView: React.FC<GoalProgressViewProps> = ({
             const currentPIs = (piResponse as any).current_pis || [];
             if (currentPIs.length > 0) {
               const currentPIName = currentPIs[0].pi_name;
-              setFilters((prev) => ({
+              setFilters?.((prev) => ({
                 ...prev,
                 pi_name: currentPIName,
                 pi: currentPIName,
@@ -175,7 +175,7 @@ const GoalProgressView: React.FC<GoalProgressViewProps> = ({
       } else if (scopeType === 'sprint' && !sprintName && sprintOptions.length > 0) {
         // Select first sprint when switching to Sprint scope
         const firstSprint = sprintOptions[0].value;
-        setFilters((prev) => ({
+        setFilters?.((prev) => ({
           ...prev,
           sprint_name: firstSprint,
         }));
@@ -192,7 +192,7 @@ const GoalProgressView: React.FC<GoalProgressViewProps> = ({
     // This handles the case where sprints load after scope type change
     if (scopeType === 'sprint' && !sprintName && sprintOptions.length > 0) {
       const firstSprint = sprintOptions[0].value;
-      setFilters((prev) => ({
+      setFilters?.((prev) => ({
         ...prev,
         sprint_name: firstSprint,
       }));
@@ -201,7 +201,7 @@ const GoalProgressView: React.FC<GoalProgressViewProps> = ({
 
   // Handlers
   const handleScopeTypeChange = useCallback((value: string) => {
-    setFilters((prev) => {
+    setFilters?.((prev) => {
       const updated: Record<string, any> = { ...prev, scope_type: value };
       // Clear scope-specific filters when switching
       if (value === 'pi') {
@@ -215,7 +215,7 @@ const GoalProgressView: React.FC<GoalProgressViewProps> = ({
   }, [setFilters]);
 
   const handlePIChange = useCallback((pi: string) => {
-    setFilters((prev) => ({
+    setFilters?.((prev) => ({
       ...prev,
       pi_name: pi || null,
       pi: pi || null,
@@ -223,7 +223,7 @@ const GoalProgressView: React.FC<GoalProgressViewProps> = ({
   }, [setFilters]);
 
   const handleSprintChange = useCallback((value: string) => {
-    setFilters((prev) => ({
+    setFilters?.((prev) => ({
       ...prev,
       sprint_name: value || null,
     }));
@@ -231,13 +231,13 @@ const GoalProgressView: React.FC<GoalProgressViewProps> = ({
 
   const handleTeamGroupChange = useCallback((value: string | null, type: 'group' | 'team', name: string) => {
     if (value === null) {
-      setFilters((prev) => ({
+      setFilters?.((prev) => ({
         ...prev,
         team_name: null,
         isGroup: false,
       }));
     } else {
-      setFilters((prev) => ({
+      setFilters?.((prev) => ({
         ...prev,
         team_name: name,
         isGroup: type === 'group',
@@ -252,7 +252,7 @@ const GoalProgressView: React.FC<GoalProgressViewProps> = ({
         <select
           value={scopeType}
           onChange={(e) => handleScopeTypeChange(e.target.value)}
-          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand"
         >
           <option value="pi">PI Goals</option>
           <option value="sprint">Sprint Goals</option>
@@ -274,7 +274,7 @@ const GoalProgressView: React.FC<GoalProgressViewProps> = ({
             value={sprintName || ''}
             onChange={(e) => handleSprintChange(e.target.value)}
             disabled={loadingSprints}
-            className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand disabled:bg-surface-secondary disabled:cursor-not-allowed"
           >
             <option value="">
               {loadingSprints ? 'Loading sprints...' : 'Select Sprint'}
@@ -364,12 +364,15 @@ const GoalProgressView: React.FC<GoalProgressViewProps> = ({
       onRefresh={refresh}
       onClose={componentProps?.onClose}
       onAIChat={componentProps?.onAIChat}
+      readOnly={componentProps?.readOnly}
+      hideHeader={componentProps?.hideHeader}
+      hideCollapse={componentProps?.hideCollapse}
     >
       {loading && (
         <div className="flex items-center justify-center h-96">
           <div className="flex flex-col items-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-            <div className="text-sm text-gray-600">Loading goal progress...</div>
+            <div className="text-sm text-content-secondary">Loading goal progress...</div>
           </div>
         </div>
       )}
@@ -385,10 +388,10 @@ const GoalProgressView: React.FC<GoalProgressViewProps> = ({
           {hierarchyData.length === 0 ? (
             <div className="flex items-center justify-center h-96">
               <div className="text-center">
-                <p className="text-gray-500 text-sm">
+                <p className="text-content-tertiary text-sm">
                   No goals found for the selected filters.
                 </p>
-                <p className="text-gray-400 text-xs mt-2">
+                <p className="text-content-muted text-xs mt-2">
                   {scopeType === 'pi' 
                     ? 'Please select a PI and optionally a team/group.'
                     : 'Please select a sprint and optionally a team/group.'}

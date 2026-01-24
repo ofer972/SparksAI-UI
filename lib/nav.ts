@@ -1,0 +1,27 @@
+export type NavItemId =
+  | 'home'
+  | 'home-detail'
+  | 'team-ai-insights'
+  | 'team-dashboard'
+  | 'pi-dashboard'
+  | 'custom-dashboards'
+  | 'custom-dashboard-editor'
+  | 'settings'
+  | 'general-data'
+  | 'create-agent-job'
+  | 'upload-transcripts'
+  | 'users-admin'
+  | 'teams-and-meetings'
+  | 'etl-dashboard'
+  | 'etl-sync'
+  | 'etl-settings'
+  | 'user-settings'
+  | 'goal-progress'
+  | 'pi-goals'
+  | 'sprint-goals';
+
+export type BreadcrumbItem = {
+  label: string;
+  onClick?: () => void;
+};
+

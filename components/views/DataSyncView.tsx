@@ -29,7 +29,7 @@ export default function DataSyncView({ activeSubView: initialSubView = 'dashboar
       <div className="flex items-center justify-center h-full min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Connecting to ETL backend...</p>
+          <p className="text-content-secondary">Connecting to ETL backend...</p>
         </div>
       </div>
     );
@@ -41,7 +41,7 @@ export default function DataSyncView({ activeSubView: initialSubView = 'dashboar
       <div className="flex items-center justify-center h-full min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading ETL configuration...</p>
+          <p className="text-content-secondary">Loading ETL configuration...</p>
         </div>
       </div>
     );
@@ -54,10 +54,10 @@ export default function DataSyncView({ activeSubView: initialSubView = 'dashboar
         <div className="text-center">
           <div className="text-red-500 text-4xl mb-4">⚠️</div>
           <h2 className="text-xl font-semibold mb-2">Connection Error</h2>
-          <p className="text-gray-600 mb-4">{etlData.error}</p>
+          <p className="text-content-secondary mb-4">{etlData.error}</p>
           <button
             onClick={etlData.etlLoadData}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="px-4 py-2 bg-brand text-white rounded hover:bg-brand-hover"
           >
             Retry
           </button>
@@ -74,7 +74,7 @@ export default function DataSyncView({ activeSubView: initialSubView = 'dashboar
         <div className="flex items-center justify-center h-full min-h-[400px]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading ETL configuration...</p>
+            <p className="text-content-secondary">Loading ETL configuration...</p>
           </div>
         </div>
       );
@@ -114,7 +114,7 @@ export default function DataSyncView({ activeSubView: initialSubView = 'dashboar
       default:
         return (
           <div className="text-center py-12">
-            <p className="text-gray-600">View not found</p>
+            <p className="text-content-secondary">View not found</p>
           </div>
         );
     }

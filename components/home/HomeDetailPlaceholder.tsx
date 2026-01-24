@@ -1,0 +1,115 @@
+'use client';
+
+import React from 'react';
+
+export type HomeDetailPlaceholderProps = {
+ detail: {
+ id: string;
+ title: string;
+ description?: string;
+ kind?: 'metric' | 'insight' | 'goal' | 'shortcut';
+ };
+ onBack: () => void;
+};
+
+export default function HomeDetailPlaceholder({ detail, onBack }: HomeDetailPlaceholderProps) {
+ return (
+ <div className="min-h-full">
+ <div className="bg-surface bg-surface border border-outline border-outline rounded-2xl shadow-sm overflow-hidden">
+ {/* Header */}
+ <div className="p-5 bg-gradient-to-r from-surface to-surface-elevated border-b border-outline">
+ <div className="flex items-start justify-between gap-3">
+ <div className="min-w-0">
+ <div className="text-sm font-semibold text-content-primary truncate">{detail.title}</div>
+ <div className="mt-1 text-xs text-content-tertiary">
+ {detail.description ?? 'Placeholder detail page. Charts and breakdowns will be connected later.'}
+ </div>
+ </div>
+ <button
+ type="button"
+ onClick={onBack}
+ className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-outline-strong text-content-secondary hover:bg-surface-elevated transition-colors text-sm"
+ >
+ <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+ <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+ </svg>
+ Back to Home
+ </button>
+ </div>
+ </div>
+
+ {/* Body */}
+ <div className="p-5">
+ {/* Summary cards */}
+ <div className="grid grid-cols-12 gap-3">
+ {['Summary', 'Trend', 'Drivers', 'Next action'].map((label) => (
+ <div key={label} className="col-span-12 sm:col-span-6 lg:col-span-3">
+ <div className="rounded-xl border border-outline bg-surface p-4 shadow-sm">
+ <div className="text-[11px] font-semibold text-content-tertiary uppercase tracking-wider">{label}</div>
+ <div className="mt-2 h-7 w-24 rounded-md bg-surface-secondary border border-outline animate-pulse" />
+ <div className="mt-2 h-3 w-40 rounded bg-surface-secondary border border-outline animate-pulse" />
+ </div>
+ </div>
+ ))}
+ </div>
+
+ {/* Chart placeholder */}
+ <div className="mt-4 rounded-2xl border border-outline bg-gradient-to-br from-white to-blue-50 p-4 shadow-sm">
+ <div className="flex items-center justify-between">
+ <div className="text-xs font-semibold text-content-secondary uppercase tracking-wider">Chart</div>
+ <div className="text-[11px] text-content-muted">Placeholder</div>
+ </div>
+ <div className="mt-3 h-[260px] rounded-xl border border-outline bg-surface relative overflow-hidden">
+ <div className="absolute inset-0 opacity-70">
+ <div className="absolute left-6 right-6 top-10 h-px bg-surface-secondary" />
+ <div className="absolute left-6 right-6 top-24 h-px bg-surface-secondary" />
+ <div className="absolute left-6 right-6 top-40 h-px bg-surface-secondary" />
+ <div className="absolute left-6 right-6 top-56 h-px bg-surface-secondary" />
+ </div>
+ <div className="absolute inset-0 flex items-end justify-center pb-10">
+ <div className="w-[85%] h-[55%] rounded-xl bg-gradient-to-r from-indigo-200/40 via-blue-200/40 to-emerald-200/40 border border-outline" />
+ </div>
+ <div className="absolute inset-0 flex items-center justify-center text-xs text-content-muted">
+ Graph will be wired to real data
+ </div>
+ </div>
+ </div>
+
+ {/* Details */}
+ <div className="mt-4 grid grid-cols-12 gap-3">
+ <div className="col-span-12 lg:col-span-7">
+ <div className="rounded-2xl border border-outline bg-surface p-4 shadow-sm">
+ <div className="text-xs font-semibold text-content-secondary uppercase tracking-wider">Details</div>
+ <div className="mt-3 space-y-2">
+ {Array.from({ length: 5 }).map((_, idx) => (
+ <div key={idx} className="h-3 w-full rounded bg-surface-secondary border border-outline animate-pulse" />
+ ))}
+ </div>
+ </div>
+ </div>
+ <div className="col-span-12 lg:col-span-5">
+ <div className="rounded-2xl border border-outline bg-surface p-4 shadow-sm">
+ <div className="text-xs font-semibold text-content-secondary uppercase tracking-wider">Recommendations</div>
+ <ul className="mt-3 space-y-2 text-sm text-content-secondary">
+ <li className="flex gap-2">
+ <span className="text-content-muted">•</span>
+ <span>Placeholder: highlight the top driver behind this metric.</span>
+ </li>
+ <li className="flex gap-2">
+ <span className="text-content-muted">•</span>
+ <span>Placeholder: recommend one concrete next action.</span>
+ </li>
+ <li className="flex gap-2">
+ <span className="text-content-muted">•</span>
+ <span>Placeholder: link to related dashboards/insights.</span>
+ </li>
+ </ul>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ );
+}
+

@@ -38,7 +38,7 @@ export default function TeamAICardsTab() {
             value={filterText}
             onChange={(event) => handleFilterChange(event.target.value)}
             placeholder="Search AI cards..."
-            className="w-full sm:w-72 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full sm:w-72 px-3 py-2 border border-outline rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-brand"
           />
         </div>
         <div className="flex-1 min-h-0">

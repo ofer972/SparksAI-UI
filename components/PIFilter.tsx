@@ -4,89 +4,89 @@ import { useState, useEffect } from 'react';
 import { ApiService } from '@/lib/api';
 
 interface PIFilterProps {
-  selectedPI: string;
-  onPIChange: (pi: string) => void;
-  className?: string;
+ selectedPI: string;
+ onPIChange: (pi: string) => void;
+ className?: string;
 }
 
 interface PI {
-  pi_name: string;
-  start_date: string;
-  end_date: string;
-  planning_grace_days: number;
-  prep_grace_days: number;
-  updated_at: string;
+ pi_name: string;
+ start_date: string;
+ end_date: string;
+ planning_grace_days: number;
+ prep_grace_days: number;
+ updated_at: string;
 }
 
 interface PIResponse {
-  success: boolean;
-  data: {
-    pis: PI[];
-    count: number;
-  };
-  message: string;
+ success: boolean;
+ data: {
+ pis: PI[];
+ count: number;
+ };
+ message: string;
 }
 
 export default function PIFilter({ selectedPI, onPIChange, className = '' }: PIFilterProps) {
-  const [pis, setPis] = useState<PI[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+ const [pis, setPis] = useState<PI[]>([]);
+ const [loading, setLoading] = useState(true);
+ const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchPIs = async () => {
-      try {
-        setLoading(true);
-        const apiService = new ApiService();
-        const response = await apiService.getPIs();
-        
-        if (response.pis) {
-          setPis(response.pis);
-          // Don't auto-select PI - let user choose or parent component handle default
-        } else {
-          throw new Error('Failed to fetch PIs');
-        }
-      } catch (err) {
-        console.error('Error fetching PIs:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch PIs');
-        // No fallback - let parent handle default
-        setPis([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+ useEffect(() => {
+ const fetchPIs = async () => {
+ try {
+ setLoading(true);
+ const apiService = new ApiService();
+ const response = await apiService.getPIs();
+ 
+ if (response.pis) {
+ setPis(response.pis);
+ // Don't auto-select PI - let user choose or parent component handle default
+ } else {
+ throw new Error('Failed to fetch PIs');
+ }
+ } catch (err) {
+ console.error('Error fetching PIs:', err);
+ setError(err instanceof Error ? err.message : 'Failed to fetch PIs');
+ // No fallback - let parent handle default
+ setPis([]);
+ } finally {
+ setLoading(false);
+ }
+ };
 
-    fetchPIs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only fetch once on mount
+ fetchPIs();
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, []); // Only fetch once on mount
 
-  if (loading) {
-    return (
-      <select className={`w-full border border-gray-300 rounded-lg px-4 py-1 text-sm bg-white ${className}`} disabled>
-        <option>Loading PIs...</option>
-      </select>
-    );
-  }
+ if (loading) {
+ return (
+ <select className={`w-full border border-outline-strong rounded-lg px-4 py-1 text-sm bg-surface-elevated text-content-primary ${className}`} disabled>
+ <option>Loading PIs...</option>
+ </select>
+ );
+ }
 
-  if (error) {
-    return (
-      <select className={`w-full border border-gray-300 rounded-lg px-4 py-1 text-sm bg-white ${className}`} disabled>
-        <option>Error loading PIs</option>
-      </select>
-    );
-  }
+ if (error) {
+ return (
+ <select className={`w-full border border-outline-strong rounded-lg px-4 py-1 text-sm bg-surface-elevated text-content-primary ${className}`} disabled>
+ <option>Error loading PIs</option>
+ </select>
+ );
+ }
 
-  return (
-    <select
-      value={selectedPI || ''}
-      onChange={(e) => onPIChange(e.target.value || '')}
-      className={`w-full border border-gray-300 rounded-lg px-4 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 hover:border-gray-400 transition-colors ${className}`}
-    >
-      <option value="">Select PI</option>
-      {pis.map((pi) => (
-        <option key={pi.pi_name} value={pi.pi_name}>
-          {pi.pi_name}
-        </option>
-      ))}
-    </select>
-  );
+ return (
+ <select
+ value={selectedPI || ''}
+ onChange={(e) => onPIChange(e.target.value || '')}
+ className={`w-full border border-outline-strong rounded-lg px-4 py-1 text-sm bg-surface-elevated text-content-primary focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600 hover:border-outline-strong hover:border-outline-strong transition-colors ${className}`}
+ >
+ <option value="">Select PI</option>
+ {pis.map((pi) => (
+ <option key={pi.pi_name} value={pi.pi_name}>
+ {pi.pi_name}
+ </option>
+ ))}
+ </select>
+ );
 }

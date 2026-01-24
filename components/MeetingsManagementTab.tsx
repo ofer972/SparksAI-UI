@@ -337,7 +337,7 @@ export default function MeetingsManagementTab() {
       return (
         <div key={node.id}>
           <div
-            className={`flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-gray-50 transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-surface-elevated transition-all cursor-pointer ${
               isSelected ? 'bg-blue-50 ring-2 ring-blue-400' : ''
             }`}
             style={{ paddingLeft: `${depth * 20 + 8}px` }}
@@ -356,7 +356,7 @@ export default function MeetingsManagementTab() {
             >
               {hasChildren && (
                 <svg
-                  className={`w-3.5 h-3.5 text-gray-600 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                  className={`w-3.5 h-3.5 text-content-secondary transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -370,7 +370,7 @@ export default function MeetingsManagementTab() {
             <span className="text-base">📁</span>
 
             {/* Group name */}
-            <span className={`flex-1 font-semibold text-sm ${depth === 0 ? 'text-gray-900' : 'text-gray-800'}`}>
+            <span className={`flex-1 font-semibold text-sm ${depth === 0 ? 'text-content-primary' : 'text-content-primary'}`}>
               {group.group_name}
             </span>
           </div>
@@ -390,7 +390,7 @@ export default function MeetingsManagementTab() {
       return (
         <div
           key={node.id}
-          className={`flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-gray-50 transition-all cursor-pointer ${
+          className={`flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-surface-elevated transition-all cursor-pointer ${
             isSelected ? 'bg-blue-50 ring-2 ring-blue-400' : ''
           }`}
           style={{ paddingLeft: `${depth * 20 + 28}px` }}
@@ -400,7 +400,7 @@ export default function MeetingsManagementTab() {
           <span className="text-sm">👥</span>
 
           {/* Team name */}
-          <span className="flex-1 text-xs text-gray-700">{team.team_name}</span>
+          <span className="flex-1 text-xs text-content-secondary">{team.team_name}</span>
         </div>
       );
     }
@@ -411,7 +411,7 @@ export default function MeetingsManagementTab() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading meetings...</p>
+          <p className="text-content-secondary">Loading meetings...</p>
         </div>
       </div>
     );
@@ -428,19 +428,19 @@ export default function MeetingsManagementTab() {
   return (
     <div className="h-full flex flex-col min-h-0 space-y-3">
       {/* Header */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-3 flex-shrink-0">
+      <div className="bg-surface rounded-lg border border-outline shadow-sm p-3 flex-shrink-0">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Teams Meetings</h2>
-          <p className="text-sm text-gray-600">View and manage meetings for teams and groups</p>
+          <h2 className="text-xl font-bold text-content-primary">Teams Meetings</h2>
+          <p className="text-sm text-content-secondary">View and manage meetings for teams and groups</p>
         </div>
       </div>
 
       {/* Tree Structure and Meetings - Side by Side */}
       <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
         {/* Team/Group Hierarchy */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col min-h-0">
-          <div className="flex items-center justify-between p-3 border-b border-gray-200 flex-shrink-0 bg-gradient-to-r from-gray-50 to-white">
-            <h3 className="text-base font-semibold text-gray-900">Teams & Groups</h3>
+        <div className="bg-surface rounded-lg border border-outline shadow-sm flex flex-col min-h-0">
+          <div className="flex items-center justify-between p-3 border-b border-outline flex-shrink-0 bg-gradient-to-r from-gray-50 to-white">
+            <h3 className="text-base font-semibold text-content-primary">Teams & Groups</h3>
             <button
               onClick={() => {
                 const allGroupIds = groups.map(g => g.group_key);
@@ -452,7 +452,7 @@ export default function MeetingsManagementTab() {
                   setExpandedGroups(new Set(allGroupIds));
                 }
               }}
-              className="inline-flex items-center gap-1 px-2 md:px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-all"
+              className="inline-flex items-center gap-1 px-2 md:px-2.5 py-1.5 text-xs font-medium text-content-secondary hover:text-content-primary hover:bg-surface-secondary rounded-md transition-all"
             >
               {groups.length > 0 && groups.every(g => expandedGroups.has(g.group_key)) ? (
                 <>
@@ -478,8 +478,8 @@ export default function MeetingsManagementTab() {
                 <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                 </svg>
-                <p className="text-gray-600 mb-2">No teams or groups</p>
-                <p className="text-sm text-gray-500">Teams and groups will appear here</p>
+                <p className="text-content-secondary mb-2">No teams or groups</p>
+                <p className="text-sm text-content-tertiary">Teams and groups will appear here</p>
               </div>
             ) : (
               <div className="space-y-0.5">
@@ -490,9 +490,9 @@ export default function MeetingsManagementTab() {
         </div>
 
         {/* Meetings Panel */}
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col min-h-0">
-          <div className="flex items-center justify-between p-3 border-b border-gray-200 flex-shrink-0 bg-gradient-to-r from-gray-50 to-white">
-            <h3 className="text-base font-semibold text-gray-900">
+        <div className="bg-surface border border-outline rounded-lg shadow-sm flex flex-col min-h-0">
+          <div className="flex items-center justify-between p-3 border-b border-outline flex-shrink-0 bg-gradient-to-r from-gray-50 to-white">
+            <h3 className="text-base font-semibold text-content-primary">
               {selectedNode ? `Meetings - ${selectedNode.name}` : 'Meetings'}
             </h3>
           </div>
@@ -503,16 +503,16 @@ export default function MeetingsManagementTab() {
                 <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                <p className="text-gray-600 mb-2">Select a team or group</p>
-                <p className="text-sm text-gray-500">Click on a team or group to view its meetings</p>
+                <p className="text-content-secondary mb-2">Select a team or group</p>
+                <p className="text-sm text-content-tertiary">Click on a team or group to view its meetings</p>
               </div>
             ) : selectedMeetings.length === 0 ? (
               <div className="text-center py-12">
                 <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                <p className="text-gray-600 mb-2">No meetings found</p>
-                <p className="text-sm text-gray-500">This {selectedNode.type === 'group' ? 'group' : 'team'} has no meetings</p>
+                <p className="text-content-secondary mb-2">No meetings found</p>
+                <p className="text-sm text-content-tertiary">This {selectedNode.type === 'group' ? 'group' : 'team'} has no meetings</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -524,18 +524,18 @@ export default function MeetingsManagementTab() {
                     <div
                       key={meetingKey}
                       className={`border rounded-lg overflow-hidden hover:shadow-md transition-all ${
-                        isGenerated ? 'border-dashed border-gray-300 bg-gray-50/30' : 'border-gray-200'
+                        isGenerated ? 'border-dashed border-outline bg-surface-elevated/30' : 'border-outline'
                       }`}
                     >
                       {/* Header with Meeting Type */}
                       <div className={`flex items-center justify-between px-3 py-2 border-b ${
-                        isGenerated ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100' : 'bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200'
+                        isGenerated ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100' : 'bg-gradient-to-r from-gray-50 to-gray-100 border-outline'
                       }`}>
                         <div className="flex items-center gap-2">
-                          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 text-content-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
-                          <h3 className="text-sm font-semibold text-gray-800">{meeting.type}</h3>
+                          <h3 className="text-sm font-semibold text-content-primary">{meeting.type}</h3>
                         </div>
                         
                         {/* Edit Button */}
@@ -543,7 +543,7 @@ export default function MeetingsManagementTab() {
                           <button
                             type="button"
                             onClick={() => startEditing(meeting)}
-                            className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-white/50 rounded transition-colors"
+                            className="p-1.5 text-content-muted hover:text-brand hover:bg-surface/50 rounded transition-colors"
                             title="Edit meeting"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -557,22 +557,22 @@ export default function MeetingsManagementTab() {
                       <div className="p-3 space-y-2">
                         {/* Meeting Name */}
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-600 w-20">Name:</span>
+                          <span className="text-xs text-content-secondary w-20">Name:</span>
                           {isEditing ? (
                             <input
                               type="text"
                               value={editName}
                               onChange={(e) => setEditName(e.target.value)}
-                              className="flex-1 px-2 py-1 text-sm font-semibold border border-indigo-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              className="flex-1 px-2 py-1 text-sm font-semibold border border-indigo-300 rounded focus:outline-none focus:ring-2 focus:ring-brand"
                               placeholder="Meeting name"
                             />
                           ) : (
                             <div className="flex items-center gap-2 flex-1">
-                              <h4 className="font-semibold text-gray-900 text-sm">
+                              <h4 className="font-semibold text-content-primary text-sm">
                                 {meeting.name}
                               </h4>
                               {isGenerated && (
-                                <span className="text-xs text-gray-500 italic">
+                                <span className="text-xs text-content-tertiary italic">
                                   (Default name)
                                 </span>
                               )}
@@ -582,36 +582,36 @@ export default function MeetingsManagementTab() {
 
                         {/* Organizer Email */}
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-600 w-20">Organizer:</span>
+                          <span className="text-xs text-content-secondary w-20">Organizer:</span>
                           {isEditing ? (
                             <input
                               type="email"
                               value={editOrganizerEmail}
                               onChange={(e) => setEditOrganizerEmail(e.target.value)}
                               placeholder="organizer@example.com"
-                              className="flex-1 px-2 py-1 text-xs border border-indigo-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              className="flex-1 px-2 py-1 text-xs border border-indigo-300 rounded focus:outline-none focus:ring-2 focus:ring-brand"
                             />
                           ) : (
-                            <span className="text-xs text-gray-600 flex-1">
-                              {meeting.organizer_email || <span className="text-gray-400 italic">No email set</span>}
+                            <span className="text-xs text-content-secondary flex-1">
+                              {meeting.organizer_email || <span className="text-content-muted italic">No email set</span>}
                             </span>
                           )}
                         </div>
 
                         {/* Save/Cancel Buttons - Show when editing */}
                         {isEditing && (
-                          <div className="flex justify-end gap-2 pt-2 border-t border-gray-200 mt-3">
+                          <div className="flex justify-end gap-2 pt-2 border-t border-outline mt-3">
                             <button
                               type="button"
                               onClick={cancelEditing}
-                              className="px-3 py-1.5 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+                              className="px-3 py-1.5 text-xs text-content-secondary hover:text-content-primary hover:bg-surface-secondary rounded transition-colors"
                             >
                               Cancel
                             </button>
                             <button
                               type="button"
                               onClick={() => saveEditing(meeting)}
-                              className="px-3 py-1.5 text-xs text-white bg-indigo-600 hover:bg-indigo-700 rounded transition-colors"
+                              className="px-3 py-1.5 text-xs text-white bg-brand hover:bg-brand-hover rounded transition-colors"
                             >
                               Save
                             </button>

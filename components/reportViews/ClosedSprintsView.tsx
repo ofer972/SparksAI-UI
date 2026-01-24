@@ -42,9 +42,9 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
   });
 
   const months = Number(filters.months ?? 3);
-  const teamName = (filters.team_name as string) ?? '';
-  const isGroup = (filters.isGroup as boolean) ?? false;
-  const issueType = (filters.issue_type as string) ?? '';
+  const teamName = (filters?.team_name as string) ?? '';
+  const isGroup = (filters?.isGroup as boolean) ?? false;
+  const issueType = (filters?.issue_type as string) ?? '';
   
   // Look up ID from name to construct proper teamValue
   const teamValue = useMemo(() => {
@@ -82,7 +82,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
 
   const handleTimePeriodChange = useCallback(
     (value: number) => {
-      setFilters((prev) => ({
+      setFilters?.((prev) => ({
         ...prev,
         months: value,
       }));
@@ -93,13 +93,13 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
   const handleTeamGroupChange = useCallback(
     (value: string | null, type: 'group' | 'team', name: string) => {
       if (value === null) {
-        setFilters((prev) => ({
+        setFilters?.((prev) => ({
           ...prev,
           team_name: null,
           isGroup: false,
         }));
       } else {
-        setFilters((prev) => ({
+        setFilters?.((prev) => ({
           ...prev,
           team_name: name,
           isGroup: type === 'group',
@@ -111,7 +111,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
 
   const handleIssueTypeChange = useCallback(
     (value: string) => {
-      setFilters((prev) => ({
+      setFilters?.((prev) => ({
         ...prev,
         issue_type: value || null,
       }));
@@ -299,7 +299,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
             if (keyStr === 'sprint_name' && row.closed_sprint_url) {
               return (
                 <div
-                  className="text-sm text-blue-600 font-medium hover:text-blue-800 hover:underline cursor-pointer"
+                  className="text-sm text-brand font-medium hover:text-blue-800 hover:underline cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation();
                     window.open(row.closed_sprint_url, '_blank');
@@ -355,7 +355,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
             // Format avg_story_cycle_time
             if (keyStr === 'avg_story_cycle_time') {
               const num = typeof value === 'string' ? parseFloat(value) : (typeof value === 'number' ? value : 0);
-              let color = 'text-gray-900';
+              let color = 'text-content-primary';
               if (num > 15) {
                 color = 'text-red-600';
               } else if (num >= 10) {
@@ -394,7 +394,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
               if (keys.length > 0 && jiraUrl) {
                 const link = getJiraSearchLink(keys, jiraUrl);
                 // Apply color coding - most are blue, but issues_remaining is red, bug_resolved is purple, and issues_removed is yellow/brown
-                let colorClass = 'text-blue-600';
+                let colorClass = 'text-brand';
                 if (keyStr === 'issues_not_completed' || keyStr === 'issues_remaining') {
                   colorClass = 'text-red-600';
                 } else if (keyStr === 'bug_resolved_during_sprint') {
@@ -425,16 +425,16 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
             // Fallback rendering for numeric values (when no keys array available)
             // Note: These should normally have keys arrays, but keeping as fallback
             if (keyStr === 'issues_completed_in_sprint' || keyStr === 'issues_done') {
-              return <span className="text-blue-600 font-semibold">{value}</span>;
+              return <span className="text-brand font-semibold">{value}</span>;
             }
             if (keyStr === 'issues_not_completed' || keyStr === 'issues_remaining') {
               return <span className="text-red-600 font-semibold">{value}</span>;
             }
             if (keyStr === 'total_issues_in_sprint') {
-              return <span className="text-blue-600 font-semibold">{value}</span>;
+              return <span className="text-brand font-semibold">{value}</span>;
             }
             if (keyStr === 'issues_at_start' || keyStr === 'issues_added') {
-              return <span className="text-blue-600 font-semibold">{value}</span>;
+              return <span className="text-brand font-semibold">{value}</span>;
             }
             if (keyStr === 'issues_removed') {
               return <span className="text-yellow-600 font-semibold">{value}</span>;
@@ -443,7 +443,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
               return <span className="text-purple-600 font-semibold">{value}</span>;
             }
             if (keyStr === 'bugs_planned_plus_added') {
-              return <span className="text-blue-600 font-semibold">{value}</span>;
+              return <span className="text-brand font-semibold">{value}</span>;
             }
 
             return value;
@@ -476,7 +476,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
         <select
           value={months}
           onChange={(e) => handleTimePeriodChange(Number(e.target.value))}
-          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand"
         >
           {timePeriodOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -490,7 +490,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
         <select
           value={issueType}
           onChange={(e) => handleIssueTypeChange(e.target.value)}
-          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand"
         >
           <option value="">All Issue Types</option>
           {availableIssueTypes.map((type) => (
@@ -547,12 +547,15 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
       onRefresh={refresh}
       onClose={componentProps?.onClose}
       onAIChat={componentProps?.onAIChat}
+      readOnly={componentProps?.readOnly}
+      hideHeader={componentProps?.hideHeader}
+      hideCollapse={componentProps?.hideCollapse}
     >
       {loading && (
         <div className="flex-1 flex items-center justify-center h-64">
           <div className="flex flex-col items-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-            <div className="text-sm text-gray-600">Loading sprints...</div>
+            <div className="text-sm text-content-secondary">Loading sprints...</div>
           </div>
         </div>
       )}

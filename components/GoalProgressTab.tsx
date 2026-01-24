@@ -10,339 +10,339 @@ import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 import { useDefaultTeamGroup } from '@/hooks/useDefaultTeamGroup';
 
 interface Sprint {
-  sprint_id: number;
-  sprint_name: string;
-  start_date: string | null;
-  end_date: string | null;
+ sprint_id: number;
+ sprint_name: string;
+ start_date: string | null;
+ end_date: string | null;
 }
 
 export default function GoalProgressTab() {
-  // State
-  const [scopeType, setScopeType] = useState<'pi' | 'sprint'>('pi');
-  const [selectedPI, setSelectedPI] = useState<string>('');
-  const [selectedSprintId, setSelectedSprintId] = useState<number | null>(null);
-  const [selectedSprintName, setSelectedSprintName] = useState<string | null>(null);
-  const [selectedTeamValue, setSelectedTeamValue] = useState<string | null>(null);
-  const [selectedTeamType, setSelectedTeamType] = useState<'team' | 'group' | null>(null);
-  const [selectedTeamName, setSelectedTeamName] = useState<string | null>(null);
-  const [availablePIs, setAvailablePIs] = useState<string[]>([]);
-  const [availableSprints, setAvailableSprints] = useState<Sprint[]>([]);
-  const [loadingPIs, setLoadingPIs] = useState(true);
-  const [loadingSprints, setLoadingSprints] = useState(false);
+ // State
+ const [scopeType, setScopeType] = useState<'pi' | 'sprint'>('pi');
+ const [selectedPI, setSelectedPI] = useState<string>('');
+ const [selectedSprintId, setSelectedSprintId] = useState<number | null>(null);
+ const [selectedSprintName, setSelectedSprintName] = useState<string | null>(null);
+ const [selectedTeamValue, setSelectedTeamValue] = useState<string | null>(null);
+ const [selectedTeamType, setSelectedTeamType] = useState<'team' | 'group' | null>(null);
+ const [selectedTeamName, setSelectedTeamName] = useState<string | null>(null);
+ const [availablePIs, setAvailablePIs] = useState<string[]>([]);
+ const [availableSprints, setAvailableSprints] = useState<Sprint[]>([]);
+ const [loadingPIs, setLoadingPIs] = useState(true);
+ const [loadingSprints, setLoadingSprints] = useState(false);
 
-  const apiService = useMemo(() => new ApiService(), []);
-  const { teams, loading: teamsLoading } = useTeamsGroups();
-  const hasInitializedPIRef = useRef(false);
-  const prevScopeTypeRef = useRef<'pi' | 'sprint'>('pi');
+ const apiService = useMemo(() => new ApiService(), []);
+ const { teams, loading: teamsLoading } = useTeamsGroups();
+ const hasInitializedPIRef = useRef(false);
+ const prevScopeTypeRef = useRef<'pi' | 'sprint'>('pi');
 
-  // Load default team/group from user preferences
-  useDefaultTeamGroup({
-    selectedTeamValue,
-    setSelectedTeamValue,
-    setSelectedTeamType,
-    setSelectedTeamName,
-  });
+ // Load default team/group from user preferences
+ useDefaultTeamGroup({
+ selectedTeamValue,
+ setSelectedTeamValue,
+ setSelectedTeamType,
+ setSelectedTeamName,
+ });
 
-  // Fetch available PIs
-  useEffect(() => {
-    const fetchPIs = async () => {
-      try {
-        setLoadingPIs(true);
-        const response = await apiService.getPIs();
-        if (response.pis && Array.isArray(response.pis)) {
-          const piNames = response.pis.map((pi: any) => pi.pi_name);
-          setAvailablePIs(piNames);
-        }
-      } catch (err) {
-        console.error('Error fetching PIs:', err);
-      } finally {
-        setLoadingPIs(false);
-      }
-    };
-    fetchPIs();
-  }, [apiService]);
+ // Fetch available PIs
+ useEffect(() => {
+ const fetchPIs = async () => {
+ try {
+ setLoadingPIs(true);
+ const response = await apiService.getPIs();
+ if (response.pis && Array.isArray(response.pis)) {
+ const piNames = response.pis.map((pi: any) => pi.pi_name);
+ setAvailablePIs(piNames);
+ }
+ } catch (err) {
+ console.error('Error fetching PIs:', err);
+ } finally {
+ setLoadingPIs(false);
+ }
+ };
+ fetchPIs();
+ }, [apiService]);
 
-  // Auto-select current PI on mount
-  useEffect(() => {
-    if (hasInitializedPIRef.current) return;
-    if (scopeType !== 'pi' || selectedPI) return;
-    
-    hasInitializedPIRef.current = true;
-    const fetchCurrentPI = async () => {
-      try {
-        const piResponse = await apiService.getCurrentAndNextPIs();
-        const currentPIs = (piResponse as any).current_pis || [];
-        if (currentPIs.length > 0) {
-          setSelectedPI(currentPIs[0].pi_name);
-        }
-      } catch (err) {
-        console.error('Failed to load current PI:', err);
-      }
-    };
-    fetchCurrentPI();
-  }, [scopeType, selectedPI, apiService]);
+ // Auto-select current PI on mount
+ useEffect(() => {
+ if (hasInitializedPIRef.current) return;
+ if (scopeType !== 'pi' || selectedPI) return;
+ 
+ hasInitializedPIRef.current = true;
+ const fetchCurrentPI = async () => {
+ try {
+ const piResponse = await apiService.getCurrentAndNextPIs();
+ const currentPIs = (piResponse as any).current_pis || [];
+ if (currentPIs.length > 0) {
+ setSelectedPI(currentPIs[0].pi_name);
+ }
+ } catch (err) {
+ console.error('Failed to load current PI:', err);
+ }
+ };
+ fetchCurrentPI();
+ }, [scopeType, selectedPI, apiService]);
 
 
-  // Fetch sprints when scope is sprint and team/group is selected
-  useEffect(() => {
-    if (scopeType === 'sprint' && selectedTeamName) {
-      const fetchSprints = async () => {
-        try {
-          setLoadingSprints(true);
-          const response = await apiService.getAvailableSprints(
-            selectedTeamName,
-            selectedTeamType === 'group'
-          );
-          if (response.success && response.data?.sprints) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+ // Fetch sprints when scope is sprint and team/group is selected
+ useEffect(() => {
+ if (scopeType === 'sprint' && selectedTeamName) {
+ const fetchSprints = async () => {
+ try {
+ setLoadingSprints(true);
+ const response = await apiService.getAvailableSprints(
+ selectedTeamName,
+ selectedTeamType === 'group'
+ );
+ if (response.success && response.data?.sprints) {
+ const today = new Date();
+ today.setHours(0, 0, 0, 0);
 
-            const filteredSprints = response.data.sprints
-              .filter((sprint: Sprint) => {
-                if (!sprint.start_date || !sprint.end_date) return false;
-                const startDate = new Date(sprint.start_date);
-                startDate.setHours(0, 0, 0, 0);
-                const endDate = new Date(sprint.end_date);
-                endDate.setHours(0, 0, 0, 0);
+ const filteredSprints = response.data.sprints
+ .filter((sprint: Sprint) => {
+ if (!sprint.start_date || !sprint.end_date) return false;
+ const startDate = new Date(sprint.start_date);
+ startDate.setHours(0, 0, 0, 0);
+ const endDate = new Date(sprint.end_date);
+ endDate.setHours(0, 0, 0, 0);
 
-                const isCurrent = startDate <= today && today <= endDate;
-                const fourteenDaysBeforeStart = new Date(startDate);
-                fourteenDaysBeforeStart.setDate(fourteenDaysBeforeStart.getDate() - 14);
-                const isUpcoming = today >= fourteenDaysBeforeStart && today < startDate;
+ const isCurrent = startDate <= today && today <= endDate;
+ const fourteenDaysBeforeStart = new Date(startDate);
+ fourteenDaysBeforeStart.setDate(fourteenDaysBeforeStart.getDate() - 14);
+ const isUpcoming = today >= fourteenDaysBeforeStart && today < startDate;
 
-                return isCurrent || isUpcoming;
-              })
-              .sort((a: Sprint, b: Sprint) => {
-                if (!a.start_date || !b.start_date) return 0;
-                return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
-              });
+ return isCurrent || isUpcoming;
+ })
+ .sort((a: Sprint, b: Sprint) => {
+ if (!a.start_date || !b.start_date) return 0;
+ return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+ });
 
-            setAvailableSprints(filteredSprints);
-          }
-        } catch (err) {
-          console.error('Error fetching sprints:', err);
-          setAvailableSprints([]);
-        } finally {
-          setLoadingSprints(false);
-        }
-      };
+ setAvailableSprints(filteredSprints);
+ }
+ } catch (err) {
+ console.error('Error fetching sprints:', err);
+ setAvailableSprints([]);
+ } finally {
+ setLoadingSprints(false);
+ }
+ };
 
-      fetchSprints();
-    } else {
-      setAvailableSprints([]);
-    }
-  }, [scopeType, selectedTeamName, selectedTeamType, apiService]);
+ fetchSprints();
+ } else {
+ setAvailableSprints([]);
+ }
+ }, [scopeType, selectedTeamName, selectedTeamType, apiService]);
 
-  // Auto-select first sprint when sprints become available
-  useEffect(() => {
-    if (scopeType === 'sprint' && !selectedSprintId && availableSprints.length > 0) {
-      const firstSprint = availableSprints[0];
-      setSelectedSprintId(firstSprint.sprint_id);
-      setSelectedSprintName(firstSprint.sprint_name);
-    }
-  }, [scopeType, selectedSprintId, availableSprints]);
+ // Auto-select first sprint when sprints become available
+ useEffect(() => {
+ if (scopeType === 'sprint' && !selectedSprintId && availableSprints.length > 0) {
+ const firstSprint = availableSprints[0];
+ setSelectedSprintId(firstSprint.sprint_id);
+ setSelectedSprintName(firstSprint.sprint_name);
+ }
+ }, [scopeType, selectedSprintId, availableSprints]);
 
-  // Auto-select current PI when switching to PI scope
-  useEffect(() => {
-    const scopeTypeChanged = prevScopeTypeRef.current !== scopeType;
-    prevScopeTypeRef.current = scopeType;
+ // Auto-select current PI when switching to PI scope
+ useEffect(() => {
+ const scopeTypeChanged = prevScopeTypeRef.current !== scopeType;
+ prevScopeTypeRef.current = scopeType;
 
-    if (scopeTypeChanged) {
-      if (scopeType === 'pi' && !selectedPI) {
-        const fetchCurrentPI = async () => {
-          try {
-            const piResponse = await apiService.getCurrentAndNextPIs();
-            const currentPIs = (piResponse as any).current_pis || [];
-            if (currentPIs.length > 0) {
-              setSelectedPI(currentPIs[0].pi_name);
-            }
-          } catch (err) {
-            console.error('Failed to load current PI:', err);
-          }
-        };
-        fetchCurrentPI();
-      } else if (scopeType === 'sprint') {
-        // Clear PI selection when switching to sprint
-        setSelectedPI('');
-      }
-    }
-  }, [scopeType, selectedPI, apiService]);
+ if (scopeTypeChanged) {
+ if (scopeType === 'pi' && !selectedPI) {
+ const fetchCurrentPI = async () => {
+ try {
+ const piResponse = await apiService.getCurrentAndNextPIs();
+ const currentPIs = (piResponse as any).current_pis || [];
+ if (currentPIs.length > 0) {
+ setSelectedPI(currentPIs[0].pi_name);
+ }
+ } catch (err) {
+ console.error('Failed to load current PI:', err);
+ }
+ };
+ fetchCurrentPI();
+ } else if (scopeType === 'sprint') {
+ // Clear PI selection when switching to sprint
+ setSelectedPI('');
+ }
+ }
+ }, [scopeType, selectedPI, apiService]);
 
-  // Handle scope type change
-  const handleScopeTypeChange = (value: 'pi' | 'sprint') => {
-    setScopeType(value);
-    if (value === 'pi') {
-      setSelectedSprintId(null);
-      setSelectedSprintName(null);
-    } else {
-      setSelectedPI('');
-    }
-  };
+ // Handle scope type change
+ const handleScopeTypeChange = (value: 'pi' | 'sprint') => {
+ setScopeType(value);
+ if (value === 'pi') {
+ setSelectedSprintId(null);
+ setSelectedSprintName(null);
+ } else {
+ setSelectedPI('');
+ }
+ };
 
-  // Handle team/group change
-  const handleTeamGroupChange = (value: string | null, type: 'group' | 'team', name: string) => {
-    setSelectedTeamValue(value);
-    setSelectedTeamType(type);
-    setSelectedTeamName(name);
-  };
+ // Handle team/group change
+ const handleTeamGroupChange = (value: string | null, type: 'group' | 'team', name: string) => {
+ setSelectedTeamValue(value);
+ setSelectedTeamType(type);
+ setSelectedTeamName(name);
+ };
 
-  // Calculate panel title
-  const panelTitle = useMemo(() => {
-    const scopeLabel = scopeType === 'pi' ? 'PI Goal Progress' : 'Sprint Goal Progress';
-    const name = scopeType === 'pi' ? selectedPI : selectedSprintName;
-    if (name) {
-      return `${scopeLabel} (${name})`;
-    }
-    return scopeLabel;
-  }, [scopeType, selectedPI, selectedSprintName]);
+ // Calculate panel title
+ const panelTitle = useMemo(() => {
+ const scopeLabel = scopeType === 'pi' ? 'PI Goal Progress' : 'Sprint Goal Progress';
+ const name = scopeType === 'pi' ? selectedPI : selectedSprintName;
+ if (name) {
+ return `${scopeLabel} (${name})`;
+ }
+ return scopeLabel;
+ }, [scopeType, selectedPI, selectedSprintName]);
 
-  // Use User goals hook for PI (read-only view)
-  const {
-    hierarchyData: piHierarchyData,
-    loading: piLoading,
-    error: piGoalsError,
-    refetch: refetchPIGoals,
-  } = useUserGoals(
-    scopeType === 'pi' ? selectedPI : undefined,
-    selectedTeamName || undefined,
-    selectedTeamType === 'group',
-    scopeType === 'pi' && !!selectedPI
-  );
+ // Use User goals hook for PI (read-only view)
+ const {
+ hierarchyData: piHierarchyData,
+ loading: piLoading,
+ error: piGoalsError,
+ refetch: refetchPIGoals,
+ } = useUserGoals(
+ scopeType === 'pi' ? selectedPI : undefined,
+ selectedTeamName || undefined,
+ selectedTeamType === 'group',
+ scopeType === 'pi' && !!selectedPI
+ );
 
-  // Use User Sprint goals hook (read-only view)
-  const {
-    hierarchyData: sprintHierarchyData,
-    loading: sprintLoading,
-    error: sprintGoalsError,
-    refetch: refetchSprintGoals,
-  } = useUserSprintGoals(
-    scopeType === 'sprint' ? selectedSprintId || undefined : undefined,
-    selectedTeamName || undefined,
-    selectedTeamType === 'group',
-    scopeType === 'sprint' && !!selectedSprintId
-  );
+ // Use User Sprint goals hook (read-only view)
+ const {
+ hierarchyData: sprintHierarchyData,
+ loading: sprintLoading,
+ error: sprintGoalsError,
+ refetch: refetchSprintGoals,
+ } = useUserSprintGoals(
+ scopeType === 'sprint' ? selectedSprintId || undefined : undefined,
+ selectedTeamName || undefined,
+ selectedTeamType === 'group',
+ scopeType === 'sprint' && !!selectedSprintId
+ );
 
-  // Use appropriate data based on scope
-  const hierarchyData = scopeType === 'pi' ? piHierarchyData : sprintHierarchyData;
-  const loading = scopeType === 'pi' ? piLoading : sprintLoading;
-  const error = scopeType === 'pi' ? piGoalsError : sprintGoalsError;
-  const refetch = scopeType === 'pi' ? refetchPIGoals : refetchSprintGoals;
+ // Use appropriate data based on scope
+ const hierarchyData = scopeType === 'pi' ? piHierarchyData : sprintHierarchyData;
+ const loading = scopeType === 'pi' ? piLoading : sprintLoading;
+ const error = scopeType === 'pi' ? piGoalsError : sprintGoalsError;
+ const refetch = scopeType === 'pi' ? refetchPIGoals : refetchSprintGoals;
 
-  return (
-    <div className="h-full flex flex-col space-y-4">
-      {/* Filters Section */}
-      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <div className="flex flex-col md:flex-row gap-4 items-center">
-          {/* Scope Type Filter */}
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-              Scope Type
-            </label>
-            <select
-              value={scopeType}
-              onChange={(e) => handleScopeTypeChange(e.target.value as 'pi' | 'sprint')}
-              className="w-32 md:w-40 px-2 py-1 border border-gray-300 rounded text-xs bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-[34px]"
-            >
-              <option value="pi">PI Goals</option>
-              <option value="sprint">Sprint Goals</option>
-            </select>
-          </div>
+ return (
+ <div className="h-full flex flex-col space-y-4">
+ {/* Filters Section */}
+ <div className="p-4 bg-surface-elevated rounded-lg border border-outline">
+ <div className="flex flex-col md:flex-row gap-4 items-center">
+ {/* Scope Type Filter */}
+ <div className="flex items-center gap-2">
+ <label className="text-sm font-medium text-content-secondary whitespace-nowrap">
+ Scope Type
+ </label>
+ <select
+ value={scopeType}
+ onChange={(e) => handleScopeTypeChange(e.target.value as 'pi' | 'sprint')}
+ className="w-32 md:w-40 px-2 py-1 border border-outline-strong rounded text-xs bg-surface-elevated text-content-primary hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand h-[34px]"
+ >
+ <option value="pi">PI Goals</option>
+ <option value="sprint">Sprint Goals</option>
+ </select>
+ </div>
 
-          {/* PI Filter - Only show when scope is PI */}
-          {scopeType === 'pi' && (
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-                PI <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={selectedPI}
-                onChange={(e) => setSelectedPI(e.target.value)}
-                disabled={loadingPIs}
-                className="w-32 md:w-40 px-2 py-1 border border-gray-300 rounded text-xs bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed h-[34px]"
-              >
-                <option value="">Select PI</option>
-                {availablePIs.map((pi) => (
-                  <option key={pi} value={pi}>
-                    {pi}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+ {/* PI Filter - Only show when scope is PI */}
+ {scopeType === 'pi' && (
+ <div className="flex items-center gap-2">
+ <label className="text-sm font-medium text-content-secondary whitespace-nowrap">
+ PI <span className="text-danger-text">*</span>
+ </label>
+ <select
+ value={selectedPI}
+ onChange={(e) => setSelectedPI(e.target.value)}
+ disabled={loadingPIs}
+ className="w-32 md:w-40 px-2 py-1 border border-outline-strong rounded text-xs bg-surface-elevated text-content-primary hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand disabled:opacity-50 disabled:cursor-not-allowed h-[34px]"
+ >
+ <option value="">Select PI</option>
+ {availablePIs.map((pi) => (
+ <option key={pi} value={pi}>
+ {pi}
+ </option>
+ ))}
+ </select>
+ </div>
+ )}
 
-          {/* Sprint Filter - Only show when scope is Sprint */}
-          {scopeType === 'sprint' && (
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-                Sprint <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={selectedSprintId || ''}
-                onChange={(e) => {
-                  const sprintId = e.target.value ? parseInt(e.target.value, 10) : null;
-                  const sprint = availableSprints.find(s => s.sprint_id === sprintId);
-                  setSelectedSprintId(sprintId);
-                  setSelectedSprintName(sprint?.sprint_name || null);
-                }}
-                disabled={loadingSprints || !selectedTeamName}
-                className="w-64 md:w-80 px-2 py-1 border border-gray-300 rounded text-xs bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed h-[34px]"
-              >
-                <option value="">
-                  {loadingSprints ? 'Loading sprints...' : !selectedTeamName ? 'Select team/group first' : 'Select Sprint'}
-                </option>
-                {availableSprints.map((sprint) => (
-                  <option key={sprint.sprint_id} value={sprint.sprint_id}>
-                    {sprint.sprint_name} {sprint.start_date && sprint.end_date
-                      ? `(${new Date(sprint.start_date).toLocaleDateString()} - ${new Date(sprint.end_date).toLocaleDateString()})`
-                      : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+ {/* Sprint Filter - Only show when scope is Sprint */}
+ {scopeType === 'sprint' && (
+ <div className="flex items-center gap-2">
+ <label className="text-sm font-medium text-content-secondary whitespace-nowrap">
+ Sprint <span className="text-danger-text">*</span>
+ </label>
+ <select
+ value={selectedSprintId || ''}
+ onChange={(e) => {
+ const sprintId = e.target.value ? parseInt(e.target.value, 10) : null;
+ const sprint = availableSprints.find(s => s.sprint_id === sprintId);
+ setSelectedSprintId(sprintId);
+ setSelectedSprintName(sprint?.sprint_name || null);
+ }}
+ disabled={loadingSprints || !selectedTeamName}
+ className="w-64 md:w-80 px-2 py-1 border border-outline-strong rounded text-xs bg-surface-elevated text-content-primary hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand disabled:opacity-50 disabled:cursor-not-allowed h-[34px]"
+ >
+ <option value="">
+ {loadingSprints ? 'Loading sprints...' : !selectedTeamName ? 'Select team/group first' : 'Select Sprint'}
+ </option>
+ {availableSprints.map((sprint) => (
+ <option key={sprint.sprint_id} value={sprint.sprint_id}>
+ {sprint.sprint_name} {sprint.start_date && sprint.end_date
+ ? `(${new Date(sprint.start_date).toLocaleDateString()} - ${new Date(sprint.end_date).toLocaleDateString()})`
+ : ''}
+ </option>
+ ))}
+ </select>
+ </div>
+ )}
 
-          {/* Team/Group Filter */}
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-              Team/Group
-            </label>
-            <div className="w-64">
-              <TeamGroupFilter
-                value={selectedTeamValue}
-                onChange={handleTeamGroupChange}
-                placeholder="Select team or group"
-                allowClear={true}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+ {/* Team/Group Filter */}
+ <div className="flex items-center gap-2">
+ <label className="text-sm font-medium text-content-secondary whitespace-nowrap">
+ Team/Group
+ </label>
+ <div className="w-64">
+ <TeamGroupFilter
+ value={selectedTeamValue}
+ onChange={handleTeamGroupChange}
+ placeholder="Select team or group"
+ allowClear={true}
+ />
+ </div>
+ </div>
+ </div>
+ </div>
 
-      {/* Goals Panel - Read Only */}
-      {(scopeType === 'pi' ? selectedPI : selectedSprintId) && (
-        <div className="flex-1 flex flex-col min-h-0">
-          <GoalsPanel
-            title={panelTitle}
-            hierarchyData={hierarchyData}
-            type="user"
-            loading={loading}
-            error={error}
-            onRefresh={refetch}
-            scopeType={scopeType as 'pi' | 'sprint' | 'release'}
-            piName={scopeType === 'pi' ? selectedPI : undefined}
-            sprintId={scopeType === 'sprint' ? selectedSprintId || undefined : undefined}
-            teamName={selectedTeamName || undefined}
-            isGroup={selectedTeamType === 'group'}
-            actionOptions={{
-              allowEdit: false,
-              allowDelete: false,
-              allowConnect: false,
-              allowDisconnect: false,
-              allowCreate: false,
-            }}
-          />
-        </div>
-      )}
-    </div>
-  );
+ {/* Goals Panel - Read Only */}
+ {(scopeType === 'pi' ? selectedPI : selectedSprintId) && (
+ <div className="flex-1 flex flex-col min-h-0">
+ <GoalsPanel
+ title={panelTitle}
+ hierarchyData={hierarchyData}
+ type="user"
+ loading={loading}
+ error={error}
+ onRefresh={refetch}
+ scopeType={scopeType as 'pi' | 'sprint' | 'release'}
+ piName={scopeType === 'pi' ? selectedPI : undefined}
+ sprintId={scopeType === 'sprint' ? selectedSprintId || undefined : undefined}
+ teamName={selectedTeamName || undefined}
+ isGroup={selectedTeamType === 'group'}
+ actionOptions={{
+ allowEdit: false,
+ allowDelete: false,
+ allowConnect: false,
+ allowDisconnect: false,
+ allowCreate: false,
+ }}
+ />
+ </div>
+ )}
+ </div>
+ );
 }

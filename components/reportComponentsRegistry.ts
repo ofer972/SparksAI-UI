@@ -51,7 +51,7 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
   'team-sprint-burndown': {
     component: SprintBurndownView,
     requiredFilters: [],
-    mapProps: ({ result, loading, error, meta }) => {
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => {
       // Handle new response format where result is an object with burndown_data
       if (result && typeof result === 'object' && 'burndown_data' in result && Array.isArray(result.burndown_data)) {
         // Extract sprint_id and sprint_name into meta
@@ -67,6 +67,8 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
           loading,
           error,
           meta: enhancedMeta,
+          filters,
+          refresh,
         };
       }
       return {
@@ -74,13 +76,15 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
         loading,
         error,
         meta,
+        filters,
+        refresh,
       };
     },
   },
   'pi-burndown': {
     component: PIBurndownView,
     requiredFilters: [],
-    mapProps: ({ result, loading, error, meta }) => {
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => {
       // Handle new response format where result is an object with burndown_data
       if (result && typeof result === 'object' && 'burndown_data' in result && Array.isArray(result.burndown_data)) {
         // Extract dates from result object if they exist
@@ -95,6 +99,8 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
           loading,
           error,
           meta: enhancedMeta,
+          filters,
+          refresh,
         };
       }
       return {
@@ -102,13 +108,15 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
         loading,
         error,
         meta,
+        filters,
+        refresh,
       };
     },
   },
   'release-burndown': {
     component: ReleaseBurndownView,
     requiredFilters: [],
-    mapProps: ({ result, loading, error, meta }) => {
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => {
       // Handle response format where result is an object with burndown_data
       if (result && typeof result === 'object' && 'burndown_data' in result && Array.isArray(result.burndown_data)) {
         // Extract dates from result object if they exist
@@ -123,6 +131,8 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
           loading,
           error,
           meta: enhancedMeta,
+          filters,
+          refresh,
         };
       }
       return {
@@ -130,147 +140,181 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
         loading,
         error,
         meta,
+        filters,
+        refresh,
       };
     },
   },
   'team-closed-sprints': {
     component: ClosedSprintsView,
     requiredFilters: [],
-    mapProps: ({ result, loading, error, meta }) => ({
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => ({
       data: Array.isArray(result) ? result : [],
       loading,
       error,
       meta,
+      filters,
+      refresh,
     }),
   },
   'team-issues-trend': {
     component: IssuesTrendChartView,
     requiredFilters: [],
-    mapProps: ({ result, loading, error }) => ({
+    mapProps: ({ result, loading, error, filters, refresh, meta }) => ({
       data: result || {},
       loading,
       error,
+      filters,
+      refresh,
+      meta,
     }),
   },
   'pi-predictability': {
     component: PIPredictabilityView,
     requiredFilters: [],
-    mapProps: ({ result, loading, error, meta }) => ({
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => ({
       data: Array.isArray(result) ? result : [],
       loading,
       error,
       meta,
+      filters,
+      refresh,
     }),
   },
   'epic-scope-changes': {
     component: EpicScopeChangesView,
     requiredFilters: [],
-    mapProps: ({ result, loading, error, meta }) => ({
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => ({
       data: Array.isArray(result) ? result : [],
       loading,
       error,
       meta,
+      filters,
+      refresh,
     }),
   },
   'bugs-by-priority': {
     component: IssuesByPriorityView,
     requiredFilters: ['team_name'],
-    mapProps: ({ result, loading, error }) => ({
+    mapProps: ({ result, loading, error, filters, refresh, meta }) => ({
       data: Array.isArray(result) ? result : [],
       loading,
       error,
+      filters,
+      refresh,
+      meta,
     }),
   },
   'flow-status-duration': {
     component: FlowStatusDurationView,
     requiredFilters: [],
-    mapProps: ({ result, loading, error, meta }) => ({
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => ({
       data: result,
       loading,
       error,
       meta,
+      filters,
+      refresh,
     }),
   },
   'epics-hierarchy': {
     component: EpicsHierarchyView,
     requiredFilters: [],
-    mapProps: ({ result, loading, error, meta }) => ({
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => ({
       data: (result as any) ?? null,
       loading,
       error,
       meta,
+      filters,
+      refresh,
     }),
   },
   'issues-bugs-by-priority': {
     component: IssuesByPriorityView,
-    mapProps: ({ result, loading, error, meta }) => ({
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => ({
       data: (result as any) ?? null,
       loading,
       error,
       meta,
+      filters,
+      refresh,
     }),
   },
   'issues-bugs-by-team': {
     component: IssuesByTeamView,
-    mapProps: ({ result, loading, error, meta }) => ({
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => ({
       data: (result as any) ?? null,
       loading,
       error,
       meta,
+      filters,
+      refresh,
     }),
   },
   'issues-flow-status-duration': {
     component: FlowStatusDurationView,
-    mapProps: ({ result, loading, error, meta }) => ({
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => ({
       data: (result as any) ?? null,
       loading,
       error,
       meta,
+      filters,
+      refresh,
     }),
   },
   'issues-epics-hierarchy': {
     component: EpicsHierarchyView,
-    mapProps: ({ result, loading, error, meta }) => ({
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => ({
       data: (result as any) ?? null,
       loading,
       error,
       meta,
+      filters,
+      refresh,
     }),
   },
   'issues-epic-dependencies': {
     component: EpicDependenciesView,
-    mapProps: ({ result, loading, error, meta }) => ({
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => ({
       data: (result as any) ?? null,
       loading,
       error,
       meta,
+      filters,
+      refresh,
     }),
   },
   'issues-release-predictability': {
     component: ReleasePredictabilityView,
-    mapProps: ({ result, loading, error, meta }) => ({
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => ({
       data: Array.isArray(result) ? (result as any[]) : [],
       loading,
       error,
       meta,
+      filters,
+      refresh,
     }),
   },
   'sprint-predictability': {
     component: SprintPredictabilityView,
-    mapProps: ({ result, loading, error, meta }) => ({
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => ({
       data: Array.isArray(result) ? (result as any[]) : [],
       loading,
       error,
       meta,
+      filters,
+      refresh,
     }),
   },
   'pi-metrics-summary': {
     component: PIMetricsSummaryView,
-    mapProps: ({ result, loading, error, meta }) => ({
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => ({
       data: (result as any) ?? null,
       loading,
       error,
       meta,
+      filters,
+      refresh,
     }),
   },
   'team-current-sprint-progress': {
@@ -287,11 +331,13 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
   'sprint-velocity-advanced': {
     component: TeamVelocityView,
     requiredFilters: [],
-    mapProps: ({ result, loading, error, meta }) => ({
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => ({
       data: Array.isArray(result) ? result : [],
       loading,
       error,
       meta,
+      filters,
+      refresh,
     }),
   },
   'active-sprint-summary': {
@@ -309,21 +355,25 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
   'wip-over-time': {
     component: WIPOverTimeView,
     requiredFilters: [],
-    mapProps: ({ result, loading, error, meta }) => ({
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => ({
       data: Array.isArray(result) ? result : [],
       loading,
       error,
       meta,
+      filters,
+      refresh,
     }),
   },
   'cycle-time-over-time': {
     component: CycleTimeView,
     requiredFilters: [],
-    mapProps: ({ result, loading, error, meta }) => ({
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => ({
       data: Array.isArray(result) ? result : [],
       loading,
       error,
       meta,
+      filters,
+      refresh,
     }),
   },
   'goal-progress': {

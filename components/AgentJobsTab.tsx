@@ -39,12 +39,12 @@ export default function AgentJobsTab() {
             value={filterText}
             onChange={(event) => handleFilterChange(event.target.value)}
             placeholder="Search agent jobs..."
-              className="flex-1 sm:w-72 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 sm:w-72 px-3 py-2 border border-outline rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-brand"
           />
             <button
               onClick={refetch}
               disabled={loading}
-              className="flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center justify-center px-3 py-2 bg-brand text-white rounded-md hover:bg-brand-hover disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               title="Refresh data"
             >
               <svg 

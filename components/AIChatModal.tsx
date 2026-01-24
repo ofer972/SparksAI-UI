@@ -57,13 +57,13 @@ const hasHebrewText = (text: string): boolean => {
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose, onMouseDown }) => (
   <div
-    className="flex items-center justify-between p-3 border-b border-gray-200 select-none md:cursor-move bg-gray-100 text-gray-900 rounded-t-lg"
+    className="flex items-center justify-between p-3 border-b border-outline select-none md:cursor-move bg-surface-secondary text-content-primary rounded-t-lg"
     onMouseDown={onMouseDown}
   >
     <h3 className="text-sm font-semibold">AI Chat</h3>
     <button
       onClick={onClose}
-      className="text-gray-600 hover:text-gray-800 transition-colors"
+      className="text-content-secondary hover:text-content-primary transition-colors"
       aria-label="Close"
     >
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,7 +82,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
   return (
     <div className="flex-1 overflow-y-auto p-4 min-h-[400px] space-y-4">
       {messages.length === 0 && !loading && !hasInitialMessage && (
-        <div className="text-center text-gray-500 text-sm mt-8">
+        <div className="text-center text-content-tertiary text-sm mt-8">
           Loading...
         </div>
       )}
@@ -98,8 +98,8 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
             <div
               className={`max-w-[75%] rounded-lg px-4 py-2 ${
                 message.role === 'user'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-800'
+                  ? 'bg-brand text-white'
+                  : 'bg-surface-secondary text-content-primary'
               }`}
               dir={isRTL ? 'rtl' : 'ltr'}
             >
@@ -162,7 +162,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
                     ),
                     blockquote: ({ children }) => (
                       <blockquote 
-                        className={`${isRTL ? 'border-r-2 pr-2' : 'border-l-2 pl-2'} border-gray-300 italic text-sm mb-2`}
+                        className={`${isRTL ? 'border-r-2 pr-2' : 'border-l-2 pl-2'} border-outline italic text-sm mb-2`}
                         dir={isRTL ? 'rtl' : 'ltr'}
                       >
                         {children}
@@ -171,7 +171,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
                     a: ({ href, children }) => (
                       <a 
                         href={href} 
-                        className="text-blue-600 underline hover:text-blue-800" 
+                        className="text-brand underline hover:text-blue-800" 
                         target="_blank" 
                         rel="noopener noreferrer"
                         dir={isRTL ? 'rtl' : 'ltr'}
@@ -194,7 +194,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
       })}
 
       {loading && (
-        <div className="flex justify-center text-gray-500 text-sm italic">
+        <div className="flex justify-center text-content-tertiary text-sm italic">
           Sending your request to the LLM
         </div>
       )}
@@ -218,7 +218,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   onSpeechErrorDismiss,
   onSpeechLanguageChange,
 }) => (
-  <div className="p-4 border-t border-gray-200">
+  <div className="p-4 border-t border-outline">
     {speechError && (
       <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
         {speechError}
@@ -240,7 +240,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           onKeyDown={onKeyDown}
           placeholder="Type your question here... (Press Enter to send, Shift+Enter for new line)"
           rows={3}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full border border-outline rounded-lg px-3 py-2 pr-10 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
           disabled={loading || isListening}
         />
         {isSpeechRecognitionSupported && (
@@ -249,7 +249,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
               value={speechLanguage}
               onChange={(e) => onSpeechLanguageChange(e.target.value as SpeechLanguage)}
               disabled={loading || isListening}
-              className="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="text-xs border border-outline rounded px-2 py-1 bg-surface text-content-secondary disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-brand"
               title="Select speech recognition language"
             >
               <option value="auto">Auto (EN/HE)</option>
@@ -262,7 +262,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
               className={`p-2 rounded-full transition-all ${
                 isListening
                   ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse'
-                  : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                  : 'bg-gray-200 hover:bg-gray-300 text-content-secondary'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
               aria-label={isListening ? 'Stop recording' : 'Start voice input'}
               title={isListening ? 'Stop recording' : 'Start voice input'}
@@ -288,7 +288,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
       <button
         onClick={onSend}
         disabled={!inputValue.trim() || loading}
-        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+        className="bg-brand hover:bg-brand-hover text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand"
       >
         Send
       </button>
@@ -431,7 +431,7 @@ export default function AIChatModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div
         ref={panelRef}
-        className="bg-white rounded-lg shadow-xl max-w-[900px] w-full mx-4 max-h-[98vh] flex flex-col"
+        className="bg-surface rounded-lg shadow-xl max-w-[900px] w-full mx-4 max-h-[98vh] flex flex-col"
         style={{ transform: `translate(${dragPos.x}px, ${dragPos.y}px)` }}
       >
         <ChatHeader onClose={onClose} onMouseDown={onHeaderMouseDown} />

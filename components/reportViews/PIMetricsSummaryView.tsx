@@ -40,7 +40,7 @@ interface PIMetricsSummaryViewProps {
   setFilters: (updater: ReportFiltersUpdater) => void;
   refresh: () => void;
   meta?: Record<string, any> | null;
-  componentProps?: { isDashboard?: boolean; reportId?: string; onClose?: () => void; onAIChat?: () => void };
+  componentProps?: { isDashboard?: boolean; reportId?: string; onClose?: () => void; onAIChat?: () => void; readOnly?: boolean; hideHeader?: boolean; hideCollapse?: boolean };
   togglePin?: (filterKey: string) => void;
   pinnedFilters?: string[];
 }
@@ -57,21 +57,21 @@ const colorClassMap: Record<NonNullable<MetricCardProps['color']>, string> = {
   green: 'text-green-600',
   yellow: 'text-yellow-600',
   red: 'text-red-600',
-  gray: 'text-gray-600',
-  blue: 'text-blue-600',
+  gray: 'text-content-secondary',
+  blue: 'text-brand',
 };
 
 const MetricCard: React.FC<MetricCardProps> = ({ title, description, value, color = 'gray', footer }) => {
   return (
-    <div className="flex flex-col bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-3">
+    <div className="flex flex-col bg-surface border border-outline rounded-xl shadow-sm p-4 space-y-3">
       <div>
-        <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-        <p className="text-xs text-gray-600">{description}</p>
+        <h3 className="text-sm font-semibold text-content-primary">{title}</h3>
+        <p className="text-xs text-content-secondary">{description}</p>
       </div>
       <div className={`text-3xl font-bold ${colorClassMap[color]} min-h-[48px] flex items-center`}>
         {value !== undefined && value !== null ? value : '—'}
       </div>
-      {footer && <p className="text-xs text-gray-500">{footer}</p>}
+      {footer && <p className="text-xs text-content-tertiary">{footer}</p>}
     </div>
   );
 };
@@ -120,10 +120,10 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
   const remainingEpics = statusRecord?.remaining_epics ?? undefined;
   const idealRemaining = statusRecord?.ideal_remaining ?? undefined;
 
-  const piName = (filters.pi as string) ?? '';
+  const piName = (filters?.pi as string) ?? '';
   const { groups, teams } = useTeamsGroups();
-  const teamName = (filters.team_name as string) ?? '';
-  const isGroup = (filters.isGroup as boolean) ?? false;
+  const teamName = (filters?.team_name as string) ?? '';
+  const isGroup = (filters?.isGroup as boolean) ?? false;
   const isDashboard = componentProps?.isDashboard;
   
   console.log('[PIMetricsSummary] Current filters:', { piName, teamName, isGroup });
@@ -171,7 +171,7 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
 
   const handleFilterChange = useCallback(
     (key: string, value: string | number | null) => {
-      setFilters((prev) => ({
+      setFilters?.((prev) => ({
         ...prev,
         [key]: value,
       }));
@@ -185,7 +185,7 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
         <select
             value={piName}
           onChange={(event) => handleFilterChange('pi', event.target.value || null)}
-          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[140px]"
+          className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand min-w-[140px]"
         >
           <option value="">Select PI</option>
             {availablePIs.map((pi) => (
@@ -201,13 +201,13 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
           value={teamValue}
           onChange={(value, type, name) => {
             if (value === null) {
-              setFilters((prev) => ({
+              setFilters?.((prev) => ({
                 ...prev,
                 team_name: null,
                 isGroup: false,
               }));
             } else {
-              setFilters((prev) => ({
+              setFilters?.((prev) => ({
                 ...prev,
                 team_name: name,
                 isGroup: type === 'group',
@@ -256,6 +256,9 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
       onRefresh={refresh}
       onClose={componentProps?.onClose}
       onAIChat={componentProps?.onAIChat}
+      readOnly={componentProps?.readOnly}
+      hideHeader={componentProps?.hideHeader}
+      hideCollapse={componentProps?.hideCollapse}
     >
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
@@ -335,7 +338,7 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
           </div>
 
           {loading && (
-            <div className="text-sm text-gray-600">Loading metrics...</div>
+            <div className="text-sm text-content-secondary">Loading metrics...</div>
           )}
         </div>
       )}

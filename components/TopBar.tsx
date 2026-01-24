@@ -5,7 +5,7 @@ import DashboardTopBarContent from './topbar/DashboardTopBarContent';
 import InsightsTopBarContent from './topbar/InsightsTopBarContent';
 import TopBarFilterPanel from './topbar/TopBarFilterPanel';
 
-type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'custom-dashboards' | 'custom-dashboard-editor' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings' | 'user-settings' | 'goal-progress' | 'pi-goals' | 'sprint-goals';
+import type { BreadcrumbItem, NavItemId } from '@/lib/nav';
 
 interface FilterBadge {
   label: string;
@@ -18,6 +18,7 @@ interface TopBarProps {
   navigationItems: Array<{id: string; label: string}>;
   customViewTitle?: string; // Optional custom title override
   onToggleMobileSidebar: () => void;
+  breadcrumbs?: BreadcrumbItem[];
   
   // Dashboard-specific (team-dashboard, pi-dashboard)
   dashboardSettings?: {
@@ -68,6 +69,7 @@ export default function TopBar({
   navigationItems,
   customViewTitle,
   onToggleMobileSidebar,
+  breadcrumbs,
   dashboardSettings,
   insightSettings,
   filters,
@@ -150,16 +152,16 @@ export default function TopBar({
   }, [filters.selectedPI, filters.currentPIName, filters.selectedTreeValue, filters.selectedTreeLabel, activeNavItem]);
 
   return (
-    <div className="flex-shrink-0 w-full">
+    <div className="flex-shrink-0 w-full" data-theme-area="topbar">
       {/* Top Bar Container */}
       <div className="w-full">
         {/* Main TopBar Content - Fixed height with bottom border */}
-        <div className="bg-gradient-to-r from-white to-gray-50 border-b border-gray-200">
+        <div className="bg-gradient-to-r from-surface to-surface-elevated border-b border-outline">
           <div className="flex flex-wrap md:flex-nowrap items-start md:items-center gap-0 md:gap-4 min-h-[40px] md:h-[57px] pl-3 md:pl-0 md:flex-1">
         {/* Mobile hamburger */}
         <button
           onClick={onToggleMobileSidebar}
-              className="md:hidden p-2 rounded hover:bg-gray-100 text-gray-600 mt-0.5"
+              className="md:hidden p-2 rounded hover:bg-surface-secondary text-content-tertiary mt-0.5"
           aria-label="Open sidebar"
         >
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -172,6 +174,7 @@ export default function TopBar({
               <DashboardTopBarContent
                 activeNavItem={activeNavItem}
                 viewTitle={viewTitle}
+                breadcrumbs={breadcrumbs}
                 dashboardSettings={dashboardSettings}
                 filters={filters}
                 aiChat={aiChat}
@@ -187,6 +190,7 @@ export default function TopBar({
               <InsightsTopBarContent
                 activeNavItem={activeNavItem}
                 viewTitle={viewTitle}
+                breadcrumbs={breadcrumbs}
                 insightSettings={insightSettings}
                 filters={filters}
                 currentUser={currentUser}

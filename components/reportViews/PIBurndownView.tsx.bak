@@ -1,0 +1,208 @@
+'use client';
+
+import React, { useMemo, useCallback, useEffect, useRef } from 'react';
+import type { BurndownDataPoint } from '@/lib/api';
+import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
+import { getIssueTypes } from '@/lib/issueTypes';
+import { ApiService } from '@/lib/api';
+import BurndownViewBase from './BurndownViewBase';
+import ReportFilterField from '../reporting/ReportFilterField';
+
+interface PIBurndownViewProps {
+  data: BurndownDataPoint[];
+  loading: boolean;
+  error: string | null;
+  filters: Record<string, any>;
+  setFilters: (updater: ReportFiltersUpdater) => void;
+  refresh: () => void;
+  meta?: Record<string, any>;
+  componentProps?: { isDashboard?: boolean; reportId?: string; onClose?: () => void; onAIChat?: () => void };
+  togglePin?: (filterKey: string) => void;
+  pinnedFilters?: string[];
+}
+
+const PIBurndownView: React.FC<PIBurndownViewProps> = ({
+  data,
+  loading,
+  error,
+  filters,
+  setFilters,
+  refresh,
+  meta,
+  componentProps,
+  togglePin,
+  pinnedFilters = [],
+}) => {
+  const issueType = (filters.issue_type as string) ?? 'Epic';
+  const piName = (filters.pi as string) ?? '';
+  const teamName = (filters.team_name as string) ?? '';
+  const isGroup = (filters.isGroup as boolean) ?? false;
+
+  const issueTypeOptions = useMemo(() => getIssueTypes(), []);
+  const apiService = React.useMemo(() => new ApiService(), []);
+
+  const availablePIs = useMemo(() => {
+    if (meta && Array.isArray(meta.available_pis)) {
+      return meta.available_pis as string[];
+    }
+    return [];
+  }, [meta]);
+
+  const hasAutoSelectedRef = useRef(false);
+
+  const handleFilterChange = useCallback((key: string, value: string | null) => {
+    setFilters((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  }, [setFilters]);
+
+  // Auto-select current PI if available and no PI is selected
+  useEffect(() => {
+    // Skip if still loading or no available PIs
+    if (loading || availablePIs.length === 0) {
+      return;
+    }
+
+    // Auto-select the first PI (most recent) if no PI is selected and we haven't auto-selected yet
+    if (!piName && !hasAutoSelectedRef.current) {
+      hasAutoSelectedRef.current = true;
+      handleFilterChange('pi', availablePIs[0]); // Select the first (most recent) PI
+    }
+  }, [availablePIs, piName, handleFilterChange, loading]);
+
+  // Custom filters for PI Burndown
+  const customFilters = [
+    {
+      type: 'pi' as const,
+      component: (
+        <ReportFilterField label="PI">
+          <select
+            value={piName}
+            onChange={(event) => handleFilterChange('pi', event.target.value || null)}
+            className="px-2 py-1 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[140px]"
+          >
+            <option value="">Select PI</option>
+            {availablePIs.map((pi) => (
+              <option key={pi} value={pi}>
+                {pi}
+              </option>
+            ))}
+          </select>
+        </ReportFilterField>
+      ),
+    },
+    {
+      type: 'issueType' as const,
+      component: (
+        <ReportFilterField label="Issue Type">
+          <select
+            value={issueType}
+            disabled={true}
+            className="px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-xs bg-gray-100 dark:bg-slate-700 cursor-not-allowed text-gray-600 dark:text-slate-400"
+          >
+            {issueTypeOptions.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </select>
+        </ReportFilterField>
+      ),
+    },
+  ];
+
+  // Generate filter badges for active filters
+  const filterBadges = useMemo(() => {
+    const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
+    
+    if (piName) {
+      badges.push({
+        label: 'PI',
+        value: piName,
+        filterKey: 'pi',
+        isPinned: pinnedFilters.includes('pi'),
+      });
+    }
+    
+    if (issueType) {
+      badges.push({
+        label: 'Issue Type',
+        value: issueType,
+        filterKey: 'issue_type',
+        isPinned: pinnedFilters.includes('issue_type'),
+      });
+    }
+    
+    if (teamName) {
+      badges.push({
+        label: isGroup ? 'Group' : 'Team',
+        value: teamName,
+        filterKey: 'team_name',
+        isPinned: pinnedFilters.includes('team_name'),
+      });
+    }
+    
+    return badges;
+  }, [piName, issueType, teamName, isGroup, pinnedFilters]);
+
+  // Handle chart click
+  const handleChartClick = useCallback((clickData: { date: string; metricType: string; dataIndex: number }) => {
+    const pi = meta?.pi || piName;
+    if (!pi) {
+      console.warn('PI name not available in meta or filters');
+    }
+  }, [meta, piName]);
+
+  // Fetch function factory for dialog
+  const fetchPIBurndownIssuesFactory = useCallback((selectedDate: string, selectedMetricType: string) => {
+    return async () => {
+      const pi = meta?.pi || piName;
+      if (!pi) {
+        return { success: false, message: 'PI name not available' };
+      }
+
+      return await apiService.getPIBurndownIssues(
+        selectedDate,
+        pi,
+        selectedMetricType,
+        teamName || undefined,
+        isGroup,
+        issueType !== 'all' ? issueType : undefined
+      );
+    };
+  }, [meta?.pi, piName, teamName, isGroup, issueType, apiService]);
+
+  // Date display for PI
+  const dateDisplay = Array.isArray(data) && data.length > 0 ? (
+    <div className="mt-2 text-xs text-gray-500 text-center">
+      <span>
+        Dates of the PI: {data[0].snapshot_date} – {data[data.length - 1].snapshot_date}
+      </span>
+    </div>
+  ) : undefined;
+
+  return (
+    <BurndownViewBase
+      data={data}
+      loading={loading}
+      error={error}
+      filters={filters}
+      setFilters={setFilters}
+      refresh={refresh}
+      meta={meta}
+      componentProps={componentProps}
+      togglePin={togglePin}
+      pinnedFilters={pinnedFilters}
+      title="PI Burndown"
+      customFilters={customFilters}
+      filterBadges={filterBadges}
+      chartTitle={meta?.pi ? `PI Burndown: ${meta.pi}` : undefined}
+      dateDisplay={dateDisplay}
+      onChartClick={handleChartClick}
+      fetchIssuesFunctionFactory={fetchPIBurndownIssuesFactory}
+    />
+  );
+};
+
+export default PIBurndownView;

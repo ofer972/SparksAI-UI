@@ -8,7 +8,7 @@ interface ErrorModalProps {
 export default function ErrorModal({ message, onClose }: ErrorModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+      <div className="bg-surface rounded-lg shadow-xl max-w-md w-full mx-4">
         <div className="border-b border-red-200 bg-red-50 px-6 py-4 rounded-t-lg">
           <div className="flex items-center gap-3">
             <svg
@@ -28,9 +28,9 @@ export default function ErrorModal({ message, onClose }: ErrorModalProps) {
           </div>
         </div>
         <div className="px-6 py-4">
-          <p className="text-gray-700">{message}</p>
+          <p className="text-content-secondary">{message}</p>
         </div>
-        <div className="border-t border-gray-200 px-6 py-4 flex justify-end">
+        <div className="border-t border-outline px-6 py-4 flex justify-end">
           <button
             onClick={onClose}
             className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"

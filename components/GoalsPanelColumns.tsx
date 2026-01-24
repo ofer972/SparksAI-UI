@@ -48,9 +48,9 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ percent, completed, total, la
         )}
       </div>
       {showLabel && label && (
-        <span className="text-xs text-gray-600 min-w-[50px] text-right whitespace-nowrap">{label}</span>
+        <span className="text-xs text-content-secondary min-w-[50px] text-right whitespace-nowrap">{label}</span>
       )}
-      <span className="text-xs font-medium text-gray-900 min-w-[40px] text-right">
+      <span className="text-xs font-medium text-content-primary min-w-[40px] text-right">
         {total === 0 ? '-' : safePercent > 0 ? `${formattedPercent}%` : ''}
       </span>
     </div>
@@ -200,7 +200,7 @@ export function createGoalsPanelColumns(params: CreateColumnsParams): ColumnConf
                   toggleExpanded(key);
                 }
               }}
-              className="text-xs text-gray-600 hover:text-gray-900 flex items-center justify-center w-6 h-6 flex-shrink-0 cursor-pointer"
+              className="text-xs text-content-tertiary hover:text-content-primary flex items-center justify-center w-6 h-6 flex-shrink-0 cursor-pointer"
               title={isExpanded ? 'Collapse' : 'Expand'}
               style={{ minWidth: '24px', width: '24px', height: '24px' }}
             >
@@ -248,7 +248,7 @@ export function createGoalsPanelColumns(params: CreateColumnsParams): ColumnConf
                   </>
                 )}
                 {' '}
-                <span style={{ color: '#374151' }}>{displaySummary}</span>
+                <span className="text-content-secondary">{displaySummary}</span>
               </span>
             ) : (
               // Section or Goal row: show value
@@ -261,14 +261,14 @@ export function createGoalsPanelColumns(params: CreateColumnsParams): ColumnConf
                     const prefix = parts[0] + ':';
                     const name = parts[1].trim();
                     return (
-                      <span className="text-[13px]" style={{ color: '#374151' }}>
+                      <span className="text-[13px] text-content-secondary">
                         {prefix} <span className="font-bold">{name}</span>
                       </span>
                     );
                   }
                 }
                 // Regular value (not a section header)
-                return <span className="text-[13px]" style={{ color: '#374151' }}>{valueStr}</span>;
+                return <span className="text-[13px] text-content-secondary">{valueStr}</span>;
               })()
             )}
           </div>
@@ -316,7 +316,7 @@ export function createGoalsPanelColumns(params: CreateColumnsParams): ColumnConf
               className="p-0.5 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
               title="Connect issues to goal"
             >
-              <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
             </button>
@@ -364,7 +364,7 @@ export function createGoalsPanelColumns(params: CreateColumnsParams): ColumnConf
               e.stopPropagation();
               toggleSelectAll();
             }}
-            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+            className="w-4 h-4 text-brand border-outline rounded focus:ring-brand cursor-pointer"
             title="Select all goals"
           />
         </div>
@@ -393,7 +393,7 @@ export function createGoalsPanelColumns(params: CreateColumnsParams): ColumnConf
                 e.stopPropagation();
                 toggleGoalCheck(goalId);
               }}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+              className="w-4 h-4 text-brand border-outline rounded focus:ring-brand cursor-pointer"
             />
           </div>
         );
@@ -581,7 +581,7 @@ export function createGoalsPanelColumns(params: CreateColumnsParams): ColumnConf
         // For goals (level 1), display the priority BV value
         return (
           <div className="text-center">
-            <span className="text-[13px] text-gray-700">{String(value || '')}</span>
+            <span className="text-[13px] text-content-secondary">{String(value || '')}</span>
           </div>
         );
       },

@@ -161,8 +161,8 @@ export default function PIManagement({ onSaved }: PIManagementProps) {
       {/* Header with Add Button */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Program Increments</h3>
-          <p className="text-sm text-gray-500">Manage PI dates and grace periods</p>
+          <h3 className="text-lg font-semibold text-content-primary">Program Increments</h3>
+          <p className="text-sm text-content-tertiary">Manage PI dates and grace periods</p>
         </div>
         <button
           onClick={handleAdd}
@@ -195,9 +195,9 @@ export default function PIManagement({ onSaved }: PIManagementProps) {
       {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
+          <div className="bg-surface rounded-lg shadow-xl max-w-lg w-full border border-outline">
+            <div className="px-6 py-4 border-b border-outline">
+              <h3 className="text-lg font-semibold text-content-primary">
                 {editingPI ? 'Edit PI' : 'Add New PI'}
               </h3>
             </div>
@@ -210,64 +210,64 @@ export default function PIManagement({ onSaved }: PIManagementProps) {
 
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">PI Name</label>
+                <label className="block text-sm font-medium text-content-secondary mb-1">PI Name</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   disabled={!!editingPI}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 disabled:bg-gray-100"
+                  className="w-full px-3 py-2 border border-outline rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 disabled:bg-surface-secondary"
                   placeholder="e.g., Q12025"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                  <label className="block text-sm font-medium text-content-secondary mb-1">Start Date</label>
                   <input
                     type="date"
                     value={formData.start_date}
                     onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
+                    className="w-full px-3 py-2 border border-outline rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <label className="block text-sm font-medium text-content-secondary mb-1">End Date</label>
                   <input
                     type="date"
                     value={formData.end_date}
                     onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
+                    className="w-full px-3 py-2 border border-outline rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Planning Grace (days)</label>
+                  <label className="block text-sm font-medium text-content-secondary mb-1">Planning Grace (days)</label>
                   <input
                     type="number"
                     value={formData.planning_grace_days}
                     onChange={(e) => setFormData({ ...formData, planning_grace_days: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
+                    className="w-full px-3 py-2 border border-outline rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Prep Grace (days)</label>
+                  <label className="block text-sm font-medium text-content-secondary mb-1">Prep Grace (days)</label>
                   <input
                     type="number"
                     value={formData.prep_grace_days}
                     onChange={(e) => setFormData({ ...formData, prep_grace_days: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
+                    className="w-full px-3 py-2 border border-outline rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-outline flex justify-end gap-3">
               <button
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                className="px-4 py-2 bg-gray-200 text-content-secondary rounded-lg hover:bg-gray-300"
               >
                 Cancel
               </button>
@@ -285,9 +285,9 @@ export default function PIManagement({ onSaved }: PIManagementProps) {
       {/* Delete Confirmation */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full border border-gray-200">
-            <h3 className="font-semibold text-lg mb-3 text-gray-900">Delete PI</h3>
-            <p className="text-sm text-gray-600 mb-6">
+          <div className="bg-surface rounded-lg shadow-xl p-6 max-w-md w-full border border-outline">
+            <h3 className="font-semibold text-lg mb-3 text-content-primary">Delete PI</h3>
+            <p className="text-sm text-content-secondary mb-6">
               Are you sure you want to delete <strong>{deleteConfirm}</strong>?
             </p>
             <div className="flex gap-3">
@@ -299,7 +299,7 @@ export default function PIManagement({ onSaved }: PIManagementProps) {
               </button>
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                className="flex-1 px-4 py-2 bg-gray-200 text-content-secondary rounded-lg hover:bg-gray-300"
               >
                 Cancel
               </button>

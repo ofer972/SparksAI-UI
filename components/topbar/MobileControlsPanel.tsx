@@ -5,7 +5,7 @@ import PIFilter from '@/components/PIFilter';
 import TreeSelect from '@/components/TreeSelect';
 import InsightCategoryFilter from '@/components/InsightCategoryFilter';
 
-type NavItemId = 'team-ai-insights' | 'team-dashboard' | 'pi-dashboard' | 'custom-dashboards' | 'custom-dashboard-editor' | 'settings' | 'general-data' | 'create-agent-job' | 'upload-transcripts' | 'users-admin' | 'teams-and-meetings' | 'etl-dashboard' | 'etl-sync' | 'etl-settings' | 'user-settings' | 'goal-progress' | 'pi-goals' | 'sprint-goals';
+import type { NavItemId } from '@/lib/nav';
 
 interface MobileControlsPanelProps {
   activeNavItem: NavItemId;
@@ -26,7 +26,7 @@ export default function MobileControlsPanel({
   filters,
 }: MobileControlsPanelProps) {
   return (
-    <div className="md:hidden border-t border-gray-200 bg-gradient-to-b from-white to-gray-50 pl-3 pr-3 pt-2 pb-2 space-y-2 -mt-[1px] overflow-visible">
+    <div className="md:hidden border-t border-outline bg-gradient-to-b from-white to-gray-50 pl-3 pr-3 pt-2 pb-2 space-y-2 -mt-[1px] overflow-visible">
       {/* Filters */}
       <div className="flex flex-col gap-2">
         {/* Team/Group Filter */}

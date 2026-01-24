@@ -81,8 +81,8 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
       ? componentProps.autoSelectFirst
       : true;
   const { groups, teams } = useTeamsGroups();
-  const teamName = (filters.team_name as string) ?? '';
-  const isGroup = (filters.isGroup as boolean) ?? false;
+  const teamName = (filters?.team_name as string) ?? '';
+  const isGroup = (filters?.isGroup as boolean) ?? false;
 
   const availablePIs = useMemo(() => {
     if (meta && Array.isArray(meta.available_pis)) {
@@ -161,7 +161,7 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
         return;
       }
       setSelectedPIs(values);
-      setFilters((prev) => {
+      setFilters?.((prev) => {
         const nextPiNames = values;
         const prevPiNames = Array.isArray(prev.pi_names) ? prev.pi_names : [];
         if (arraysEqual(nextPiNames, prevPiNames)) {
@@ -179,13 +179,13 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
   const handleTeamGroupChange = useCallback(
     (value: string | null, type: 'group' | 'team', name: string) => {
       if (value === null) {
-        setFilters((prev) => ({
+        setFilters?.((prev) => ({
           ...prev,
           team_name: null,
           isGroup: false,
         }));
       } else {
-        setFilters((prev) => ({
+        setFilters?.((prev) => ({
           ...prev,
           team_name: name,
           isGroup: type === 'group',
@@ -269,13 +269,16 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
       onRefresh={refresh}
       onClose={componentProps?.onClose}
       onAIChat={componentProps?.onAIChat}
+      readOnly={componentProps?.readOnly}
+      hideHeader={componentProps?.hideHeader}
+      hideCollapse={componentProps?.hideCollapse}
     >
       <div className="h-full w-full flex flex-col">
         {loading && (
           <div className="flex-1 flex items-center justify-center">
             <div className="flex flex-col items-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-              <div className="text-sm text-gray-600">Loading scope changes...</div>
+              <div className="text-sm text-content-secondary">Loading scope changes...</div>
             </div>
           </div>
         )}
@@ -287,7 +290,7 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
         )}
 
         {!loading && !error && selectedPIs.length === 0 && (
-          <div className="flex-1 flex items-center justify-center text-gray-500">
+          <div className="flex-1 flex items-center justify-center text-content-tertiary">
             Select at least one PI to view scope changes.
           </div>
         )}
@@ -308,7 +311,7 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
         )}
 
         {!loading && !error && selectedPIs.length > 0 && aggregatedData.length === 0 && (
-          <div className="flex-1 flex items-center justify-center text-gray-500">
+          <div className="flex-1 flex items-center justify-center text-content-tertiary">
             No scope changes found for the selected quarters.
           </div>
         )}

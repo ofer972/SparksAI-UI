@@ -384,8 +384,8 @@ export default function DashboardLayoutArranger({
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="bg-white rounded-lg border-2 border-gray-300 shadow-sm overflow-x-auto overflow-y-auto mx-6">
-          <div className="text-xs text-gray-600 p-3 text-center bg-gray-50 border-b-2 border-gray-300 sticky top-0 z-10">
+        <div className="bg-surface rounded-lg border-2 border-outline shadow-sm overflow-x-auto overflow-y-auto mx-6">
+          <div className="text-xs text-content-secondary p-3 text-center bg-surface-elevated border-b-2 border-outline sticky top-0 z-10">
             Drag reports to any row to organize. Each row can have any number of reports.
           </div>
           
@@ -398,7 +398,7 @@ export default function DashboardLayoutArranger({
                 >
                   <DroppableRow rowId={row.id} isEmpty={row.reportIds.length === 0}>
                     {row.reportIds.length === 0 ? (
-                       <div className="flex items-center justify-center text-center text-gray-400 text-xs py-12 bg-gray-50">
+                       <div className="flex items-center justify-center text-center text-content-muted text-xs py-12 bg-surface-elevated">
                          <div>
                            <div className="text-3xl mb-2">⬇️</div>
                            <div className="font-semibold">Drop reports here</div>
@@ -414,7 +414,7 @@ export default function DashboardLayoutArranger({
                              <div 
                                key={`${row.id}-${reportId}`} 
                                className={`relative p-3 min-h-[80px] ${
-                                 colIndex < row.reportIds.length - 1 ? 'border-r-2 border-gray-300' : ''
+                                 colIndex < row.reportIds.length - 1 ? 'border-r-2 border-outline' : ''
                                }`}
                              >
                                <div className="h-full">

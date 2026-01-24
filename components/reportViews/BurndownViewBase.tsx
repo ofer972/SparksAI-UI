@@ -26,9 +26,9 @@ export interface BurndownViewBaseProps {
   data: BurndownDataPoint[];
   loading: boolean;
   error: string | null;
-  filters: Record<string, any>;
-  setFilters: (updater: ReportFiltersUpdater) => void;
-  refresh: () => void;
+  filters?: Record<string, any>;
+  setFilters?: (updater: ReportFiltersUpdater) => void;
+  refresh?: () => void;
   meta?: Record<string, any>;
   componentProps?: Record<string, any>;
   togglePin?: (filterKey: string) => void;
@@ -63,8 +63,8 @@ const BurndownViewBase: React.FC<BurndownViewBaseProps> = ({
   fetchIssuesFunctionFactory,
 }) => {
   const { groups, teams } = useTeamsGroups();
-  const teamName = (filters.team_name as string) ?? '';
-  const isGroup = (filters.isGroup as boolean) ?? false;
+  const teamName = (filters?.team_name as string) ?? '';
+  const isGroup = (filters?.isGroup as boolean) ?? false;
 
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -87,13 +87,13 @@ const BurndownViewBase: React.FC<BurndownViewBaseProps> = ({
   const handleTeamGroupChange = useCallback(
     (value: string | null, type: 'group' | 'team', name: string) => {
       if (value === null) {
-        setFilters((prev) => ({
+        setFilters?.((prev) => ({
           ...prev,
           team_name: null,
           isGroup: false,
         }));
       } else {
-        setFilters((prev) => ({
+        setFilters?.((prev) => ({
           ...prev,
           team_name: name,
           isGroup: type === 'group',
@@ -236,6 +236,9 @@ const BurndownViewBase: React.FC<BurndownViewBaseProps> = ({
       onRefresh={refresh}
       onClose={componentProps?.onClose}
       onAIChat={componentProps?.onAIChat}
+      readOnly={componentProps?.readOnly}
+      hideHeader={componentProps?.hideHeader}
+      hideCollapse={componentProps?.hideCollapse}
     >
       <div className="w-full h-full flex flex-col">
         <div className="relative flex-1 min-h-[350px]">

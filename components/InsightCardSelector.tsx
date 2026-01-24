@@ -147,11 +147,11 @@ export default function InsightCardSelector({
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Filters</h3>
+      <div className="p-4 bg-surface-elevated rounded-lg border border-outline">
+        <h3 className="text-sm font-semibold text-content-secondary mb-3">Filters</h3>
         <div className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-content-secondary mb-1">
               Team / Group
             </label>
             <TreeSelect
@@ -161,7 +161,7 @@ export default function InsightCardSelector({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-content-secondary mb-1">
               PI (optional)
             </label>
             <input
@@ -169,12 +169,12 @@ export default function InsightCardSelector({
               value={selectedPI}
               onChange={(e) => setSelectedPI(e.target.value)}
               placeholder="Enter PI name"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-outline rounded-md focus:outline-none focus:ring-2 focus:ring-brand"
             />
           </div>
           <button
             onClick={loadInsightCards}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+            className="px-4 py-2 bg-brand text-white rounded-md hover:bg-brand-hover transition-colors text-sm font-medium"
           >
             Apply Filters
           </button>
@@ -185,14 +185,14 @@ export default function InsightCardSelector({
       {loading ? (
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-          <p className="text-sm text-gray-600">Loading insight cards...</p>
+          <p className="text-sm text-content-secondary">Loading insight cards...</p>
         </div>
       ) : error ? (
         <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
           {error}
         </div>
       ) : cards.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-content-tertiary">
           No insight cards found. Adjust your filters and try again.
         </div>
       ) : (
@@ -208,19 +208,19 @@ export default function InsightCardSelector({
                 className={`p-4 border-2 rounded-lg hover:shadow-md transition-all ${
                   hasInstances
                     ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-blue-500'
+                    : 'border-outline hover:border-blue-500'
                 }`}
               >
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-semibold text-gray-900">{card.card_name}</h3>
+                  <h3 className="font-semibold text-content-primary">{card.card_name}</h3>
                   {onUpdateCounts ? (
                     <div className="flex items-center gap-2">
                       {hasInstances && (
-                        <span className="text-xs text-gray-600 mr-1">
+                        <span className="text-xs text-content-secondary mr-1">
                           {currentCount} on dashboard
                         </span>
                       )}
-                      <div className="flex items-center gap-1 border border-gray-300 rounded">
+                      <div className="flex items-center gap-1 border border-outline rounded">
                         <button
                           onClick={(e) => {
                             e.preventDefault();
@@ -238,7 +238,7 @@ export default function InsightCardSelector({
                             });
                           }}
                           disabled={currentCount === 0}
-                          className="px-2 py-1 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-2 py-1 text-content-secondary hover:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           −
                         </button>
@@ -255,7 +255,7 @@ export default function InsightCardSelector({
                               return next;
                             });
                           }}
-                          className="px-2 py-1 text-gray-600 hover:bg-gray-100"
+                          className="px-2 py-1 text-content-secondary hover:bg-surface-secondary"
                         >
                           +
                         </button>
@@ -280,7 +280,7 @@ export default function InsightCardSelector({
                       className="cursor-pointer"
                     >
                       {onSelectCards && selectedCardIds.includes(cardId) && (
-                        <div className="w-5 h-5 bg-blue-600 rounded flex items-center justify-center">
+                        <div className="w-5 h-5 bg-brand rounded flex items-center justify-center">
                           <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
@@ -309,7 +309,7 @@ export default function InsightCardSelector({
                     </span>
                   )}
                 </div>
-                <div className="mt-2 text-xs text-gray-500">
+                <div className="mt-2 text-xs text-content-tertiary">
                   Updated: {new Date(card.updated_at).toLocaleDateString()}
                 </div>
               </div>

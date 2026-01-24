@@ -160,17 +160,17 @@ export default function ETLSyncActionsView({
   };
 
   return (
-    <div className="h-full p-6 overflow-auto bg-white">
+    <div className="h-full p-6 overflow-auto bg-surface">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Sync & History</h1>
-        <p className="text-sm text-gray-500 mt-1">Manage data synchronization operations</p>
+        <h1 className="text-2xl font-semibold text-content-primary">Sync & History</h1>
+        <p className="text-sm text-content-tertiary mt-1">Manage data synchronization operations</p>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         {/* Job Status - Spans 4 columns */}
         {jobStatus && (
-          <div className="xl:col-span-4 bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="xl:col-span-4 bg-surface rounded-lg shadow-sm border border-outline">
             <div className="p-5">
               <ETLJobStatus 
                 jobStatus={jobStatus} 
@@ -184,9 +184,9 @@ export default function ETLSyncActionsView({
         )}
 
         {/* Data Sync Operations */}
-        <div className="xl:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-5 py-4 border-b border-gray-200">
-            <h3 className="text-base font-semibold text-gray-900">Data Sync</h3>
+        <div className="xl:col-span-2 bg-surface rounded-lg shadow-sm border border-outline">
+          <div className="px-5 py-4 border-b border-outline">
+            <h3 className="text-base font-semibold text-content-primary">Data Sync</h3>
           </div>
           <div className="p-5 space-y-3">
             <button
@@ -196,8 +196,8 @@ export default function ETLSyncActionsView({
             >
               <span className="text-2xl">⚡</span>
               <div className="flex-1 text-left">
-                <div className="text-sm font-semibold text-gray-900">Sync Changes</div>
-                <div className="text-xs text-gray-600">Incremental sync</div>
+                <div className="text-sm font-semibold text-content-primary">Sync Changes</div>
+                <div className="text-xs text-content-secondary">Incremental sync</div>
               </div>
             </button>
 
@@ -208,17 +208,17 @@ export default function ETLSyncActionsView({
             >
               <span className="text-2xl">💾</span>
               <div className="flex-1 text-left">
-                <div className="text-sm font-semibold text-gray-900">Full Re-import</div>
-                <div className="text-xs text-gray-600">Truncate & reload</div>
+                <div className="text-sm font-semibold text-content-primary">Full Re-import</div>
+                <div className="text-xs text-content-secondary">Truncate & reload</div>
               </div>
             </button>
           </div>
         </div>
 
         {/* History Backfill */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-5 py-4 border-b border-gray-200">
-            <h3 className="text-base font-semibold text-gray-900">History Backfill</h3>
+        <div className="bg-surface rounded-lg shadow-sm border border-outline">
+          <div className="px-5 py-4 border-b border-outline">
+            <h3 className="text-base font-semibold text-content-primary">History Backfill</h3>
           </div>
           <div className="p-5 space-y-3">
             <button
@@ -228,29 +228,29 @@ export default function ETLSyncActionsView({
             >
               <span className="text-2xl">📆</span>
               <div className="flex-1 text-left">
-                <div className="text-sm font-semibold text-gray-900">Daily</div>
-                <div className="text-xs text-gray-600">Custom days</div>
+                <div className="text-sm font-semibold text-content-primary">Daily</div>
+                <div className="text-xs text-content-secondary">Custom days</div>
               </div>
             </button>
 
             <button
               onClick={() => { if (!etlCheckEnableSync()) return; setConfirmDefaultBackfill(true); }}
               disabled={loading || isJobRunning}
-              className="w-full flex items-center gap-3 p-4 rounded-lg border-2 border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all disabled:opacity-50"
+              className="w-full flex items-center gap-3 p-4 rounded-lg border-2 border-outline bg-surface-elevated hover:bg-surface-secondary hover:border-outline-strong transition-all disabled:opacity-50"
             >
               <span className="text-2xl">⏳</span>
               <div className="flex-1 text-left">
-                <div className="text-sm font-semibold text-gray-900">Full</div>
-                <div className="text-xs text-gray-600">{settings?.history_default_backfill_days || 30} days</div>
+                <div className="text-sm font-semibold text-content-primary">Full</div>
+                <div className="text-xs text-content-secondary">{settings?.history_default_backfill_days || 30} days</div>
               </div>
             </button>
           </div>
         </div>
 
         {/* Management Panel with Enable Sync */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-5 py-4 border-b border-gray-200">
-            <h3 className="text-base font-semibold text-gray-900">Management</h3>
+        <div className="bg-surface rounded-lg shadow-sm border border-outline">
+          <div className="px-5 py-4 border-b border-outline">
+            <h3 className="text-base font-semibold text-content-primary">Management</h3>
           </div>
           <div className="p-5 space-y-4">
             {/* Enable Sync Toggle */}
@@ -260,18 +260,18 @@ export default function ETLSyncActionsView({
               className={`w-full flex items-center gap-3 p-4 rounded-lg border-2 transition-all disabled:opacity-50 ${
                 enableSync
                   ? 'border-green-200 bg-green-50 hover:bg-green-100 hover:border-green-300'
-                  : 'border-gray-200 bg-gray-50 hover:bg-gray-100 hover:border-gray-300'
+                  : 'border-outline bg-surface-elevated hover:bg-surface-secondary hover:border-outline'
               }`}
             >
               <span className="text-2xl">{enableSync ? '🟢' : '⚪'}</span>
               <div className="flex-1 text-left">
-                <div className="text-sm font-semibold text-gray-900">Enable Sync</div>
-                <div className="text-xs text-gray-600">{enableSync ? 'System is active' : 'System is paused'}</div>
+                <div className="text-sm font-semibold text-content-primary">Enable Sync</div>
+                <div className="text-xs text-content-secondary">{enableSync ? 'System is active' : 'System is paused'}</div>
               </div>
               <div className={`px-3 py-1 rounded text-xs font-medium ${
                 enableSync 
                   ? 'bg-green-100 text-green-800' 
-                  : 'bg-gray-200 text-gray-600'
+                  : 'bg-gray-200 text-content-secondary'
               }`}>
                 {enableSync ? 'Active' : 'Inactive'}
               </div>
@@ -285,8 +285,8 @@ export default function ETLSyncActionsView({
             >
               <span className="text-2xl">⚠️</span>
               <div className="flex-1 text-left">
-                <div className="text-sm font-semibold text-gray-900">Reset Queue</div>
-                <div className="text-xs text-gray-600">Clear jobs</div>
+                <div className="text-sm font-semibold text-content-primary">Reset Queue</div>
+                <div className="text-xs text-content-secondary">Clear jobs</div>
               </div>
             </button>
           </div>
@@ -296,16 +296,16 @@ export default function ETLSyncActionsView({
       {/* Modals - Clean minimal design */}
       {confirmFullImport && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full border border-gray-200">
-            <h3 className="font-semibold text-lg mb-3 text-gray-900">Confirm Full Import</h3>
-            <p className="text-sm text-gray-600 mb-6">
+          <div className="bg-surface rounded-lg shadow-xl p-6 max-w-md w-full border border-outline">
+            <h3 className="font-semibold text-lg mb-3 text-content-primary">Confirm Full Import</h3>
+            <p className="text-sm text-content-secondary mb-6">
               This will <strong className="text-red-600">delete all</strong> existing data from relevant tables.
             </p>
             <div className="flex gap-3">
               <button onClick={etlHandleFullImport} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">
                 Proceed
               </button>
-              <button onClick={() => setConfirmFullImport(false)} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+              <button onClick={() => setConfirmFullImport(false)} className="flex-1 px-4 py-2 bg-gray-200 text-content-secondary rounded-lg hover:bg-gray-300">
                 Cancel
               </button>
             </div>
@@ -315,16 +315,16 @@ export default function ETLSyncActionsView({
 
       {confirmDefaultBackfill && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full border border-gray-200">
-            <h3 className="font-semibold text-lg mb-3 text-gray-900">Confirm History Backfill</h3>
-            <p className="text-sm text-gray-600 mb-6">
+          <div className="bg-surface rounded-lg shadow-xl p-6 max-w-md w-full border border-outline">
+            <h3 className="font-semibold text-lg mb-3 text-content-primary">Confirm History Backfill</h3>
+            <p className="text-sm text-content-secondary mb-6">
               Backfill history for <strong>{settings?.history_default_backfill_days || 30} days</strong>.
             </p>
             <div className="flex gap-3">
               <button onClick={etlHandleDefaultBackfill} className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium">
                 Start
               </button>
-              <button onClick={() => setConfirmDefaultBackfill(false)} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+              <button onClick={() => setConfirmDefaultBackfill(false)} className="flex-1 px-4 py-2 bg-gray-200 text-content-secondary rounded-lg hover:bg-gray-300">
                 Cancel
               </button>
             </div>
@@ -334,10 +334,10 @@ export default function ETLSyncActionsView({
 
       {confirmDailyBackfill && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full border border-gray-200">
-            <h3 className="font-semibold text-lg mb-4 text-gray-900">Daily History Backfill</h3>
+          <div className="bg-surface rounded-lg shadow-xl p-6 max-w-md w-full border border-outline">
+            <h3 className="font-semibold text-lg mb-4 text-content-primary">Daily History Backfill</h3>
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-content-secondary mb-2">
                 Days (1-30):
               </label>
               <input
@@ -346,14 +346,14 @@ export default function ETLSyncActionsView({
                 max="30"
                 value={dailyBackfillDays}
                 onChange={(e) => setDailyBackfillDays(Math.min(30, Math.max(1, parseInt(e.target.value) || 1)))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
+                className="w-full px-4 py-2 border border-outline rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
               />
             </div>
             <div className="flex gap-3">
               <button onClick={etlHandleDailyBackfill} className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium">
                 Start
               </button>
-              <button onClick={() => setConfirmDailyBackfill(false)} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+              <button onClick={() => setConfirmDailyBackfill(false)} className="flex-1 px-4 py-2 bg-gray-200 text-content-secondary rounded-lg hover:bg-gray-300">
                 Cancel
               </button>
             </div>
@@ -363,9 +363,9 @@ export default function ETLSyncActionsView({
 
       {confirmResetJobs && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full border border-gray-200">
-            <h3 className="font-semibold text-lg mb-3 text-gray-900">Reset Jobs Queue</h3>
-            <p className="text-sm text-gray-600 mb-6">
+          <div className="bg-surface rounded-lg shadow-xl p-6 max-w-md w-full border border-outline">
+            <h3 className="font-semibold text-lg mb-3 text-content-primary">Reset Jobs Queue</h3>
+            <p className="text-sm text-content-secondary mb-6">
               Delete all entries from the jobs table.
               {isJobRunning && <span className="block mt-2 text-red-600">Warning: A job is running!</span>}
             </p>
@@ -373,7 +373,7 @@ export default function ETLSyncActionsView({
               <button onClick={etlHandleResetJobs} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">
                 Reset
               </button>
-              <button onClick={() => setConfirmResetJobs(false)} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+              <button onClick={() => setConfirmResetJobs(false)} className="flex-1 px-4 py-2 bg-gray-200 text-content-secondary rounded-lg hover:bg-gray-300">
                 Cancel
               </button>
             </div>
@@ -383,9 +383,9 @@ export default function ETLSyncActionsView({
 
       {showEnableSyncWarning && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full border border-gray-200">
-            <h3 className="font-semibold text-lg mb-3 text-gray-900">Sync Disabled</h3>
-            <p className="text-sm text-gray-600 mb-6">
+          <div className="bg-surface rounded-lg shadow-xl p-6 max-w-md w-full border border-outline">
+            <h3 className="font-semibold text-lg mb-3 text-content-primary">Sync Disabled</h3>
+            <p className="text-sm text-content-secondary mb-6">
               Enable sync in <strong>ETL Settings</strong> before running operations.
             </p>
             <button onClick={() => setShowEnableSyncWarning(false)} className="w-full px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium">

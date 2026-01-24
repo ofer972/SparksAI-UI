@@ -2,6 +2,248 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   THEME DEFINITIONS - Outside @layer for highest priority
+   ============================================ */
+
+/* Light Theme - Default fallback */
+:root {
+  --color-surface: 255 255 255;
+  --color-surface-elevated: 249 250 251;
+  --color-surface-secondary: 243 244 246;
+  --color-text-primary: 17 24 39;
+  --color-text-secondary: 55 65 81;
+  --color-text-tertiary: 75 85 99;
+  --color-text-muted: 107 114 128;
+  --color-border: 229 231 235;
+  --color-border-strong: 209 213 219;
+  --color-primary: 37 99 235;
+  --color-primary-hover: 29 78 216;
+  --color-accent: 37 99 235;
+  --color-error-bg: 254 242 242;
+  --color-error-border: 254 202 202;
+  --color-error-text: 220 38 38;
+  --color-success-bg: 240 253 244;
+  --color-success-border: 187 247 208;
+  --color-success-text: 22 163 74;
+}
+
+/* Light Theme - Explicit */
+html.theme-light {
+  --color-surface: 255 255 255;
+  --color-surface-elevated: 249 250 251;
+  --color-surface-secondary: 243 244 246;
+  --color-text-primary: 17 24 39;
+  --color-text-secondary: 55 65 81;
+  --color-text-tertiary: 75 85 99;
+  --color-text-muted: 107 114 128;
+  --color-border: 229 231 235;
+  --color-border-strong: 209 213 219;
+  --color-primary: 37 99 235;
+  --color-primary-hover: 29 78 216;
+  --color-accent: 37 99 235;
+  --color-error-bg: 254 242 242;
+  --color-error-border: 254 202 202;
+  --color-error-text: 220 38 38;
+  --color-success-bg: 240 253 244;
+  --color-success-border: 187 247 208;
+  --color-success-text: 22 163 74;
+}
+
+/* Dark Theme */
+html.theme-dark,
+html.dark {
+  --color-surface: 30 41 59;
+  --color-surface-elevated: 51 65 85;
+  --color-surface-secondary: 71 85 105;
+  --color-text-primary: 241 245 249;
+  --color-text-secondary: 203 213 225;
+  --color-text-tertiary: 148 163 184;
+  --color-text-muted: 148 163 184;
+  --color-border: 51 65 85;
+  --color-border-strong: 71 85 105;
+  --color-primary: 59 130 246;
+  --color-primary-hover: 37 99 235;
+  --color-accent: 59 130 246;
+  --color-error-bg: 127 29 29;
+  --color-error-border: 153 27 27;
+  --color-error-text: 252 165 165;
+  --color-success-bg: 20 83 45;
+  --color-success-border: 22 101 52;
+  --color-success-text: 134 239 172;
+}
+
+/* Ocean Theme - Light blue/teal */
+html.theme-ocean {
+  --color-surface: 240 249 255;
+  --color-surface-elevated: 224 242 254;
+  --color-surface-secondary: 186 230 253;
+  --color-text-primary: 12 74 110;
+  --color-text-secondary: 14 116 144;
+  --color-text-tertiary: 21 94 117;
+  --color-text-muted: 107 114 128;
+  --color-border: 186 230 253;
+  --color-border-strong: 125 211 252;
+  --color-primary: 6 182 212;
+  --color-primary-hover: 8 145 178;
+  --color-accent: 20 184 166;
+  --color-error-bg: 254 242 242;
+  --color-error-border: 254 202 202;
+  --color-error-text: 220 38 38;
+  --color-success-bg: 236 253 245;
+  --color-success-border: 167 243 208;
+  --color-success-text: 5 150 105;
+}
+
+/* Forest Theme - Light green */
+html.theme-forest {
+  --color-surface: 240 253 244;
+  --color-surface-elevated: 220 252 231;
+  --color-surface-secondary: 187 247 208;
+  --color-text-primary: 20 83 45;
+  --color-text-secondary: 22 101 52;
+  --color-text-tertiary: 21 128 61;
+  --color-text-muted: 107 114 128;
+  --color-border: 187 247 208;
+  --color-border-strong: 134 239 172;
+  --color-primary: 34 197 94;
+  --color-primary-hover: 22 163 74;
+  --color-accent: 132 204 22;
+  --color-error-bg: 254 242 242;
+  --color-error-border: 254 202 202;
+  --color-error-text: 220 38 38;
+  --color-success-bg: 220 252 231;
+  --color-success-border: 134 239 172;
+  --color-success-text: 22 163 74;
+}
+
+/* Purple Theme - Light purple/violet */
+html.theme-purple {
+  --color-surface: 250 245 255;
+  --color-surface-elevated: 243 232 255;
+  --color-surface-secondary: 233 213 255;
+  --color-text-primary: 88 28 135;
+  --color-text-secondary: 107 33 168;
+  --color-text-tertiary: 126 34 206;
+  --color-text-muted: 107 114 128;
+  --color-border: 233 213 255;
+  --color-border-strong: 216 180 254;
+  --color-primary: 168 85 247;
+  --color-primary-hover: 147 51 234;
+  --color-accent: 192 132 252;
+  --color-error-bg: 254 242 242;
+  --color-error-border: 254 202 202;
+  --color-error-text: 220 38 38;
+  --color-success-bg: 240 253 244;
+  --color-success-border: 187 247 208;
+  --color-success-text: 22 163 74;
+}
+
+/* Sunset Theme - Warm yellow/orange */
+html.theme-sunset {
+  --color-surface: 255 247 237;
+  --color-surface-elevated: 254 243 199;
+  --color-surface-secondary: 253 230 138;
+  --color-text-primary: 120 53 15;
+  --color-text-secondary: 154 52 18;
+  --color-text-tertiary: 194 65 12;
+  --color-text-muted: 107 114 128;
+  --color-border: 253 230 138;
+  --color-border-strong: 252 211 77;
+  --color-primary: 249 115 22;
+  --color-primary-hover: 234 88 12;
+  --color-accent: 251 146 60;
+  --color-error-bg: 254 242 242;
+  --color-error-border: 254 202 202;
+  --color-error-text: 220 38 38;
+  --color-success-bg: 240 253 244;
+  --color-success-border: 187 247 208;
+  --color-success-text: 22 163 74;
+}
+
+/* Mixed Theme - Dark sidebar/topbar, Light main content */
+html.theme-mixed {
+  /* Default to light for main content */
+  --color-surface: 255 255 255;
+  --color-surface-elevated: 249 250 251;
+  --color-surface-secondary: 243 244 246;
+  --color-text-primary: 17 24 39;
+  --color-text-secondary: 55 65 81;
+  --color-text-tertiary: 75 85 99;
+  --color-text-muted: 107 114 128;
+  --color-border: 229 231 235;
+  --color-border-strong: 209 213 219;
+  --color-primary: 37 99 235;
+  --color-primary-hover: 29 78 216;
+  --color-accent: 37 99 235;
+  --color-error-bg: 254 242 242;
+  --color-error-border: 254 202 202;
+  --color-error-text: 220 38 38;
+  --color-success-bg: 240 253 244;
+  --color-success-border: 187 247 208;
+  --color-success-text: 22 163 74;
+}
+
+/* Mixed theme - Dark colors for sidebar only */
+html.theme-mixed [data-theme-area="sidebar"] {
+  --color-surface: 30 41 59;
+  --color-surface-elevated: 51 65 85;
+  --color-surface-secondary: 71 85 105;
+  --color-text-primary: 241 245 249;
+  --color-text-secondary: 203 213 225;
+  --color-text-tertiary: 148 163 184;
+  --color-text-muted: 148 163 184;
+  --color-border: 51 65 85;
+  --color-border-strong: 71 85 105;
+  --color-primary: 59 130 246;
+  --color-primary-hover: 37 99 235;
+  --color-accent: 59 130 246;
+}
+
+/* Midnight Theme - Very dark blue */
+html.theme-midnight {
+  --color-surface: 15 23 42;
+  --color-surface-elevated: 30 41 59;
+  --color-surface-secondary: 51 65 85;
+  --color-text-primary: 226 232 240;
+  --color-text-secondary: 203 213 225;
+  --color-text-tertiary: 148 163 184;
+  --color-text-muted: 100 116 139;
+  --color-border: 51 65 85;
+  --color-border-strong: 71 85 105;
+  --color-primary: 56 189 248;
+  --color-primary-hover: 14 165 233;
+  --color-accent: 96 165 250;
+  --color-error-bg: 127 29 29;
+  --color-error-border: 153 27 27;
+  --color-error-text: 248 113 113;
+  --color-success-bg: 20 83 45;
+  --color-success-border: 22 101 52;
+  --color-success-text: 74 222 128;
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
+/* Smooth transitions for theme changes - only on specific elements */
+html {
+  transition-property: background-color;
+  transition-timing-function: ease-out;
+  transition-duration: 150ms;
+}
+
+/* Color scheme for browser UI */
+html {
+  color-scheme: light;
+}
+
+html.dark,
+html.theme-dark,
+html.theme-midnight {
+  color-scheme: dark;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',

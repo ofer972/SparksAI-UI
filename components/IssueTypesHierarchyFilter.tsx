@@ -157,7 +157,7 @@ export default function IssueTypesHierarchyFilter({
       />
       <div
         ref={dropdownRef}
-        className="fixed bg-white border border-gray-300 rounded shadow-lg z-[9999]"
+        className="fixed bg-surface border border-outline rounded shadow-lg z-[9999]"
         style={{
           ...position,
           left: buttonRect ? `${buttonRect.left}px` : '0px',
@@ -169,14 +169,14 @@ export default function IssueTypesHierarchyFilter({
         }}
       >
         {loading ? (
-          <div className="px-3 py-2 text-sm text-gray-500 whitespace-nowrap">Loading...</div>
+          <div className="px-3 py-2 text-sm text-content-tertiary whitespace-nowrap">Loading...</div>
         ) : issueTypes.length === 0 ? (
-          <div className="px-3 py-2 text-sm text-gray-500 whitespace-nowrap">No issue types available</div>
+          <div className="px-3 py-2 text-sm text-content-tertiary whitespace-nowrap">No issue types available</div>
         ) : (
           <>
             {allowClear && value !== undefined && value !== null && (
               <div
-                className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 cursor-pointer border-b whitespace-nowrap"
+                className="px-3 py-2 text-sm text-content-secondary hover:bg-surface-secondary cursor-pointer border-b whitespace-nowrap"
                 onClick={handleClear}
               >
                 Clear selection
@@ -226,7 +226,7 @@ export default function IssueTypesHierarchyFilter({
         ref={buttonRef}
         type="button"
         onClick={handleToggle}
-        className={`px-2 py-1 border border-gray-300 rounded text-xs bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[140px] text-left flex items-center justify-between ${className}`}
+        className={`px-2 py-1 border border-outline rounded text-xs bg-surface hover:bg-surface-elevated focus:outline-none focus:ring-1 focus:ring-brand min-w-[140px] text-left flex items-center justify-between ${className}`}
         disabled={loading}
       >
         <span className="truncate">{loading ? 'Loading...' : getDisplayText()}</span>

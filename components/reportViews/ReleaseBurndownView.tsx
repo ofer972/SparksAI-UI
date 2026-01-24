@@ -33,10 +33,10 @@ const ReleaseBurndownView: React.FC<ReleaseBurndownViewProps> = ({
   togglePin,
   pinnedFilters = [],
 }) => {
-  const issueType = (filters.issue_type as string) ?? 'all';
-  const releaseName = (filters.release as string) ?? '';
-  const teamName = (filters.team_name as string) ?? '';
-  const isGroup = (filters.isGroup as boolean) ?? false;
+  const issueType = (filters?.issue_type as string) ?? 'all';
+  const releaseName = (filters?.release as string) ?? '';
+  const teamName = (filters?.team_name as string) ?? '';
+  const isGroup = (filters?.isGroup as boolean) ?? false;
 
   const issueTypeOptions = useMemo(() => {
     const allTypes = getIssueTypes();
@@ -60,7 +60,7 @@ const ReleaseBurndownView: React.FC<ReleaseBurndownViewProps> = ({
   const hasAutoSelectedRef = useRef(false);
 
   const handleFilterChange = useCallback((key: string, value: string | null) => {
-    setFilters((prev) => ({
+    setFilters?.((prev) => ({
       ...prev,
       [key]: value,
     }));
@@ -89,7 +89,7 @@ const ReleaseBurndownView: React.FC<ReleaseBurndownViewProps> = ({
           <select
             value={releaseName}
             onChange={(event) => handleFilterChange('release', event.target.value || null)}
-            className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[140px]"
+            className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand min-w-[140px]"
           >
             <option value="">Select Release</option>
             {availableReleases.map((release) => (
@@ -108,7 +108,7 @@ const ReleaseBurndownView: React.FC<ReleaseBurndownViewProps> = ({
           <select
             value={issueType}
             onChange={(event) => handleFilterChange('issue_type', event.target.value || null)}
-            className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand"
           >
             {issueTypeOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -184,7 +184,7 @@ const ReleaseBurndownView: React.FC<ReleaseBurndownViewProps> = ({
 
   // Date display for Release
   const dateDisplay = (meta?.release_start_date || meta?.release_end_date) ? (
-    <div className="mt-2 text-xs text-gray-500 text-center">
+    <div className="mt-2 text-xs text-content-tertiary text-center">
       {meta?.release_start_date && meta?.release_end_date && (
         <span>
           Dates: {meta.release_start_date} – {meta.release_end_date}

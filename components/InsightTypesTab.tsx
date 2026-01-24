@@ -210,7 +210,7 @@ export default function InsightTypesTab() {
             value={filterText}
             onChange={(event) => handleFilterChange(event.target.value)}
             placeholder="Search insight types..."
-            className="w-full sm:w-72 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full sm:w-72 px-3 py-2 border border-outline rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-brand"
           />
           <div className="flex items-center gap-2">
             <button
@@ -237,7 +237,7 @@ export default function InsightTypesTab() {
                 if (col.key === 'categories') {
                   const includedCategories = row.insight_categories || row.categories || [];
                   return (
-                    <span className="text-sm text-gray-700">
+                    <span className="text-sm text-content-secondary">
                       {includedCategories.length > 0 ? includedCategories.join(', ') : '-'}
                     </span>
                   );
@@ -248,7 +248,7 @@ export default function InsightTypesTab() {
                       type="checkbox"
                       checked={row.active}
                       readOnly
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-default"
+                      className="h-4 w-4 text-brand focus:ring-brand border-outline rounded cursor-default"
                     />
                   );
                 }
@@ -259,7 +259,7 @@ export default function InsightTypesTab() {
                       type="checkbox"
                       checked={piInsight}
                       readOnly
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-default"
+                      className="h-4 w-4 text-brand focus:ring-brand border-outline rounded cursor-default"
                     />
                   );
                 }
@@ -270,7 +270,7 @@ export default function InsightTypesTab() {
                       type="checkbox"
                       checked={sprintInsight}
                       readOnly
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-default"
+                      className="h-4 w-4 text-brand focus:ring-brand border-outline rounded cursor-default"
                     />
                   );
                 }
@@ -281,7 +281,7 @@ export default function InsightTypesTab() {
                       type="checkbox"
                       checked={teamInsight}
                       readOnly
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-default"
+                      className="h-4 w-4 text-brand focus:ring-brand border-outline rounded cursor-default"
                     />
                   );
                 }
@@ -292,7 +292,7 @@ export default function InsightTypesTab() {
                       type="checkbox"
                       checked={groupInsight}
                       readOnly
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-default"
+                      className="h-4 w-4 text-brand focus:ring-brand border-outline rounded cursor-default"
                     />
                   );
                 }
@@ -310,7 +310,7 @@ export default function InsightTypesTab() {
                   const minutes = lastModificationDate.getMinutes().toString().padStart(2, '0');
                   const formattedTime = `${hours}:${minutes}`;
                   return (
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-content-secondary">
                       {formattedDate} {formattedTime}
                     </span>
                   );

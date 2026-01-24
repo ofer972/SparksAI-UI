@@ -213,16 +213,27 @@ export interface PIsResponse {
 
 export interface AICard {
   id: number;
+  date?: string;
+  pi?: string | null;
   updated_at: string;
   team_name: string;
+  group_name?: string | null;
   card_name: string;
-  card_type: string;
+  card_type?: string;
+  insight_type?: string;
   priority: string;
+  priority_color?: string;
   source: string;
   source_job_id?: string | number;
   description: string;
+  short_summary?: string;
   full_information: string;
   information_json?: string;
+  report_ids?: string[];
+  pi_insight?: boolean;
+  team_insight?: boolean;
+  group_insight?: boolean;
+  sprint_insight?: boolean;
   recommendations?: Recommendation[];
   recommendations_count?: number;
 }

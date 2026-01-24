@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -42,6 +42,16 @@ export default function BurndownChart({
   title,
   onChartClick
 }: BurndownChartProps) {
+
+  // Dark mode detection
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const checkDark = () => setIsDark(document.documentElement.classList.contains('dark'));
+    checkDark();
+    const observer = new MutationObserver(checkDark);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   // Memoize chart data preparation to prevent unnecessary recalculations
   const chartData = React.useMemo(() => {
@@ -216,6 +226,7 @@ export default function BurndownChart({
           font: {
             size: 9,
           },
+          color: isDark ? '#cbd5e1' : '#374151',
         },
         padding: {
           top: 0,
@@ -228,14 +239,15 @@ export default function BurndownChart({
       title: {
         display: true,
         text: title || 'Burndown Chart',
+        color: isDark ? '#cbd5e1' : '#374151',
       },
       tooltip: {
         mode: 'index' as const,
         intersect: true,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        backgroundColor: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(0, 0, 0, 0.8)',
         titleColor: '#fff',
         bodyColor: '#fff',
-        borderColor: '#333',
+        borderColor: isDark ? '#475569' : '#333',
         borderWidth: 1,
         cornerRadius: 6,
         displayColors: true,
@@ -286,9 +298,13 @@ export default function BurndownChart({
             size: 10,
             weight: 'bold' as const,
           },
+          color: isDark ? '#cbd5e1' : '#374151',
+        },
+        ticks: {
+          color: isDark ? '#cbd5e1' : '#374151',
         },
         grid: {
-          color: 'rgba(0, 0, 0, 0.1)',
+          color: isDark ? 'rgba(148, 163, 184, 0.2)' : 'rgba(0, 0, 0, 0.1)',
         },
       },
       y: {
@@ -300,6 +316,7 @@ export default function BurndownChart({
             size: 10,
             weight: 'bold' as const,
           },
+          color: isDark ? '#cbd5e1' : '#374151',
         },
         min: 0,
         max: Math.max(
@@ -309,9 +326,10 @@ export default function BurndownChart({
         ) + 2,
         ticks: {
           stepSize: 2,
+          color: isDark ? '#cbd5e1' : '#374151',
         },
         grid: {
-          color: 'rgba(0, 0, 0, 0.1)',
+          color: isDark ? 'rgba(148, 163, 184, 0.2)' : 'rgba(0, 0, 0, 0.1)',
         },
       },
     },
@@ -345,14 +363,14 @@ export default function BurndownChart({
         });
       }
     },
-  }), [data, onChartClick]);
+  }), [data, onChartClick, isDark]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="flex flex-col items-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-          <div className="text-sm text-gray-600">Loading burndown chart...</div>
+          <div className="text-sm text-content-tertiary">Loading burndown chart...</div>
         </div>
       </div>
     );
@@ -361,7 +379,7 @@ export default function BurndownChart({
   if (error) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-red-500">Error: {error}</div>
+        <div className="text-danger-text">Error: {error}</div>
       </div>
     );
   }
@@ -369,7 +387,7 @@ export default function BurndownChart({
   if (!data.length) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-gray-500">No data available</div>
+        <div className="text-content-muted">No data available</div>
       </div>
     );
   }
@@ -377,14 +395,14 @@ export default function BurndownChart({
   if (!chartData) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-gray-500">No chart data available</div>
+        <div className="text-content-muted">No chart data available</div>
       </div>
     );
   }
 
   return (
     <div className="relative h-full min-h-[350px]">
-      <Line options={options} data={chartData} />
+      <Line key={isDark ? 'dark' : 'light'} options={options} data={chartData} />
     </div>
   );
 }

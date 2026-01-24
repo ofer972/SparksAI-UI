@@ -99,7 +99,7 @@ export default function IssuesDialog<T extends Record<string, any>>({
           render: (value: string) => (
             <button
               onClick={() => handleIssueKeyClick(value)}
-              className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer font-medium"
+              className="text-brand hover:text-blue-800 hover:underline cursor-pointer font-medium"
             >
               {value}
             </button>
@@ -125,16 +125,16 @@ export default function IssuesDialog<T extends Record<string, any>>({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] flex flex-col">
+      <div className="bg-surface rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="border-b border-gray-200 bg-gray-50 px-6 py-4 rounded-t-lg">
+        <div className="border-b border-outline bg-surface-elevated px-6 py-4 rounded-t-lg">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-content-primary">
               {title}
             </h3>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-content-muted hover:text-content-secondary transition-colors"
               aria-label="Close"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -171,10 +171,10 @@ export default function IssuesDialog<T extends Record<string, any>>({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 px-6 py-4 flex justify-end items-center">
+        <div className="border-t border-outline px-6 py-4 flex justify-end items-center">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-brand text-white rounded-md hover:bg-brand-hover transition-colors"
           >
             Close
           </button>

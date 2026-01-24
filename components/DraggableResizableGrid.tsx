@@ -481,10 +481,10 @@ export default function DraggableResizableGrid({
                 >
                   {row.reportIds.length === 0 && emptyRowIds.includes(row.id) && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-                      <div className="text-center text-gray-500 animate-pulse">
+                      <div className="text-center text-content-tertiary animate-pulse">
                         <div className="text-4xl mb-2">⬇️</div>
                         <div className="text-sm font-semibold">Drag widgets here</div>
-                        <div className="text-xs text-gray-400 mt-1">Drop reports or insight cards into this row</div>
+                        <div className="text-xs text-content-muted mt-1">Drop reports or insight cards into this row</div>
                       </div>
                     </div>
                   )}
@@ -521,7 +521,7 @@ export default function DraggableResizableGrid({
               <div
                 className={`h-1 cursor-row-resize transition-all relative group ${
                   isDraggingVertical && activeVerticalResizer === rowIndex
-                    ? 'bg-blue-500'
+                    ? 'bg-brand'
                     : 'bg-transparent hover:bg-blue-400'
                 }`}
                 onMouseDown={handleVerticalMouseDown(rowIndex)}

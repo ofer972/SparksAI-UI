@@ -82,22 +82,22 @@ export default function EditInsightTypeModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col">
+      <div className="bg-surface rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div className="px-6 py-4 border-b border-outline bg-gradient-to-r from-blue-50 to-indigo-50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-brand rounded-lg flex items-center justify-center">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-900">
+                <h3 className="text-xl font-bold text-content-primary">
                   Edit Insight Type
                 </h3>
                 {insightType && (
-                  <p className="text-sm text-gray-600 mt-0.5">
+                  <p className="text-sm text-content-secondary mt-0.5">
                     {insightType.insight_type}
                   </p>
                 )}
@@ -105,7 +105,7 @@ export default function EditInsightTypeModal({
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-content-muted hover:text-content-secondary transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -131,13 +131,13 @@ export default function EditInsightTypeModal({
           <form onSubmit={handleSubmit}>
             <div className="space-y-6">
               {/* Active Status */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <div className="bg-surface-elevated border border-outline rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <label htmlFor="active" className="block text-sm font-medium text-gray-900">
+                    <label htmlFor="active" className="block text-sm font-medium text-content-primary">
                       Status
                     </label>
-                    <p className="text-xs text-gray-600 mt-1">
+                    <p className="text-xs text-content-secondary mt-1">
                       {active ? 'This insight type is currently active and will be generated' : 'This insight type is currently inactive'}
                     </p>
                   </div>
@@ -147,9 +147,9 @@ export default function EditInsightTypeModal({
                       id="active"
                       checked={active}
                       onChange={(e) => setActive(e.target.checked)}
-                      className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="h-5 w-5 text-brand focus:ring-brand border-outline rounded"
                     />
-                    <label htmlFor="active" className="ml-3 text-sm font-medium text-gray-700">
+                    <label htmlFor="active" className="ml-3 text-sm font-medium text-content-secondary">
                       {active ? 'Active' : 'Inactive'}
                     </label>
                   </div>
@@ -158,14 +158,14 @@ export default function EditInsightTypeModal({
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
+                <label className="block text-sm font-medium text-content-primary mb-2">
                   Description
                 </label>
                 <textarea
                   value={insightDescription}
                   onChange={(e) => setInsightDescription(e.target.value)}
                   rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  className="w-full px-4 py-3 border border-outline rounded-lg focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent resize-none"
                   placeholder="Enter a detailed description of this insight type..."
                 />
               </div>
@@ -180,7 +180,7 @@ export default function EditInsightTypeModal({
               />
 
               {/* Cron Schedule */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <div className="bg-surface-elevated border border-outline rounded-lg p-4">
                 <CronEditor
                   value={cronConfig}
                   onChange={setCronConfig}
@@ -191,13 +191,13 @@ export default function EditInsightTypeModal({
         </div>
 
         {/* Footer with buttons - sticky at bottom */}
-        <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 rounded-b-xl">
+        <div className="border-t border-outline px-6 py-4 bg-surface-elevated rounded-b-xl">
           <div className="flex gap-3">
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="flex-1 bg-white text-gray-700 border border-gray-300 py-3 px-6 rounded-lg hover:bg-gray-50 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow"
+              className="flex-1 bg-surface text-content-secondary border border-outline py-3 px-6 rounded-lg hover:bg-surface-elevated transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow"
             >
               Cancel
             </button>

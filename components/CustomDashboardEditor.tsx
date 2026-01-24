@@ -1511,7 +1511,7 @@ export default function CustomDashboardEditor({
       <div className="flex items-center justify-center h-96">
         <div className="flex flex-col items-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-          <div className="text-sm text-gray-600">Loading dashboard...</div>
+          <div className="text-sm text-content-secondary">Loading dashboard...</div>
         </div>
       </div>
     );
@@ -1538,12 +1538,12 @@ export default function CustomDashboardEditor({
       {/* Content Area */}
       <div className={`flex-1 overflow-auto ${isMobile ? 'p-2' : 'p-4'}`}>
         {mergedLayoutConfig.rows.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
-            <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="text-center py-12 bg-surface rounded-lg border-2 border-dashed border-outline">
+            <svg className="mx-auto h-12 w-12 text-content-muted mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
             </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No widgets yet</h3>
-            <p className="text-sm text-gray-600 mb-4">Click "Manage Dashboard" in the topbar to add widgets</p>
+            <h3 className="text-lg font-medium text-content-primary mb-2">No widgets yet</h3>
+            <p className="text-sm text-content-secondary mb-4">Click "Manage Dashboard" in the topbar to add widgets</p>
           </div>
         ) : isMobile ? (
           // Mobile: render as single column (same as TeamDashboard)

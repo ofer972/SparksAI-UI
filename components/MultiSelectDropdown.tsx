@@ -74,7 +74,7 @@ export default function MultiSelectDropdown({
 
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
+      <label className="block text-sm font-medium text-content-secondary mb-2">
         {label}
       </label>
       
@@ -82,13 +82,13 @@ export default function MultiSelectDropdown({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3 py-2 text-left border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white hover:bg-gray-50 transition-colors flex items-center justify-between"
+        className="w-full px-3 py-2 text-left border border-outline rounded-lg focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-surface hover:bg-surface-elevated transition-colors flex items-center justify-between"
       >
-        <span className={`truncate ${selectedValues.length === 0 ? 'text-gray-500' : 'text-gray-900'}`}>
+        <span className={`truncate ${selectedValues.length === 0 ? 'text-content-tertiary' : 'text-content-primary'}`}>
           {getDisplayText()}
         </span>
         <svg 
-          className={`w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ml-2 ${isOpen ? 'transform rotate-180' : ''}`}
+          className={`w-5 h-5 text-content-muted transition-transform flex-shrink-0 ml-2 ${isOpen ? 'transform rotate-180' : ''}`}
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"
@@ -104,17 +104,17 @@ export default function MultiSelectDropdown({
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           
           {/* Dropdown content */}
-          <div className={`absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg ${maxHeight} overflow-hidden flex flex-col`}>
+          <div className={`absolute z-50 w-full mt-1 bg-surface border border-outline rounded-lg shadow-lg ${maxHeight} overflow-hidden flex flex-col`}>
             {/* Header with actions */}
-            <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-gray-50">
-              <span className="text-xs font-medium text-gray-700">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-outline bg-surface-elevated">
+              <span className="text-xs font-medium text-content-secondary">
                 {selectedValues.length} of {options?.length || 0} selected
               </span>
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={handleSelectAll}
-                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-xs text-brand hover:text-blue-700 font-medium"
                 >
                   Select All
                 </button>
@@ -122,7 +122,7 @@ export default function MultiSelectDropdown({
                 <button
                   type="button"
                   onClick={handleClearAll}
-                  className="text-xs text-gray-600 hover:text-gray-700 font-medium"
+                  className="text-xs text-content-secondary hover:text-content-secondary font-medium"
                 >
                   Clear All
                 </button>
@@ -132,22 +132,22 @@ export default function MultiSelectDropdown({
             {/* Options list */}
             <div className="overflow-y-auto flex-1">
               {!options || options.length === 0 ? (
-                <div className="px-3 py-4 text-center text-sm text-gray-500">
+                <div className="px-3 py-4 text-center text-sm text-content-tertiary">
                   No options available
                 </div>
               ) : (
                 options.map((option) => (
                   <label
                     key={option}
-                    className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors"
+                    className="flex items-center px-3 py-2 hover:bg-surface-elevated cursor-pointer transition-colors"
                   >
                     <input
                       type="checkbox"
                       checked={selectedValues.includes(option)}
                       onChange={() => toggleOption(option)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-brand focus:ring-brand border-outline rounded"
                     />
-                    <span className="ml-3 text-sm text-gray-900">{option}</span>
+                    <span className="ml-3 text-sm text-content-primary">{option}</span>
                   </label>
                 ))
               )}

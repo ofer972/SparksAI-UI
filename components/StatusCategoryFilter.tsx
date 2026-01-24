@@ -80,13 +80,13 @@ const StatusCategoryFilter: React.FC<StatusCategoryFilterProps> = ({
       <button
         type="button"
         onClick={() => setDropdownOpen(!dropdownOpen)}
-        className="w-full px-2 py-1 text-left border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white hover:bg-gray-50 transition-colors flex items-center justify-between"
+        className="w-full px-2 py-1 text-left border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand bg-surface hover:bg-surface-elevated transition-colors flex items-center justify-between"
       >
-        <span className={`truncate ${localStatusCategories.length === 0 || localStatusCategories.length === options.length ? 'text-gray-500' : 'text-gray-900'}`}>
+        <span className={`truncate ${localStatusCategories.length === 0 || localStatusCategories.length === options.length ? 'text-content-tertiary' : 'text-content-primary'}`}>
           {getStatusDisplayText()}
         </span>
         <svg 
-          className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ml-2 ${dropdownOpen ? 'transform rotate-180' : ''}`}
+          className={`w-4 h-4 text-content-muted transition-transform flex-shrink-0 ml-2 ${dropdownOpen ? 'transform rotate-180' : ''}`}
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"
@@ -98,12 +98,12 @@ const StatusCategoryFilter: React.FC<StatusCategoryFilterProps> = ({
       {dropdownOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
-          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-hidden flex flex-col">
+          <div className="absolute z-50 w-full mt-1 bg-surface border border-outline rounded-lg shadow-lg max-h-48 overflow-hidden flex flex-col">
             <div className="overflow-y-auto flex-1">
               {options.map((option) => (
                 <label
                   key={option}
-                  className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors"
+                  className="flex items-center px-3 py-2 hover:bg-surface-elevated cursor-pointer transition-colors"
                 >
                   <input
                     type="checkbox"
@@ -115,9 +115,9 @@ const StatusCategoryFilter: React.FC<StatusCategoryFilterProps> = ({
                         handleStatusCategoryChange(localStatusCategories.filter((c) => c !== option));
                       }
                     }}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-brand focus:ring-brand border-outline rounded"
                   />
-                  <span className="ml-3 text-sm text-gray-900">{option}</span>
+                  <span className="ml-3 text-sm text-content-primary">{option}</span>
                 </label>
               ))}
             </div>

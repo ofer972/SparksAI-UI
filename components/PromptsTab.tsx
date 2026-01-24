@@ -247,12 +247,12 @@ export default function PromptsTab() {
             value={filterText}
             onChange={(event) => handleFilterChange(event.target.value)}
             placeholder="Search prompts..."
-            className="w-full sm:w-72 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full sm:w-72 px-3 py-2 border border-outline rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-brand"
           />
           <div className="flex items-center gap-2">
             <button
               onClick={handleRefresh}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2 whitespace-nowrap shadow-sm"
+              className="px-4 py-2 bg-brand text-white rounded-lg hover:bg-brand-hover transition-colors text-sm font-medium flex items-center gap-2 whitespace-nowrap shadow-sm"
               title="Refresh data"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

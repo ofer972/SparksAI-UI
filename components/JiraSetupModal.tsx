@@ -32,19 +32,19 @@ export default function JiraSetupModal({
           {/* Icon */}
           <div className="flex items-center justify-center mb-6">
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-8 h-8 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
             </div>
           </div>
           
           {/* Title */}
-          <h3 className="text-xl font-semibold text-gray-800 text-center mb-3 leading-tight">
+          <h3 className="text-xl font-semibold text-content-primary text-center mb-3 leading-tight">
             {hasPermission ? 'JIRA Setup Required' : 'JIRA Configuration Needed'}
           </h3>
           
           {/* Message */}
-          <p className="text-[15px] text-gray-600 text-center mb-8 leading-relaxed">
+          <p className="text-[15px] text-content-secondary text-center mb-8 leading-relaxed">
             {hasPermission 
               ? 'You need first to set up Jira. Please configure your JIRA connection settings to continue.'
               : 'JIRA setup is required. Please contact your administrator to configure JIRA settings.'}
@@ -54,7 +54,7 @@ export default function JiraSetupModal({
           <div className="flex flex-col gap-3">
             <button
               onClick={onConfirm}
-              className="w-full px-6 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg transition-colors duration-150 font-medium text-[15px]"
+              className="w-full px-6 py-2 bg-brand hover:bg-brand-hover active:bg-blue-800 text-white rounded-lg transition-colors duration-150 font-medium text-[15px]"
             >
               {hasPermission ? 'Go to Settings' : 'OK'}
             </button>

@@ -180,13 +180,13 @@ export default function JiraConnectionTab({ settings, onSaved, onShowToast }: Ji
       
       <div>
         <h3 className="font-semibold mb-2">JIRA Connection Settings</h3>
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-content-secondary mb-4">
           Configure your JIRA connection details. The API token will be masked for security.
         </p>
         
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-            <label className="text-sm font-medium text-gray-700 w-full sm:w-48 flex-shrink-0">
+            <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
               JIRA URL *:
             </label>
             <input
@@ -197,12 +197,12 @@ export default function JiraConnectionTab({ settings, onSaved, onShowToast }: Ji
                 setIsValidated(false);
               }}
               placeholder="https://your-instance.atlassian.net"
-              className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="flex-1 border border-outline rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
             />
           </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-            <label className="text-sm font-medium text-gray-700 w-full sm:w-48 flex-shrink-0">
+            <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
               Email *:
             </label>
             <input
@@ -213,12 +213,12 @@ export default function JiraConnectionTab({ settings, onSaved, onShowToast }: Ji
                 setIsValidated(false);
               }}
               placeholder="user@example.com"
-              className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="flex-1 border border-outline rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
             />
           </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-            <label className="text-sm font-medium text-gray-700 w-full sm:w-48 flex-shrink-0">
+            <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
               API Token *:
             </label>
             <input
@@ -229,12 +229,12 @@ export default function JiraConnectionTab({ settings, onSaved, onShowToast }: Ji
                 setIsValidated(false);
               }}
               placeholder="Enter API token"
-              className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="flex-1 border border-outline rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
             />
           </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-            <label className="text-sm font-medium text-gray-700 w-full sm:w-48 flex-shrink-0">
+            <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
               JIRA on Cloud:
             </label>
             <div className="flex-1 flex items-center space-x-3">
@@ -246,9 +246,9 @@ export default function JiraConnectionTab({ settings, onSaved, onShowToast }: Ji
                     setJiraCloud(e.target.checked);
                     setIsValidated(false);
                   }}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  className="w-4 h-4 text-brand border-outline rounded focus:ring-brand"
                 />
-                <span className="text-sm text-gray-700">
+                <span className="text-sm text-content-secondary">
                   {jiraCloud ? 'Yes (Cloud)' : 'No (On-Prem)'}
                 </span>
               </label>
@@ -283,18 +283,18 @@ export default function JiraConnectionTab({ settings, onSaved, onShowToast }: Ji
         <button
           onClick={handleSave}
           disabled={loading || !isValidated || !hasChanges()}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-brand text-white rounded hover:bg-brand-hover disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           {loading ? 'Saving...' : '💾 Save'}
         </button>
       </div>
       {!isValidated && (
-        <p className="text-xs text-gray-500 mt-2">
+        <p className="text-xs text-content-tertiary mt-2">
           Please validate the JIRA configuration before saving.
         </p>
       )}
       {isValidated && !hasChanges() && (
-        <p className="text-xs text-gray-500 mt-2">
+        <p className="text-xs text-content-tertiary mt-2">
           No changes to save. Settings are already saved.
         </p>
       )}

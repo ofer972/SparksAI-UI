@@ -36,6 +36,15 @@ export function useAICards(piName?: string, teamName?: string, categories?: stri
       return;
     }
 
+    // For Sprint insights, we need at least teamName
+    // For PI insights, we need both piName and teamName
+    if (!teamName || teamName.trim() === '') {
+      console.log('[useAICards] No team name, skipping fetch');
+      setCards([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       console.log('[useAICards] Fetching cards for piName:', piName, 'teamName:', teamName, 'categories:', categories, 'isGroup:', isGroup);
       setLoading(true);
@@ -43,7 +52,7 @@ export function useAICards(piName?: string, teamName?: string, categories?: stri
       const apiService = new ApiService();
       // Use the unified endpoint with recommendations, pass piName, teamName, categories and isGroup
       const response = await apiService.getAICardsWithRecommendations(
-        piName || '',  // Use piName if provided, otherwise empty string
+        piName,  // Optional PI name
         teamName,
         isGroup,
         categories
@@ -57,7 +66,7 @@ export function useAICards(piName?: string, teamName?: string, categories?: stri
     } finally {
       setLoading(false);
     }
-  }, [piName, teamName, categoriesKey, categories, isGroup]);
+  }, [piName, teamName, categoriesKey, isGroup]);
 
   useEffect(() => {
     fetchCards();

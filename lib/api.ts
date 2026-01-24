@@ -720,16 +720,19 @@ export class ApiService {
     return result.data;
   }
 
-  // PI AI Cards API
+  // AI Cards API with recommendations
   async getAICardsWithRecommendations(
-    piName: string,
+    piName?: string,
     teamName?: string,
     isGroup?: boolean,
     categories?: string[]
   ): Promise<AICardsResponse> {
-    const params = new URLSearchParams({
-      pi: piName,
-    });
+    const params = new URLSearchParams();
+
+    // Add PI parameter if provided
+    if (piName) {
+      params.append('pi', piName);
+    }
 
     // Add team or group parameter if provided
     if (teamName) {
@@ -750,7 +753,7 @@ export class ApiService {
     const response = await fetch(`${buildBackendUrl('/ai-insights/getTopCardsWithRecommendations')}?${params}`);
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch PI AI cards with recommendations: ${response.statusText}`);
+      throw new Error(`Failed to fetch AI cards with recommendations: ${response.statusText}`);
     }
 
     const result: ApiResponse<AICardsResponse> = await response.json();
