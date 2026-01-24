@@ -303,7 +303,7 @@ const ReportRenderer: React.FC<ReportRendererProps> = ({
 
   const componentProps = {
     ...(reportConfig.mapProps?.(context) ?? defaultMapProps(context)),
-    setFilters: onFiltersChange ? setFilters : undefined,
+    setFilters: onFiltersChange ? setFilters : (reportConfig.mapProps?.(context)?.setFilters),
     ...additionalComponentProps,
   };
 
