@@ -40,7 +40,7 @@ export default function DORAFilters({
         <select
           value={environment}
           onChange={(e) => onEnvironmentChange(e.target.value)}
-          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-surface text-content-primary"
         >
           <option value="">All Environments</option>
           {availableEnvironments.map((env) => (
@@ -55,7 +55,7 @@ export default function DORAFilters({
         <select
           value={months}
           onChange={(e) => onMonthsChange(Number(e.target.value))}
-          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-surface text-content-primary"
         >
           {TIME_PERIOD_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>

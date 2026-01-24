@@ -126,7 +126,7 @@ export default function GitHubAnalysisView() {
 
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden flex flex-col min-h-0 bg-surface border border-outline-strong rounded-tr-lg rounded-b-lg shadow-sm mb-4">
-        <div className="flex-1 overflow-hidden flex flex-col min-h-0 pt-4 pb-4 px-4 md:pt-4 md:pb-6 md:px-6">
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0 p-4 md:p-6">
           {renderTabContent()}
         </div>
       </div>

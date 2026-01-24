@@ -76,13 +76,13 @@ export default function RepositoryMultiSelect({
       <button
         type="button"
         onClick={() => setRepoDropdownOpen(!repoDropdownOpen)}
-        className="w-full px-2 py-1 text-left border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white hover:bg-gray-50 transition-colors flex items-center justify-between min-w-[280px]"
+        className="w-full px-2 py-1 text-left border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-surface hover:bg-surface-secondary transition-colors flex items-center justify-between min-w-[280px]"
       >
-        <span className={`truncate ${githubRepoIds.length === 0 || githubRepoIds.length === availableRepositories.length ? 'text-gray-500' : 'text-gray-900'}`}>
+        <span className={`truncate ${githubRepoIds.length === 0 || githubRepoIds.length === availableRepositories.length ? 'text-content-tertiary' : 'text-content-primary'}`}>
           {getRepositoryDisplayText()}
         </span>
         <svg 
-          className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ml-2 ${repoDropdownOpen ? 'transform rotate-180' : ''}`}
+          className={`w-4 h-4 text-content-muted transition-transform flex-shrink-0 ml-2 ${repoDropdownOpen ? 'transform rotate-180' : ''}`}
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"
@@ -94,12 +94,12 @@ export default function RepositoryMultiSelect({
       {repoDropdownOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setRepoDropdownOpen(false)} />
-          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-hidden flex flex-col">
-            <div className="px-3 py-2 border-b border-gray-200">
+          <div className="absolute z-50 w-full mt-1 bg-surface-elevated border border-outline rounded-lg shadow-lg max-h-64 overflow-hidden flex flex-col">
+            <div className="px-3 py-2 border-b border-outline">
               <button
                 type="button"
                 onClick={handleSelectAll}
-                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                className="text-xs text-brand hover:text-blue-800 dark:hover:text-blue-400 font-medium"
               >
                 {githubRepoIds.length === availableRepositories.length ? 'Deselect All' : 'Select All'}
               </button>
@@ -108,15 +108,15 @@ export default function RepositoryMultiSelect({
               {availableRepositories.map((repo) => (
                 <label
                   key={repo.id}
-                  className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors"
+                  className="flex items-center px-3 py-2 hover:bg-surface-secondary cursor-pointer transition-colors"
                 >
                   <input
                     type="checkbox"
                     checked={githubRepoIds.includes(repo.github_repo_id)}
                     onChange={() => handleRepositoryToggle(repo.github_repo_id)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-outline bg-surface rounded"
                   />
-                  <span className="ml-3 text-sm text-gray-900">{repo.name}</span>
+                  <span className="ml-3 text-sm text-content-primary">{repo.name}</span>
                 </label>
               ))}
             </div>

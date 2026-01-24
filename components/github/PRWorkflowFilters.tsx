@@ -45,7 +45,7 @@ export default function PRWorkflowFilters({
         <select
           value={prState}
           onChange={(e) => onPrStateChange(e.target.value)}
-          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-surface text-content-primary"
         >
           {prStateOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -59,7 +59,7 @@ export default function PRWorkflowFilters({
         <select
           value={months}
           onChange={(e) => onMonthsChange(Number(e.target.value))}
-          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-surface text-content-primary"
         >
           {TIME_PERIOD_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
