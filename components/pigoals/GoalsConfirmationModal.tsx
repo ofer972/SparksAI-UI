@@ -60,7 +60,7 @@ export default function GoalsConfirmationModal({
  <button
  onClick={onClose}
  disabled={isLoading}
- className="flex-1 bg-gray-600 bg-surface-elevated text-white py-2 px-4 rounded-lg hover:bg-gray-700 hover:bg-surface-secondary transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+ className="flex-1 bg-surface text-content-secondary border border-outline py-2 px-4 rounded-lg hover:bg-surface-elevated transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
  >
  Cancel
  </button>
