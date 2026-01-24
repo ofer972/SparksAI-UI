@@ -92,7 +92,13 @@ export function EditRecordModal<T extends Record<string, any>>({
  if (config.title === 'Prompts' && field.key === 'prompt_active' && field.type === 'boolean') {
  initialData[field.key] = true as any;
  } else {
+ // Use item value if provided in create mode, otherwise use default empty value
+ const itemValue = item?.[field.key];
+ if (itemValue !== undefined && itemValue !== null) {
+ initialData[field.key] = itemValue as any;
+ } else {
  initialData[field.key] = (field.type === 'boolean' ? false : '') as any;
+ }
  }
  });
  }
