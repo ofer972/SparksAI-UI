@@ -70,7 +70,7 @@ export default function MetricCard({
         )}
 
         {!loading && !error && summaryContent && (
-          <div className="h-full flex flex-col relative -mt-2 min-h-0 flex-1">
+          <div className="h-full flex flex-col relative -mt-2">
             {/* Tier Tooltip positioned just below the filters separator */}
             {showTierTooltip && (
               <div className="absolute left-0 top-0 z-50 mt-1">
@@ -94,7 +94,7 @@ export default function MetricCard({
             </div>
 
             {/* Chart or other content - FULLY CUSTOMIZABLE */}
-            <div className="flex-1 min-h-0 overflow-hidden">
+            <div className="flex-1 min-h-[150px]">
               {children}
             </div>
           </div>

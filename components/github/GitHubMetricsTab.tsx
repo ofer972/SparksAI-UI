@@ -169,17 +169,17 @@ export default function GitHubMetricsTab({
   }, [isDraggingVertical, handleVerticalMouseMove, handleVerticalMouseUp]);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col overflow-auto">
       <div 
         ref={mainContainerRef}
-        className="flex-1 flex flex-col overflow-hidden min-h-0"
+        className="flex-1 flex flex-col min-h-0"
       >
         {rows.map((row, rowIdx) => (
           <React.Fragment key={rowIdx}>
             {/* Row of cards - uses flex-grow for dynamic height distribution */}
             <div 
               ref={(el) => { containerRefs.current[rowIdx] = el; }}
-              className="flex relative min-h-0 overflow-hidden"
+              className="flex relative min-h-[250px]"
               style={{
                 flex: `${rowHeights[rowIdx] || (100 / rows.length)} 1 0%`
               }}
@@ -187,14 +187,14 @@ export default function GitHubMetricsTab({
               {row.map((card, colIdx) => (
                 <React.Fragment key={colIdx}>
                   <div
-                    className="flex-shrink-0 h-full overflow-hidden flex flex-col p-1"
+                    className="flex-shrink-0 h-full flex flex-col p-1"
                     style={{
                       width: row.length === 1
                         ? '100%'
                         : `${columnWidths[rowIdx]?.[colIdx] || 50}%`
                     }}
                   >
-                    <div className="h-full overflow-hidden flex flex-col flex-1 min-h-0">
+                    <div className="h-full flex flex-col flex-1">
                       {card}
                     </div>
                   </div>
