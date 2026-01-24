@@ -454,7 +454,7 @@ export default function HomeDashboard({
  </div>
  <div className="p-2">
  {hasDefaultContext ? (
- <div className="h-[380px] overflow-hidden">
+ <div className="h-[500px]">
  <ReportRenderer
  reportId="team-issues-trend"
  filters={{
