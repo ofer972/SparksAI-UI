@@ -157,19 +157,19 @@ export default function MultiPIFilter({
  Select up to {maxSelections} PIs
  </span>
  <div className="space-x-1">
- <button
- onClick={handleSelectAll}
- className="text-xs text-brand hover:text-blue-800 hover:text-blue-300"
- >
- Select All
- </button>
- <span className="text-xs text-gray-300 text-content-muted">|</span>
- <button
- onClick={handleClearAll}
- className="text-xs text-danger-text hover:text-red-800 hover:text-red-300"
- >
- Clear All
- </button>
+            <button
+              onClick={handleSelectAll}
+              className="text-xs text-brand hover:text-blue-800 hover:text-blue-300"
+            >
+              Select All
+            </button>
+            <span className="text-xs text-content-muted">|</span>
+            <button
+              onClick={handleClearAll}
+              className="text-xs text-danger-text hover:text-red-800 hover:text-red-300"
+            >
+              Clear All
+            </button>
  </div>
  </div>
  </div>

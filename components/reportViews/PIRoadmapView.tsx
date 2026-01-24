@@ -485,7 +485,7 @@ const PIRoadmapView: React.FC<PIRoadmapViewProps> = ({
           <select
             value={ganttViewMode}
             onChange={(e) => handleGanttViewModeChange(e.target.value as 'month' | 'week' | 'sprint')}
-            className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand"
+            className="px-2 py-1 border border-outline rounded text-xs bg-surface-elevated text-content-primary focus:outline-none focus:ring-1 focus:ring-brand"
           >
             <option value="month">Months</option>
             <option value="week">Weeks</option>
@@ -606,7 +606,7 @@ const PIRoadmapView: React.FC<PIRoadmapViewProps> = ({
       {/* Loading State */}
       {loading && (
         <div className="bg-surface rounded-lg shadow-sm p-6 text-center">
-          <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
+          <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-brand" />
           <p className="mt-3 text-content-tertiary text-sm">Loading roadmap data...</p>
         </div>
       )}

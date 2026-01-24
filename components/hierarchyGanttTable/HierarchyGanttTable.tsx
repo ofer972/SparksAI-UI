@@ -584,7 +584,7 @@ export default function HierarchyGanttTable({
               event.stopPropagation();
               toggleAllExpanded();
             }}
-            className="text-xs text-gray-600 hover:text-gray-800 flex items-center justify-center w-6 h-6"
+            className="text-xs text-content-tertiary hover:text-content-primary flex items-center justify-center w-6 h-6"
             title={hasExpanded ? 'Collapse All' : 'Expand All'}
           >
             {hasExpanded ? '▼' : '▶'}
@@ -608,7 +608,7 @@ export default function HierarchyGanttTable({
                 toggleExpanded(key);
               }
             }}
-            className="text-xs text-gray-600 hover:text-gray-900 flex items-center justify-center w-6 h-6"
+            className="text-xs text-content-tertiary hover:text-content-primary flex items-center justify-center w-6 h-6"
             style={{ pointerEvents: 'auto', cursor: 'pointer' }}
             title={isExpanded ? 'Collapse' : 'Expand'}
           >
@@ -947,15 +947,11 @@ export default function HierarchyGanttTable({
                           {/* PI name text above bar */}
                           {piBarPosition.width > 40 && (
                             <div
-                              className="absolute flex items-center justify-center pointer-events-none z-20 whitespace-nowrap overflow-hidden"
+                              className="absolute flex items-center justify-center pointer-events-none z-20 whitespace-nowrap overflow-hidden text-[11px] font-semibold text-content-tertiary"
                               style={{
                                 left: '50%',
                                 transform: 'translateX(-50%)',
                                 bottom: 'calc(50% + 2px)', // Position just above the bar line (bar is at 50%, so 50% + small offset)
-                                color: '#6b7280', // gray-500 for better visibility
-                                fontSize: '11px', // Slightly bigger than 10px
-                                fontWeight: 600, // font-semibold
-                                textShadow: '0 0 2px white, 0 0 2px white', // white outline for readability
                               }}
                             >
                               {pi['PI name']}

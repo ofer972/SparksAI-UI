@@ -205,8 +205,8 @@ export default function IssueTypesHierarchyFilter({
                       return (
                         <div
                           key={`${item.hierarchyLevel}-${item.name}`}
-                          className={`px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer whitespace-nowrap ${
-                            isSelected ? 'bg-blue-100 font-semibold' : ''
+                          className={`px-3 py-2 text-sm text-content-primary hover:bg-surface-elevated cursor-pointer whitespace-nowrap ${
+                            isSelected ? 'bg-brand/20 text-brand font-semibold' : ''
                           }`}
                           style={{ paddingLeft: `${12 + indent}px` }}
                           onClick={() => handleSelect(item.hierarchyLevel)}
