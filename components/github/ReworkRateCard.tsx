@@ -258,7 +258,7 @@ export default function ReworkRateCard() {
             setSelectedPeriod(null);
           }}
           period={selectedPeriod}
-          githubRepoIds={githubRepoIds}
+          githubRepoIds={githubRepoIds.length > 0 ? githubRepoIds.join(',') : undefined}
         />
       )}
     </PRWorkflowMetricCard>

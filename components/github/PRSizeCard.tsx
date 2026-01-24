@@ -259,7 +259,7 @@ export default function PRSizeCard() {
           period={selectedPeriod}
           metricType="pr-size"
           title={`PRs Created on ${formatDate(selectedPeriod)}`}
-          githubRepoIds={githubRepoIds}
+          githubRepoIds={githubRepoIds.length > 0 ? githubRepoIds.join(',') : undefined}
         />
       )}
     </PRWorkflowMetricCard>

@@ -10,6 +10,7 @@ export interface ETLSettings {
   selected_sizing_field_id: string | null;
   selected_team_name_field_id: string | null;
   selected_flagged_field_id: string | null;
+  selected_epic_target_completion_field_id: string | null;
   etl_start_months_back: number;
   history_default_backfill_days: number;
   periodic_sync_of_data_minutes: number;

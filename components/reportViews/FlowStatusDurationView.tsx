@@ -633,7 +633,7 @@ const FlowStatusDurationView: React.FC<FlowStatusDurationViewProps> = ({
  <div className="space-y-4 h-full flex flex-col">
  <div className="border border-outline rounded-lg p-4 h-full flex flex-col">
  <div className="relative flex-1 h-full min-h-[350px]">
- <Bar key={isDark ? 'dark' : 'light'} data={chartData} options={chartOptions} plugins={[ChartDataLabels]} />
+  <Bar key={isDark ? 'dark' : 'light'} data={chartData} options={chartOptions} plugins={[ChartDataLabels as any]} />
  </div>
  </div>
  </div>

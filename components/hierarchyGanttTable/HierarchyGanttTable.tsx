@@ -540,7 +540,7 @@ export default function HierarchyGanttTable({
               className="text-[13px] text-gray-700"
               style={{ paddingLeft: `${level * 20}px` }}
             >
-              {value || ''}
+              {value !== null && value !== undefined ? String(value) : ''}
             </div>
           );
         },

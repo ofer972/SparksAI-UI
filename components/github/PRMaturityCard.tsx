@@ -272,7 +272,7 @@ export default function PRMaturityCard() {
           period={selectedPeriod}
           metricType="pr-maturity"
           title={`PRs Created on ${formatDate(selectedPeriod)}`}
-          githubRepoIds={githubRepoIds}
+          githubRepoIds={githubRepoIds.length > 0 ? githubRepoIds.join(',') : undefined}
         />
       )}
     </PRWorkflowMetricCard>

@@ -218,7 +218,7 @@ export default function PRListReportDialog({
               if (!value || value.length === 0) return '-';
               return (
                 <div className="flex flex-wrap gap-1">
-                  {value.map((reviewer, idx) => (
+                  {value.map((reviewer: string, idx: number) => (
                     <span
                       key={idx}
                       className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs"
@@ -239,7 +239,7 @@ export default function PRListReportDialog({
               if (!value || value.length === 0) return '-';
               return (
                 <div className="flex flex-wrap gap-1">
-                  {value.map((label, idx) => (
+                  {value.map((label: string, idx: number) => (
                     <span
                       key={idx}
                       className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs"
