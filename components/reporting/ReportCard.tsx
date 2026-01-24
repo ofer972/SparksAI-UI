@@ -280,8 +280,8 @@ const ReportCard: React.FC<ReportCardProps> = ({
  </div>
  )}
 
-<div className={`flex-1 min-h-0 overflow-visible flex flex-col ${isInsightCard ? 'bg-gradient-to-r from-surface to-surface-elevated' : 'bg-surface'}`}>
-<div className={`h-full w-full flex flex-col ${enableContentOverflow ? 'overflow-visible' : 'overflow-hidden'} ${isInsightCard ? '' : 'p-4'}`}>
+<div className={`flex-1 min-h-0 overflow-hidden flex flex-col ${isInsightCard ? 'bg-gradient-to-r from-surface to-surface-elevated' : 'bg-surface'}`}>
+<div className={`h-full w-full flex flex-col flex-1 min-h-0 ${enableContentOverflow ? 'overflow-visible' : 'overflow-hidden'} ${isInsightCard ? '' : 'p-4'}`}>
 {children}
 </div>
 </div>
