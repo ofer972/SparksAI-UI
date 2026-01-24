@@ -168,11 +168,15 @@ export default function GitHubMetricsTab({
     }
   }, [isDraggingVertical, handleVerticalMouseMove, handleVerticalMouseUp]);
 
+  // Calculate total splitter height (h-2 = 0.5rem = 8px per splitter)
+  const splitterCount = rows.length - 1;
+  const splitterHeightPx = splitterCount * 8; // 8px per splitter
+
   return (
-    <div className="h-full flex flex-col overflow-visible p-1 pb-2">
+    <div className="h-full flex flex-col overflow-visible p-1">
       <div 
         ref={mainContainerRef}
-        className="flex-1 flex flex-col overflow-visible min-h-0"
+        className="flex-1 flex flex-col overflow-hidden min-h-0"
       >
         {rows.map((row, rowIdx) => (
           <React.Fragment key={rowIdx}>
@@ -181,7 +185,9 @@ export default function GitHubMetricsTab({
               ref={(el) => { containerRefs.current[rowIdx] = el; }}
               className="flex relative min-h-0 overflow-visible flex-shrink-0"
               style={{
-                height: rowHeights.length > 0 ? `${rowHeights[rowIdx] || (100 / rows.length)}%` : `${100 / rows.length}%`
+                height: rowHeights.length > 0 
+                  ? `calc(${rowHeights[rowIdx] || (100 / rows.length)}% - ${splitterHeightPx / rows.length}px)` 
+                  : `calc(${100 / rows.length}% - ${splitterHeightPx / rows.length}px)`
               }}
             >
               {row.map((card, colIdx) => (
