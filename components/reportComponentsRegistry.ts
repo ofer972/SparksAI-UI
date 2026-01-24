@@ -19,6 +19,7 @@ import ActiveSprintSummaryView from './reportViews/ActiveSprintSummaryView';
 import WIPOverTimeView from './reportViews/WIPOverTimeView';
 import CycleTimeView from './reportViews/CycleTimeView';
 import GoalProgressView from './reportViews/GoalProgressView';
+import PIRoadmapView from './reportViews/PIRoadmapView';
 import type { ReportDefinition } from '@/lib/config';
 
 export interface ReportRenderContext {
@@ -412,6 +413,18 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
         refresh,
       };
     },
+  },
+  'pi-roadmap': {
+    component: PIRoadmapView,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => ({
+      data: (result as any) ?? null,
+      loading,
+      error,
+      meta,
+      filters,
+      refresh,
+    }),
   },
 };
 

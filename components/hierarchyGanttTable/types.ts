@@ -53,6 +53,10 @@ export interface HierarchyGanttTableProps {
   ganttViewMode?: GanttViewMode;
   /** Callback when Gantt view mode changes */
   onGanttViewModeChange?: (mode: GanttViewMode) => void;
+  /** Whether to show milestones (PIs and Releases) */
+  showMilestones?: boolean;
+  /** Callback when show milestones changes */
+  onShowMilestonesChange?: (show: boolean) => void;
   /** Sprint data for sprint view mode */
   sprints?: SprintData[];
   /** PI (Program Increment) data for milestones */
@@ -79,5 +83,6 @@ export interface TimelineDate {
   sprintStartDate?: Date;
   sprintEndDate?: Date;
 }
+
 
 

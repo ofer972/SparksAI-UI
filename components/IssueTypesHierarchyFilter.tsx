@@ -42,16 +42,20 @@ export default function IssueTypesHierarchyFilter({
         const response = await apiService.getIssueTypesHierarchy();
         if (response.success && response.data?.levels) {
           // Flatten the levels into a single array with hierarchy level info
+          // Filter out level 0 and null levels (only show level 1 and above)
           const flattened: IssueTypeItem[] = [];
           response.data.levels.forEach((level) => {
-            level.issue_types.forEach((issueType) => {
-              flattened.push({
-                name: issueType,
-                hierarchyLevel: level.hierarchyLevel,
+            // Filter out level 0 and null levels
+            if (level.hierarchyLevel !== null && level.hierarchyLevel !== 0) {
+              level.issue_types.forEach((issueType) => {
+                flattened.push({
+                  name: issueType,
+                  hierarchyLevel: level.hierarchyLevel,
+                });
               });
-            });
+            }
           });
-          // Sort by hierarchy level descending (3 → 2 → 1 → 0)
+          // Sort by hierarchy level descending (3 → 2 → 1)
           flattened.sort((a, b) => b.hierarchyLevel - a.hierarchyLevel);
           setIssueTypes(flattened);
         }

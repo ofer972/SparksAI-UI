@@ -43,6 +43,8 @@ export default function HierarchyGanttTable({
   ganttConfig,
   ganttViewMode = 'month',
   onGanttViewModeChange,
+  showMilestones: externalShowMilestones,
+  onShowMilestonesChange,
   sprints = [],
   pis = [],
   releases = [],
@@ -55,7 +57,17 @@ export default function HierarchyGanttTable({
   const [leftPanelWidth, setLeftPanelWidth] = useState(initialLeftPanelWidth);
   const [isResizing, setIsResizing] = useState(false);
   const [currentGanttViewMode, setCurrentGanttViewMode] = useState<GanttViewMode>(ganttViewMode);
-  const [showMilestones, setShowMilestones] = useState(false);
+  const [internalShowMilestones, setInternalShowMilestones] = useState(false);
+  
+  // Use external showMilestones if provided, otherwise use internal state
+  const showMilestones = externalShowMilestones !== undefined ? externalShowMilestones : internalShowMilestones;
+  const setShowMilestones = useCallback((value: boolean) => {
+    if (onShowMilestonesChange) {
+      onShowMilestonesChange(value);
+    } else {
+      setInternalShowMilestones(value);
+    }
+  }, [onShowMilestonesChange]);
   const [rowHeights, setRowHeights] = useState<Map<string, number>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
   const leftPanelRef = useRef<HTMLDivElement>(null);
@@ -175,13 +187,13 @@ export default function HierarchyGanttTable({
     if (defaultExpanded && processedData.length > 0) {
       const expandedState: ExpandedState = {};
       
-      // Recursively expand all nodes where Hierarchy Level > 0 (not stories)
+      // Recursively expand all nodes where Hierarchy Level > 1 (Level 2 and Level 3, but NOT Level 1/Epics)
       const expandNodes = (nodes: TreeNode[]) => {
         nodes.forEach((node) => {
           // Use Hierarchy Level field from data
           const hierarchyLevel = (node as any)['Hierarchy Level'];
-          // Expand if Hierarchy Level > 0 (Epic, Portfolio Epic, Initiative, etc.)
-          if (node.key && hierarchyLevel !== undefined && hierarchyLevel !== null && hierarchyLevel > 0) {
+          // Expand if Hierarchy Level > 1 (Portfolio Epic, Initiative, etc., but NOT Epics)
+          if (node.key && hierarchyLevel !== undefined && hierarchyLevel !== null && hierarchyLevel > 1) {
             // Only expand if it has children
             if (node.children && node.children.length > 0) {
               expandedState[node.key] = true;
@@ -234,6 +246,13 @@ export default function HierarchyGanttTable({
       setExpanded({});
     }
   }, [expanded, tree, setExpanded]);
+
+  // Sync currentGanttViewMode with external prop
+  useEffect(() => {
+    if (ganttViewMode !== undefined) {
+      setCurrentGanttViewMode(ganttViewMode);
+    }
+  }, [ganttViewMode]);
 
   // Handle Gantt view mode change
   const handleGanttViewModeChange = useCallback((mode: GanttViewMode) => {
@@ -434,7 +453,7 @@ export default function HierarchyGanttTable({
 
             return (
               <div
-                className="text-[13px] text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                className="text-[13px] text-brand hover:text-blue-800 hover:text-blue-300 hover:underline cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
                   if ((col.id === 'key' || col.id === 'Key') && item.key && jiraUrl) {
@@ -460,7 +479,7 @@ export default function HierarchyGanttTable({
             
             if (col.colorMap && value) {
               // Explicit color map takes precedence
-              badgeColor = col.colorMap[String(value)] || 'bg-gray-100 text-gray-800 border-gray-200';
+              badgeColor = col.colorMap[String(value)] || 'bg-surface-secondary text-content-primary border-outline';
             } else if (colIdLower === 'status' || col.id === 'Status') {
               // Status should use status_category colors
               const statusCategory =
@@ -473,7 +492,7 @@ export default function HierarchyGanttTable({
               // Type badges (Epic, Story, Task, Bug, etc.) use dedicated type colors
               badgeColor = getTypeColor(String(value || ''));
             } else {
-              badgeColor = 'bg-gray-100 text-gray-800 border-gray-200';
+              badgeColor = 'bg-surface-secondary text-content-primary border-outline';
             }
             
             // For status column, show empty if value is empty string (for PIs row)
@@ -518,13 +537,13 @@ export default function HierarchyGanttTable({
             // Determine color: red bold if Status is "done" and progress is not 100%
             let progressColor = '';
             if (isNaN(progressInt)) {
-              progressColor = 'text-gray-400';
+              progressColor = 'text-content-tertiary';
             } else if ((statusLower === 'done' || statusLower === 'closed') && progressInt !== 100) {
-              progressColor = 'text-red-600 font-bold';
+              progressColor = 'text-danger-text font-bold';
             } else if (progressInt === 100) {
-              progressColor = 'text-green-600 font-semibold';
+              progressColor = 'text-positive-text font-semibold';
             } else {
-              progressColor = 'text-gray-700';
+              progressColor = 'text-content-secondary';
             }
 
             return (
@@ -537,7 +556,7 @@ export default function HierarchyGanttTable({
           // Default text renderer with indentation for hierarchy
           return (
             <div
-              className="text-[13px] text-gray-700"
+              className="text-[13px] text-content-secondary"
               style={{ paddingLeft: `${level * 20}px` }}
             >
               {value !== null && value !== undefined ? String(value) : ''}
@@ -629,18 +648,24 @@ export default function HierarchyGanttTable({
   // Render left panel (hierarchy table)
   const renderLeftPanel = () => (
     <div className="h-full">
-      <table className="min-w-full divide-y divide-gray-200 text-[13px]" style={{ tableLayout: 'fixed' }}>
-        <thead className="bg-gray-50 sticky top-0 z-10" style={{ height: `${HEADER_HEIGHT}px` }}>
+      <table className="min-w-full divide-y divide-outline text-[13px]" style={{ tableLayout: 'fixed' }}>
+        <thead className="bg-surface-elevated" style={{ position: 'sticky', top: 0, zIndex: 20, height: `${HEADER_HEIGHT}px`, lineHeight: `${HEADER_HEIGHT}px` }}>
           {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
+            <tr key={headerGroup.id} style={{ height: `${HEADER_HEIGHT}px`, lineHeight: `${HEADER_HEIGHT}px` }}>
               {headerGroup.headers.map((header) => {
                 const headerStyle: React.CSSProperties = {
                   width: header.getSize() === Number.POSITIVE_INFINITY ? undefined : header.getSize(),
+                  height: `${HEADER_HEIGHT}px`,
+                  lineHeight: `${HEADER_HEIGHT}px`,
+                  boxSizing: 'border-box',
+                  paddingTop: '0',
+                  paddingBottom: '0',
+                  verticalAlign: 'middle',
                 };
                 return (
                   <th
                     key={header.id}
-                    className="px-3 py-2 text-left text-[13px] font-medium text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-r border-gray-200 whitespace-nowrap"
+                    className="px-3 text-left text-[13px] font-medium text-content-tertiary uppercase tracking-wider bg-surface-elevated border-b border-r border-outline whitespace-nowrap"
                     style={headerStyle}
                   >
                     {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
@@ -650,10 +675,10 @@ export default function HierarchyGanttTable({
             </tr>
           ))}
         </thead>
-        <tbody ref={leftTableBodyRef} className="bg-white divide-y divide-gray-200">
+        <tbody ref={leftTableBodyRef} className="bg-surface divide-y divide-outline">
           {table.getRowModel().rows.length === 0 ? (
             <tr>
-              <td colSpan={table.getAllColumns().length} className="px-3 py-6 text-center text-[13px] text-gray-500">
+              <td colSpan={table.getAllColumns().length} className="px-3 py-6 text-center text-[13px] text-content-muted">
                 No data available
               </td>
             </tr>
@@ -669,9 +694,7 @@ export default function HierarchyGanttTable({
               return (
                 <tr
                   key={row.id}
-                  className={`cursor-pointer ${
-                    index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                  } hover:bg-gray-100`}
+                  className="cursor-pointer hover:bg-surface-elevated/50"
                   style={rowStyle}
                   onClick={() => onRowClick?.(row.original as HierarchyItem)}
                 >
@@ -680,7 +703,7 @@ export default function HierarchyGanttTable({
                     return (
                       <td
                         key={cell.id}
-                        className="px-3 py-2 text-[13px] text-gray-700 align-top border-r border-gray-200"
+                        className="px-3 py-2 text-[13px] text-content-secondary align-top border-r border-outline"
                         style={isExpanderColumn ? { pointerEvents: 'auto' } : undefined}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -703,7 +726,7 @@ export default function HierarchyGanttTable({
     }
 
     return (
-      <div className="border-b border-gray-200 bg-gray-50 sticky top-0 z-10" style={{ height: `${HEADER_HEIGHT}px` }}>
+      <div className="border-b border-outline bg-surface-elevated" style={{ position: 'sticky', top: 0, zIndex: 20, height: `${HEADER_HEIGHT}px`, boxSizing: 'border-box' }}>
         <div className="flex items-center h-full">
           {timelineDates.map((timelineDate, index) => {
             if (currentGanttViewMode === 'sprint' && timelineDate.isSprint && timelineDate.sprintStartDate && timelineDate.sprintEndDate) {
@@ -711,16 +734,21 @@ export default function HierarchyGanttTable({
               return (
                 <div
                   key={index}
-                  className="border-r border-gray-200 px-1 text-[11px] text-gray-500 font-medium leading-tight"
+                  className="border-r border-outline px-1 text-[11px] text-content-tertiary font-medium leading-tight"
                   style={{
                     width: `${columnWidth}px`,
+                    height: `${HEADER_HEIGHT}px`,
                     textAlign: 'center',
                     flexShrink: 0,
                     lineHeight: '1.2',
+                    boxSizing: 'border-box',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
                   }}
                 >
                   <div className="font-bold">{timelineDate.sprintName || timelineDate.label}</div>
-                  <div className="text-[10px] text-gray-400 font-bold">
+                  <div className="text-[10px] text-content-tertiary font-bold">
                     {format(timelineDate.sprintStartDate, 'MMM d')} - {format(timelineDate.sprintEndDate, 'MMM d')}
                   </div>
                 </div>
@@ -730,11 +758,16 @@ export default function HierarchyGanttTable({
               return (
                 <div
                   key={index}
-                  className="border-r border-gray-200 px-2 text-[13px] text-gray-500 font-medium"
+                  className="border-r border-outline px-2 text-[13px] text-content-tertiary font-medium"
                   style={{
                     width: `${columnWidth}px`,
+                    height: `${HEADER_HEIGHT}px`,
                     textAlign: 'center',
                     flexShrink: 0,
+                    boxSizing: 'border-box',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
                 >
                   {timelineDate.label}
@@ -844,9 +877,7 @@ export default function HierarchyGanttTable({
             return (
               <div
                 key={item.key || index}
-                className={`relative border-b border-gray-200 ${
-                  index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                } hover:bg-gray-100`}
+                className="relative border-b border-outline bg-surface hover:bg-surface-elevated/50"
                 style={{ 
                   height: `${rowHeight}px`, 
                   minHeight: `${rowHeight}px`, 
@@ -859,7 +890,7 @@ export default function HierarchyGanttTable({
                   {timelineDates.map((_, dateIndex) => (
                     <div
                       key={dateIndex}
-                      className="border-r border-gray-200"
+                      className="border-r border-outline"
                       style={{ width: `${columnWidth}px`, flexShrink: 0 }}
                     />
                   ))}
@@ -1048,35 +1079,107 @@ export default function HierarchyGanttTable({
                       </div>
                     ) : (
                       // Regular bar rendering for other items
-                      <div
-                        className="absolute top-1/2 -translate-y-1/2 rounded z-10 cursor-pointer"
-                        style={{
-                          left: `${Math.max(0, barPosition.left)}px`,
-                          width: `${Math.max(10, barPosition.width)}px`,
-                          height: '18px', // 10% smaller: 20px * 0.9 = 18px
-                          backgroundColor: barColor,
-                        }}
-                        title={tooltipText || ''}
-                      >
-                        {/* Progress overlay - light green overlay to show completed progress for Hierarchy Level > 0 */}
-                        {hierarchyLevel !== undefined && hierarchyLevel !== null && hierarchyLevel > 0 && progress > 0 && (
-                          <div
-                            className="absolute top-0 left-0 h-full rounded"
-                            style={{ 
-                              width: `${progress}%`,
-                              backgroundColor: 'rgba(134, 239, 172, 0.6)' // light green (green-300 with opacity)
-                            }}
-                          />
-                        )}
-                        {/* Progress text on bar - only for Hierarchy Level > 0 and progress > 0 */}
-                        {showProgressOnBar && (
-                          <div
-                            className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-gray-800 pointer-events-none z-20"
-                          >
-                            {Math.round(progress)}%
-                          </div>
-                        )}
-                      </div>
+                      <>
+                        <div
+                          className="absolute top-1/2 -translate-y-1/2 rounded z-10 cursor-pointer"
+                          style={{
+                            left: `${Math.max(0, barPosition.left)}px`,
+                            width: `${Math.max(10, barPosition.width)}px`,
+                            height: '18px', // 10% smaller: 20px * 0.9 = 18px
+                            backgroundColor: barColor,
+                          }}
+                          title={tooltipText || ''}
+                        >
+                          {/* Progress overlay - light green overlay to show completed progress for Hierarchy Level > 0 */}
+                          {hierarchyLevel !== undefined && hierarchyLevel !== null && hierarchyLevel > 0 && progress > 0 && (
+                            <div
+                              className="absolute top-0 left-0 h-full rounded"
+                              style={{ 
+                                width: `${progress}%`,
+                                backgroundColor: 'rgba(134, 239, 172, 0.6)' // light green (green-300 with opacity)
+                              }}
+                            />
+                          )}
+                          {/* Progress text on bar - only for Hierarchy Level > 0 and progress > 0 */}
+                          {showProgressOnBar && (
+                            <div
+                              className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-content-primary pointer-events-none z-20"
+                            >
+                              {Math.round(progress)}%
+                            </div>
+                          )}
+                        </div>
+                        {/* Red triangle indicator for epics with Original Epic End Date different from End Date */}
+                        {(item as any).Type === 'Epic' && (item as any)['Original Epic End Date'] && (item as any)['Original Epic End Date'] !== (item as any)['End Date'] && (() => {
+                          const originalEndDate = new Date((item as any)['Original Epic End Date']);
+                          let iconLeft = 0;
+                          let found = false;
+                          
+                          for (let i = 0; i < timelineDates.length; i++) {
+                            const timelineDate = timelineDates[i];
+                            const colDate = timelineDate.date;
+                            
+                            if (currentGanttViewMode === 'month') {
+                              const monthStart = startOfMonth(colDate);
+                              const monthEnd = endOfMonth(colDate);
+                              if (originalEndDate >= monthStart && originalEndDate <= monthEnd) {
+                                const monthDays = differenceInDays(monthEnd, monthStart) + 1;
+                                const dayOffset = differenceInDays(originalEndDate, monthStart);
+                                const offsetRatio = dayOffset / monthDays;
+                                iconLeft = i * columnWidth + offsetRatio * columnWidth;
+                                found = true;
+                                break;
+                              }
+                            } else if (currentGanttViewMode === 'week') {
+                              const weekStart = startOfWeek(colDate, { weekStartsOn: 0 });
+                              const weekEnd = endOfWeek(colDate, { weekStartsOn: 0 });
+                              if (originalEndDate >= weekStart && originalEndDate <= weekEnd) {
+                                const dayOffset = differenceInDays(originalEndDate, weekStart);
+                                const offsetRatio = dayOffset / 7;
+                                iconLeft = i * columnWidth + offsetRatio * columnWidth;
+                                found = true;
+                                break;
+                              }
+                            } else {
+                              // Sprint mode
+                              if (timelineDate.isSprint && timelineDate.sprintStartDate && timelineDate.sprintEndDate) {
+                                if (originalEndDate >= timelineDate.sprintStartDate && originalEndDate <= timelineDate.sprintEndDate) {
+                                  iconLeft = i * columnWidth + columnWidth / 2;
+                                  found = true;
+                                  break;
+                                }
+                              }
+                            }
+                          }
+                          
+                          if (!found) return null;
+                          
+                          const epicKey = (item as any).Key || (item as any).key || '';
+                          const epicSummary = (item as any)['Issue Summary'] || (item as any).Summary || '';
+                          const tooltip = `Original Epic End Date: ${epicKey}\n${epicSummary}\nOriginal: ${(item as any)['Original Epic End Date']}\nCurrent: ${(item as any)['End Date'] || 'N/A'}`;
+                          
+                          return (
+                            <div
+                              className="absolute top-1/2 -translate-y-1/2 z-10 cursor-pointer"
+                              style={{
+                                left: `${iconLeft}px`,
+                                transform: 'translateX(-50%) translateY(-50%)',
+                              }}
+                              title={tooltip}
+                            >
+                              <div
+                                style={{
+                                  width: '0',
+                                  height: '0',
+                                  borderLeft: '7px solid transparent',
+                                  borderRight: '7px solid transparent',
+                                  borderTop: '12px solid #dc2626',
+                                }}
+                              />
+                            </div>
+                          );
+                        })()}
+                      </>
                     )}
                   </>
                 ) : null}
@@ -1100,17 +1203,17 @@ export default function HierarchyGanttTable({
                 value={globalFilter}
                 onChange={(event) => setGlobalFilter(event.target.value)}
                 placeholder="Search..."
-                className="px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-2 py-1.5 border border-outline rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
                 type="button"
                 onClick={toggleAllExpanded}
-                className="px-2 py-1 text-xs text-gray-600 border border-gray-200 rounded hover:bg-gray-50"
+                className="px-2 py-1 text-xs text-content-secondary border border-outline rounded hover:bg-surface-elevated"
               >
                 {Object.keys(expanded).length === 0 ? 'Expand all' : 'Collapse all'}
               </button>
             </div>
-            <div className="text-sm text-gray-500">Rows: {flatData.length}</div>
+            <div className="text-sm text-content-secondary">Rows: {flatData.length}</div>
           </div>
         )}
         {renderLeftPanel()}
@@ -1121,149 +1224,15 @@ export default function HierarchyGanttTable({
   // Hierarchy + Gantt mode
   return (
     <div className={`flex flex-col h-full ${className}`}>
-      {/* View Mode Selector and Color Legend - Same Row */}
-      {ganttConfig && (
-        <div className="mb-4 flex items-center gap-8 flex-shrink-0">
-          {/* View Mode Selector */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleGanttViewModeChange('month')}
-              className={`px-3 py-1 text-sm border rounded ${
-                currentGanttViewMode === 'month'
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              Month
-            </button>
-            <button
-              onClick={() => handleGanttViewModeChange('week')}
-              className={`px-3 py-1 text-sm border rounded ${
-                currentGanttViewMode === 'week'
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              Week
-            </button>
-            <button
-              onClick={() => handleGanttViewModeChange('sprint')}
-              className={`px-3 py-1 text-sm border rounded ${
-                currentGanttViewMode === 'sprint'
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              Sprints
-            </button>
-            <label className="flex items-center gap-2 px-3 py-1 text-sm text-gray-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showMilestones}
-                onChange={(e) => {
-                  const newValue = e.target.checked;
-                  setShowMilestones(newValue);
-                  // Automatically expand milestone when checked
-                  if (newValue) {
-                    setTimeout(() => {
-                      setExpanded((prev) => ({
-                        ...(prev as Record<string, boolean>),
-                        'Milestone': true,
-                      }));
-                    }, 0);
-                  }
-                }}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <span>Show milestones</span>
-            </label>
-          </div>
-
-          {/* Color Legend */}
-          <div className="flex items-center gap-4 text-sm">
-            <span className="text-gray-600 font-medium">Bar Colors:</span>
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-1.5">
-                <div 
-                  className="w-4 h-4 rounded" 
-                  style={{ backgroundColor: '#86efac' }}
-                />
-                <span className="text-gray-700">Done</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div 
-                  className="w-4 h-4 rounded" 
-                  style={{ backgroundColor: '#60a5fa' }}
-                />
-                <span className="text-gray-700">In Progress</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div 
-                  className="w-4 h-4 rounded" 
-                  style={{ backgroundColor: '#6b7280' }}
-                />
-                <span className="text-gray-700">To Do</span>
-              </div>
-              {showMilestones && (
-                <>
-                  <div className="flex items-center gap-1.5">
-                    <div className="relative flex items-center" style={{ width: '24px', height: '16px' }}>
-                      {/* Left marker */}
-                      <div
-                        className="absolute left-0 top-1/2 -translate-y-1/2"
-                        style={{ 
-                          width: '2px', 
-                          height: '8px', 
-                          backgroundColor: '#c084fc' 
-                        }}
-                      />
-                      {/* Horizontal line */}
-                      <div
-                        className="absolute left-0 top-1/2 -translate-y-1/2"
-                        style={{ 
-                          width: '20px', 
-                          height: '1px', 
-                          backgroundColor: '#c084fc' 
-                        }}
-                      />
-                      {/* Right marker */}
-                      <div
-                        className="absolute right-0 top-1/2 -translate-y-1/2"
-                        style={{ 
-                          width: '2px', 
-                          height: '8px', 
-                          backgroundColor: '#c084fc' 
-                        }}
-                      />
-                    </div>
-                    <span className="text-gray-700">PI (Program Increment)</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div 
-                      className="w-3 h-3"
-                      style={{ 
-                        backgroundColor: '#06b6d4',
-                        transform: 'rotate(45deg)',
-                      }}
-                    />
-                    <span className="text-gray-700">Release</span>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Split Layout */}
       <div
         ref={containerRef}
-        className="flex-1 flex overflow-hidden border border-gray-200 rounded-lg min-h-0"
+        className="flex-1 flex overflow-hidden border border-outline rounded-lg min-h-0"
       >
         {/* Left Panel */}
         <div
           ref={leftPanelRef}
-          className="flex-shrink-0 border-r border-gray-200 overflow-auto bg-white"
+          className="flex-shrink-0 border-r border-outline overflow-auto bg-surface"
           style={{ width: `${leftPanelWidth}px` }}
         >
           {renderLeftPanel()}
@@ -1272,14 +1241,14 @@ export default function HierarchyGanttTable({
         {/* Resizer */}
         <div
           onMouseDown={handleMouseDown}
-          className={`flex-shrink-0 bg-gray-400 hover:bg-blue-500 cursor-col-resize transition-colors ${
-            isResizing ? 'bg-blue-500' : ''
+          className={`flex-shrink-0 bg-outline-strong hover:bg-brand cursor-col-resize transition-colors ${
+            isResizing ? 'bg-brand' : ''
           }`}
           style={{ width: '4px' }}
         />
 
         {/* Right Panel - Gantt */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-white">
+        <div className="flex-1 flex flex-col overflow-hidden bg-surface">
           <div ref={rightPanelRef} className="flex-1 overflow-x-auto overflow-y-auto relative">
             {mode === 'hierarchy-gantt' && ganttConfig && timelineDates.length > 0 && (
               <div style={{ width: `${timelineDates.length * columnWidth}px`, minWidth: '100%' }}>

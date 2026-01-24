@@ -180,7 +180,7 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
  />
  </ReportFilterField>
 
- <ReportFilterField label="Issue Type Hierarchy Level">
+ <ReportFilterField label="Issue Type Hierarchy">
  <IssueTypesHierarchyFilter
  value={hierarchyLevel}
  onChange={handleHierarchyLevelChange}
