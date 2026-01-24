@@ -18,7 +18,8 @@ export type NavItemId =
   | 'user-settings'
   | 'goal-progress'
   | 'pi-goals'
-  | 'sprint-goals';
+  | 'sprint-goals'
+  | 'github-analysis';
 
 export type BreadcrumbItem = {
   label: string;

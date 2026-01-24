@@ -510,6 +510,7 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
   const [sizingField, setSizingField] = useState<string>(settings.selected_sizing_field_id || '');
   const [teamNameField, setTeamNameField] = useState<string>(settings.selected_team_name_field_id || '');
   const [flaggedField, setFlaggedField] = useState<string>(settings.selected_flagged_field_id || '');
+  const [epicTargetCompletionField, setEpicTargetCompletionField] = useState<string>(settings.selected_epic_target_completion_field_id || '');
   
   // Local state for custom fields (reloaded when tab opens)
   const [localCustomFields, setLocalCustomFields] = useState<{ [field_id: string]: string }>(customFields);
@@ -544,6 +545,7 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
         selected_sizing_field_id: sizingField || null,
         selected_team_name_field_id: teamNameField || null,
         selected_flagged_field_id: flaggedField || null,
+        selected_epic_target_completion_field_id: epicTargetCompletionField || null,
       };
       await etlApiService.updateSettings(settingsUpdate);
       onShowToast('Fields saved successfully!');
@@ -652,6 +654,25 @@ function FieldsTab({ settings, customFields, onSaved, onShowToast }: { settings:
               className="flex-1 border border-outline rounded px-3 py-1.5 text-sm"
             >
               <option value="">--- Not Set ---</option>
+              {Object.entries(localCustomFields).map(([id, name]) => (
+                <option key={id} value={id}>
+                  {name} ({id})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+            <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
+              Epic Target Completion Field:
+            </label>
+            <select
+              value={epicTargetCompletionField}
+              onChange={(e) => setEpicTargetCompletionField(e.target.value)}
+              className="flex-1 border border-outline rounded px-3 py-1.5 text-sm"
+            >
+              <option value="">--- Not Set ---</option>
+              <option value="duedate">Due Date (System Default)</option>
               {Object.entries(localCustomFields).map(([id, name]) => (
                 <option key={id} value={id}>
                   {name} ({id})

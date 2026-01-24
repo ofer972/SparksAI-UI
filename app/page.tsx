@@ -37,6 +37,7 @@ import SprintGoalsTab from '@/components/SprintGoalsTab';
 import HomeDashboard from '../components/home/HomeDashboard';
 import HomeDetailPlaceholder from '../components/home/HomeDetailPlaceholder';
 import InsightDashboard from '../components/home/InsightDashboard';
+import GitHubAnalysisView from '@/components/GitHubAnalysisView';
 import type { BreadcrumbItem, NavItemId } from '@/lib/nav';
 import type { AICard } from '@/lib/config';
 
@@ -1058,11 +1059,12 @@ export default function Home() {
  return null;
  }, [teamsLoading, teams, groups, preferences?.default_team_or_group, preferences?.default_type]);
 
- const navigationItems = [
- { id: 'team-ai-insights', label: 'AI Insights', icon: '💡' },
- { id: 'team-dashboard', label: 'Team Dashboard', icon: '📊' },
- { id: 'pi-dashboard', label: 'PI Dashboard', icon: '📈' },
- { id: 'user-settings', label: 'Settings', icon: '👤' },
+const navigationItems = [
+  { id: 'team-ai-insights', label: 'AI Insights', icon: '💡' },
+  { id: 'team-dashboard', label: 'Team Dashboard', icon: '📊' },
+  { id: 'pi-dashboard', label: 'PI Dashboard', icon: '📈' },
+  { id: 'github-analysis', label: 'DORA Metrics', icon: '📊' },
+  { id: 'user-settings', label: 'Settings', icon: '👤' },
  { id: 'settings', label: 'System Settings', icon: '⚙️' },
  { id: 'general-data', label: 'View General Data', icon: '📁' },
  { id: 'create-agent-job', label: 'Create Agent Job', icon: '➕' },
@@ -1227,25 +1229,34 @@ export default function Home() {
  </SidebarIcon>
  );
 
- const IconCogAlt = () => (
- <SidebarIcon>
- <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
- <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
- </svg>
- </SidebarIcon>
- );
+const IconCogAlt = () => (
+  <SidebarIcon>
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+    </svg>
+  </SidebarIcon>
+);
+
+const IconGitHub = () => (
+  <SidebarIcon>
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+    </svg>
+  </SidebarIcon>
+);
 
 
  // Accordion navigation groups for the sidebar UI (beautified)
  const navigationGroups: Array<{ title: string; items: Array<{ id: string; label: string; icon: React.ReactNode; children?: Array<{ id: string; label: string; icon: React.ReactNode }> }> }> = [
- {
- title: 'System Dashboards',
- items: [
- { id: 'team-ai-insights', label: 'AI Insights', icon: <IconLightbulb /> },
- { id: 'team-dashboard', label: 'Team Dashboard', icon: <IconChartBar /> },
- { id: 'pi-dashboard', label: 'PI Dashboard', icon: <IconTrendingUp /> },
- ],
- },
+  {
+    title: 'System Dashboards',
+    items: [
+      { id: 'team-ai-insights', label: 'AI Insights', icon: <IconLightbulb /> },
+      { id: 'team-dashboard', label: 'Team Dashboard', icon: <IconChartBar /> },
+      { id: 'pi-dashboard', label: 'PI Dashboard', icon: <IconTrendingUp /> },
+      { id: 'github-analysis', label: 'DORA Metrics', icon: <IconGitHub /> },
+    ],
+  },
  {
  title: 'Goals',
  items: [
@@ -1311,10 +1322,11 @@ export default function Home() {
 
  // Map sidebar items to browser tab titles (no spaces around '-')
  const titles: Record<string, string> = {
- 'team-ai-insights': 'SparksAI-AI Insights',
- 'team-dashboard': 'SparksAI-Team Dashboard',
- 'pi-dashboard': 'SparksAI-PI Dashboard',
- 'custom-dashboards': 'SparksAI-My Dashboards',
+  'team-ai-insights': 'SparksAI-AI Insights',
+  'team-dashboard': 'SparksAI-Team Dashboard',
+  'pi-dashboard': 'SparksAI-PI Dashboard',
+  'github-analysis': 'SparksAI-DORA Metrics',
+  'custom-dashboards': 'SparksAI-My Dashboards',
  'custom-dashboard-editor': 'SparksAI-Dashboard Editor',
  'settings': 'SparksAI-System Settings',
  'general-data': 'SparksAI-General Data',
@@ -1473,9 +1485,17 @@ export default function Home() {
  return <GoalProgressTab />;
  case 'pi-goals':
  return <PIGoalsTab />;
- case 'sprint-goals':
- return <SprintGoalsTab />;
- case 'custom-dashboards':
+      case 'sprint-goals':
+        return <SprintGoalsTab />;
+      case 'github-analysis':
+        return (
+          <div className="h-full flex flex-col">
+            <div className="flex-1 overflow-hidden min-h-0">
+              <GitHubAnalysisView />
+            </div>
+          </div>
+        );
+      case 'custom-dashboards':
  return (
  <CustomDashboardsView
  onSelectDashboard={(dashboardId) => {

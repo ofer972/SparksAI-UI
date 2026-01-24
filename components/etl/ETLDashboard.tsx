@@ -16,6 +16,7 @@ interface ETLDashboardProps {
 function etlGetFieldDisplayName(fieldId: string | null | undefined, customFields: { [field_id: string]: string }): string {
   if (!fieldId) return 'Not Set';
   if (fieldId === 'sprint') return 'Sprint (System Default)';
+  if (fieldId === 'duedate') return 'Due Date (System Default)';
   const fieldName = customFields?.[fieldId];
   return fieldName ? `${fieldName} (${fieldId})` : fieldId;
 }
@@ -129,6 +130,10 @@ export default function ETLDashboard({
               <div className="flex flex-col sm:flex-row">
                 <span className="text-xs font-medium text-black w-full sm:w-48 flex-shrink-0 mb-1 sm:mb-0">Selected Flagged Field ID:</span>
                 <span className="text-xs text-brand">{etlGetFieldDisplayName(settings?.selected_flagged_field_id, customFields)}</span>
+              </div>
+              <div className="flex flex-col sm:flex-row">
+                <span className="text-xs font-medium text-black w-full sm:w-48 flex-shrink-0 mb-1 sm:mb-0">Selected Epic Target Completion Field ID:</span>
+                <span className="text-xs text-brand">{etlGetFieldDisplayName(settings?.selected_epic_target_completion_field_id, customFields)}</span>
               </div>
 
               {/* Selected Custom Fields */}

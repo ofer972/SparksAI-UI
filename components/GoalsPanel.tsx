@@ -839,11 +839,19 @@ export default function GoalsPanel({
  // else if (goalType === 'overall') {
  // updateData.team_name = null;
  // updateData.group_name = null;
- // }
- 
- await apiService.updatePIGoal(editGoal.id, updateData);
- 
- // Refresh the goals data first
+        // }
+        
+        // Use appropriate API method based on scope type (same pattern as CREATE)
+        if (scopeType === 'pi') {
+          await apiService.updatePIGoal(editGoal.id, updateData);
+        } else if (scopeType === 'sprint') {
+          await apiService.updateSprintGoal(editGoal.id, updateData);
+        } else {
+          // For release, we can use updatePIGoal as it's generic now
+          await apiService.updatePIGoal(editGoal.id, updateData);
+        }
+        
+        // Refresh the goals data first
  if (onRefresh) {
  await onRefresh();
  }

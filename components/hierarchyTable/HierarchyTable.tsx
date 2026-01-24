@@ -484,13 +484,18 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
  No data available
  </td>
  </tr>
- ) : (
- table.getRowModel().rows.map((row) => (
- <tr
- key={row.id}
- className="hover:bg-surface-elevated/50 cursor-pointer"
- onClick={() => onRowClick?.(row.original as HierarchyItem)}
- >
+              ) : (
+                // Alternating row colors (commented out - not in effect):
+                // table.getRowModel().rows.map((row, index) => (
+                //   className={`cursor-pointer ${
+                //     index % 2 === 0 ? 'bg-surface' : 'bg-surface-elevated'
+                //   } hover:bg-surface-elevated/50`}
+                table.getRowModel().rows.map((row) => (
+                  <tr
+                    key={row.id}
+                    className="hover:bg-surface-elevated/50 cursor-pointer"
+                    onClick={() => onRowClick?.(row.original as HierarchyItem)}
+                  >
  {row.getVisibleCells().map((cell) => {
  const isExpanderColumn = cell.column.id === '__expander';
  const isKeyColumn = cell.column.id === 'Key' || cell.column.id === 'key';

@@ -333,13 +333,13 @@ export default function GoalProgressTab() {
  sprintId={scopeType === 'sprint' ? selectedSprintId || undefined : undefined}
  teamName={selectedTeamName || undefined}
  isGroup={selectedTeamType === 'group'}
- actionOptions={{
- allowEdit: false,
- allowDelete: false,
- allowConnect: false,
- allowDisconnect: false,
- allowCreate: false,
- }}
+        actionOptions={{
+          allowEdit: true,
+          allowDelete: false,
+          allowConnect: false,
+          allowDisconnect: false,
+          allowCreate: false,
+        }}
  />
  </div>
  )}
