@@ -37,74 +37,53 @@ export default function PIInsightsPreview({
 
   const topCards = useMemo(() => cards.slice(0, 3), [cards]);
 
+  // Render content directly without wrapper (wrapper is handled by parent)
   return (
-    <div className="bg-surface border border-outline rounded-xl shadow-sm overflow-hidden h-full flex flex-col">
-      <div className="px-4 py-3 border-b border-outline bg-gradient-to-r from-surface to-surface-elevated flex-shrink-0">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="text-sm font-semibold text-content-primary">PI Insights</div>
-            <div className="text-xs text-content-tertiary">
-              PI Events & Status insights
-              {piName ? ` • ${piName}` : ''}
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onOpenAll}
-            className="text-sm text-brand text-indigo-400 hover:text-indigo-700 hover:text-indigo-300 font-medium whitespace-nowrap"
-          >
-            View all
-          </button>
+    <div className="h-full">
+      {!teamOrGroupName || !piName ? (
+        <div className="text-xs text-content-tertiary">
+          {!teamOrGroupName ? 'Set a default team/group' : 'Loading PI'} to see PI insights.
         </div>
-      </div>
+      ) : loading ? (
+        <div className="flex items-center gap-2 text-xs text-content-tertiary">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand" />
+          Loading…
+        </div>
+      ) : error ? (
+        <div className="text-xs text-danger-text">Failed to load: {error}</div>
+      ) : topCards.length === 0 ? (
+        <div className="text-xs text-content-tertiary">No PI insights available yet.</div>
+      ) : (
+        <div className="space-y-2">
+          {topCards.map((card) => {
+            const anyCard = card as any;
+            const badgeCls = priorityBadgeClass(card.priority, anyCard.priority_color);
+            const summary = (anyCard.short_summary || card.description || '').trim();
+            const short = summary.length > 120 ? `${summary.slice(0, 120)}…` : summary;
 
-      <div className="p-4 flex-1 flex flex-col">
-        {!teamOrGroupName || !piName ? (
-          <div className="text-sm text-content-tertiary">
-            {!teamOrGroupName ? 'Set a default team/group' : 'Loading current PI'} to see PI insights.
-          </div>
-        ) : loading ? (
-          <div className="flex items-center gap-3 text-sm text-content-tertiary">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600 dark:border-indigo-400" />
-            Loading insights…
-          </div>
-        ) : error ? (
-          <div className="text-sm text-danger-text">Failed to load insights: {error}</div>
-        ) : topCards.length === 0 ? (
-          <div className="text-sm text-content-tertiary">No PI insights available yet.</div>
-        ) : (
-          <div className="space-y-3">
-            {topCards.map((card) => {
-              const anyCard = card as any;
-              const badgeCls = priorityBadgeClass(card.priority, anyCard.priority_color);
-              // Use short_summary if available, otherwise fall back to description
-              const summary = (anyCard.short_summary || card.description || '').trim();
-              const short = summary.length > 170 ? `${summary.slice(0, 170)}…` : summary;
-
-              return (
-                <button
-                  key={card.id}
-                  type="button"
-                  className="w-full text-left rounded-xl border border-outline hover:border-outline-strong hover:bg-surface-elevated/50 transition-colors p-3"
-                  onClick={() => onOpenCard(card)}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-content-primary truncate">
-                        {card.card_name || 'Insight'}
-                      </div>
-                      <div className="mt-1 text-xs text-content-tertiary line-clamp-2">{short || '—'}</div>
+            return (
+              <button
+                key={card.id}
+                type="button"
+                className="w-full text-left rounded-lg border border-outline hover:border-outline-strong hover:bg-surface-elevated/50 transition-colors p-2"
+                onClick={() => onOpenCard(card)}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-medium text-content-primary truncate">
+                      {card.card_name || 'Insight'}
                     </div>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${badgeCls}`}>
-                      {card.priority || 'Info'}
-                    </span>
+                    <div className="mt-0.5 text-[11px] text-content-tertiary line-clamp-2">{short || '—'}</div>
                   </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border ${badgeCls}`}>
+                    {card.priority || 'Info'}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

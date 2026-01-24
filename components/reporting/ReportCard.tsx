@@ -230,10 +230,17 @@ const ReportCard: React.FC<ReportCardProps> = ({
  </div>
  )}
 
- {(hideHeader || !collapsed) && (
- <div className="flex-1 flex flex-col min-h-0 rounded-b-xl overflow-visible">
- {/* Active Filter Badges */}
- {filterBadges && filterBadges.length > 0 && (
+    {(hideHeader || !collapsed) && (
+      <div className="flex-1 flex flex-col min-h-0 rounded-b-xl overflow-visible">
+        {/* Inline Title when header is hidden */}
+        {hideHeader && title && (
+          <div className="flex-shrink-0 px-4 py-2 border-b border-outline">
+            <h3 className="text-sm font-semibold text-content-primary">{title}</h3>
+          </div>
+        )}
+
+        {/* Active Filter Badges */}
+        {filterBadges && filterBadges.length > 0 && (
  <div className="flex-shrink-0 px-4 py-1.5 border-b border-outline bg-gradient-to-r from-blue-25 to-indigo-25">
  <div className="flex flex-wrap gap-1.5 items-center">
  <span className="text-xs font-semibold text-content-tertiary mr-0.5">Active Filters:</span>

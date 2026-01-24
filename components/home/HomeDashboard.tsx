@@ -155,370 +155,306 @@ export default function HomeDashboard({
  <div className="grid grid-cols-12 gap-3">
  {/* Main column */}
  <div className="col-span-12">
- {/* Header */}
- <div className="bg-surface border border-outline rounded-2xl shadow-sm overflow-hidden">
- <div className="p-4 bg-gradient-to-r from-surface to-surface-elevated border-b border-outline">
- <div className="flex items-start justify-between gap-3">
- <div className="min-w-0">
- <div className="text-sm font-semibold text-content-primary truncate">Overview</div>
- <div className="text-xs text-content-tertiary">
- Your at-a-glance board for metrics, insights, and dashboards.
- </div>
- </div>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {hasDefaultContext ? (
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/40 text-[11px] font-semibold text-blue-700 dark:text-blue-300">
-                <svg className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        {/* Compact Header with context badges */}
+        <div className="bg-surface border border-outline rounded-xl shadow-sm overflow-hidden">
+          <div className="px-3 py-2 bg-gradient-to-r from-surface to-surface-elevated flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div>
+                <span className="text-sm font-semibold text-content-primary">Home</span>
+                <span className="ml-2 text-xs text-content-tertiary hidden sm:inline">Your at-a-glance board for metrics, insights, and dashboards.</span>
+              </div>
+              {hasDefaultContext ? (
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/40 text-[10px] font-medium text-blue-700 dark:text-blue-300">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  {isGroup ? 'Group' : 'Team'}: {contextLabel}
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onNavigate('user-settings')}
+                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/40 text-[10px] font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60"
+                >
+                  Set team/group
+                </button>
+              )}
+              {currentPIName && (
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-purple-300 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/40 text-[10px] font-medium text-purple-700 dark:text-purple-300">
+                  PI: {currentPIName}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {!hasDefaultContext && (
+            <div className="px-3 py-2 border-t border-outline bg-gradient-to-r from-surface-elevated to-brand/5">
+              <div className="text-xs text-content-secondary">
+                <button type="button" className="text-brand hover:text-brand-hover font-medium" onClick={() => onNavigate('user-settings')}>Set your default team/group</button> to personalize this view.
+              </div>
+            </div>
+          )}
+        </div>
+
+      {/* Insights Row */}
+      <div className="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {/* Sprint Insights Panel */}
+        <div className="bg-surface border border-outline rounded-xl shadow-sm overflow-hidden">
+          <div className="px-3 py-1.5 border-b border-outline bg-gradient-to-r from-sky-50 to-sky-100 dark:from-sky-950/50 dark:to-sky-900/40">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                {isGroup ? 'Group' : 'Team'}: {contextLabel}
-              </span>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onNavigate('user-settings')}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 border-amber-400 dark:border-amber-500 bg-amber-100 dark:bg-amber-900/50 text-[11px] font-semibold text-amber-900 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-900/70 transition-colors"
-              >
-                Set default team/group
+                <span className="text-xs font-semibold text-sky-700 dark:text-sky-300">Sprint Insights</span>
+                <span className="text-[10px] text-sky-600/70 dark:text-sky-400/70 hidden sm:inline">· Sprint Events & Status</span>
+              </div>
+              <button type="button" onClick={() => onNavigate('team-ai-insights')} className="text-[10px] text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-200 font-medium">
+                View All →
               </button>
-            )}
-            {currentPIName ? (
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 border-purple-500 dark:border-purple-400 bg-purple-50 dark:bg-purple-900/40 text-[11px] font-semibold text-purple-700 dark:text-purple-300">
-                <svg className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            </div>
+          </div>
+          <div className="p-3 min-h-[160px]">
+            <SprintInsightsPreview
+              teamOrGroupName={hasDefaultContext ? contextLabel : undefined}
+              isGroup={isGroup}
+              onOpenAll={() => onNavigate('team-ai-insights')}
+              onOpenCard={(card) => onOpenInsight(card)}
+            />
+          </div>
+        </div>
+
+        {/* PI Insights Panel */}
+        <div className="bg-surface border border-outline rounded-xl shadow-sm overflow-hidden">
+          <div className="px-3 py-1.5 border-b border-outline bg-gradient-to-r from-violet-50 to-violet-100 dark:from-violet-950/50 dark:to-violet-900/40">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
-                Current PI: {currentPIName}
-              </span>
-            ) : null}
-          </div>
- </div>
- </div>
-
-        {!hasDefaultContext ? (
-          <div className="p-4">
-            <div className="rounded-2xl border border-outline bg-gradient-to-r from-surface-elevated to-brand/10 p-4">
-              <div className="text-sm font-semibold text-content-primary">Welcome</div>
-              <div className="mt-1 text-sm text-content-secondary">
-                To personalize this Home screen, set your default team/group in <button type="button" className="text-brand text-indigo-400 hover:text-indigo-700 hover:text-indigo-300 font-medium" onClick={() => onNavigate('user-settings')}>Settings</button>.
+                <span className="text-xs font-semibold text-violet-700 dark:text-violet-300">PI Insights</span>
+                <span className="text-[10px] text-violet-600/70 dark:text-violet-400/70 hidden sm:inline">· PI Events & Status {currentPIName ? `· ${currentPIName}` : ''}</span>
               </div>
+              <button type="button" onClick={() => onNavigate('team-ai-insights')} className="text-[10px] text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-200 font-medium">
+                View All →
+              </button>
             </div>
           </div>
-        ) : null}
-      </div>
-
-      {/* Insights Row - Sprint and PI side by side */}
-      <div className="mt-3 grid grid-cols-12 gap-3 items-stretch">
-        <div className="col-span-12 lg:col-span-6">
-          <div className="bg-surface border border-outline rounded-2xl shadow-sm overflow-hidden h-full flex flex-col">
-            <div className="px-4 py-3 border-b border-outline bg-gradient-to-r from-surface to-surface-elevated flex-shrink-0">
-              <div className="text-base font-semibold text-content-primary">Sprint</div>
-            </div>
-            <div className="p-3 flex-1 flex flex-col min-h-0">
-              <SprintInsightsPreview
-                teamOrGroupName={hasDefaultContext ? contextLabel : undefined}
-                isGroup={isGroup}
-                onOpenAll={() => onNavigate('team-ai-insights')}
-                onOpenCard={(card) => onOpenInsight(card)}
-              />
-            </div>
-          </div>
-        </div>
-        <div className="col-span-12 lg:col-span-6">
-          <div className="bg-surface border border-outline rounded-2xl shadow-sm overflow-hidden h-full flex flex-col">
-            <div className="px-4 py-3 border-b border-outline bg-gradient-to-r from-surface to-surface-elevated flex-shrink-0">
-              <div className="text-base font-semibold text-content-primary">PI</div>
-            </div>
-            <div className="p-3 flex-1 flex flex-col min-h-0">
-              <PIInsightsPreview
-                piName={currentPIName || undefined}
-                teamOrGroupName={hasDefaultContext ? contextLabel : undefined}
-                isGroup={isGroup}
-                onOpenAll={() => onNavigate('team-ai-insights')}
-                onOpenCard={(card) => onOpenInsight(card)}
-              />
-            </div>
+          <div className="p-3 min-h-[160px]">
+            <PIInsightsPreview
+              piName={currentPIName || undefined}
+              teamOrGroupName={hasDefaultContext ? contextLabel : undefined}
+              isGroup={isGroup}
+              onOpenAll={() => onNavigate('team-ai-insights')}
+              onOpenCard={(card) => onOpenInsight(card)}
+            />
           </div>
         </div>
       </div>
 
-      {/* Metrics Row - Sprint and PI side by side */}
-      <div className="mt-3 grid grid-cols-12 gap-3">
-        <div className="col-span-12 lg:col-span-6">
-          <div className="bg-surface border border-outline rounded-2xl shadow-sm overflow-hidden h-full flex flex-col">
-            <div className="px-4 py-3 border-b border-outline bg-gradient-to-r from-surface to-surface-elevated">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-semibold text-content-primary">Sprint metrics</div>
-                  <div className="text-xs text-content-tertiary">From Team Metrics</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onNavigate('team-dashboard')}
-                  className="text-sm text-brand text-indigo-400 hover:text-indigo-700 hover:text-indigo-300 font-medium"
-                >
-                  Open
-                </button>
+      {/* Metrics Row */}
+      <div className="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {/* Sprint Metrics Panel */}
+        <div className="bg-surface border border-outline rounded-xl shadow-sm overflow-hidden">
+          <div className="px-3 py-1.5 border-b border-outline bg-gradient-to-r from-sky-50 to-sky-100 dark:from-sky-950/50 dark:to-sky-900/40">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span className="text-xs font-semibold text-sky-700 dark:text-sky-300">Sprint Metrics</span>
+                <span className="text-[10px] text-sky-600/70 dark:text-sky-400/70 hidden sm:inline">· From Team Dashboard</span>
               </div>
-            </div>
-            <div className="p-3 flex-1" style={{ zoom: 0.92 }}>
-              {hasDefaultContext ? (
-                <TeamMetrics teamName={contextLabel} isGroup={isGroup} singleRowLayout={true} />
-              ) : (
-                <div className="text-sm text-content-tertiary p-3">Set a default team/group to view sprint metrics.</div>
-              )}
+              <button type="button" onClick={() => onNavigate('team-dashboard')} className="text-[10px] text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-200 font-medium">
+                Open →
+              </button>
             </div>
           </div>
+          <div className="p-3 min-h-[100px]" style={{ zoom: 0.9 }}>
+            {hasDefaultContext ? (
+              <TeamMetrics teamName={contextLabel} isGroup={isGroup} singleRowLayout={true} />
+            ) : (
+              <div className="text-xs text-content-tertiary">Set a default team/group to view metrics.</div>
+            )}
+          </div>
         </div>
-        <div className="col-span-12 lg:col-span-6">
-          <div className="bg-surface border border-outline rounded-2xl shadow-sm overflow-hidden h-full flex flex-col">
-            <div className="px-4 py-3 border-b border-outline bg-gradient-to-r from-surface to-surface-elevated">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-semibold text-content-primary">PI metrics</div>
-                  <div className="text-xs text-content-tertiary">From PI Metrics</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onNavigate('pi-dashboard')}
-                  className="text-sm text-brand text-indigo-400 hover:text-indigo-700 hover:text-indigo-300 font-medium"
-                >
-                  Open
-                </button>
+
+        {/* PI Metrics Panel */}
+        <div className="bg-surface border border-outline rounded-xl shadow-sm overflow-hidden">
+          <div className="px-3 py-1.5 border-b border-outline bg-gradient-to-r from-violet-50 to-violet-100 dark:from-violet-950/50 dark:to-violet-900/40">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+                <span className="text-xs font-semibold text-violet-700 dark:text-violet-300">PI Metrics</span>
+                <span className="text-[10px] text-violet-600/70 dark:text-violet-400/70 hidden sm:inline">· From PI Dashboard {currentPIName ? `· ${currentPIName}` : ''}</span>
               </div>
+              <button type="button" onClick={() => onNavigate('pi-dashboard')} className="text-[10px] text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-200 font-medium">
+                Open →
+              </button>
             </div>
-            <div className="p-3 flex-1" style={{ zoom: 0.92 }}>
-              {hasDefaultContext && currentPIName ? (
-                <PIMetrics
-                  piName={currentPIName}
-                  teamName={contextLabel}
-                  isGroup={isGroup}
-                  singleRowLayout={true}
-                />
-              ) : (
-                <div className="text-sm text-content-tertiary p-3">
-                  {hasDefaultContext ? 'Loading current PI…' : 'Set a default team/group to view PI metrics.'}
-                </div>
-              )}
-            </div>
+          </div>
+          <div className="p-3 min-h-[100px]" style={{ zoom: 0.9 }}>
+            {hasDefaultContext && currentPIName ? (
+              <PIMetrics piName={currentPIName} teamName={contextLabel} isGroup={isGroup} singleRowLayout={true} />
+            ) : (
+              <div className="text-xs text-content-tertiary">
+                {hasDefaultContext ? 'Loading PI…' : 'Set a default team/group to view metrics.'}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Goals Row - Sprint and PI side by side */}
-      <div className="mt-3 grid grid-cols-12 gap-3 items-stretch">
-        <div className="col-span-12 lg:col-span-6">
-          <div className="bg-surface border border-outline rounded-2xl shadow-sm overflow-hidden h-full flex flex-col">
-            <div className="px-4 py-3 border-b border-outline bg-gradient-to-r from-surface to-surface-elevated">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-content-primary">Sprint Goals</div>
-                  <div className="text-xs text-content-tertiary truncate">
-                    {homeSprintName ? homeSprintName : homeSprintsLoading ? 'Loading sprint…' : 'Current / upcoming sprint'}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onNavigate('sprint-goals')}
-                  className="text-sm text-brand text-indigo-400 hover:text-indigo-700 hover:text-indigo-300 font-medium whitespace-nowrap"
-                >
-                  {sprintGoalRows.length > 0 ? 'Manage' : 'Define'}
+      {/* Goals Row */}
+      <div className="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {/* Sprint Goals Panel */}
+        <div className="bg-surface border border-outline rounded-xl shadow-sm overflow-hidden">
+          <div className="px-3 py-1.5 border-b border-outline bg-gradient-to-r from-sky-50 to-sky-100 dark:from-sky-950/50 dark:to-sky-900/40">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span className="text-xs font-semibold text-sky-700 dark:text-sky-300">Sprint Goals</span>
+                <span className="text-[10px] text-sky-600/70 dark:text-sky-400/70 hidden sm:inline">· {homeSprintName || 'Current / upcoming sprint'}</span>
+              </div>
+              <button type="button" onClick={() => onNavigate('sprint-goals')} className="text-[10px] text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-200 font-medium">
+                {sprintGoalRows.length > 0 ? 'Manage →' : 'Define →'}
+              </button>
+            </div>
+          </div>
+          <div className="p-3 min-h-[160px]">
+            {!hasDefaultContext ? (
+              <div className="text-xs text-content-tertiary">Set your default team/group to view goals.</div>
+            ) : homeSprintsError ? (
+              <div className="text-xs text-danger-text">Failed to load: {homeSprintsError}</div>
+            ) : homeSprintsLoading || sprintGoalsLoading ? (
+              <div className="flex items-center gap-2 text-xs text-content-tertiary">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand" />
+                Loading…
+              </div>
+            ) : sprintGoalRows.length === 0 ? (
+              <div className="rounded-lg border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-2">
+                <div className="text-xs font-medium text-amber-900 dark:text-amber-300">No sprint goals defined</div>
+                <button type="button" onClick={() => onNavigate('sprint-goals')} className="mt-1.5 text-[10px] text-amber-700 dark:text-amber-400 font-medium hover:underline">
+                  Define Goals →
                 </button>
               </div>
-            </div>
-            <div className="p-4 flex-1">
-              {!hasDefaultContext ? (
-                <div className="text-sm text-content-tertiary">
-                  Set your default team/group to view and manage sprint goals.
-                </div>
-              ) : homeSprintsError ? (
-                <div className="text-sm text-danger-text">Failed to load sprints: {homeSprintsError}</div>
-              ) : homeSprintsLoading ? (
-                <div className="flex items-center gap-3 text-sm text-content-tertiary">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600" />
-                  Loading sprint goals…
-                </div>
-              ) : sprintGoalsError ? (
-                <div className="text-sm text-danger-text">Failed to load sprint goals: {sprintGoalsError}</div>
-              ) : sprintGoalsLoading ? (
-                <div className="flex items-center gap-3 text-sm text-content-tertiary">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600" />
-                  Loading sprint goals…
-                </div>
-              ) : sprintGoalRows.length === 0 ? (
-                <div className="rounded-xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-3">
-                  <div className="text-sm font-semibold text-amber-900 dark:text-amber-300">Don't forget to define your sprint goals</div>
-                  <div className="mt-1 text-sm text-amber-800 dark:text-amber-400">
-                    Sprint goals help your team align on outcomes and track progress.
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => onNavigate('sprint-goals')}
-                    className="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-900 dark:bg-amber-700 text-white text-sm hover:bg-amber-800 dark:hover:bg-amber-600 transition-colors"
-                  >
-                    Define Sprint Goals
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs text-content-muted">{sprintGoalRows.length} goal(s) defined</div>
-                  </div>
-                  {sprintGoalRows.slice(0, 3).map((g: any) => {
-                    const progress = g['Progress'] || g['Progress%'] || g['Progress (%)'] || 0;
-                    const progressNum = typeof progress === 'number' ? progress : parseFloat(progress) || 0;
-                    const progressInt = Math.floor(progressNum);
-                    
-                    return (
-                      <div key={g.key} className="rounded-xl border border-outline bg-surface-elevated/50 p-3">
-                        <div className="text-sm font-semibold text-content-primary line-clamp-2 mb-2">
-                          {g['Section / Goal / Issues'] || 'Goal'}
+            ) : (
+              <div className="space-y-1.5">
+                {sprintGoalRows.slice(0, 3).map((g: any) => {
+                  const progress = g['Progress'] || g['Progress%'] || g['Progress (%)'] || 0;
+                  const progressNum = typeof progress === 'number' ? progress : parseFloat(progress) || 0;
+                  const progressInt = Math.floor(progressNum);
+                  return (
+                    <div key={g.key} className="rounded-lg border border-outline bg-surface-elevated/50 p-2">
+                      <div className="text-xs font-medium text-content-primary line-clamp-1 mb-1">{g['Section / Goal / Issues'] || 'Goal'}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1 bg-surface-secondary rounded-full overflow-hidden">
+                          <div className="h-full bg-brand transition-all duration-300" style={{ width: `${Math.min(progressInt, 100)}%` }} />
                         </div>
-                        {/* Progress bar */}
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-1.5 bg-gray-200 bg-surface-secondary rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-brand dark:bg-blue-400 transition-all duration-300"
-                              style={{ width: `${Math.min(progressInt, 100)}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-content-tertiary font-medium min-w-[32px] text-right">
-                            {progressInt}%
-                          </span>
-                        </div>
+                        <span className="text-[10px] text-content-tertiary font-medium">{progressInt}%</span>
                       </div>
-                    );
-                  })}
-                  {sprintGoalRows.length > 3 ? (
-                    <button
-                      type="button"
-                      onClick={() => onNavigate('sprint-goals')}
-                      className="text-sm text-brand text-indigo-400 hover:text-indigo-700 hover:text-indigo-300 font-medium"
-                    >
-                      View all goals →
-                    </button>
-                  ) : null}
-                </div>
-              )}
-            </div>
+                    </div>
+                  );
+                })}
+                {sprintGoalRows.length > 3 && (
+                  <button type="button" onClick={() => onNavigate('sprint-goals')} className="text-[10px] text-brand hover:text-brand-hover font-medium">
+                    +{sprintGoalRows.length - 3} more →
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
-        <div className="col-span-12 lg:col-span-6">
-          <div className="bg-surface border border-outline rounded-2xl shadow-sm overflow-hidden h-full flex flex-col">
-            <div className="px-4 py-3 border-b border-outline bg-gradient-to-r from-surface to-surface-elevated">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-content-primary">PI Goals</div>
-                  <div className="text-xs text-content-tertiary truncate">
-                    {currentPIName ? `Current PI: ${currentPIName}` : 'Loading current PI…'}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onNavigate('pi-goals')}
-                  className="text-sm text-brand text-indigo-400 hover:text-indigo-700 hover:text-indigo-300 font-medium whitespace-nowrap"
-                >
-                  {piGoalRows.length > 0 ? 'Manage' : 'Define'}
+
+        {/* PI Goals Panel */}
+        <div className="bg-surface border border-outline rounded-xl shadow-sm overflow-hidden">
+          <div className="px-3 py-1.5 border-b border-outline bg-gradient-to-r from-violet-50 to-violet-100 dark:from-violet-950/50 dark:to-violet-900/40">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+                <span className="text-xs font-semibold text-violet-700 dark:text-violet-300">PI Goals</span>
+                <span className="text-[10px] text-violet-600/70 dark:text-violet-400/70 hidden sm:inline">· {currentPIName || 'Current PI'}</span>
+              </div>
+              <button type="button" onClick={() => onNavigate('pi-goals')} className="text-[10px] text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-200 font-medium">
+                {piGoalRows.length > 0 ? 'Manage →' : 'Define →'}
+              </button>
+            </div>
+          </div>
+          <div className="p-3 min-h-[160px]">
+            {!hasDefaultContext ? (
+              <div className="text-xs text-content-tertiary">Set your default team/group to view goals.</div>
+            ) : !currentPIName ? (
+              <div className="flex items-center gap-2 text-xs text-content-tertiary">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand" />
+                Loading…
+              </div>
+            ) : piGoalsError ? (
+              <div className="text-xs text-danger-text">Failed to load: {piGoalsError}</div>
+            ) : piGoalsLoading ? (
+              <div className="flex items-center gap-2 text-xs text-content-tertiary">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand" />
+                Loading…
+              </div>
+            ) : piGoalRows.length === 0 ? (
+              <div className="rounded-lg border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-2">
+                <div className="text-xs font-medium text-amber-900 dark:text-amber-300">No PI goals defined</div>
+                <button type="button" onClick={() => onNavigate('pi-goals')} className="mt-1.5 text-[10px] text-amber-700 dark:text-amber-400 font-medium hover:underline">
+                  Define Goals →
                 </button>
               </div>
-            </div>
-            <div className="p-4 flex-1">
-              {!hasDefaultContext ? (
-                <div className="text-sm text-content-tertiary">
-                  Set your default team/group to view and manage PI goals.
-                </div>
-              ) : !currentPIName ? (
-                <div className="flex items-center gap-3 text-sm text-content-tertiary">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600" />
-                  Loading PI goals…
-                </div>
-              ) : piGoalsError ? (
-                <div className="text-sm text-danger-text">Failed to load PI goals: {piGoalsError}</div>
-              ) : piGoalsLoading ? (
-                <div className="flex items-center gap-3 text-sm text-content-tertiary">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600" />
-                  Loading PI goals…
-                </div>
-              ) : piGoalRows.length === 0 ? (
-                <div className="rounded-xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-3">
-                  <div className="text-sm font-semibold text-amber-900 dark:text-amber-300">Don't forget to define your PI goals</div>
-                  <div className="mt-1 text-sm text-amber-800 dark:text-amber-400">
-                    PI goals connect execution to outcomes and improve predictability.
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => onNavigate('pi-goals')}
-                    className="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-900 dark:bg-amber-700 text-white text-sm hover:bg-amber-800 dark:hover:bg-amber-600 transition-colors"
-                  >
-                    Define PI Goals
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs text-content-muted">{piGoalRows.length} goal(s) defined</div>
-                  </div>
-                  {piGoalRows.slice(0, 3).map((g: any) => {
-                    const progress = g['Progress'] || g['Progress%'] || g['Progress (%)'] || 0;
-                    const progressNum = typeof progress === 'number' ? progress : parseFloat(progress) || 0;
-                    const progressInt = Math.floor(progressNum);
-                    
-                    return (
-                      <div key={g.key} className="rounded-xl border border-outline bg-surface-elevated/50 p-3">
-                        <div className="text-sm font-semibold text-content-primary line-clamp-2 mb-2">
-                          {g['Section / Goal / Issues'] || 'Goal'}
+            ) : (
+              <div className="space-y-1.5">
+                {piGoalRows.slice(0, 3).map((g: any) => {
+                  const progress = g['Progress'] || g['Progress%'] || g['Progress (%)'] || 0;
+                  const progressNum = typeof progress === 'number' ? progress : parseFloat(progress) || 0;
+                  const progressInt = Math.floor(progressNum);
+                  return (
+                    <div key={g.key} className="rounded-lg border border-outline bg-surface-elevated/50 p-2">
+                      <div className="text-xs font-medium text-content-primary line-clamp-1 mb-1">{g['Section / Goal / Issues'] || 'Goal'}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1 bg-surface-secondary rounded-full overflow-hidden">
+                          <div className="h-full bg-brand transition-all duration-300" style={{ width: `${Math.min(progressInt, 100)}%` }} />
                         </div>
-                        {/* Progress bar */}
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-1.5 bg-gray-200 bg-surface-secondary rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-brand dark:bg-blue-400 transition-all duration-300"
-                              style={{ width: `${Math.min(progressInt, 100)}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-content-tertiary font-medium min-w-[32px] text-right">
-                            {progressInt}%
-                          </span>
-                        </div>
+                        <span className="text-[10px] text-content-tertiary font-medium">{progressInt}%</span>
                       </div>
-                    );
-                  })}
-                  {piGoalRows.length > 3 ? (
-                    <button
-                      type="button"
-                      onClick={() => onNavigate('pi-goals')}
-                      className="text-sm text-brand text-indigo-400 hover:text-indigo-700 hover:text-indigo-300 font-medium"
-                    >
-                      View all goals →
-                    </button>
-                  ) : null}
-                </div>
-              )}
-            </div>
+                    </div>
+                  );
+                })}
+                {piGoalRows.length > 3 && (
+                  <button type="button" onClick={() => onNavigate('pi-goals')} className="text-[10px] text-brand hover:text-brand-hover font-medium">
+                    +{piGoalRows.length - 3} more →
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
- {/* Key report preview */}
+ {/* Key Reports preview */}
  <div className="mt-3">
- <div className="bg-surface border border-outline rounded-2xl shadow-sm overflow-hidden">
- <div className="px-4 py-3 border-b border-outline bg-gradient-to-r from-surface to-surface-elevated">
- <div className="flex items-center justify-between gap-3">
- <div className="min-w-0">
- <div className="text-sm font-semibold text-content-primary">Key report</div>
- <div className="text-xs text-content-tertiary">A live report preview from your Team Dashboard</div>
- </div>
+ <div className="bg-surface border border-outline rounded-xl shadow-sm overflow-hidden">
+ <div className="px-3 py-2 border-b border-outline bg-gradient-to-r from-surface to-surface-elevated">
+ <div className="flex items-center justify-between">
+ <span className="text-xs font-medium text-content-tertiary uppercase tracking-wider">Key Reports</span>
  <button
  type="button"
  onClick={() => onNavigate('team-dashboard')}
- className="text-sm text-brand text-indigo-400 hover:text-indigo-700 hover:text-indigo-300 font-medium whitespace-nowrap"
+ className="text-xs text-brand hover:text-brand-hover font-medium"
  >
- Open all reports
+ Open all reports →
  </button>
  </div>
  </div>
  <div className="p-2">
  {hasDefaultContext ? (
- <div className="h-[420px] overflow-hidden">
+ <div className="h-[380px] overflow-hidden">
  <ReportRenderer
  reportId="team-issues-trend"
  filters={{
@@ -528,10 +464,11 @@ export default function HomeDashboard({
  months: 6,
  }}
  enabled
+ componentProps={{ componentProps: { hideHeader: true } }}
  />
  </div>
  ) : (
- <div className="p-4 text-sm text-content-tertiary">Set a default team/group to see report previews.</div>
+ <div className="p-3 text-xs text-content-tertiary">Set a default team/group to see report previews.</div>
  )}
  </div>
  </div>
