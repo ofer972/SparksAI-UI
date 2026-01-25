@@ -4,7 +4,6 @@ import { useState } from 'react';
 import DORAAnalysisTab from './github/DORAAnalysisTab';
 import PRQualityMetricsTab from './github/PRQualityMetricsTab';
 import CoreKPIsTab from './github/CoreKPIsTab';
-import GanttChartTab from './github/GanttChartTab';
 
 interface TabItem {
   id: string;
@@ -40,15 +39,6 @@ const tabs: TabItem[] = [
       </svg>
     )
   },
-  { 
-    id: 'gantt-chart', 
-    label: 'Gantt Chart', 
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-      </svg>
-    )
-  },
 ];
 
 export default function GitHubAnalysisView() {
@@ -62,8 +52,6 @@ export default function GitHubAnalysisView() {
         return <PRQualityMetricsTab />;
       case 'core-kpis':
         return <CoreKPIsTab />;
-      case 'gantt-chart':
-        return <GanttChartTab />;
       default:
         return (
           <div className="bg-surface rounded-lg shadow-sm p-6 text-center">
@@ -83,7 +71,7 @@ export default function GitHubAnalysisView() {
       <div className="flex-shrink-0 mt-4">
         <div className="px-4 md:pl-0 md:pr-6">
           {/* Mobile: tabs grid */}
-          <nav className="grid grid-cols-4 gap-1 md:hidden">
+          <nav className="grid grid-cols-3 gap-1 md:hidden">
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
