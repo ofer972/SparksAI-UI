@@ -1121,6 +1121,16 @@ export default function HierarchyGanttTable({
                               }}
                             />
                           )}
+                          {/* Diagonal stripe pattern for "Added" epics */}
+                          {(item as any).Type === 'Epic' && (item as any)['Planned or Added'] === 'added' && (
+                            <div
+                              className="absolute inset-0 rounded pointer-events-none"
+                              style={{
+                                backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0, 0, 0, 0.15) 4px, rgba(0, 0, 0, 0.15) 8px)',
+                                zIndex: 15,
+                              }}
+                            />
+                          )}
                           {/* Progress text on bar - only for Hierarchy Level > 0 and progress > 0 */}
                           {showProgressOnBar && (
                             <div
