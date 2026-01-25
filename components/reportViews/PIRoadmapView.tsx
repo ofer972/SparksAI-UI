@@ -50,7 +50,6 @@ const PIRoadmapView: React.FC<PIRoadmapViewProps> = ({
   console.log('[PIRoadmapView] filters:', filters);
   console.log('[PIRoadmapView] props:', { hasSetFilters: !!setFilters, setFiltersType: typeof setFilters });
   
-  const [filterText, setFilterText] = useState('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const jiraUrl = useMemo(() => getCleanJiraUrl(), []);
 
@@ -62,6 +61,7 @@ const PIRoadmapView: React.FC<PIRoadmapViewProps> = ({
     (filters.showMilestones as boolean) ?? false
   );
   const [showOnlyDeviations, setShowOnlyDeviations] = useState<boolean>(false);
+  const [plannedOrAdded, setPlannedOrAdded] = useState<'all' | 'planned' | 'added'>('all');
 
   const issues = Array.isArray(data?.issues) ? data!.issues : [];
 
@@ -81,21 +81,9 @@ const PIRoadmapView: React.FC<PIRoadmapViewProps> = ({
     }));
   }, [issues]);
 
-  // Client-side search filtering and deviation filtering
+  // Client-side filtering: deviation and planned/added filtering
   const filteredIssues = useMemo(() => {
     let filtered = normalizedIssues;
-    
-    // Apply text search filter
-    const query = filterText.trim().toLowerCase();
-    if (query) {
-      filtered = filtered.filter((issue) =>
-        Object.values(issue).some((value) =>
-          value !== null &&
-          value !== undefined &&
-          String(value).toLowerCase().includes(query)
-        )
-      );
-    }
     
     // Apply "Show Only Deviations" filter
     if (showOnlyDeviations) {
@@ -134,8 +122,44 @@ const PIRoadmapView: React.FC<PIRoadmapViewProps> = ({
       });
     }
     
+    // Apply "Planned or Added" filter
+    if (plannedOrAdded !== 'all') {
+      // Step 1: Find all epic keys matching the filter value
+      const matchingEpicKeys = new Set<string>();
+      filtered.forEach((issue: any) => {
+        const issueType = issue.Type || issue.type;
+        if (issueType === 'Epic') {
+          const plannedOrAddedValue = issue['Planned or Added'];
+          const issueKey = issue.key || issue.Key;
+          if (plannedOrAddedValue === plannedOrAdded && issueKey) {
+            matchingEpicKeys.add(issueKey);
+          }
+        }
+      });
+      
+      // Step 2: Keep matching epics + their children (stories)
+      filtered = filtered.filter((issue: any) => {
+        const issueType = issue.Type || issue.type;
+        const issueKey = issue.key || issue.Key;
+        const parentKey = issue.parent || issue['Parent Key'];
+        
+        // Keep matching epics
+        if (issueType === 'Epic' && issueKey && matchingEpicKeys.has(issueKey)) {
+          return true;
+        }
+        
+        // Keep stories whose parent is a matching epic
+        if (issueType !== 'Epic' && parentKey && matchingEpicKeys.has(parentKey)) {
+          return true;
+        }
+        
+        // Filter out everything else (non-matching epics, stories of non-matching epics, parent items)
+        return false;
+      });
+    }
+    
     return filtered;
-  }, [normalizedIssues, filterText, showOnlyDeviations]);
+  }, [normalizedIssues, showOnlyDeviations, plannedOrAdded]);
 
   const { groups, teams } = useTeamsGroups();
   const teamName = (filters?.team_name as string) ?? '';
@@ -253,6 +277,11 @@ const PIRoadmapView: React.FC<PIRoadmapViewProps> = ({
     // Not calling setFilters to avoid triggering backend refetch
   }, []);
 
+  const handlePlannedOrAddedChange = useCallback((value: 'all' | 'planned' | 'added') => {
+    setPlannedOrAdded(value);
+    // Not calling setFilters to avoid triggering backend refetch
+  }, []);
+
   // Determine field names from the data for Gantt config
   const ganttConfig = useMemo<GanttConfig>(() => {
     if (filteredIssues.length === 0) {
@@ -340,17 +369,40 @@ const PIRoadmapView: React.FC<PIRoadmapViewProps> = ({
       });
     }
 
-    // Summary
+    // Summary - fixed 250px width
     if (firstRow['Issue Summary'] || firstRow.summary || firstRow.Summary) {
       columnsToShow.push({
         id: 'Summary',
         header: 'Summary',
         accessorKey: firstRow['Issue Summary'] ? 'Issue Summary' : (firstRow.Summary ? 'Summary' : 'summary'),
         renderer: 'text',
-        minWidth: 200,
-        size: 270,
+        minWidth: 250,
+        maxWidth: 250,
+        size: 250,
       });
     }
+
+    // Team Name - after Summary
+    columnsToShow.push({
+      id: 'Team Name',
+      header: 'Team Name',
+      accessorKey: 'Team Name',
+      renderer: 'text',
+      minWidth: 120,
+      maxWidth: 150,
+      size: 135,
+    });
+
+    // Quarter PI - after Team Name, only visible for Epic type
+    columnsToShow.push({
+      id: 'Quarter PI',
+      header: 'Quarter PI',
+      accessorKey: 'Quarter PI of Epic',
+      renderer: 'text',
+      minWidth: 100,
+      maxWidth: 120,
+      size: 110,
+    });
 
     // Status (badge)
     if (firstRow.Status || firstRow.status) {
@@ -523,17 +575,20 @@ const PIRoadmapView: React.FC<PIRoadmapViewProps> = ({
       </div>
 
       <div className="flex items-center gap-2 text-xs">
-        <span className="text-content-secondary font-medium whitespace-nowrap">Search</span>
+        <span className="text-content-secondary font-medium whitespace-nowrap">Planned or Added</span>
         <div>
-          <input
-            type="text"
-            value={filterText}
-            onChange={(event) => setFilterText(event.target.value)}
-            placeholder="Search hierarchy..."
-            className="w-40 px-2 py-1 border border-outline-strong bg-surface-elevated text-content-primary rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand"
-          />
+          <select
+            value={plannedOrAdded}
+            onChange={(e) => handlePlannedOrAddedChange(e.target.value as 'all' | 'planned' | 'added')}
+            className="px-2 py-1 border border-outline rounded text-xs bg-surface-elevated text-content-primary focus:outline-none focus:ring-1 focus:ring-brand"
+          >
+            <option value="all">All</option>
+            <option value="planned">Planned</option>
+            <option value="added">Added</option>
+          </select>
         </div>
       </div>
+
     </div>
   );
 

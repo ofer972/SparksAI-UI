@@ -48,7 +48,7 @@ export default function HierarchyGanttTable({
   sprints = [],
   pis = [],
   releases = [],
-  leftPanelWidth: initialLeftPanelWidth = 400,
+  leftPanelWidth: initialLeftPanelWidth = 550,
   minLeftPanelWidth = 200,
   maxLeftPanelWidth = 800,
 }: HierarchyGanttTableProps) {
@@ -432,6 +432,9 @@ export default function HierarchyGanttTable({
         id: col.id,
         accessorKey,
         header: typeof col.header === 'function' ? col.header : () => col.header,
+        size: col.size,
+        minSize: col.minWidth,
+        maxSize: col.maxWidth,
         cell: ({ getValue, row, column }) => {
           const value = getValue();
           const item = row.original;
@@ -552,6 +555,16 @@ export default function HierarchyGanttTable({
               </div>
             );
           }
+
+          // Quarter PI - only show for Epic type
+          if (col.id === 'Quarter PI') {
+            const issueType = item.Type || item.type || '';
+            const isEpic = String(issueType).toLowerCase() === 'epic';
+            
+            if (!isEpic) {
+              return <div className="text-[13px] text-content-secondary"></div>;
+            }
+          }
           
           // Default text renderer with indentation for hierarchy
           return (
@@ -634,6 +647,8 @@ export default function HierarchyGanttTable({
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    enableColumnResizing: false,
+    columnResizeMode: 'onChange',
     globalFilterFn: (row, columnId, filterValue) => {
       const searchValue = String(filterValue).toLowerCase();
       if (!searchValue) return true;
@@ -653,8 +668,12 @@ export default function HierarchyGanttTable({
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id} style={{ height: `${HEADER_HEIGHT}px`, lineHeight: `${HEADER_HEIGHT}px` }}>
               {headerGroup.headers.map((header) => {
+                const columnSize = header.getSize();
+                const isSummaryColumn = header.column.id === 'Summary';
                 const headerStyle: React.CSSProperties = {
-                  width: header.getSize() === Number.POSITIVE_INFINITY ? undefined : header.getSize(),
+                  width: isSummaryColumn ? 250 : (columnSize === Number.POSITIVE_INFINITY ? undefined : columnSize),
+                  minWidth: isSummaryColumn ? 250 : undefined,
+                  maxWidth: isSummaryColumn ? 250 : undefined,
                   height: `${HEADER_HEIGHT}px`,
                   lineHeight: `${HEADER_HEIGHT}px`,
                   boxSizing: 'border-box',
@@ -700,11 +719,17 @@ export default function HierarchyGanttTable({
                 >
                   {row.getVisibleCells().map((cell) => {
                     const isExpanderColumn = cell.column.id === '__expander';
+                    const isSummaryColumn = cell.column.id === 'Summary';
+                    const cellStyle: React.CSSProperties = isExpanderColumn 
+                      ? { pointerEvents: 'auto' }
+                      : isSummaryColumn
+                      ? { width: 250, minWidth: 250, maxWidth: 250 }
+                      : undefined;
                     return (
                       <td
                         key={cell.id}
                         className="px-3 py-2 text-[13px] text-content-secondary align-top border-r border-outline"
-                        style={isExpanderColumn ? { pointerEvents: 'auto' } : undefined}
+                        style={cellStyle}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
