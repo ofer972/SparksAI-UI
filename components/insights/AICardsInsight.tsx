@@ -889,7 +889,7 @@ export default function AICardsInsight({
  <div className="space-y-0 mb-4">
  {informationItems.map((item, index) => (
  <div key={index} className={`py-2.5 border-b border-outline last:border-b-0 hover:bg-blue-50/50 hover:bg-surface-elevated/50 transition-colors rounded-md px-2 -mx-2 ${index === 0 ? 'border-t-0' : ''}`}>
- <span className="font-semibold text-blue-800 text-blue-400 text-sm">{item.header}:</span>
+ <span className="font-semibold text-blue-800 dark:text-brand text-sm">{item.header}:</span>
  <span className="text-content-secondary text-sm leading-relaxed ml-2">{item.text}</span>
  </div>
  ))}
@@ -961,7 +961,7 @@ export default function AICardsInsight({
         <div className="flex-1 flex flex-col min-h-0 bg-gradient-to-r from-surface to-surface-elevated">
           <div className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-surface to-surface-elevated">
  <h4 className="text-xs font-bold text-content-secondary uppercase tracking-wide">Recommendations</h4>
- <span className="text-xs font-semibold text-blue-800 dark:text-blue-300 bg-surface-elevated px-1.5 py-0.5 rounded-md border-2 border-blue-200 border-blue-700 shadow-sm">{card.recommendations.length}</span>
+ <span className="text-xs font-semibold text-blue-800 dark:text-brand bg-surface-elevated px-1.5 py-0.5 rounded-md border-2 border-blue-200 dark:border-brand shadow-sm">{card.recommendations.length}</span>
  </div>
  <div className="flex-1 flex flex-col min-h-0 px-5 pb-4 pt-2">
  <div className="flex-1 space-y-2.5 overflow-y-auto pr-1">
@@ -970,7 +970,7 @@ export default function AICardsInsight({
  <React.Fragment key={rec.id}>
  <div className="text-sm leading-relaxed text-content-secondary">
  {rec.rational && (
- <span className="font-semibold text-blue-800 text-blue-400">{rec.rational}</span>
+ <span className="font-semibold text-blue-800 dark:text-brand">{rec.rational}</span>
  )}
  {rec.rational && rec.action_text && <span className="mx-1.5 text-gray-300 text-content-muted">•</span>}
  <span className="text-content-secondary">{rec.action_text}</span>

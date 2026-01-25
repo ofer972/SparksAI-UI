@@ -836,6 +836,11 @@ export default function HierarchyGanttTable({
   const buildTooltipText = useCallback((item: HierarchyItem, ganttConfig: GanttConfig): string => {
     const parts: string[] = [];
     
+    // Check if this is an "added" epic - add message at the beginning
+    if ((item as any).Type === 'Epic' && (item as any)['Planned or Added'] === 'added') {
+      parts.push('Epic was added after PI planning');
+    }
+    
     // Summary
     const summary = (item as any)['Issue Summary'] || (item as any).Summary || (item as any).summary || '';
     if (summary) {
