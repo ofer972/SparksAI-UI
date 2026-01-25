@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { useAICards } from '@/hooks/useAICards';
+import ReactMarkdown from 'react-markdown';
 
 import type { AICard } from '@/lib/config';
 
@@ -73,7 +74,9 @@ export default function PIInsightsPreview({
                     <div className="text-xs font-medium text-content-primary truncate">
                       {card.card_name || 'Insight'}
                     </div>
-                    <div className="mt-0.5 text-[11px] text-content-tertiary line-clamp-2">{short || '—'}</div>
+                    <div className="mt-0.5 text-[11px] text-content-tertiary">
+                      {short ? <ReactMarkdown>{short}</ReactMarkdown> : '—'}
+                    </div>
                   </div>
                   <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border ${badgeCls}`}>
                     {card.priority || 'Info'}

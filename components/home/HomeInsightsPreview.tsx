@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { useAICards } from '@/hooks/useAICards';
+import ReactMarkdown from 'react-markdown';
 
 type Props = {
  piName?: string;
@@ -94,7 +95,9 @@ export default function HomeInsightsPreview({
  <div className="text-sm font-semibold text-content-primary truncate">
  {card.card_name || 'Insight'}
  </div>
- <div className="mt-1 text-xs text-content-tertiary line-clamp-2">{short || '—'}</div>
+                <div className="mt-1 text-xs text-content-tertiary">
+                  {short ? <ReactMarkdown>{short}</ReactMarkdown> : '—'}
+                </div>
  </div>
  <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${badgeCls}`}>
  {card.priority || 'Info'}
