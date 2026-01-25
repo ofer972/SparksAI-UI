@@ -240,9 +240,9 @@ export default function UserSettingsView() {
  <button
  onClick={handleSave}
  disabled={saving || preferencesLoading || !hasChanges}
- className="inline-flex items-center gap-2 px-6 py-2.5 bg-slate-900 bg-surface-elevated text-white font-medium rounded-xl 
- hover:bg-slate-800 hover:bg-surface-secondary transition-all shadow-lg shadow-slate-900/25 dark:shadow-slate-900/50
- disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+ className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand text-white font-medium rounded-xl 
+ hover:bg-brand-hover transition-all shadow-lg
+ disabled:bg-surface-elevated disabled:text-content-muted disabled:cursor-not-allowed disabled:shadow-none"
  >
  {saving ? (
  <>
