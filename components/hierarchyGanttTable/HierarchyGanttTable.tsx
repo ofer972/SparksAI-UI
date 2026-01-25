@@ -724,7 +724,7 @@ export default function HierarchyGanttTable({
                       ? { pointerEvents: 'auto' }
                       : isSummaryColumn
                       ? { width: 250, minWidth: 250, maxWidth: 250 }
-                      : undefined;
+                      : {};
                     return (
                       <td
                         key={cell.id}
