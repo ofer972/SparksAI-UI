@@ -36,7 +36,7 @@ export default function ETLJobStatus({
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               {isStale ? (
-                <span className="text-yellow-600 font-semibold">⏳ Stale</span>
+                <span className="text-content-tertiary font-semibold">⏳ Stale</span>
               ) : current_job.status === 'RUNNING' ? (
                 <span className="text-brand font-semibold">⚙️ Running</span>
               ) : (
@@ -49,7 +49,7 @@ export default function ETLJobStatus({
           </div>
 
           <div className="mb-2">
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div className="w-full bg-surface-secondary rounded-full h-2.5">
               <div
                 className="bg-brand h-2.5 rounded-full transition-all"
                 style={{ width: `${Math.min(100, Math.max(0, progressPercent * 100))}%` }}
@@ -97,14 +97,14 @@ export default function ETLJobStatus({
 
       return (
         <>
-          <div className={`flex items-center gap-2 mb-2 ${isSuccess ? 'text-green-600' : 'text-red-600'}`}>
+          <div className={`flex items-center gap-2 mb-2 ${isSuccess ? 'text-positive-text' : 'text-danger-text'}`}>
             <span className="font-semibold">{isSuccess ? '✅' : '❌'}</span>
             <span className="font-semibold">
               Last job ({last_finished_job.job_type}) {isSuccess ? 'completed' : 'failed'} at; &nbsp;&nbsp;{finishedTime}
             </span>
           </div>
           {last_finished_job.error_details && (
-            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-800">
+            <div className="mt-2 p-2 bg-danger-bg border border-danger-border rounded text-sm text-danger-text">
               {last_finished_job.error_details.substring(0, 200)}
             </div>
           )}
@@ -124,7 +124,7 @@ export default function ETLJobStatus({
             <button
               onClick={onRefresh}
               disabled={refreshingStatus}
-              className="px-2.5 py-1 bg-brand text-white text-xs rounded hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+              className="px-2.5 py-1 bg-brand text-content-primary text-xs rounded hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
               <span className={refreshingStatus ? 'animate-spin' : ''}>🔄</span>
               <span>Refresh</span>

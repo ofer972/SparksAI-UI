@@ -28,7 +28,7 @@ export default function DataSyncView({ activeSubView: initialSubView = 'dashboar
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4"></div>
           <p className="text-content-secondary">Connecting to ETL backend...</p>
         </div>
       </div>
@@ -40,7 +40,7 @@ export default function DataSyncView({ activeSubView: initialSubView = 'dashboar
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4"></div>
           <p className="text-content-secondary">Loading ETL configuration...</p>
         </div>
       </div>
@@ -52,12 +52,12 @@ export default function DataSyncView({ activeSubView: initialSubView = 'dashboar
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
         <div className="text-center">
-          <div className="text-red-500 text-4xl mb-4">⚠️</div>
+          <div className="text-danger-text text-4xl mb-4">⚠️</div>
           <h2 className="text-xl font-semibold mb-2">Connection Error</h2>
           <p className="text-content-secondary mb-4">{etlData.error}</p>
           <button
             onClick={etlData.etlLoadData}
-            className="px-4 py-2 bg-brand text-white rounded hover:bg-brand-hover"
+            className="px-4 py-2 bg-brand text-content-primary rounded hover:bg-brand-hover"
           >
             Retry
           </button>
@@ -73,7 +73,7 @@ export default function DataSyncView({ activeSubView: initialSubView = 'dashboar
       return (
         <div className="flex items-center justify-center h-full min-h-[400px]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4"></div>
             <p className="text-content-secondary">Loading ETL configuration...</p>
           </div>
         </div>

@@ -57,7 +57,7 @@ export default function HistoryScopeDialog({ settings, onClose, onSaved }: Histo
         </div>
 
         {error && (
-          <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded text-red-800">
+          <div className="mx-6 mt-4 p-4 bg-danger-bg border border-danger-border rounded text-danger-text">
             {error}
           </div>
         )}
@@ -141,13 +141,13 @@ export default function HistoryScopeDialog({ settings, onClose, onSaved }: Histo
           <button
             onClick={handleSave}
             disabled={loading}
-            className="px-4 py-2 bg-brand text-white rounded hover:bg-brand-hover disabled:bg-gray-400"
+            className="px-4 py-2 bg-brand text-content-primary rounded hover:bg-brand-hover disabled:bg-surface-elevated"
           >
             {loading ? 'Saving...' : '💾 Save'}
           </button>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-300 text-content-secondary rounded hover:bg-gray-400"
+            className="px-4 py-2 bg-surface-elevated text-content-secondary rounded hover:bg-surface-secondary"
             disabled={loading}
           >
             Cancel
