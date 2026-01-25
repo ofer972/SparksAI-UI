@@ -17,7 +17,7 @@ function priorityBadgeClass(priority: string, priorityColor?: string) {
   const color = (priorityColor || '').toLowerCase();
   const p = (priority || '').toLowerCase();
 
-  if (color === 'red' || p === 'critical') return 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700';
+  if (color === 'red' || p === 'critical') return 'bg-red-100 text-red-700 dark:text-content-primary border-red-300 dark:border-brand';
   if (color === 'yellow' || p === 'high') return 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700';
   if (color === 'green' || p === 'low') return 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700';
   if (p === 'medium') return 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700';
