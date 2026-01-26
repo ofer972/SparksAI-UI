@@ -346,7 +346,7 @@ export default function HomeDashboard({
             ) : (
               <div className="space-y-1.5">
                 {sprintGoalRows.slice(0, 3).map((g: any) => {
-                  const progress = g['Progress'] || g['Progress%'] || g['Progress (%)'] || 0;
+                  const progress = (g as any)._goalProgressByChildren ?? 0;
                   const progressNum = typeof progress === 'number' ? progress : parseFloat(progress) || 0;
                   const progressInt = Math.floor(progressNum);
                   return (
@@ -412,7 +412,7 @@ export default function HomeDashboard({
             ) : (
               <div className="space-y-1.5">
                 {piGoalRows.slice(0, 3).map((g: any) => {
-                  const progress = g['Progress'] || g['Progress%'] || g['Progress (%)'] || 0;
+                  const progress = (g as any)._goalProgressByChildren ?? 0;
                   const progressNum = typeof progress === 'number' ? progress : parseFloat(progress) || 0;
                   const progressInt = Math.floor(progressNum);
                   return (
