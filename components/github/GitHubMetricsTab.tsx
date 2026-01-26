@@ -173,7 +173,7 @@ export default function GitHubMetricsTab({
   const splitterHeightPx = splitterCount * 8; // 8px per splitter
 
   return (
-    <div className="h-full flex flex-col overflow-visible p-1">
+    <div className="flex-1 h-full flex flex-col overflow-hidden p-1 min-h-0">
       <div 
         ref={mainContainerRef}
         className="flex-1 flex flex-col overflow-hidden min-h-0"
@@ -183,7 +183,7 @@ export default function GitHubMetricsTab({
             {/* Row of cards - height controlled by rowHeights state */}
             <div 
               ref={(el) => { containerRefs.current[rowIdx] = el; }}
-              className="flex relative min-h-0 overflow-visible flex-shrink-0"
+              className="flex relative min-h-0 overflow-hidden flex-shrink-0"
               style={{
                 height: rowHeights.length > 0 
                   ? `calc(${rowHeights[rowIdx] || (100 / rows.length)}% - ${splitterHeightPx / rows.length}px)` 
@@ -193,7 +193,7 @@ export default function GitHubMetricsTab({
               {row.map((card, colIdx) => (
                 <React.Fragment key={colIdx}>
                   <div
-                    className="flex-shrink-0 h-full overflow-visible flex flex-col p-1"
+                    className="flex-shrink-0 h-full overflow-hidden flex flex-col p-1"
                     style={{
                       width: row.length === 1
                         ? '100%'

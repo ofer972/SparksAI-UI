@@ -231,7 +231,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
  )}
 
     {(hideHeader || !collapsed) && (
-      <div className="flex-1 flex flex-col min-h-0 rounded-b-xl overflow-visible">
+      <div className="flex-1 flex flex-col min-h-0 rounded-b-xl overflow-hidden">
         {/* Title bar with optional filter badges - shown when header is hidden OR when there are filter badges */}
         {(hideHeader || (filterBadges && filterBadges.length > 0)) && (
           <div className="flex-shrink-0 px-4 py-1.5 border-b border-outline bg-gradient-to-r from-blue-25 to-indigo-25">
@@ -280,8 +280,8 @@ const ReportCard: React.FC<ReportCardProps> = ({
  </div>
  )}
 
-<div className={`flex-1 min-h-0 overflow-visible flex flex-col ${isInsightCard ? 'bg-gradient-to-r from-surface to-surface-elevated' : 'bg-surface'}`}>
-<div className={`h-full w-full flex flex-col ${enableContentOverflow ? 'overflow-visible' : 'overflow-hidden'} ${isInsightCard ? '' : 'p-4'}`}>
+<div className={`flex-1 min-h-0 overflow-hidden flex flex-col ${isInsightCard ? 'bg-gradient-to-r from-surface to-surface-elevated' : 'bg-surface'}`}>
+<div className={`flex-1 w-full flex flex-col overflow-hidden min-h-0 ${isInsightCard ? '' : 'p-4'}`}>
 {children}
 </div>
 </div>
