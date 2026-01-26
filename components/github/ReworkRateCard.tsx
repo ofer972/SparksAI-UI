@@ -213,7 +213,7 @@ export default function ReworkRateCard() {
 
   return (
     <PRWorkflowMetricCard
-      title="Rework Rate"
+      title="Code Churn Rate"
       metricName="rework_rate"
       tier={data.summary.tier}
       tierLabel={data.summary.tier_label}
