@@ -17,11 +17,51 @@ function priorityBadgeClass(priority: string, priorityColor?: string) {
   const color = (priorityColor || '').toLowerCase();
   const p = (priority || '').toLowerCase();
 
-  if (color === 'red' || p === 'critical') return 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700';
+  if (color === 'red' || p === 'critical') return 'bg-red-100 text-red-700 dark:text-content-primary border-red-300 dark:border-brand';
   if (color === 'yellow' || p === 'high') return 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700';
   if (color === 'green' || p === 'low') return 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700';
   if (p === 'medium') return 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700';
   return 'bg-surface-elevated text-content-secondary border-outline';
+}
+
+// Interface for information items (header/text pairs)
+interface InformationItem {
+  header: string;
+  text: string;
+}
+
+// Parse information_json for non-Sprint Goal cards (header/text format)
+function parseInformationJson(jsonString: string | undefined): InformationItem[] | null {
+  if (!jsonString || jsonString.trim() === '') {
+    return null;
+  }
+  
+  try {
+    const parsed = JSON.parse(jsonString);
+    
+    // Handle direct array
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+    
+    // Handle object - only extract DashboardSummary (or variations)
+    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+      // Look for DashboardSummary with flexible key matching
+      const keys = Object.keys(parsed);
+      const dashboardSummaryKey = keys.find(key => 
+        key.toLowerCase().replace(/[_\s]/g, '') === 'dashboardsummary'
+      );
+      
+      if (dashboardSummaryKey && Array.isArray(parsed[dashboardSummaryKey])) {
+        return parsed[dashboardSummaryKey] as InformationItem[];
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error parsing information_json:', error);
+    return null;
+  }
 }
 
 // Parse Sprint Goal JSON into table format (copied from AICardsInsight.tsx)
@@ -153,15 +193,8 @@ export default function InsightDashboard({ card, onBack }: InsightDashboardProps
     };
   }, [controlledFilters, card.sprint_insight, card.pi_insight]);
 
-  // Create rows of reports (2 per row, odd one takes full width)
-  const reportRows: string[][] = [];
-  for (let i = 0; i < reportIds.length; i += 2) {
-    if (i + 1 < reportIds.length) {
-      reportRows.push([reportIds[i], reportIds[i + 1]]);
-    } else {
-      reportRows.push([reportIds[i]]);
-    }
-  }
+  // Create rows of reports (1 per row for cleaner layout)
+  const reportRows: string[][] = reportIds.map(id => [id]);
 
   // Initialize column widths for rows with 2 columns
   useEffect(() => {
@@ -301,115 +334,148 @@ export default function InsightDashboard({ card, onBack }: InsightDashboardProps
             <div className="text-xs font-semibold text-content-tertiary uppercase tracking-wider mb-2">Details</div>
             <div className="text-sm text-content-secondary max-w-none">
               {(() => {
-                // Handle Sprint Goal cards with JSON table format
+                // Handle cards with JSON table format
                 const cardType = card.insight_type || (card as any).card_type;
-                if (cardType === 'Sprint Goal' || (card as any).information_json) {
-                  const sprintGoalItems = parseSprintGoalJson((card as any).information_json);
+                const isSprintGoal = cardType === 'Sprint Goal';
+                
+                if ((card as any).information_json) {
+                  // Sprint Goal: Parse and render as table
+                  if (isSprintGoal) {
+                    const items = parseSprintGoalJson((card as any).information_json);
 
-                  if (sprintGoalItems && sprintGoalItems.length > 0) {
-                    // Extract column names
-                    let columns = Object.keys(sprintGoalItems[0]);
-                    
-                    // Reorder columns: Goal first, Alert last
-                    const goalColumn = columns.find(col => col.toLowerCase().includes('goal'));
-                    const alertColumn = columns.find(col => col.toLowerCase().includes('alert'));
-                    
-                    // Build new column order
-                    columns = columns.filter(col => col !== goalColumn && col !== alertColumn);
-                    if (goalColumn) columns.unshift(goalColumn);
-                    if (alertColumn) columns.push(alertColumn);
+                    if (items && items.length > 0) {
+                      // Extract column names
+                      let columns = Object.keys(items[0]);
+                      
+                      // Reorder columns: Goal first, Alert last
+                      const goalColumn = columns.find(col => col.toLowerCase().includes('goal'));
+                      const alertColumn = columns.find(col => col.toLowerCase().includes('alert'));
+                      
+                      // Build new column order
+                      columns = columns.filter(col => col !== goalColumn && col !== alertColumn);
+                      if (goalColumn) columns.unshift(goalColumn);
+                      if (alertColumn) columns.push(alertColumn);
 
-                    return (
-                      <div className="w-full overflow-auto rounded-lg border-2 border-outline shadow-sm bg-gradient-to-r from-surface to-surface-elevated">
-                        <table className="text-sm border-collapse w-full">
-                          <thead className="sticky top-0 bg-gradient-to-r from-surface to-surface-elevated z-10">
-                            <tr>
-                              {columns.map((column) => {
-                                const isGoalColumn = column.toLowerCase().includes('goal');
-                                const width = isGoalColumn ? '50%' : 'auto';
-                                return (
-                                  <th
-                                    key={column}
-                                    className="px-3 py-2 text-left text-xs font-semibold text-content-primary uppercase tracking-wider border-b-2 border-outline bg-surface-elevated"
-                                    style={{ width }}
-                                  >
-                                    {column.replace(/_/g, ' ')}
-                                  </th>
-                                );
-                              })}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {sprintGoalItems.map((row, idx) => (
-                              <tr 
-                                key={idx} 
-                                className={`${
-                                  idx % 2 === 0 ? 'bg-surface' : 'bg-surface-elevated'
-                                } hover:bg-surface-secondary transition-colors`}
-                              >
+                      return (
+                        <div className="w-full overflow-auto rounded-lg border border-outline shadow-sm">
+                          <table className="text-sm border-collapse w-full">
+                            <thead className="sticky top-0 z-10">
+                              <tr>
                                 {columns.map((column) => {
                                   const isGoalColumn = column.toLowerCase().includes('goal');
-                                  const value = row[column];
+                                  const width = isGoalColumn ? '50%' : 'auto';
                                   return (
-                                    <td
+                                    <th
                                       key={column}
-                                      className={`px-3 py-2 text-content-secondary border-b border-outline ${
-                                        isGoalColumn ? 'font-medium' : ''
-                                      }`}
+                                      className="px-3 py-2.5 text-left text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider border-b border-outline bg-surface-elevated"
+                                      style={{ width }}
                                     >
-                                      {String(value)}
-                                    </td>
+                                      {column.replace(/_/g, ' ')}
+                                    </th>
                                   );
                                 })}
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            </thead>
+                            <tbody>
+                              {items.map((row, idx) => (
+                                <tr 
+                                  key={idx} 
+                                  className={`${
+                                    idx % 2 === 0 ? 'bg-surface' : 'bg-surface-elevated/50'
+                                  } hover:bg-surface-secondary transition-colors`}
+                                >
+                                  {columns.map((column) => {
+                                    const isGoalColumn = column.toLowerCase().includes('goal');
+                                    const isAlertColumn = column.toLowerCase().includes('alert');
+                                    const value = row[column];
+                                    return (
+                                      <td
+                                        key={column}
+                                        className={`px-3 py-2.5 border-b border-outline ${
+                                          isGoalColumn 
+                                            ? 'font-medium text-content-primary' 
+                                            : isAlertColumn 
+                                            ? 'text-amber-600 dark:text-amber-400'
+                                            : 'text-content-secondary'
+                                        }`}
+                                      >
+                                        {String(value)}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    }
+                  }
+                  
+                  // Non-Sprint Goal: Parse and render with header/text format (like AICardsInsight)
+                  const informationItems = parseInformationJson((card as any).information_json);
+                  
+                  if (informationItems && informationItems.length > 0) {
+                    return (
+                      <div className="p-4 bg-gradient-to-r from-surface to-surface-elevated rounded-xl border border-outline shadow-sm">
+                        <div className="space-y-0">
+                          {informationItems.map((item, index) => (
+                            <div 
+                              key={index} 
+                              className={`py-2.5 border-b border-outline last:border-b-0 hover:bg-surface-elevated/50 transition-colors rounded-md px-2 -mx-2 ${index === 0 ? 'border-t-0' : ''}`}
+                            >
+                              <span className="font-semibold text-blue-600 dark:text-blue-400 text-sm">{item.header}:</span>
+                              <span className="text-content-secondary text-sm leading-relaxed ml-2">{item.text}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     );
                   }
                 }
 
-                // Fallback to markdown for description
+                // Fallback to markdown for description - wrapped in card styling
                 return (
-                  <div className="prose prose-sm dark:prose-invert max-w-none">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm, remarkBreaks]}
-                      components={{
-                        p: ({ children }) => <p className="text-sm text-content-secondary mb-2 last:mb-0">{children}</p>,
-                        ul: ({ children }) => <ul className="list-disc pl-5 mb-2 text-sm text-content-secondary space-y-1">{children}</ul>,
-                        ol: ({ children }) => <ol className="list-decimal pl-5 mb-2 text-sm text-content-secondary space-y-1">{children}</ol>,
-                        li: ({ children }) => <li className="text-sm text-content-secondary">{children}</li>,
-                        strong: ({ children }) => <strong className="font-bold text-content-primary">{children}</strong>,
-                        em: ({ children }) => <em className="italic text-content-secondary">{children}</em>,
-                        code: ({ children }) => <code className="bg-surface-secondary px-1 py-0.5 rounded text-xs font-mono text-content-primary border border-outline">{children}</code>,
-                        pre: ({ children }) => <pre className="bg-surface-secondary p-2 rounded text-sm overflow-x-auto border-2 border-outline">{children}</pre>,
-                        h1: ({ children }) => <h1 className="text-base font-bold text-content-primary mb-2">{children}</h1>,
-                        h2: ({ children }) => <h2 className="text-base font-bold text-content-primary mb-2">{children}</h2>,
-                        h3: ({ children }) => <h3 className="text-sm font-semibold text-content-primary mb-1">{children}</h3>,
-                        blockquote: ({ children }) => <blockquote className="border-l-2 border-blue-400 pl-2 italic text-content-secondary text-sm">{children}</blockquote>,
-                        table: ({ children }) => (
-                          <div className="overflow-auto rounded-lg border-2 border-outline shadow-sm bg-gradient-to-r from-surface to-surface-elevated mb-2">
-                            <table className="w-full text-sm border-collapse">{children}</table>
-                          </div>
-                        ),
-                        thead: ({ children }) => <thead className="bg-surface-elevated">{children}</thead>,
-                        tbody: ({ children }) => <tbody>{children}</tbody>,
-                        tr: ({ children }) => <tr className="border-b border-outline hover:bg-surface-secondary transition-colors">{children}</tr>,
-                        th: ({ children }) => (
-                          <th className="px-3 py-2 text-left text-xs font-semibold text-content-primary uppercase tracking-wider border-b-2 border-outline bg-surface-elevated">
-                            {children}
-                          </th>
-                        ),
-                        td: ({ children }) => (
-                          <td className="px-3 py-2 text-content-secondary border-b border-outline">
-                            {children}
-                          </td>
-                        ),
-                      }}
-                    >
-                      {card.description || (card as any).full_information || 'No detailed information available.'}
-                    </ReactMarkdown>
+                  <div className="p-4 bg-gradient-to-r from-surface to-surface-elevated rounded-xl border border-outline shadow-sm">
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm, remarkBreaks]}
+                        components={{
+                          p: ({ children }) => <p className="text-sm text-content-secondary mb-2 last:mb-0">{children}</p>,
+                          ul: ({ children }) => <ul className="list-disc pl-5 mb-2 text-sm text-content-secondary space-y-1">{children}</ul>,
+                          ol: ({ children }) => <ol className="list-decimal pl-5 mb-2 text-sm text-content-secondary space-y-1">{children}</ol>,
+                          li: ({ children }) => <li className="text-sm text-content-secondary">{children}</li>,
+                          strong: ({ children }) => <strong className="font-bold text-blue-600 dark:text-blue-400">{children}</strong>,
+                          em: ({ children }) => <em className="italic text-content-secondary">{children}</em>,
+                          code: ({ children }) => <code className="bg-surface-secondary px-1 py-0.5 rounded text-xs font-mono text-content-primary border border-outline">{children}</code>,
+                          pre: ({ children }) => <pre className="bg-surface-secondary p-2 rounded text-sm overflow-x-auto border-2 border-outline">{children}</pre>,
+                          h1: ({ children }) => <h1 className="text-base font-bold text-content-primary mb-2">{children}</h1>,
+                          h2: ({ children }) => <h2 className="text-base font-bold text-content-primary mb-2">{children}</h2>,
+                          h3: ({ children }) => <h3 className="text-sm font-semibold text-content-primary mb-1">{children}</h3>,
+                          blockquote: ({ children }) => <blockquote className="border-l-2 border-blue-400 pl-2 italic text-content-secondary text-sm">{children}</blockquote>,
+                          table: ({ children }) => (
+                            <div className="overflow-auto rounded-lg border-2 border-outline shadow-sm bg-surface mb-2">
+                              <table className="w-full text-sm border-collapse">{children}</table>
+                            </div>
+                          ),
+                          thead: ({ children }) => <thead className="bg-surface-elevated">{children}</thead>,
+                          tbody: ({ children }) => <tbody>{children}</tbody>,
+                          tr: ({ children }) => <tr className="border-b border-outline hover:bg-surface-secondary transition-colors">{children}</tr>,
+                          th: ({ children }) => (
+                            <th className="px-3 py-2 text-left text-xs font-semibold text-content-primary uppercase tracking-wider border-b-2 border-outline bg-surface-elevated">
+                              {children}
+                            </th>
+                          ),
+                          td: ({ children }) => (
+                            <td className="px-3 py-2 text-content-secondary border-b border-outline">
+                              {children}
+                            </td>
+                          ),
+                        }}
+                      >
+                        {card.description || (card as any).full_information || 'No detailed information available.'}
+                      </ReactMarkdown>
+                    </div>
                   </div>
                 );
               })()}
@@ -435,67 +501,39 @@ export default function InsightDashboard({ card, onBack }: InsightDashboardProps
 
       {/* Related Reports */}
       {reportRows.length > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div className="px-1">
             <h2 className="text-sm font-semibold text-content-tertiary uppercase tracking-wider">Related Reports</h2>
           </div>
-          {reportRows.map((row, rowIdx) => (
-            <React.Fragment key={rowIdx}>
-              {/* Row of reports */}
+          <div className="space-y-6">
+            {reportRows.map((row, rowIdx) => (
               <div 
+                key={rowIdx}
                 ref={(el) => { containerRefs.current[rowIdx] = el; }}
-                className="flex relative" 
-                style={{ height: '500px' }}
+                className="bg-surface rounded-2xl border border-outline shadow-sm overflow-hidden" 
+                style={{ height: '450px' }}
               >
-                {row.map((reportId, colIdx) => (
-                  <React.Fragment key={`${reportId}-${rowIdx}-${colIdx}`}>
-                    <div 
-                      className="flex-shrink-0 h-full"
-                      style={{ 
-                        width: row.length === 1 
-                          ? '100%' 
-                          : `${columnWidths[rowIdx]?.[colIdx] || 50}%` 
+                {row.map((reportId) => (
+                  <div 
+                    key={reportId}
+                    className="h-full"
+                  >
+                    <ReportPanel
+                      reportId={reportId}
+                      initialFilters={getInitialFiltersForReport(reportId)}
+                      controlledFilters={controlledFilters}
+                      enabled={true}
+                      componentProps={{
+                        // Hide the entire header - reports are read-only in this view
+                        hideHeader: true,
+                        isDashboard: true,
                       }}
-                    >
-                      <ReportPanel
-                        reportId={reportId}
-                        initialFilters={getInitialFiltersForReport(reportId)}
-                        controlledFilters={controlledFilters}
-                        enabled={true}
-                        componentProps={{
-                          // Hide the entire header - reports are read-only in this view
-                          hideHeader: true,
-                          isDashboard: true,
-                        }}
-                      />
-                    </div>
-                    {/* Column splitter (between columns, draggable to resize) */}
-                    {row.length > 1 && colIdx < row.length - 1 && (
-                      <div
-                        className={`flex-shrink-0 w-1 cursor-col-resize transition-all relative group ${
-                          isDraggingHorizontal && activeHorizontalResizer?.rowIdx === rowIdx && activeHorizontalResizer?.colIdx === colIdx
-                            ? 'bg-blue-500'
-                            : 'bg-transparent hover:bg-blue-400'
-                        }`}
-                        onMouseDown={handleHorizontalMouseDown(rowIdx, colIdx)}
-                        style={{ cursor: 'col-resize' }}
-                      >
-                        <div className="absolute inset-y-0 left-0 w-1 h-full"></div>
-                      </div>
-                    )}
-                  </React.Fragment>
+                    />
+                  </div>
                 ))}
               </div>
-              {/* Row splitter (between rows, visible on hover) */}
-              {rowIdx < reportRows.length - 1 && (
-                <div
-                  className="h-1 transition-all relative group bg-transparent hover:bg-blue-400"
-                >
-                  <div className="absolute inset-x-0 top-0 h-1 w-full"></div>
-                </div>
-              )}
-            </React.Fragment>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
