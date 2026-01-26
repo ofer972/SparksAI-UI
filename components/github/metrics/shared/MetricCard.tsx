@@ -19,6 +19,10 @@ interface MetricCardProps {
   summaryContent: ReactNode; // The metric value/display on the left side
   children: ReactNode; // The chart or other content below the summary - FULLY CUSTOMIZABLE
   filters?: ReactNode; // Custom filter component - maintains flexibility
+  // Report mode props (for ReportCard)
+  reportId?: string;
+  hideHeader?: boolean;
+  onTogglePin?: (filterKey: string) => void;
 }
 
 /**
@@ -42,15 +46,21 @@ export default function MetricCard({
   summaryContent,
   children,
   filters,
+  reportId,
+  hideHeader,
+  onTogglePin,
 }: MetricCardProps) {
   const [showTierTooltip, setShowTierTooltip] = useState(false);
 
   return (
     <ReportCard
       title={title}
+      reportId={reportId}
       filters={filters}
       filterBadges={filterBadges}
       onRefresh={onRefresh}
+      onTogglePin={onTogglePin}
+      hideHeader={hideHeader}
       hideCollapse={true}
     >
       {error && (

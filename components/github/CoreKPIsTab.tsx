@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { authFetch } from '@/lib/api';
 import KPICard from './KPICard';
 import PRListReportDialog from './PRListReportDialog';
+import KPIDashboard from '@/components/KPIDashboard';
 
 interface Trend {
   direction: 'up' | 'down' | 'flat';
@@ -21,10 +22,12 @@ interface MetricResponse {
   tooltip: string;
   trend?: Trend;
   action?: {
-    type: string;
-    target_id: string;
-    params: {
-      metric: string;
+    type: 'table' | 'report';
+    target_id?: string;
+    report_ids?: string[];
+    params?: {
+      metric?: string;
+      [key: string]: any;
     };
   };
 }
@@ -36,6 +39,15 @@ export default function CoreKPIsTab() {
   const [selectedMetric, setSelectedMetric] = useState<{
     metric: string;
     title: string;
+  } | null>(null);
+  const [selectedKPIDashboard, setSelectedKPIDashboard] = useState<{
+    title: string;
+    value: string;
+    tierStatus: 'elite' | 'high' | 'medium' | 'low';
+    description: string;
+    trend?: Trend;
+    reportIds: string[];
+    initialFilters?: Record<string, any>;
   } | null>(null);
 
   useEffect(() => {
@@ -66,16 +78,38 @@ export default function CoreKPIsTab() {
   }, []);
 
   const handleKPIClick = (metric: MetricResponse) => {
-    if (metric.action?.params?.metric) {
-      setSelectedMetric({
-        metric: metric.action.params.metric,
-        title: metric.label,
-      });
+    if (!metric.action) return;
+
+    if (metric.action.type === 'table') {
+      // Table type - open PR list dialog
+      if (metric.action.params?.metric) {
+        setSelectedMetric({
+          metric: metric.action.params.metric,
+          title: metric.label,
+        });
+      }
+    } else if (metric.action.type === 'report') {
+      // Report type - open KPI dashboard
+      if (metric.action.report_ids && metric.action.report_ids.length > 0) {
+        setSelectedKPIDashboard({
+          title: metric.label,
+          value: metric.value,
+          tierStatus: metric.tier_status,
+          description: metric.description,
+          trend: metric.trend,
+          reportIds: metric.action.report_ids,
+          initialFilters: metric.action.params || {},
+        });
+      }
     }
   };
 
   const handleCloseDialog = () => {
     setSelectedMetric(null);
+  };
+
+  const handleCloseKPIDashboard = () => {
+    setSelectedKPIDashboard(null);
   };
 
   if (loading) {
@@ -98,6 +132,24 @@ export default function CoreKPIsTab() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-content-muted">No metrics available.</div>
+      </div>
+    );
+  }
+
+  // If KPI dashboard is selected, show it instead of the KPI cards
+  if (selectedKPIDashboard) {
+    return (
+      <div className="h-full flex flex-col overflow-hidden">
+        <KPIDashboard
+          title={selectedKPIDashboard.title}
+          value={selectedKPIDashboard.value}
+          tierStatus={selectedKPIDashboard.tierStatus}
+          description={selectedKPIDashboard.description}
+          trend={selectedKPIDashboard.trend}
+          reportIds={selectedKPIDashboard.reportIds}
+          initialFilters={selectedKPIDashboard.initialFilters}
+          onBack={handleCloseKPIDashboard}
+        />
       </div>
     );
   }

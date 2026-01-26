@@ -100,9 +100,7 @@ export default function KPICard({
       case 'flat':
         return '→';
       default:
-        // Debug: log what we're getting
-        console.log('Unknown trend direction:', direction, 'normalized:', normalized);
-        return '→'; // Default to flat arrow instead of ?
+        return '→'; // Default to flat arrow
     }
   };
 

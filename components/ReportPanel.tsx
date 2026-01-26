@@ -81,6 +81,7 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
   ...rendererProps
 }) => {
   const entry = registry[reportId];
+  console.log('[ReportPanel] reportId:', reportId, 'entry found:', !!entry, 'registry keys:', Object.keys(registry).slice(0, 10));
 
   const [localFilters, setLocalFilters] = React.useState<FiltersState>(() =>
     initialFilters ? { ...initialFilters } : {}

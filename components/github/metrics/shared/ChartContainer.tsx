@@ -12,7 +12,7 @@ interface ChartContainerProps {
  */
 export default function ChartContainer({ children }: ChartContainerProps) {
   return (
-    <div className="flex-1 min-h-0 overflow-hidden relative h-full">
+    <div className="flex-1 min-h-0 overflow-auto relative h-full">
       {children || (
         <div className="flex items-center justify-center h-full">
           <div className="text-gray-500">No data available</div>

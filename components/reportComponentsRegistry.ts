@@ -20,6 +20,14 @@ import WIPOverTimeView from './reportViews/WIPOverTimeView';
 import CycleTimeView from './reportViews/CycleTimeView';
 import GoalProgressView from './reportViews/GoalProgressView';
 import PIRoadmapView from './reportViews/PIRoadmapView';
+import DeploymentFrequencyCard from './github/DeploymentFrequencyCard';
+import ChangeFailureRateCard from './github/ChangeFailureRateCard';
+import RecoveryTimeCard from './github/RecoveryTimeCard';
+import LeadTimeCard from './github/LeadTimeCard';
+import ReworkRateCard from './github/ReworkRateCard';
+import PickupTimeCard from './github/PickupTimeCard';
+import PRSizeCard from './github/PRSizeCard';
+import PRMaturityCard from './github/PRMaturityCard';
 import type { ReportDefinition } from '@/lib/config';
 
 export interface ReportRenderContext {
@@ -422,6 +430,94 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
       loading,
       error,
       meta,
+      filters,
+      refresh,
+    }),
+  },
+  'dora-deployment-frequency': {
+    component: DeploymentFrequencyCard,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, filters, refresh }) => ({
+      data: result,
+      loading,
+      error,
+      filters,
+      refresh,
+    }),
+  },
+  'dora-change-failure-rate': {
+    component: ChangeFailureRateCard,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, filters, refresh }) => ({
+      data: result,
+      loading,
+      error,
+      filters,
+      refresh,
+    }),
+  },
+  'dora-recovery-time': {
+    component: RecoveryTimeCard,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, filters, refresh }) => ({
+      data: result,
+      loading,
+      error,
+      filters,
+      refresh,
+    }),
+  },
+  'dora-lead-time': {
+    component: LeadTimeCard,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, filters, refresh }) => ({
+      data: result,
+      loading,
+      error,
+      filters,
+      refresh,
+    }),
+  },
+  'pr-workflow-rework-rate': {
+    component: ReworkRateCard,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, filters, refresh }) => ({
+      data: result,
+      loading,
+      error,
+      filters,
+      refresh,
+    }),
+  },
+  'pr-workflow-pickup-time': {
+    component: PickupTimeCard,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, filters, refresh }) => ({
+      data: result,
+      loading,
+      error,
+      filters,
+      refresh,
+    }),
+  },
+  'pr-workflow-pr-size': {
+    component: PRSizeCard,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, filters, refresh }) => ({
+      data: result,
+      loading,
+      error,
+      filters,
+      refresh,
+    }),
+  },
+  'pr-workflow-pr-maturity': {
+    component: PRMaturityCard,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, filters, refresh }) => ({
+      data: result,
+      loading,
+      error,
       filters,
       refresh,
     }),

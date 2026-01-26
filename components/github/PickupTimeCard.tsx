@@ -2,9 +2,8 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { Chart } from 'react-chartjs-2';
-import { usePRWorkflowMetrics } from '@/hooks/usePRWorkflowMetrics';
-import { useMetricData } from '@/hooks/useMetricData';
-import PRWorkflowMetricCard from './PRWorkflowMetricCard';
+import { useDualModeMetricData } from '@/hooks/useDualModeMetricData';
+import MetricCardWrapper from './MetricCardWrapper';
 import { registerChartComponents } from '@/utils/chartRegistration';
 import ChartContainer from './metrics/shared/ChartContainer';
 import { createScatterChartOptions } from './utils/chartOptions';
@@ -28,20 +27,28 @@ interface PickupTimeData {
   }>;
 }
 
-export default function PickupTimeCard() {
-  const {
-    repositories,
-    githubRepoIds,
-    months,
-    prState,
-    setGithubRepoIds,
-    setMonths,
-    setPrState,
-    filterBadges,
-    fetchData,
-    loading: hookLoading,
-    error: hookError,
-  } = usePRWorkflowMetrics();
+interface PickupTimeCardProps {
+  data?: PickupTimeData;
+  loading?: boolean;
+  error?: string | null;
+  filters?: Record<string, any>;
+  refresh?: () => void;
+  togglePin?: (filterKey: string) => void;
+  pinnedFilters?: string[];
+  componentProps?: Record<string, any>;
+}
+
+export default function PickupTimeCard(props?: PickupTimeCardProps) {
+  // Use dual-mode hook
+  const { data, loading, error, isReportMode, hookData } = useDualModeMetricData<PickupTimeData>({
+    data: props?.data,
+    loading: props?.loading,
+    error: props?.error,
+    filters: props?.filters,
+    refresh: props?.refresh,
+    useDORA: false,
+    endpoint: '/api/v1/github-service/pr-workflow/pickup-time',
+  });
 
   // Dark mode detection
   const [isDark, setIsDark] = useState(false);
@@ -52,14 +59,6 @@ export default function PickupTimeCard() {
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     return () => observer.disconnect();
   }, []);
-
-  // Use shared data fetching hook
-  const { data, refresh: fetchPickupTime } = useMetricData<PickupTimeData>(
-    '/api/v1/github-service/pr-workflow/pickup-time',
-    fetchData,
-    [githubRepoIds, months, prState],
-    repositories
-  );
 
   const chartData = useMemo(() => {
     if (!data || !data.individual_prs || data.individual_prs.length === 0) {
@@ -121,68 +120,52 @@ export default function PickupTimeCard() {
             display: true,
             text: 'Hours',
           },
+          ticks: {},
         },
         x: {
           title: {
             display: true,
             text: 'PR Index',
           },
+          ticks: {},
         },
       },
     }, isDark);
   }, [data, isDark]);
 
-  if (!data) {
-    return (
-      <PRWorkflowMetricCard
-        title="Pickup Time"
-        metricName="pickup_time"
-        tier=""
-        tierLabel=""
-        repositories={repositories}
-        githubRepoIds={githubRepoIds}
-        months={months}
-        prState={prState}
-        onGithubRepoIdsChange={setGithubRepoIds}
-        onMonthsChange={setMonths}
-        onPrStateChange={setPrState}
-        filterBadges={filterBadges}
-        onRefresh={fetchPickupTime}
-        loading={hookLoading}
-        error={hookError}
-        loadingText="Loading pickup time data..."
-        summaryContent={null}
-      >
-        {null}
-      </PRWorkflowMetricCard>
-    );
-  }
-
   return (
-    <PRWorkflowMetricCard
+    <MetricCardWrapper
+      isReportMode={isReportMode}
+      cardType="pr-workflow"
       title="Pickup Time"
       metricName="pickup_time"
-      tier={data.summary.tier}
-      tierLabel={data.summary.tier_label}
-      repositories={repositories}
-      githubRepoIds={githubRepoIds}
-      months={months}
-      prState={prState}
-      onGithubRepoIdsChange={setGithubRepoIds}
-      onMonthsChange={setMonths}
-      onPrStateChange={setPrState}
-      filterBadges={filterBadges}
-      onRefresh={fetchPickupTime}
-      loading={hookLoading}
-      error={hookError}
+      tier={data?.summary?.tier || ''}
+      tierLabel={data?.summary?.tier_label || ''}
+      repositories={hookData.repositories}
+      githubRepoIds={hookData.githubRepoIds}
+      months={hookData.months}
+      prState={(hookData as any).prState || 'open'}
+      onGithubRepoIdsChange={hookData.setGithubRepoIds}
+      onMonthsChange={hookData.setMonths}
+      onPrStateChange={(hookData as any).setPrState}
+      filterBadges={hookData.filterBadges}
+      onRefresh={hookData.fetchData as () => void}
+      loading={loading}
+      error={error}
       loadingText="Loading pickup time data..."
+      filters={props?.filters}
+      togglePin={props?.togglePin}
+      pinnedFilters={props?.pinnedFilters}
+      componentProps={props?.componentProps}
       summaryContent={
-        <div className="flex items-baseline gap-2">
-          <span className="text-sm font-semibold text-content-secondary">median</span>
-          <span className="text-base font-bold text-content-primary">
-            {formatTime(data.summary.median_hours)}
-          </span>
-        </div>
+        data?.summary ? (
+          <div className="flex items-baseline gap-2">
+            <span className="text-sm font-semibold text-content-secondary">median</span>
+            <span className="text-base font-bold text-content-primary">
+              {formatTime(data.summary.median_hours)}
+            </span>
+          </div>
+        ) : null
       }
     >
       <ChartContainer>
@@ -194,7 +177,7 @@ export default function PickupTimeCard() {
           />
         )}
       </ChartContainer>
-    </PRWorkflowMetricCard>
+    </MetricCardWrapper>
   );
 }
 

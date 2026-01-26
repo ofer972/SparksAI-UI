@@ -2,9 +2,8 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { Chart } from 'react-chartjs-2';
-import { useDORAMetrics } from '@/hooks/useDORAMetrics';
-import { useMetricData } from '@/hooks/useMetricData';
-import DORAMetricCard from './DORAMetricCard';
+import { useDualModeMetricData } from '@/hooks/useDualModeMetricData';
+import MetricCardWrapper from './MetricCardWrapper';
 import { registerChartComponents } from '@/utils/chartRegistration';
 import ChartContainer from './metrics/shared/ChartContainer';
 import { createScatterChartOptions } from './utils/chartOptions';
@@ -28,21 +27,28 @@ interface LeadTimeData {
   }>;
 }
 
-export default function LeadTimeCard() {
-  const {
-    repositories,
-    availableEnvironments,
-    githubRepoIds,
-    environment,
-    months,
-    setGithubRepoIds,
-    setEnvironment,
-    setMonths,
-    filterBadges,
-    fetchData,
-    loading: hookLoading,
-    error: hookError,
-  } = useDORAMetrics();
+interface LeadTimeCardProps {
+  data?: LeadTimeData;
+  loading?: boolean;
+  error?: string | null;
+  filters?: Record<string, any>;
+  refresh?: () => void;
+  togglePin?: (filterKey: string) => void;
+  pinnedFilters?: string[];
+  componentProps?: Record<string, any>;
+}
+
+export default function LeadTimeCard(props?: LeadTimeCardProps) {
+  // Use dual-mode hook
+  const { data, loading, error, isReportMode, hookData } = useDualModeMetricData<LeadTimeData>({
+    data: props?.data,
+    loading: props?.loading,
+    error: props?.error,
+    filters: props?.filters,
+    refresh: props?.refresh,
+    useDORA: true,
+    endpoint: '/api/v1/github-service/dora/lead-time',
+  });
 
   // Dark mode detection
   const [isDark, setIsDark] = useState(false);
@@ -53,14 +59,6 @@ export default function LeadTimeCard() {
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     return () => observer.disconnect();
   }, []);
-
-  // Use shared data fetching hook
-  const { data, refresh: fetchLeadTime } = useMetricData<LeadTimeData>(
-    '/api/v1/github-service/dora/lead-time',
-    fetchData,
-    [githubRepoIds, environment, months],
-    repositories
-  );
 
   // Chart data transformation for scatter plot
   const chartData = useMemo(() => {
@@ -149,64 +147,45 @@ export default function LeadTimeCard() {
     return formatTime(hours);
   };
 
-  if (!data) {
-    return (
-      <DORAMetricCard
-        title="Lead Time for Changes"
-        metricName="lead_time"
-        tier=""
-        tierLabel=""
-        repositories={repositories}
-        availableEnvironments={availableEnvironments}
-        githubRepoIds={githubRepoIds}
-        environment={environment}
-        months={months}
-        onGithubRepoIdsChange={setGithubRepoIds}
-        onEnvironmentChange={setEnvironment}
-        onMonthsChange={setMonths}
-        filterBadges={filterBadges}
-        onRefresh={fetchLeadTime}
-        loading={hookLoading}
-        error={hookError}
-        loadingText="Loading lead time data..."
-        summaryContent={null}
-      >
-        {null}
-      </DORAMetricCard>
-    );
-  }
-
   return (
-    <DORAMetricCard
+    <MetricCardWrapper
+      isReportMode={isReportMode}
+      cardType="dora"
       title="Lead Time for Changes"
       metricName="lead_time"
-      tier={data.summary.tier}
-      tierLabel={data.summary.tier_label}
-      repositories={repositories}
-      availableEnvironments={availableEnvironments}
-      githubRepoIds={githubRepoIds}
-      environment={environment}
-      months={months}
-      onGithubRepoIdsChange={setGithubRepoIds}
-      onEnvironmentChange={setEnvironment}
-      onMonthsChange={setMonths}
-      filterBadges={filterBadges}
-      onRefresh={fetchLeadTime}
-      loading={hookLoading}
-      error={hookError}
+      tier={data?.summary?.tier || ''}
+      tierLabel={data?.summary?.tier_label || ''}
+      repositories={hookData.repositories}
+      availableEnvironments={(hookData as any).availableEnvironments || []}
+      githubRepoIds={hookData.githubRepoIds}
+      environment={(hookData as any).environment || ''}
+      months={hookData.months}
+      onGithubRepoIdsChange={hookData.setGithubRepoIds}
+      onEnvironmentChange={(hookData as any).setEnvironment}
+      onMonthsChange={hookData.setMonths}
+      filterBadges={hookData.filterBadges}
+      onRefresh={hookData.fetchData as () => void}
+      loading={loading}
+      error={error}
       loadingText="Loading lead time data..."
+      filters={props?.filters}
+      togglePin={props?.togglePin}
+      pinnedFilters={props?.pinnedFilters}
+      componentProps={props?.componentProps}
       summaryContent={
-        <div className="flex items-baseline gap-2">
-          <span className="text-sm font-semibold text-content-secondary">Median:</span>
-          <span className="text-base font-bold text-content-primary">
-            {formatMedianTime(data.summary.median_hours)}
-          </span>
-        </div>
+        data?.summary ? (
+          <div className="flex items-baseline gap-2">
+            <span className="text-sm font-semibold text-content-secondary">Median:</span>
+            <span className="text-base font-bold text-content-primary">
+              {formatMedianTime(data.summary.median_hours)}
+            </span>
+          </div>
+        ) : null
       }
     >
       {/* Scatter Plot Chart */}
       <ChartContainer>
-        {chartData && data.changes && data.changes.length > 0 ? (
+        {chartData && data && data.changes && data.changes.length > 0 ? (
           <Chart 
             type="scatter" 
             data={chartData} 
@@ -216,7 +195,7 @@ export default function LeadTimeCard() {
           <div className="text-content-muted">No changes in this period</div>
         )}
       </ChartContainer>
-    </DORAMetricCard>
+    </MetricCardWrapper>
   );
 }
 

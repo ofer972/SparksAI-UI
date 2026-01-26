@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { authFetch } from '@/lib/api';
 import { ApiService } from '@/lib/api';
 import { useGitHubRepositories } from './useGitHubRepositories';
-import { Repository } from '@/components/github/metrics/shared/types';
+import { Repository, generatePRWorkflowFilterBadges } from '@/components/github/metrics/shared/types';
 
 // Re-export for backward compatibility
 export type { Repository };
@@ -85,30 +85,15 @@ export function usePRWorkflowMetrics(): UsePRWorkflowMetricsReturn {
     }
   }, [githubRepoIds, months, prState]);
 
-  const filterBadges = useMemo(() => {
-    const badges = [];
-    if (githubRepoIds.length > 0) {
-      const repoNames = githubRepoIds
-        .map(githubRepoId => repositories.find(r => r.github_repo_id === githubRepoId)?.name)
-        .filter(Boolean);
-      if (repoNames.length > 0) {
-        if (repoNames.length <= 2) {
-          badges.push({ label: 'Repositories', value: repoNames.join(', ') });
-        } else {
-          badges.push({ label: 'Repositories', value: `${repoNames.slice(0, 2).join(', ')} +${repoNames.length - 2} more` });
-        }
-      }
-    } else {
-      badges.push({ label: 'Repositories', value: 'All' });
-    }
-    
-    if (prState && prState !== 'all') {
-      badges.push({ label: 'PR State', value: prState.charAt(0).toUpperCase() + prState.slice(1) });
-    }
-    
-    badges.push({ label: 'Time Period', value: `${months} month${months !== 1 ? 's' : ''}` });
-    return badges;
-  }, [githubRepoIds, months, prState, repositories]);
+  const filterBadges = useMemo(() => 
+    generatePRWorkflowFilterBadges({
+      githubRepoIds,
+      prState,
+      months,
+      repositories,
+    }),
+    [githubRepoIds, prState, months, repositories]
+  );
 
   return {
     repositories,
