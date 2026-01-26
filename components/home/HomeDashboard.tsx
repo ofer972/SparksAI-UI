@@ -477,22 +477,22 @@ export default function HomeDashboard({
  </div>
  </div>
  <div className="p-2">
- {hasDefaultContext ? (
+ {hasDefaultContext && currentPIName ? (
  <div className="h-[500px]">
  <ReportRenderer
- reportId="team-issues-trend"
+ reportId="pi-burndown"
  filters={{
  team_name: contextLabel,
  isGroup: isGroup,
- issue_type: 'Bug',
- months: 6,
+ pi: currentPIName,
+ issue_type: 'Epic',
  }}
  enabled
  componentProps={{ componentProps: { hideHeader: true } }}
  />
  </div>
  ) : (
- <div className="p-3 text-xs text-content-tertiary">Set a default team/group to see report previews.</div>
+ <div className="p-3 text-xs text-content-tertiary">Set a default team/group and ensure a PI is available to see report previews.</div>
  )}
  </div>
  </div>
