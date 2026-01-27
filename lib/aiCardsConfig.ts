@@ -13,6 +13,7 @@ export interface AICard {
   priority: string;
   priority_color?: string; // Color from backend: "Red", "Yellow", "Green", "Gray"
   source: string;
+  source_job_id?: string | number;
   description: string;
   full_information: string;
   information_json?: string;
@@ -119,7 +120,7 @@ export const aiCardsConfig: EntityConfig<AICard> = {
   },
   
   // Field categorization for detail view
-  normalFields: ['id', 'updated_at', 'pi', 'card_name', 'insight_type', 'priority', 'team_name', 'group_name', 'source'],
+  normalFields: ['id', 'updated_at', 'pi', 'card_name', 'insight_type', 'priority', 'team_name', 'group_name', 'source_job_id', 'source'],
   longTextFields: ['description', 'full_information', 'information_json'],
   markdownFields: ['description', 'full_information'], // Render these fields as markdown
 };
