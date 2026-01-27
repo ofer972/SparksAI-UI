@@ -38,6 +38,8 @@ import HomeDashboard from '../components/home/HomeDashboard';
 import HomeDetailPlaceholder from '../components/home/HomeDetailPlaceholder';
 import InsightDashboard from '../components/home/InsightDashboard';
 import GitHubAnalysisView from '@/components/GitHubAnalysisView';
+import KPIDashboard from '@/components/KPIDashboard';
+import type { KPIDashboardData } from '@/components/DORAKPIs';
 import type { BreadcrumbItem, NavItemId } from '@/lib/nav';
 import type { AICard } from '@/lib/config';
 
@@ -158,10 +160,12 @@ export default function Home() {
   };
   const [homeDetail, setHomeDetail] = useState<HomeDetail | null>(null);
   const [selectedInsightCard, setSelectedInsightCard] = useState<AICard | null>(null);
+  const [selectedKPIDashboard, setSelectedKPIDashboard] = useState<KPIDashboardData | null>(null);
   useEffect(() => {
     if (activeNavItem === 'home') {
       setHomeDetail(null);
       setSelectedInsightCard(null);
+      setSelectedKPIDashboard(null);
     }
   }, [activeNavItem]);
  
@@ -1092,8 +1096,8 @@ const navigationItems = [
     }
 
     if (activeNavItem === 'home-detail') {
-      // Use insight card name if available, otherwise use homeDetail title
-      const detailLabel = selectedInsightCard?.card_name ?? homeDetail?.title ?? 'Details';
+      // Use insight card name, KPI dashboard title, or homeDetail title
+      const detailLabel = selectedInsightCard?.card_name ?? selectedKPIDashboard?.title ?? homeDetail?.title ?? 'Details';
       return [
         { label: 'Home', onClick: goHome },
         { label: detailLabel },
@@ -1105,7 +1109,7 @@ const navigationItems = [
       (typeof activeNavItem === 'string' ? activeNavItem : 'View');
 
     return [{ label: 'Home', onClick: goHome }, { label: currentLabel }];
-  }, [activeNavItem, goHome, homeDetail?.title, selectedInsightCard?.card_name, navigationItems]);
+  }, [activeNavItem, goHome, homeDetail?.title, selectedInsightCard?.card_name, selectedKPIDashboard?.title, navigationItems]);
 
  // Modern SVG icon components
  const SidebarIcon = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
@@ -1383,11 +1387,19 @@ const IconGitHub = () => (
             onOpenDetail={(detail: { id: string; title: string; description?: string; kind?: 'metric' | 'insight' | 'goal' | 'shortcut' }) => {
               setHomeDetail(detail);
               setSelectedInsightCard(null);
+              setSelectedKPIDashboard(null);
               setActiveNavItem('home-detail');
             }}
             onOpenInsight={(card: AICard) => {
               setSelectedInsightCard(card);
               setHomeDetail(null);
+              setSelectedKPIDashboard(null);
+              setActiveNavItem('home-detail');
+            }}
+            onOpenKPIDashboard={(data: KPIDashboardData) => {
+              setSelectedKPIDashboard(data);
+              setHomeDetail(null);
+              setSelectedInsightCard(null);
               setActiveNavItem('home-detail');
             }}
             onNavigate={(navItem: NavItemId | string) => handleNavigation(navItem)}
@@ -1398,7 +1410,7 @@ const IconGitHub = () => (
           />
         );
       case 'home-detail':
-        // Show InsightDashboard if an insight card is selected, otherwise show HomeDetailPlaceholder
+        // Show InsightDashboard if an insight card is selected
         if (selectedInsightCard) {
           return (
             <InsightDashboard
@@ -1407,6 +1419,22 @@ const IconGitHub = () => (
             />
           );
         }
+        // Show KPIDashboard if a DORA KPI is selected
+        if (selectedKPIDashboard) {
+          return (
+            <KPIDashboard
+              title={selectedKPIDashboard.title}
+              value={selectedKPIDashboard.value}
+              tierStatus={selectedKPIDashboard.tierStatus}
+              description={selectedKPIDashboard.description}
+              trend={selectedKPIDashboard.trend}
+              reportIds={selectedKPIDashboard.reportIds}
+              initialFilters={selectedKPIDashboard.initialFilters}
+              onBack={goHome}
+            />
+          );
+        }
+        // Otherwise show HomeDetailPlaceholder
         return (
           <HomeDetailPlaceholder
             detail={
@@ -1951,7 +1979,7 @@ sidebarCollapsed ? 'w-16' : 'w-56'
                   : activeNavItem === 'home'
                     ? 'Home'
                     : activeNavItem === 'home-detail'
-                      ? (selectedInsightCard?.card_name ?? homeDetail?.title ?? 'Details')
+                      ? (selectedInsightCard?.card_name ?? selectedKPIDashboard?.title ?? homeDetail?.title ?? 'Details')
  : undefined
  }
  breadcrumbs={breadcrumbs}

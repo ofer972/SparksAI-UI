@@ -32,11 +32,22 @@ interface MetricResponse {
   };
 }
 
-interface DORAKPIsProps {
-  singleRowLayout?: boolean;
+export interface KPIDashboardData {
+  title: string;
+  value: string;
+  tierStatus: 'elite' | 'high' | 'medium' | 'low';
+  description: string;
+  trend?: Trend;
+  reportIds: string[];
+  initialFilters?: Record<string, any>;
 }
 
-export default function DORAKPIs({ singleRowLayout = false }: DORAKPIsProps) {
+interface DORAKPIsProps {
+  singleRowLayout?: boolean;
+  onOpenKPIDashboard?: (data: KPIDashboardData) => void;
+}
+
+export default function DORAKPIs({ singleRowLayout = false, onOpenKPIDashboard }: DORAKPIsProps) {
   const [metrics, setMetrics] = useState<MetricResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,15 +55,8 @@ export default function DORAKPIs({ singleRowLayout = false }: DORAKPIsProps) {
     metric: string;
     title: string;
   } | null>(null);
-  const [selectedKPIDashboard, setSelectedKPIDashboard] = useState<{
-    title: string;
-    value: string;
-    tierStatus: 'elite' | 'high' | 'medium' | 'low';
-    description: string;
-    trend?: Trend;
-    reportIds: string[];
-    initialFilters?: Record<string, any>;
-  } | null>(null);
+  // Only use local state when no callback is provided (for backward compatibility)
+  const [selectedKPIDashboard, setSelectedKPIDashboard] = useState<KPIDashboardData | null>(null);
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -93,7 +97,7 @@ export default function DORAKPIs({ singleRowLayout = false }: DORAKPIsProps) {
       }
     } else if (metric.action.type === 'report') {
       if (metric.action.report_ids && metric.action.report_ids.length > 0) {
-        setSelectedKPIDashboard({
+        const kpiData: KPIDashboardData = {
           title: metric.label,
           value: metric.value,
           tierStatus: metric.tier_status,
@@ -101,7 +105,15 @@ export default function DORAKPIs({ singleRowLayout = false }: DORAKPIsProps) {
           trend: metric.trend,
           reportIds: metric.action.report_ids,
           initialFilters: metric.action.params || {},
-        });
+        };
+        
+        // If callback is provided, use it to navigate to detail page
+        // Otherwise fall back to local state (for backward compatibility)
+        if (onOpenKPIDashboard) {
+          onOpenKPIDashboard(kpiData);
+        } else {
+          setSelectedKPIDashboard(kpiData);
+        }
       }
     }
   };
@@ -114,8 +126,9 @@ export default function DORAKPIs({ singleRowLayout = false }: DORAKPIsProps) {
     setSelectedKPIDashboard(null);
   };
 
-  // If KPI dashboard is selected, show it instead of the KPI cards
-  if (selectedKPIDashboard) {
+  // If KPI dashboard is selected AND no callback is provided (backward compatibility mode),
+  // show it inline instead of the KPI cards
+  if (selectedKPIDashboard && !onOpenKPIDashboard) {
     return (
       <div className="h-full w-full">
         <KPIDashboard

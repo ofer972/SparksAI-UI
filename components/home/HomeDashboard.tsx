@@ -5,7 +5,7 @@ import type { CustomDashboard, AICard } from '@/lib/config';
 import type { NavItemId } from '@/lib/nav';
 import TeamMetrics from '@/components/TeamMetrics';
 import PIMetrics from '@/components/PIMetrics';
-import DORAKPIs from '@/components/DORAKPIs';
+import DORAKPIs, { KPIDashboardData } from '@/components/DORAKPIs';
 import ReportRenderer from '@/components/ReportRenderer';
 import SprintInsightsPreview from './SprintInsightsPreview';
 import PIInsightsPreview from './PIInsightsPreview';
@@ -24,6 +24,7 @@ export type HomeDetail = {
 export default function HomeDashboard({
   onOpenDetail,
   onOpenInsight,
+  onOpenKPIDashboard,
   onNavigate,
   defaultTeamOrGroupName,
   defaultTreeType,
@@ -32,6 +33,7 @@ export default function HomeDashboard({
 }: {
   onOpenDetail: (detail: HomeDetail) => void;
   onOpenInsight: (card: AICard) => void;
+  onOpenKPIDashboard: (data: KPIDashboardData) => void;
   onNavigate: (navItem: NavItemId | string) => void;
   defaultTeamOrGroupName?: string | null;
   defaultTreeType?: 'team' | 'group' | null;
@@ -456,7 +458,7 @@ export default function HomeDashboard({
             </div>
           </div>
           <div className="p-3 min-h-[100px]" style={{ zoom: 0.9 }}>
-            <DORAKPIs singleRowLayout={true} />
+            <DORAKPIs singleRowLayout={true} onOpenKPIDashboard={onOpenKPIDashboard} />
           </div>
         </div>
       </div>

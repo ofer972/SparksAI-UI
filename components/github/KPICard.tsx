@@ -132,12 +132,11 @@ export default function KPICard({
           ref={buttonRef}
           onClick={onClick}
           className={`
-            h-32 rounded-lg border-2 transition-all relative
+            h-32 rounded-lg border transition-all relative
             bg-gradient-to-br from-surface to-surface-elevated
-            ${colors.border}
-            hover:shadow-md hover:scale-[1.02] cursor-pointer
-            focus:outline-none focus:ring-2 focus:ring-offset-2
-            ${colors.border.replace('border-', 'focus:ring-')}
+            border-outline shadow-sm
+            hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700 hover:scale-[1.02] cursor-pointer
+            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-300
             flex flex-col
           `}
           style={{ width: '171px' }}
@@ -157,20 +156,20 @@ export default function KPICard({
 
         {/* Value with tier color - centered vertically in remaining space */}
         <div className="flex-1 flex items-center justify-center -mt-2">
-          <div className={`text-3xl font-bold ${colors.valueText}`}>
+          <div className={`text-base sm:text-lg font-bold ${colors.valueText}`}>
             {value}
           </div>
         </div>
 
         {/* Trend indicator - aligned to bottom */}
-        <div className="flex items-center gap-1.5 text-xs text-content-tertiary px-2 pb-2 flex-shrink-0">
+        <div className="flex items-center justify-center gap-1.5 text-[10px] sm:text-xs text-content-secondary px-2 pb-2 flex-shrink-0 font-semibold leading-tight">
           {trend && trend.direction ? (
             <>
-              <span className={`font-bold leading-none ${getTrendColor()}`} style={{ fontSize: '1.215rem', lineHeight: '1' }}>
+              <span className={`font-bold leading-none ${getTrendColor()}`} style={{ fontSize: '0.875rem', lineHeight: '1' }}>
                 {getTrendArrow(trend.direction)}
               </span>
-              <span className={`font-medium ${getTrendColor()}`}>{trend.percentage}%</span>
-              <span className="text-content-muted">{trend.label}</span>
+              <span className={`font-semibold ${getTrendColor()}`}>{trend.percentage}%</span>
+              <span className="text-content-secondary">{trend.label}</span>
             </>
           ) : null}
         </div>
