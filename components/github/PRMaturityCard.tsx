@@ -36,14 +36,22 @@ interface PRMaturityCardProps {
   loading?: boolean;
   error?: string | null;
   filters?: Record<string, any>;
+  setFilters?: (filters: Record<string, any> | ((prev: Record<string, any>) => Record<string, any>)) => void;
   refresh?: () => void;
   togglePin?: (filterKey: string) => void;
   pinnedFilters?: string[];
   componentProps?: Record<string, any>;
 }
 
+// Default filter values for PR workflow reports
+const DEFAULT_FILTERS = {
+  githubRepoIds: [] as number[],
+  months: 1,
+  prState: 'all',
+};
+
 export default function PRMaturityCard(props?: PRMaturityCardProps) {
-  // Use dual-mode hook
+  // Use dual-mode hook (only for hook mode and for repositories list)
   const { data, loading, error, isReportMode, hookData } = useDualModeMetricData<PRMaturityData>({
     data: props?.data,
     loading: props?.loading,
@@ -53,6 +61,69 @@ export default function PRMaturityCard(props?: PRMaturityCardProps) {
     useDORA: false,
     endpoint: '/api/v1/github-service/pr-workflow/pr-maturity',
   });
+
+  // In report mode, use filters from props; in hook mode, use hookData
+  const currentFilters = isReportMode ? (props?.filters || {}) : {
+    githubRepoIds: hookData.githubRepoIds,
+    months: hookData.months,
+    prState: (hookData as any).prState,
+  };
+
+  // Get filter values with defaults
+  const githubRepoIds = (currentFilters.githubRepoIds as number[]) || DEFAULT_FILTERS.githubRepoIds;
+  const months = (currentFilters.months as number) || DEFAULT_FILTERS.months;
+  const prState = (currentFilters.prState as string) || DEFAULT_FILTERS.prState;
+
+  // Initialize default filters in report mode on mount
+  useEffect(() => {
+    if (isReportMode && props?.setFilters) {
+      const filtersToSet: Record<string, any> = {};
+      let needsUpdate = false;
+
+      // Set defaults if not already present
+      if (props?.filters?.months === undefined) {
+        filtersToSet.months = DEFAULT_FILTERS.months;
+        needsUpdate = true;
+      }
+      if (props?.filters?.prState === undefined) {
+        filtersToSet.prState = DEFAULT_FILTERS.prState;
+        needsUpdate = true;
+      }
+      if (props?.filters?.githubRepoIds === undefined) {
+        filtersToSet.githubRepoIds = DEFAULT_FILTERS.githubRepoIds;
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
+        props.setFilters(prev => ({ ...prev, ...filtersToSet }));
+      }
+    }
+  }, [isReportMode]); // Only run on mount/mode change, not on filter changes
+
+  // Filter change handlers that work in both modes
+  const handleGithubRepoIdsChange = (ids: number[]) => {
+    if (isReportMode && props?.setFilters) {
+      props.setFilters(prev => ({ ...prev, githubRepoIds: ids }));
+    } else {
+      hookData.setGithubRepoIds(ids);
+    }
+  };
+
+  const handleMonthsChange = (newMonths: number) => {
+    if (isReportMode && props?.setFilters) {
+      props.setFilters(prev => ({ ...prev, months: newMonths }));
+    } else {
+      hookData.setMonths(newMonths);
+    }
+  };
+
+  const handlePrStateChange = (state: string) => {
+    if (isReportMode && props?.setFilters) {
+      props.setFilters(prev => ({ ...prev, prState: state }));
+    } else {
+      (hookData as any).setPrState(state);
+    }
+  };
 
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -197,14 +268,14 @@ export default function PRMaturityCard(props?: PRMaturityCardProps) {
       tier={data?.summary?.tier || ''}
       tierLabel={data?.summary?.tier_label || ''}
       repositories={hookData.repositories}
-      githubRepoIds={hookData.githubRepoIds}
-      months={hookData.months}
-      prState={(hookData as any).prState || 'open'}
-      onGithubRepoIdsChange={hookData.setGithubRepoIds}
-      onMonthsChange={hookData.setMonths}
-      onPrStateChange={(hookData as any).setPrState}
-      filterBadges={hookData.filterBadges}
-      onRefresh={hookData.fetchData as () => void}
+      githubRepoIds={githubRepoIds}
+      months={months}
+      prState={prState}
+      onGithubRepoIdsChange={handleGithubRepoIdsChange}
+      onMonthsChange={handleMonthsChange}
+      onPrStateChange={handlePrStateChange}
+      filterBadges={isReportMode ? undefined : hookData.filterBadges}
+      onRefresh={isReportMode ? props?.refresh : (hookData.fetchData as () => void)}
       loading={loading}
       error={error}
       loadingText="Loading PR maturity data..."
@@ -253,7 +324,7 @@ export default function PRMaturityCard(props?: PRMaturityCardProps) {
           period={selectedPeriod}
           metricType="pr-maturity"
           title={`PRs Created on ${formatDate(selectedPeriod)}`}
-          githubRepoIds={hookData.githubRepoIds.length > 0 ? hookData.githubRepoIds.join(',') : undefined}
+          githubRepoIds={githubRepoIds.length > 0 ? githubRepoIds.join(',') : undefined}
         />
       )}
     </MetricCardWrapper>

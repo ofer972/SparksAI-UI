@@ -58,6 +58,16 @@ interface TopBarProps {
     loadingPrompts: boolean;
   };
   
+  // AI Chat for insight detail view
+  insightChat?: {
+    onOpenChat: () => void;
+  };
+  
+  // AI Chat for KPI dashboard detail view
+  kpiDashboardChat?: {
+    onOpenChat: () => void;
+  };
+  
   // User
   currentUser: any;
   onLogout: () => void;
@@ -74,6 +84,8 @@ export default function TopBar({
   insightSettings,
   filters,
   aiChat,
+  insightChat,
+  kpiDashboardChat,
   currentUser,
   onLogout,
   onNavigateToSettings,
@@ -193,6 +205,8 @@ export default function TopBar({
                 breadcrumbs={breadcrumbs}
                 insightSettings={insightSettings}
                 filters={filters}
+                insightChat={insightChat}
+                kpiDashboardChat={kpiDashboardChat}
                 currentUser={currentUser}
                 onLogout={onLogout}
                 onToggleFilters={handleToggleFilters}

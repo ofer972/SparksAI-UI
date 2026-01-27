@@ -29,6 +29,12 @@ interface InsightsTopBarContentProps {
  settingsLoading?: boolean;
  hasSavedSettings?: boolean;
  };
+ insightChat?: {
+ onOpenChat: () => void;
+ };
+ kpiDashboardChat?: {
+ onOpenChat: () => void;
+ };
  currentUser: any;
  onLogout: () => void;
  onToggleFilters: () => void;
@@ -44,6 +50,8 @@ export default function InsightsTopBarContent({
  breadcrumbs,
  insightSettings,
  filters,
+ insightChat,
+ kpiDashboardChat,
  currentUser,
  onLogout,
  onToggleFilters,
@@ -98,6 +106,38 @@ export default function InsightsTopBarContent({
  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
  <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
  </svg>
+ </button>
+ )}
+
+ {/* AI Chat Button (Mobile) - Only show if insightChat is provided */}
+ {insightChat && (
+ <button
+ onClick={insightChat.onOpenChat}
+ className="flex items-center space-x-2 px-3 py-1 rounded-lg hover:bg-surface-secondary text-content-tertiary focus:outline-none focus:ring-2 focus:ring-brand transition-colors"
+ aria-label="AI Chat for this insight"
+ title="Open AI chat for this insight"
+ >
+ <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-brand dark:text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+ <path d="M10 3.5a1.5 1.5 0 011.5 1.5v1.5a1.5 1.5 0 01-3 0V5a1.5 1.5 0 011.5-1.5zM5.5 11a1.5 1.5 0 00-1.5 1.5v1.5a1.5 1.5 0 003 0V12.5a1.5 1.5 0 00-1.5-1.5zM14.5 11a1.5 1.5 0 00-1.5 1.5v1.5a1.5 1.5 0 003 0V12.5a1.5 1.5 0 00-1.5-1.5zM10 9a1 1 0 00-1 1v1a1 1 0 002 0v-1a1 1 0 00-1-1z" />
+ <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0 2a10 10 0 100-20 10 10 0 000 20z" clipRule="evenodd" />
+ </svg>
+ <span className="text-sm font-medium">AI</span>
+ </button>
+ )}
+
+ {/* AI Chat Button (Mobile) - For KPI Dashboard */}
+ {kpiDashboardChat && (
+ <button
+ onClick={kpiDashboardChat.onOpenChat}
+ className="flex items-center space-x-2 px-3 py-1 rounded-lg hover:bg-surface-secondary text-content-tertiary focus:outline-none focus:ring-2 focus:ring-brand transition-colors"
+ aria-label="AI Chat for this KPI"
+ title="Open AI chat for this KPI"
+ >
+ <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-brand dark:text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+ <path d="M10 3.5a1.5 1.5 0 011.5 1.5v1.5a1.5 1.5 0 01-3 0V5a1.5 1.5 0 011.5-1.5zM5.5 11a1.5 1.5 0 00-1.5 1.5v1.5a1.5 1.5 0 003 0V12.5a1.5 1.5 0 00-1.5-1.5zM14.5 11a1.5 1.5 0 00-1.5 1.5v1.5a1.5 1.5 0 003 0V12.5a1.5 1.5 0 00-1.5-1.5zM10 9a1 1 0 00-1 1v1a1 1 0 002 0v-1a1 1 0 00-1-1z" />
+ <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0 2a10 10 0 100-20 10 10 0 000 20z" clipRule="evenodd" />
+ </svg>
+ <span className="text-sm font-medium">AI</span>
  </button>
  )}
 
@@ -212,6 +252,38 @@ export default function InsightsTopBarContent({
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
  </svg>
  )}
+ </button>
+ )}
+ 
+ {/* AI Chat Button (Desktop) - Only show if insightChat is provided */}
+ {insightChat && (
+ <button
+ onClick={insightChat.onOpenChat}
+ className="flex items-center space-x-2 px-3 py-1 rounded-lg hover:bg-surface-secondary text-content-tertiary focus:outline-none focus:ring-2 focus:ring-brand transition-colors"
+ aria-label="AI Chat for this insight"
+ title="Open AI chat for this insight"
+ >
+ <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-brand dark:text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+ <path d="M10 3.5a1.5 1.5 0 011.5 1.5v1.5a1.5 1.5 0 01-3 0V5a1.5 1.5 0 011.5-1.5zM5.5 11a1.5 1.5 0 00-1.5 1.5v1.5a1.5 1.5 0 003 0V12.5a1.5 1.5 0 00-1.5-1.5zM14.5 11a1.5 1.5 0 00-1.5 1.5v1.5a1.5 1.5 0 003 0V12.5a1.5 1.5 0 00-1.5-1.5zM10 9a1 1 0 00-1 1v1a1 1 0 002 0v-1a1 1 0 00-1-1z" />
+ <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0 2a10 10 0 100-20 10 10 0 000 20z" clipRule="evenodd" />
+ </svg>
+ <span className="text-sm font-medium">AI</span>
+ </button>
+ )}
+
+ {/* AI Chat Button (Desktop) - For KPI Dashboard */}
+ {kpiDashboardChat && (
+ <button
+ onClick={kpiDashboardChat.onOpenChat}
+ className="flex items-center space-x-2 px-3 py-1 rounded-lg hover:bg-surface-secondary text-content-tertiary focus:outline-none focus:ring-2 focus:ring-brand transition-colors"
+ aria-label="AI Chat for this KPI"
+ title="Open AI chat for this KPI"
+ >
+ <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-brand dark:text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+ <path d="M10 3.5a1.5 1.5 0 011.5 1.5v1.5a1.5 1.5 0 01-3 0V5a1.5 1.5 0 011.5-1.5zM5.5 11a1.5 1.5 0 00-1.5 1.5v1.5a1.5 1.5 0 003 0V12.5a1.5 1.5 0 00-1.5-1.5zM14.5 11a1.5 1.5 0 00-1.5 1.5v1.5a1.5 1.5 0 003 0V12.5a1.5 1.5 0 00-1.5-1.5zM10 9a1 1 0 00-1 1v1a1 1 0 002 0v-1a1 1 0 00-1-1z" />
+ <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0 2a10 10 0 100-20 10 10 0 000 20z" clipRule="evenodd" />
+ </svg>
+ <span className="text-sm font-medium">AI</span>
  </button>
  )}
  

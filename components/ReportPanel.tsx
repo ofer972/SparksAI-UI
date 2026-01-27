@@ -107,6 +107,18 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Emit current filters to parent whenever they change (including initial mount)
+  // This ensures the parent can track the current filter state including any defaults
+  const prevFiltersRef = React.useRef<string>('');
+  React.useEffect(() => {
+    const filtersJson = JSON.stringify(localFilters);
+    // Only emit if filters have actually changed to avoid infinite loops
+    if (filtersJson !== prevFiltersRef.current) {
+      prevFiltersRef.current = filtersJson;
+      onFiltersChange?.(localFilters);
+    }
+  }, [localFilters, onFiltersChange]);
+
   React.useEffect(() => {
     if (controlledFilters) {
       setLocalFilters((prev) => {

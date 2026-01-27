@@ -458,7 +458,13 @@ export default function HomeDashboard({
             </div>
           </div>
           <div className="p-3 min-h-[100px]" style={{ zoom: 0.9 }}>
-            <DORAKPIs singleRowLayout={true} onOpenKPIDashboard={onOpenKPIDashboard} />
+            <DORAKPIs 
+              singleRowLayout={true} 
+              onOpenKPIDashboard={onOpenKPIDashboard}
+              defaultTeamOrGroupName={defaultTeamOrGroupName}
+              defaultTreeType={defaultTreeType}
+              currentPIName={currentPIName}
+            />
           </div>
         </div>
       </div>

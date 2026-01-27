@@ -544,6 +544,9 @@ export default function Home() {
  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
  const [isDashboardChatModalOpen, setIsDashboardChatModalOpen] = useState(false);
  const [collectedDashboardData, setCollectedDashboardData] = useState<any>(null);
+ const [isInsightChatModalOpen, setIsInsightChatModalOpen] = useState(false);
+ const [isKPIDashboardChatModalOpen, setIsKPIDashboardChatModalOpen] = useState(false);
+ const [collectedKPIDashboardData, setCollectedKPIDashboardData] = useState<any>(null);
  
  // Listen for report-specific AI chat requests
  useEffect(() => {
@@ -557,6 +560,21 @@ export default function Home() {
  
  return () => {
  window.removeEventListener('open-report-ai-chat', handleReportAIChat as EventListener);
+ };
+ }, []);
+
+ // Listen for KPI dashboard data collection responses
+ useEffect(() => {
+ const handleKPIDashboardDataCollected = (event: CustomEvent) => {
+ console.log('[App] Received kpi-dashboard-data-collected event:', event.detail);
+ setCollectedKPIDashboardData(event.detail || null);
+ setIsKPIDashboardChatModalOpen(true);
+ };
+
+ window.addEventListener('kpi-dashboard-data-collected', handleKPIDashboardDataCollected as EventListener);
+ 
+ return () => {
+ window.removeEventListener('kpi-dashboard-data-collected', handleKPIDashboardDataCollected as EventListener);
  };
  }, []);
  
@@ -2127,6 +2145,19 @@ sidebarCollapsed ? 'w-16' : 'w-56'
  onPromptChange: setSelectedPrompt,
  loadingPrompts: loadingPrompts,
  } : undefined}
+ insightChat={(activeNavItem === 'home-detail' && selectedInsightCard) ? {
+ onOpenChat: () => {
+ console.log('[AI Chat] Opening chat for insight card:', selectedInsightCard.id);
+ setIsInsightChatModalOpen(true);
+ },
+ } : undefined}
+ kpiDashboardChat={(activeNavItem === 'home-detail' && selectedKPIDashboard) ? {
+ onOpenChat: () => {
+ console.log('[AI Chat] Requesting KPI dashboard data for:', selectedKPIDashboard.title);
+ // Dispatch event to collect current report filters from KPIDashboard
+ window.dispatchEvent(new CustomEvent('collect-kpi-dashboard-data'));
+ },
+ } : undefined}
  currentUser={getCurrentUser()}
  onLogout={() => { logout(); try { location.assign('/login'); } catch {} }}
  onNavigateToSettings={() => setActiveNavItem('user-settings')}
@@ -2239,6 +2270,37 @@ sidebarCollapsed ? 'w-16' : 'w-56'
  }
  promptName={selectedPrompt && selectedPrompt.trim() !== '' && selectedPrompt !== '[use default]' ? selectedPrompt : undefined}
  dashboardData={collectedDashboardData}
+ />
+ )}
+
+ {/* Insight Detail AI Chat Modal */}
+ {activeNavItem === 'home-detail' && selectedInsightCard && (
+ <AIChatModal
+ isOpen={isInsightChatModalOpen}
+ onClose={() => {
+ console.log('[AI Modal] Closing insight chat modal');
+ setIsInsightChatModalOpen(false);
+ }}
+ chatType="Team_insights"
+ insightsId={selectedInsightCard.id}
+ teamName={selectedInsightCard.team_name || ''}
+ piName={selectedInsightCard.pi || undefined}
+ />
+ )}
+
+ {/* KPI Dashboard AI Chat Modal */}
+ {activeNavItem === 'home-detail' && selectedKPIDashboard && collectedKPIDashboardData && (
+ <AIChatModal
+ isOpen={isKPIDashboardChatModalOpen}
+ onClose={() => {
+ console.log('[AI Modal] Closing KPI dashboard chat modal');
+ setIsKPIDashboardChatModalOpen(false);
+ setCollectedKPIDashboardData(null);
+ }}
+ chatType="Custom_dashboard"
+ teamName={collectedKPIDashboardData.topBarFilters?.selectedTeam || ''}
+ piName={collectedKPIDashboardData.topBarFilters?.selectedPI || ''}
+ dashboardData={collectedKPIDashboardData}
  />
  )}
  

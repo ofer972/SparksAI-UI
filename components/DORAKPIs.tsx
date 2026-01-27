@@ -45,9 +45,18 @@ export interface KPIDashboardData {
 interface DORAKPIsProps {
   singleRowLayout?: boolean;
   onOpenKPIDashboard?: (data: KPIDashboardData) => void;
+  defaultTeamOrGroupName?: string | null;
+  defaultTreeType?: 'team' | 'group' | null;
+  currentPIName?: string | null;
 }
 
-export default function DORAKPIs({ singleRowLayout = false, onOpenKPIDashboard }: DORAKPIsProps) {
+export default function DORAKPIs({ 
+  singleRowLayout = false, 
+  onOpenKPIDashboard,
+  defaultTeamOrGroupName,
+  defaultTreeType,
+  currentPIName,
+}: DORAKPIsProps) {
   const [metrics, setMetrics] = useState<MetricResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,6 +106,22 @@ export default function DORAKPIs({ singleRowLayout = false, onOpenKPIDashboard }
       }
     } else if (metric.action.type === 'report') {
       if (metric.action.report_ids && metric.action.report_ids.length > 0) {
+        // Merge action params with default team/PI context from home screen
+        const mergedFilters: Record<string, any> = {
+          ...metric.action.params,
+        };
+        
+        // Add default team/group if available from home screen context
+        if (defaultTeamOrGroupName) {
+          mergedFilters.team_name = defaultTeamOrGroupName;
+          mergedFilters.isGroup = defaultTreeType === 'group';
+        }
+        
+        // Add current PI if available from home screen context
+        if (currentPIName) {
+          mergedFilters.pi = currentPIName;
+        }
+        
         const kpiData: KPIDashboardData = {
           title: metric.label,
           value: metric.value,
@@ -104,7 +129,7 @@ export default function DORAKPIs({ singleRowLayout = false, onOpenKPIDashboard }
           description: metric.description,
           trend: metric.trend,
           reportIds: metric.action.report_ids,
-          initialFilters: metric.action.params || {},
+          initialFilters: mergedFilters,
         };
         
         // If callback is provided, use it to navigate to detail page

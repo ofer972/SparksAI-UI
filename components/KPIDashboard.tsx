@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ReportPanel from '@/components/ReportPanel';
 
 interface Trend {
@@ -67,6 +67,85 @@ export default function KPIDashboard({
   initialFilters = {},
   onBack,
 }: KPIDashboardProps) {
+  // Track each report's current filters
+  const [reportFiltersState, setReportFiltersState] = useState<Record<string, Record<string, any>>>({});
+
+  // Handler for when a report's filters change
+  const handleReportFiltersChange = useCallback((reportId: string, index: number, filters: Record<string, any>) => {
+    const key = `${reportId}-0-${index}`;
+    setReportFiltersState(prev => ({
+      ...prev,
+      [key]: filters
+    }));
+  }, []);
+
+  // Listen for data collection requests (for AI chat)
+  useEffect(() => {
+    const handleCollectData = () => {
+      // Build the dashboard data structure
+      const dashboardData = {
+        layoutConfig: {
+          rows: [{
+            id: `kpi-row-${title.replace(/\s+/g, '-').toLowerCase()}`,
+            reportIds: reportIds
+          }]
+        },
+        topBarFilters: {
+          selectedPI: initialFilters?.pi || '',
+          selectedTeam: initialFilters?.team_name || '',
+          selectedTreeType: initialFilters?.isGroup ? 'group' : 'team',
+          selectedTreeValue: initialFilters?.isGroup 
+            ? `group:${initialFilters?.team_name || ''}`
+            : `team:${initialFilters?.team_name || ''}`
+        },
+        reportFilters: reportIds.reduce((acc: Record<string, any>, reportId: string, index: number) => {
+          const key = `${reportId}-0-${index}`;
+          // Use tracked filters from report components - they now properly set their defaults
+          // via ReportPanel's setFilters callback
+          const trackedFilters = reportFiltersState[key] || {};
+          
+          // Merge initial filters with tracked filters (tracked filters take precedence)
+          const mergedFilters: Record<string, any> = {
+            ...initialFilters,
+            ...trackedFilters,
+          };
+          
+          // Add human-readable filter labels for AI context
+          // The actual filter values (months, githubRepoIds, prState, environment) are now properly
+          // set by the report components themselves via ReportPanel's setFilters callback
+          if (!mergedFilters.repositories && mergedFilters.githubRepoIds !== undefined) {
+            // Convert empty array or undefined to "All" for display
+            if (!mergedFilters.githubRepoIds || (Array.isArray(mergedFilters.githubRepoIds) && mergedFilters.githubRepoIds.length === 0)) {
+              mergedFilters.repositories = 'All';
+            }
+          }
+          if (mergedFilters.months !== undefined && !mergedFilters.time_period) {
+            mergedFilters.time_period = `${mergedFilters.months} month${mergedFilters.months !== 1 ? 's' : ''}`;
+          }
+          // PR workflow specific: prState
+          if (mergedFilters.prState !== undefined && !mergedFilters.pr_state) {
+            mergedFilters.pr_state = mergedFilters.prState === 'all' ? 'All' : mergedFilters.prState;
+          }
+          // DORA specific: environment
+          if (mergedFilters.environment !== undefined && !mergedFilters.environment_display) {
+            mergedFilters.environment_display = mergedFilters.environment || 'All';
+          }
+          
+          acc[key] = mergedFilters;
+          return acc;
+        }, {}),
+        pinnedFilters: {}
+      };
+
+      console.log('[KPIDashboard] Emitting collected data:', dashboardData);
+      window.dispatchEvent(new CustomEvent('kpi-dashboard-data-collected', { detail: dashboardData }));
+    };
+
+    window.addEventListener('collect-kpi-dashboard-data', handleCollectData);
+    return () => {
+      window.removeEventListener('collect-kpi-dashboard-data', handleCollectData);
+    };
+  }, [title, reportIds, initialFilters, reportFiltersState]);
 
   const colors = tierColors[tierStatus] || tierColors.low;
   const tierLabel = tierStatus.charAt(0).toUpperCase() + tierStatus.slice(1);
@@ -179,7 +258,7 @@ export default function KPIDashboard({
                 className="bg-surface rounded-2xl border border-outline shadow-sm overflow-hidden flex-shrink-0 flex flex-col" 
                 style={{ height: '400px', minHeight: '400px' }}
               >
-                {row.map((reportId) => {
+                {row.map((reportId, reportIndex) => {
                   return (
                     <div 
                       key={reportId}
@@ -194,6 +273,7 @@ export default function KPIDashboard({
                           hideHeader: true,
                           isDashboard: true,
                         }}
+                        onFiltersChange={(filters) => handleReportFiltersChange(reportId, rowIdx * row.length + reportIndex, filters)}
                       />
                     </div>
                   );

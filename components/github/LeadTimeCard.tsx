@@ -32,14 +32,22 @@ interface LeadTimeCardProps {
   loading?: boolean;
   error?: string | null;
   filters?: Record<string, any>;
+  setFilters?: (filters: Record<string, any> | ((prev: Record<string, any>) => Record<string, any>)) => void;
   refresh?: () => void;
   togglePin?: (filterKey: string) => void;
   pinnedFilters?: string[];
   componentProps?: Record<string, any>;
 }
 
+// Default filter values for DORA reports
+const DEFAULT_FILTERS = {
+  githubRepoIds: [] as number[],
+  months: 1,
+  environment: '',
+};
+
 export default function LeadTimeCard(props?: LeadTimeCardProps) {
-  // Use dual-mode hook
+  // Use dual-mode hook (only for hook mode and for repositories/environments list)
   const { data, loading, error, isReportMode, hookData } = useDualModeMetricData<LeadTimeData>({
     data: props?.data,
     loading: props?.loading,
@@ -49,6 +57,68 @@ export default function LeadTimeCard(props?: LeadTimeCardProps) {
     useDORA: true,
     endpoint: '/api/v1/github-service/dora/lead-time',
   });
+
+  // In report mode, use filters from props; in hook mode, use hookData
+  const currentFilters = isReportMode ? (props?.filters || {}) : {
+    githubRepoIds: hookData.githubRepoIds,
+    months: hookData.months,
+    environment: (hookData as any).environment,
+  };
+
+  // Get filter values with defaults
+  const githubRepoIds = (currentFilters.githubRepoIds as number[]) || DEFAULT_FILTERS.githubRepoIds;
+  const months = (currentFilters.months as number) || DEFAULT_FILTERS.months;
+  const environment = (currentFilters.environment as string) ?? DEFAULT_FILTERS.environment;
+
+  // Filter change handlers that work in both modes
+  const handleGithubRepoIdsChange = (ids: number[]) => {
+    if (isReportMode && props?.setFilters) {
+      props.setFilters(prev => ({ ...prev, githubRepoIds: ids }));
+    } else {
+      hookData.setGithubRepoIds(ids);
+    }
+  };
+
+  const handleMonthsChange = (newMonths: number) => {
+    if (isReportMode && props?.setFilters) {
+      props.setFilters(prev => ({ ...prev, months: newMonths }));
+    } else {
+      hookData.setMonths(newMonths);
+    }
+  };
+
+  const handleEnvironmentChange = (env: string) => {
+    if (isReportMode && props?.setFilters) {
+      props.setFilters(prev => ({ ...prev, environment: env }));
+    } else {
+      (hookData as any).setEnvironment(env);
+    }
+  };
+
+  // Initialize default filters in report mode on mount
+  useEffect(() => {
+    if (isReportMode && props?.setFilters) {
+      const filtersToSet: Record<string, any> = {};
+      let needsUpdate = false;
+
+      if (props?.filters?.months === undefined) {
+        filtersToSet.months = DEFAULT_FILTERS.months;
+        needsUpdate = true;
+      }
+      if (props?.filters?.githubRepoIds === undefined) {
+        filtersToSet.githubRepoIds = DEFAULT_FILTERS.githubRepoIds;
+        needsUpdate = true;
+      }
+      if (props?.filters?.environment === undefined) {
+        filtersToSet.environment = DEFAULT_FILTERS.environment;
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
+        props.setFilters(prev => ({ ...prev, ...filtersToSet }));
+      }
+    }
+  }, [isReportMode]); // Only run on mount/mode change
 
   // Dark mode detection
   const [isDark, setIsDark] = useState(false);
@@ -157,14 +227,14 @@ export default function LeadTimeCard(props?: LeadTimeCardProps) {
       tierLabel={data?.summary?.tier_label || ''}
       repositories={hookData.repositories}
       availableEnvironments={(hookData as any).availableEnvironments || []}
-      githubRepoIds={hookData.githubRepoIds}
-      environment={(hookData as any).environment || ''}
-      months={hookData.months}
-      onGithubRepoIdsChange={hookData.setGithubRepoIds}
-      onEnvironmentChange={(hookData as any).setEnvironment}
-      onMonthsChange={hookData.setMonths}
-      filterBadges={hookData.filterBadges}
-      onRefresh={hookData.fetchData as () => void}
+      githubRepoIds={githubRepoIds}
+      environment={environment}
+      months={months}
+      onGithubRepoIdsChange={handleGithubRepoIdsChange}
+      onEnvironmentChange={handleEnvironmentChange}
+      onMonthsChange={handleMonthsChange}
+      filterBadges={isReportMode ? undefined : hookData.filterBadges}
+      onRefresh={isReportMode ? props?.refresh : (hookData.fetchData as () => void)}
       loading={loading}
       error={error}
       loadingText="Loading lead time data..."
