@@ -113,6 +113,32 @@ function DroppableRow({ rowId, children, isEmpty, isNewRow }: { rowId: string; c
   );
 }
 
+function NewRowDropZone({ isActive }: { isActive: boolean }) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'droppable-new-row',
+    data: { type: 'new-row' },
+  });
+
+  // Only show when dragging
+  if (!isActive) return null;
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`h-24 mt-2 border-2 border-dashed rounded-lg transition-all flex items-center justify-center ${
+        isOver 
+          ? 'border-blue-500 bg-blue-100 dark:bg-blue-900/30' 
+          : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/30'
+      }`}
+    >
+      <div className={`text-center transition-colors ${isOver ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}`}>
+        <div className="text-2xl mb-1">➕</div>
+        <div className="text-sm font-medium">Drop here to create a new row</div>
+      </div>
+    </div>
+  );
+}
+
 export default function DraggableResizableGrid({
   layout,
   onLayoutChange,
@@ -215,6 +241,42 @@ export default function DraggableResizableGrid({
 
     const activeRowId = activeData.rowId;
     const activeReportId = activeData.reportId;
+
+    // Handle drop on "new row" zone - create a new row with this report
+    if (overData?.type === 'new-row' || over.id === 'droppable-new-row') {
+      const newLayout: LayoutConfig = { rows: [...layout.rows] };
+      
+      // Remove from current row
+      const activeRowIndex = newLayout.rows.findIndex((r) => r.id === activeRowId);
+      if (activeRowIndex !== -1) {
+        newLayout.rows[activeRowIndex] = {
+          ...newLayout.rows[activeRowIndex],
+          reportIds: newLayout.rows[activeRowIndex].reportIds.filter((id) => id !== activeReportId),
+        };
+      }
+      
+      // Create new row with the report
+      const newRowId = `row-${Date.now()}`;
+      newLayout.rows.push({
+        id: newRowId,
+        reportIds: [activeReportId],
+      });
+      
+      // Remove empty rows (except the new one)
+      newLayout.rows = newLayout.rows.filter((r) => r.reportIds.length > 0);
+      
+      // Update row heights to include the new row
+      setRowHeights((prev) => [...prev, defaultRowHeight]);
+      
+      // Update column widths for the new row
+      setColumnWidths((prev) => ({
+        ...prev,
+        [newRowId]: [100],
+      }));
+      
+      onLayoutChange(newLayout);
+      return;
+    }
 
     // Determine target row
     let overRowId: string | null = null;
@@ -517,21 +579,23 @@ export default function DraggableResizableGrid({
               </DroppableRow>
             </SortableContext>
             
-            {rowIndex < layout.rows.length - 1 && (
-              <div
-                className={`h-1 cursor-row-resize transition-all relative group ${
-                  isDraggingVertical && activeVerticalResizer === rowIndex
-                    ? 'bg-brand'
-                    : 'bg-transparent hover:bg-blue-400'
-                }`}
-                onMouseDown={handleVerticalMouseDown(rowIndex)}
-                style={{ cursor: 'row-resize' }}
-              >
-                <div className="absolute inset-x-0 top-0 h-1 w-full"></div>
-              </div>
-            )}
+            {/* Vertical resizer - appears after every row including the last one */}
+            <div
+              className={`h-1 cursor-row-resize transition-all relative group ${
+                isDraggingVertical && activeVerticalResizer === rowIndex
+                  ? 'bg-brand'
+                  : 'bg-transparent hover:bg-blue-400'
+              }`}
+              onMouseDown={handleVerticalMouseDown(rowIndex)}
+              style={{ cursor: 'row-resize' }}
+            >
+              <div className="absolute inset-x-0 top-0 h-1 w-full"></div>
+            </div>
           </React.Fragment>
         ))}
+        
+        {/* Drop zone for creating a new row - only visible when dragging */}
+        <NewRowDropZone isActive={activeId !== null} />
       </div>
       
       <DragOverlay>

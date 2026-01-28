@@ -57,13 +57,19 @@ const hasHebrewText = (text: string): boolean => {
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose, onMouseDown }) => (
   <div
-    className="flex items-center justify-between p-3 border-b border-outline select-none md:cursor-move bg-surface-secondary text-content-primary rounded-t-lg"
+    className="flex items-center justify-between p-4 border-b border-outline select-none bg-surface-secondary text-content-primary"
     onMouseDown={onMouseDown}
   >
-    <h3 className="text-sm font-semibold">AI Chat</h3>
+    <div className="flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-brand" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M10 3.5a1.5 1.5 0 011.5 1.5v1.5a1.5 1.5 0 01-3 0V5a1.5 1.5 0 011.5-1.5zM5.5 11a1.5 1.5 0 00-1.5 1.5v1.5a1.5 1.5 0 003 0V12.5a1.5 1.5 0 00-1.5-1.5zM14.5 11a1.5 1.5 0 00-1.5 1.5v1.5a1.5 1.5 0 003 0V12.5a1.5 1.5 0 00-1.5-1.5zM10 9a1 1 0 00-1 1v1a1 1 0 002 0v-1a1 1 0 00-1-1z" />
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0 2a10 10 0 100-20 10 10 0 000 20z" clipRule="evenodd" />
+      </svg>
+      <h3 className="text-base font-semibold">AI Assistant</h3>
+    </div>
     <button
       onClick={onClose}
-      className="text-content-secondary hover:text-content-primary transition-colors"
+      className="p-1 rounded-lg text-content-secondary hover:text-content-primary hover:bg-surface-tertiary transition-colors"
       aria-label="Close"
     >
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,7 +86,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
   messagesEndRef,
 }) => {
   return (
-    <div className="flex-1 overflow-y-auto p-4 min-h-[400px] space-y-4">
+    <div className="flex-1 overflow-y-auto p-4 space-y-4">
       {messages.length === 0 && !loading && !hasInitialMessage && (
         <div className="text-center text-content-tertiary text-sm mt-8">
           Loading...
@@ -311,11 +317,9 @@ export default function AIChatModal({
   dashboardData,
 }: AIChatModalProps) {
   const [inputValue, setInputValue] = useState('');
+  const [isVisible, setIsVisible] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const [dragPos, setDragPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const isDraggingRef = useRef(false);
   const finalTranscriptRef = useRef<string>('');
 
   const {
@@ -343,46 +347,25 @@ export default function AIChatModal({
     },
   });
 
-  const onHeaderMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (window.innerWidth < 768) return;
-    if (!panelRef.current) return;
-    isDraggingRef.current = true;
-    dragOffsetRef.current = {
-      x: e.clientX - dragPos.x,
-      y: e.clientY - dragPos.y,
-    };
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp, { once: true });
-    e.preventDefault();
-  };
+  // Handle slide-in animation
+  useEffect(() => {
+    if (isOpen) {
+      // Small delay to trigger CSS transition
+      requestAnimationFrame(() => {
+        setIsVisible(true);
+      });
+    } else {
+      setIsVisible(false);
+    }
+  }, [isOpen]);
 
-  const onMouseMove = (e: MouseEvent) => {
-    if (!isDraggingRef.current || !panelRef.current) return;
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const rect = panelRef.current.getBoundingClientRect();
-    const panelWidth = rect.width;
-    const panelHeight = rect.height;
-
-    let nextX = e.clientX - dragOffsetRef.current.x;
-    let nextY = e.clientY - dragOffsetRef.current.y;
-
-    const maxX = viewportWidth - panelWidth / 2;
-    const minX = -maxX;
-    const maxY = viewportHeight - panelHeight / 2;
-    const minY = -maxY;
-
-    if (nextX > maxX) nextX = maxX;
-    if (nextX < minX) nextX = minX;
-    if (nextY > maxY) nextY = maxY;
-    if (nextY < minY) nextY = minY;
-
-    setDragPos({ x: nextX, y: nextY });
-  };
-
-  const onMouseUp = () => {
-    isDraggingRef.current = false;
-    window.removeEventListener('mousemove', onMouseMove);
+  // Handle closing with animation
+  const handleClose = () => {
+    setIsVisible(false);
+    // Wait for animation to complete before actually closing
+    setTimeout(() => {
+      onClose();
+    }, 300);
   };
 
   // Reset local input + speech when modal closes
@@ -428,42 +411,41 @@ export default function AIChatModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div
-        ref={panelRef}
-        className="bg-surface rounded-lg shadow-xl max-w-[900px] w-full mx-4 max-h-[98vh] flex flex-col"
-        style={{ transform: `translate(${dragPos.x}px, ${dragPos.y}px)` }}
-      >
-        <ChatHeader onClose={onClose} onMouseDown={onHeaderMouseDown} />
+    <div
+      ref={panelRef}
+      className={`fixed top-0 right-0 h-full w-full sm:w-[420px] md:w-[480px] lg:w-[520px] bg-surface/70 dark:bg-surface/75 backdrop-blur-sm border-l border-outline/40 shadow-xl z-40 flex flex-col transform transition-transform duration-300 ease-out ${
+        isVisible ? 'translate-x-0' : 'translate-x-full'
+      }`}
+    >
+      <ChatHeader onClose={handleClose} onMouseDown={() => {}} />
 
-        <ChatMessages
-          messages={messages}
-          loading={loading}
-          hasInitialMessage={hasInitialMessage}
-          messagesEndRef={messagesEndRef}
-        />
+      <ChatMessages
+        messages={messages}
+        loading={loading}
+        hasInitialMessage={hasInitialMessage}
+        messagesEndRef={messagesEndRef}
+      />
 
-        <ChatInput
-          inputValue={inputValue}
-          loading={loading}
-          isListening={speech.isListening}
-          speechError={speech.error}
-          speechLanguage={speech.language}
-          isSpeechRecognitionSupported={speech.isSupported}
-          onInputChange={setInputValue}
-          onKeyDown={handleKeyDown}
-          onSend={handleSend}
-          onToggleListening={speech.toggleListening}
-          onSpeechErrorDismiss={() => speech.setError(null)}
-          onSpeechLanguageChange={(newLang) => {
-            speech.setLanguage(newLang);
-            if (speech.isListening) {
-              speech.stopListening();
-              setTimeout(() => speech.startListening(), 100);
-            }
-          }}
-        />
-      </div>
+      <ChatInput
+        inputValue={inputValue}
+        loading={loading}
+        isListening={speech.isListening}
+        speechError={speech.error}
+        speechLanguage={speech.language}
+        isSpeechRecognitionSupported={speech.isSupported}
+        onInputChange={setInputValue}
+        onKeyDown={handleKeyDown}
+        onSend={handleSend}
+        onToggleListening={speech.toggleListening}
+        onSpeechErrorDismiss={() => speech.setError(null)}
+        onSpeechLanguageChange={(newLang) => {
+          speech.setLanguage(newLang);
+          if (speech.isListening) {
+            speech.stopListening();
+            setTimeout(() => speech.startListening(), 100);
+          }
+        }}
+      />
     </div>
   );
 }

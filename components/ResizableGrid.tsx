@@ -87,27 +87,26 @@ export default function ResizableGrid({
               <div className="h-full">{row.children[0]}</div>
             )}
           </div>
-          {index < rows.length - 1 && (
-            <div
-              className={`h-1 cursor-row-resize transition-all relative group ${
-                isDraggingVertical && activeVerticalResizer === index
-                  ? 'bg-brand'
-                  : 'bg-transparent hover:bg-brand'
-              }`}
-              onMouseDown={handleVerticalMouseDown(index)}
-              style={{ cursor: 'row-resize' }}
-            >
-              <div className="absolute inset-x-0 top-1/2 transform -translate-y-1/2 h-1 flex items-center justify-center">
-                <div
-                  className={`h-0.5 w-full transition-colors ${
-                    isDraggingVertical && activeVerticalResizer === index
-                      ? 'bg-brand'
-                      : 'bg-transparent group-hover:bg-blue-400'
-                  }`}
-                ></div>
-              </div>
+          {/* Vertical resizer - appears after every row including the last one */}
+          <div
+            className={`h-1 cursor-row-resize transition-all relative group ${
+              isDraggingVertical && activeVerticalResizer === index
+                ? 'bg-brand'
+                : 'bg-transparent hover:bg-brand'
+            }`}
+            onMouseDown={handleVerticalMouseDown(index)}
+            style={{ cursor: 'row-resize' }}
+          >
+            <div className="absolute inset-x-0 top-1/2 transform -translate-y-1/2 h-1 flex items-center justify-center">
+              <div
+                className={`h-0.5 w-full transition-colors ${
+                  isDraggingVertical && activeVerticalResizer === index
+                    ? 'bg-brand'
+                    : 'bg-transparent group-hover:bg-blue-400'
+                }`}
+              ></div>
             </div>
-          )}
+          </div>
         </React.Fragment>
       ))}
     </div>
