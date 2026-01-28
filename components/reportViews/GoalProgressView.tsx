@@ -52,9 +52,23 @@ const GoalProgressView: React.FC<GoalProgressViewProps> = ({
   
   // Track previous scopeType to detect changes (initialize with current scopeType)
   const prevScopeTypeRef = useRef<string>((filters?.scope_type as string) || 'pi');
+  
+  // Track if we've set the default scope_type to avoid infinite loops
+  const hasSetDefaultScopeRef = useRef(false);
 
   // Get sprint ID from meta if available
   const sprintId = meta?.sprint_id as number | undefined;
+  
+  // Set default scope_type if missing (only once, don't override saved values)
+  useEffect(() => {
+    if (!hasSetDefaultScopeRef.current && setFilters && !filters?.scope_type) {
+      hasSetDefaultScopeRef.current = true;
+      setFilters((prev) => ({
+        ...prev,
+        scope_type: 'pi', // Backend default
+      }));
+    }
+  }, [filters?.scope_type, setFilters]);
 
   // Transform data to hierarchy format
   const hierarchyData = useMemo(() => {
