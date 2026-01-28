@@ -160,28 +160,40 @@ export default function DraggableResizableGrid({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeReportId, setActiveReportId] = useState<string | null>(null);
   const [collapsedReports, setCollapsedReports] = useState<Set<string>>(new Set());
+  
+  // Initialize row heights from layout config or use defaults
   const [rowHeights, setRowHeights] = useState<number[]>(() =>
-    layout.rows.map(() => defaultRowHeight)
+    layout.rows.map((row) => row.height || defaultRowHeight)
   );
 
   // Update row heights when layout changes (rows added or removed)
   useEffect(() => {
     setRowHeights((prevHeights) => {
       // Always ensure heights array matches rows length
-      const newHeights = layout.rows.map((_, index) => 
-        prevHeights[index] !== undefined ? prevHeights[index] : defaultRowHeight
+      const newHeights = layout.rows.map((row, index) => 
+        row.height || prevHeights[index] || defaultRowHeight
       );
       return newHeights;
     });
-  }, [layout.rows.length, defaultRowHeight]);
+  }, [layout.rows.length, defaultRowHeight, layout.rows]);
+  
+  // Initialize column widths from layout config or use equal distribution
   const [columnWidths, setColumnWidths] = useState<Record<string, number[]>>(() => {
     const widths: Record<string, number[]> = {};
     layout.rows.forEach((row) => {
-      widths[row.id] = Array(row.reportIds.length).fill(100 / row.reportIds.length);
+      // Use saved widths if available and valid, otherwise distribute equally
+      if (row.columnWidths && row.columnWidths.length === row.reportIds.length) {
+        widths[row.id] = row.columnWidths;
+      } else {
+        widths[row.id] = Array(row.reportIds.length).fill(100 / row.reportIds.length);
+      }
     });
     return widths;
   });
   const prevLayoutRef = useRef<LayoutConfig>(layout);
+  
+  // Track if we're currently resizing to avoid triggering layout updates during resize
+  const isResizingRef = useRef(false);
 
   // Listen for collapse events from report cards
   useEffect(() => {
@@ -457,7 +469,20 @@ export default function DraggableResizableGrid({
     setIsDraggingVertical(false);
     setActiveVerticalResizer(null);
     document.body.style.cursor = '';
-  }, []);
+    
+    // Persist row heights to layout config
+    setRowHeights((currentHeights) => {
+      const updatedLayout: LayoutConfig = {
+        rows: layout.rows.map((row, index) => ({
+          ...row,
+          height: currentHeights[index],
+          columnWidths: columnWidths[row.id] || row.columnWidths,
+        })),
+      };
+      onLayoutChange(updatedLayout);
+      return currentHeights;
+    });
+  }, [layout, columnWidths, onLayoutChange]);
 
   // Horizontal resize handlers
   const handleHorizontalMouseDown = useCallback((rowId: string, index: number) => (e: React.MouseEvent) => {
@@ -515,7 +540,20 @@ export default function DraggableResizableGrid({
     setIsDraggingHorizontal(false);
     setActiveHorizontalResizer(null);
     document.body.style.cursor = '';
-  }, []);
+    
+    // Persist column widths to layout config
+    setColumnWidths((currentWidths) => {
+      const updatedLayout: LayoutConfig = {
+        rows: layout.rows.map((row, index) => ({
+          ...row,
+          columnWidths: currentWidths[row.id] || row.columnWidths,
+          height: rowHeights[index] || row.height,
+        })),
+      };
+      onLayoutChange(updatedLayout);
+      return currentWidths;
+    });
+  }, [layout, rowHeights, onLayoutChange]);
 
   useEffect(() => {
     if (isDraggingVertical) {

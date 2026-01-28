@@ -138,6 +138,8 @@ export default function CustomDashboardEditor({
       rows: dashboardLayoutConfig.layoutConfig.rows.map(row => ({
         id: row.id,
         reportIds: row.widgets.map(w => w.id), // Use widget id for grid
+        columnWidths: row.columnWidths, // Preserve column widths for resizing
+        height: row.height, // Preserve row height for resizing
       })),
     };
   }, [dashboardLayoutConfig]);
@@ -923,6 +925,7 @@ export default function CustomDashboardEditor({
     currentWidgets.forEach(w => widgetMap.set(w.id, w));
     
     // Build new DashboardLayoutConfig from the grid layout
+    // Preserve columnWidths and height from the grid layout (they are set by resize handlers)
     const newLayoutConfig: DashboardLayoutConfig = {
       ...dashboardLayoutConfig,
       layoutConfig: {
@@ -931,6 +934,9 @@ export default function CustomDashboardEditor({
           widgets: row.reportIds
             .map(widgetId => widgetMap.get(widgetId))
             .filter((w): w is DashboardWidget => w !== undefined),
+          // Preserve sizing properties from the grid layout
+          columnWidths: row.columnWidths,
+          height: row.height,
         })).filter(row => row.widgets.length > 0),
       },
     };

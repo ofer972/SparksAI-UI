@@ -507,6 +507,8 @@ export interface ReportInstancePayload<T = any> {
 export interface LayoutRow {
   id: string;
   reportIds: string[];
+  columnWidths?: number[]; // Percentage widths for each report (should sum to 100)
+  height?: number; // Row height in pixels
 }
 
 export interface LayoutConfig {
@@ -535,6 +537,8 @@ export interface DashboardWidget {
 export interface CustomDashboardLayoutRow {
   id: string;
   widgets: DashboardWidget[]; // Changed from reportIds to widgets
+  columnWidths?: number[]; // Percentage widths for each widget (should sum to 100)
+  height?: number; // Row height in pixels
 }
 
 // Layout config structure for custom dashboards - now matches user_settings format
