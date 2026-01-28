@@ -28,6 +28,14 @@ import ReworkRateCard from './github/ReworkRateCard';
 import PickupTimeCard from './github/PickupTimeCard';
 import PRSizeCard from './github/PRSizeCard';
 import PRMaturityCard from './github/PRMaturityCard';
+import AuditFrequentlyUsedActionsView from './reportViews/AuditFrequentlyUsedActionsView';
+import AuditIssuesSyncedTrendView from './reportViews/AuditIssuesSyncedTrendView';
+import AuditTokenUsageView from './reportViews/AuditTokenUsageView';
+import AuditSlowActionsView from './reportViews/AuditSlowActionsView';
+import AuditFailedEndpointsView from './reportViews/AuditFailedEndpointsView';
+import AuditUserQuestionsView from './reportViews/AuditUserQuestionsView';
+import AuditMostActiveUsersView from './reportViews/AuditMostActiveUsersView';
+import AuditDailyActiveUsersView from './reportViews/AuditDailyActiveUsersView';
 import type { ReportDefinition } from '@/lib/config';
 
 export interface ReportRenderContext {
@@ -520,6 +528,102 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
       error,
       filters,
       refresh,
+    }),
+  },
+  'audit-frequently-used-actions': {
+    component: AuditFrequentlyUsedActionsView,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, filters, refresh, meta }) => ({
+      data: Array.isArray(result) ? result : [],
+      loading,
+      error,
+      filters,
+      refresh,
+      meta,
+    }),
+  },
+  'audit-issues-synced-trend': {
+    component: AuditIssuesSyncedTrendView,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, filters, refresh, meta }) => ({
+      data: Array.isArray(result) ? result : [],
+      loading,
+      error,
+      filters,
+      refresh,
+      meta,
+    }),
+  },
+  'audit-token-usage': {
+    component: AuditTokenUsageView,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, filters, refresh, meta }) => ({
+      data: Array.isArray(result) ? result : [],
+      loading,
+      error,
+      filters,
+      refresh,
+      meta,
+    }),
+  },
+  'audit-slow-actions': {
+    component: AuditSlowActionsView,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, filters, refresh, meta }) => ({
+      data: Array.isArray(result) ? result : [],
+      loading,
+      error,
+      filters,
+      refresh,
+      meta,
+    }),
+  },
+  'audit-failed-endpoints': {
+    component: AuditFailedEndpointsView,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, filters, refresh, meta }) => ({
+      data: Array.isArray(result) ? result : [],
+      loading,
+      error,
+      filters,
+      refresh,
+      meta,
+    }),
+  },
+  'audit-user-questions': {
+    component: AuditUserQuestionsView,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, filters, refresh, meta }) => ({
+      data: Array.isArray(result) ? result : [],
+      loading,
+      error,
+      filters,
+      refresh,
+      meta,
+    }),
+  },
+  'audit-most-active-users': {
+    component: AuditMostActiveUsersView,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, filters, refresh, meta }) => ({
+      data: Array.isArray(result) ? result : [],
+      loading,
+      error,
+      filters,
+      refresh,
+      meta,
+    }),
+  },
+  'audit-daily-active-users': {
+    component: AuditDailyActiveUsersView,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, filters, refresh, meta }) => ({
+      data: Array.isArray(result) ? result : [],
+      loading,
+      error,
+      filters,
+      refresh,
+      meta,
     }),
   },
 };

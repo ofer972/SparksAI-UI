@@ -176,7 +176,7 @@ export default function WidgetSelectorModal({
  setLoading(true);
  try {
  const api = new ApiService();
- const reports = await api.getReportDefinitions();
+      const reports = await api.getReportDefinitions({ includeAudit: false });
  setAvailableReports(reports);
  } catch (err) {
  console.error('Failed to load reports:', err);

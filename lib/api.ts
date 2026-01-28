@@ -279,8 +279,15 @@ export class ApiService {
   }
 
   // Reports API
-  async getReportDefinitions(): Promise<ReportDefinition[]> {
-    const url = buildBackendUrl(API_CONFIG.endpoints.reports.list);
+  async getReportDefinitions(options?: {
+    includeAudit?: boolean;
+    auditOnly?: boolean;
+  }): Promise<ReportDefinition[]> {
+    const params = new URLSearchParams();
+    if (options?.includeAudit) params.append('include_audit', 'true');
+    if (options?.auditOnly) params.append('audit_only', 'true');
+    
+    const url = `${buildBackendUrl(API_CONFIG.endpoints.reports.list)}?${params}`;
     const response = await fetch(url);
 
     if (!response.ok) {
