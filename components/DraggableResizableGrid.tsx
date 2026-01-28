@@ -113,27 +113,36 @@ function DroppableRow({ rowId, children, isEmpty, isNewRow }: { rowId: string; c
   );
 }
 
-function NewRowDropZone({ isActive }: { isActive: boolean }) {
+function NewRowDropZone({ isActive, position, insertIndex }: { isActive: boolean; position: 'between' | 'end'; insertIndex: number }) {
+  const dropId = position === 'end' ? 'droppable-new-row-end' : `droppable-new-row-${insertIndex}`;
   const { setNodeRef, isOver } = useDroppable({
-    id: 'droppable-new-row',
-    data: { type: 'new-row' },
+    id: dropId,
+    data: { type: 'new-row', insertIndex },
   });
 
   // Only show when dragging
   if (!isActive) return null;
 
+  const isBetween = position === 'between';
+
   return (
     <div
       ref={setNodeRef}
-      className={`h-24 mt-2 border-2 border-dashed rounded-lg transition-all flex items-center justify-center ${
-        isOver 
-          ? 'border-blue-500 bg-blue-100 dark:bg-blue-900/30' 
-          : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/30'
+      className={`transition-all flex items-center justify-center ${
+        isBetween 
+          ? `h-16 my-1 border-2 border-dashed rounded ${isOver ? 'border-blue-500 bg-blue-100 dark:bg-blue-900/30' : 'border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-800/20'}`
+          : `h-24 mt-2 border-2 border-dashed rounded-lg ${isOver ? 'border-blue-500 bg-blue-100 dark:bg-blue-900/30' : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/30'}`
       }`}
     >
       <div className={`text-center transition-colors ${isOver ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}`}>
-        <div className="text-2xl mb-1">➕</div>
-        <div className="text-sm font-medium">Drop here to create a new row</div>
+        {isBetween ? (
+          <div className="text-xs font-medium">Drop to insert new row here</div>
+        ) : (
+          <>
+            <div className="text-2xl mb-1">➕</div>
+            <div className="text-sm font-medium">Drop here to create a new row</div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -243,8 +252,9 @@ export default function DraggableResizableGrid({
     const activeReportId = activeData.reportId;
 
     // Handle drop on "new row" zone - create a new row with this report
-    if (overData?.type === 'new-row' || over.id === 'droppable-new-row') {
+    if (overData?.type === 'new-row' || (typeof over.id === 'string' && over.id.startsWith('droppable-new-row'))) {
       const newLayout: LayoutConfig = { rows: [...layout.rows] };
+      const insertIndex = overData?.insertIndex as number | undefined;
       
       // Remove from current row
       const activeRowIndex = newLayout.rows.findIndex((r) => r.id === activeRowId);
@@ -257,16 +267,31 @@ export default function DraggableResizableGrid({
       
       // Create new row with the report
       const newRowId = `row-${Date.now()}`;
-      newLayout.rows.push({
+      const newRow = {
         id: newRowId,
         reportIds: [activeReportId],
-      });
+      };
       
-      // Remove empty rows (except the new one)
+      // Insert at specific position or at the end
+      if (insertIndex !== undefined && insertIndex >= 0) {
+        // Adjust insert index if we removed from a row before the insert position
+        const adjustedIndex = (activeRowIndex !== -1 && activeRowIndex < insertIndex) ? insertIndex : insertIndex;
+        newLayout.rows.splice(adjustedIndex, 0, newRow);
+        
+        // Update row heights - insert at the correct position
+        setRowHeights((prev) => {
+          const newHeights = [...prev];
+          newHeights.splice(adjustedIndex, 0, defaultRowHeight);
+          return newHeights;
+        });
+      } else {
+        // Add at the end
+        newLayout.rows.push(newRow);
+        setRowHeights((prev) => [...prev, defaultRowHeight]);
+      }
+      
+      // Remove empty rows
       newLayout.rows = newLayout.rows.filter((r) => r.reportIds.length > 0);
-      
-      // Update row heights to include the new row
-      setRowHeights((prev) => [...prev, defaultRowHeight]);
       
       // Update column widths for the new row
       setColumnWidths((prev) => ({
@@ -524,6 +549,11 @@ export default function DraggableResizableGrid({
       <div>
         {layout.rows.map((row, rowIndex) => (
           <React.Fragment key={row.id}>
+            {/* Drop zone between rows - appears before each row (except first) when dragging */}
+            {rowIndex > 0 && (
+              <NewRowDropZone isActive={activeId !== null} position="between" insertIndex={rowIndex} />
+            )}
+            
             <SortableContext
               items={row.reportIds.map((id) => `${row.id}-${id}`)}
               strategy={rectSortingStrategy}
@@ -580,22 +610,24 @@ export default function DraggableResizableGrid({
             </SortableContext>
             
             {/* Vertical resizer - appears after every row including the last one */}
-            <div
-              className={`h-1 cursor-row-resize transition-all relative group ${
-                isDraggingVertical && activeVerticalResizer === rowIndex
-                  ? 'bg-brand'
-                  : 'bg-transparent hover:bg-blue-400'
-              }`}
-              onMouseDown={handleVerticalMouseDown(rowIndex)}
-              style={{ cursor: 'row-resize' }}
-            >
-              <div className="absolute inset-x-0 top-0 h-1 w-full"></div>
-            </div>
+            {!activeId && (
+              <div
+                className={`h-1 cursor-row-resize transition-all relative group ${
+                  isDraggingVertical && activeVerticalResizer === rowIndex
+                    ? 'bg-brand'
+                    : 'bg-transparent hover:bg-blue-400'
+                }`}
+                onMouseDown={handleVerticalMouseDown(rowIndex)}
+                style={{ cursor: 'row-resize' }}
+              >
+                <div className="absolute inset-x-0 top-0 h-1 w-full"></div>
+              </div>
+            )}
           </React.Fragment>
         ))}
         
-        {/* Drop zone for creating a new row - only visible when dragging */}
-        <NewRowDropZone isActive={activeId !== null} />
+        {/* Drop zone for creating a new row at the end - only visible when dragging */}
+        <NewRowDropZone isActive={activeId !== null} position="end" insertIndex={layout.rows.length} />
       </div>
       
       <DragOverlay>
