@@ -256,7 +256,7 @@ export default function DraggableResizableGrid({
     if (!over) return;
 
     const activeData = active.data.current as { reportId: string; rowId: string };
-    const overData = over.data.current as { reportId?: string; rowId?: string; type?: string } | undefined;
+    const overData = over.data.current as { reportId?: string; rowId?: string; type?: string; insertIndex?: number } | undefined;
 
     if (!activeData) return;
 
