@@ -1497,7 +1497,7 @@ export class ApiService {
       pi_name: data.pi,
       goal_text: data.goal_text,
       issue_keys: data.epic_keys || [], // Convert epic_keys to issue_keys
-      status: data.status || 'Draft',
+      status: data.status || 'Defined',
     };
     
     if (data.priority_bv !== undefined && data.priority_bv !== null) {
@@ -1868,7 +1868,7 @@ export class ApiService {
       sprint_id: data.sprint_id,
       goal_text: data.goal_text,
       issue_keys: data.issue_keys || [],
-      status: data.status || 'Draft',
+      status: data.status || 'Defined',
     };
     
     if (data.priority_bv !== undefined && data.priority_bv !== null) {

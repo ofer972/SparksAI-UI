@@ -145,7 +145,7 @@ export default function GoalsPanel({
         type: 'select' as const,
         required: true,
         options: [
-          { value: 'Draft', label: 'Draft' },
+          { value: 'Defined', label: 'Defined' },
           { value: 'In Progress', label: 'In Progress' },
           { value: 'Done', label: 'Done' },
           { value: 'Blocked', label: 'Blocked' },
@@ -1174,7 +1174,7 @@ export default function GoalsPanel({
                       team_name: teamName || null,
                       group_name: isGroup ? (teamName || null) : null,
                       goal_text: '',
-                      status: 'Draft',
+                      status: 'Defined',
                       priority_bv: null,
                     });
                     setIsCreateModalOpen(true);
@@ -1292,7 +1292,7 @@ export default function GoalsPanel({
               
               const createData: any = {
                 goal_text: data.goal_text as string,
-                status: (data.status as string) || 'Draft',
+                status: (data.status as string) || 'Defined',
                 issue_keys: [],
               };
               
