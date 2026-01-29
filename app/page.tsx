@@ -1448,6 +1448,7 @@ const IconGitHub = () => (
               trend={selectedKPIDashboard.trend}
               reportIds={selectedKPIDashboard.reportIds}
               initialFilters={selectedKPIDashboard.initialFilters}
+              metric={selectedKPIDashboard.metric}
               onBack={goHome}
             />
           );

@@ -10,6 +10,25 @@ interface Trend {
   improved: boolean;
 }
 
+interface MetricResponse {
+  metric_id: string;
+  label: string;
+  value: string;
+  tier_status: 'elite' | 'high' | 'medium' | 'low';
+  description: string;
+  tooltip: string;
+  trend?: Trend;
+  action?: {
+    type: 'table' | 'report';
+    target_id?: string;
+    report_ids?: string[];
+    params?: {
+      metric?: string;
+      [key: string]: any;
+    };
+  };
+}
+
 export interface KPIDashboardProps {
   title: string;
   value: string;
@@ -18,6 +37,7 @@ export interface KPIDashboardProps {
   trend?: Trend;
   reportIds: string[];
   initialFilters?: Record<string, any>;
+  metric?: MetricResponse;
   onBack: () => void;
 }
 
@@ -65,6 +85,7 @@ export default function KPIDashboard({
   trend,
   reportIds,
   initialFilters = {},
+  metric,
   onBack,
 }: KPIDashboardProps) {
   // Track each report's current filters
@@ -98,6 +119,7 @@ export default function KPIDashboard({
             ? `group:${initialFilters?.team_name || ''}`
             : `team:${initialFilters?.team_name || ''}`
         },
+        metric: metric,
         reportFilters: reportIds.reduce((acc: Record<string, any>, reportId: string, index: number) => {
           const key = `${reportId}-0-${index}`;
           // Use tracked filters from report components - they now properly set their defaults

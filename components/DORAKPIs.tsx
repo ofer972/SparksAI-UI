@@ -40,6 +40,7 @@ export interface KPIDashboardData {
   trend?: Trend;
   reportIds: string[];
   initialFilters?: Record<string, any>;
+  metric?: MetricResponse;
 }
 
 interface DORAKPIsProps {
@@ -130,6 +131,7 @@ export default function DORAKPIs({
           trend: metric.trend,
           reportIds: metric.action.report_ids,
           initialFilters: mergedFilters,
+          metric: metric,
         };
         
         // If callback is provided, use it to navigate to detail page
