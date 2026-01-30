@@ -34,6 +34,7 @@ interface KPICardProps {
   metricType?: 'dora' | 'sprint' | 'pi' | null;
   chart_data?: ChartData | null;
   layout?: 'normal' | 'wide';
+  alternative_text?: string | null;
   onClick: () => void;
 }
 
@@ -48,6 +49,7 @@ export default function KPICard({
   metricType,
   chart_data,
   layout = 'normal',
+  alternative_text,
   onClick,
 }: KPICardProps) {
   // DEBUG: Log chart_data for days_left metric
@@ -225,7 +227,7 @@ export default function KPICard({
             hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700 hover:scale-[1.02] cursor-pointer
             focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-300
             flex flex-col
-            ${layout === 'wide' ? 'flex-1 min-w-[150px]' : 'w-[171px]'}
+            w-[171px]
           `}
         >
         {/* Header with label and tier badge in top-right - fixed height for consistency */}
@@ -303,6 +305,9 @@ export default function KPICard({
               <span className={`font-semibold ${getTrendColor()}`}>{trend.percentage}%</span>
               <span className="text-content-secondary">{trend.label}</span>
             </>
+          ) : alternative_text ? (
+            /* Alternative text when no trend or chart */
+            <span className="text-content-secondary">{alternative_text}</span>
           ) : null}
         </div>
       </button>

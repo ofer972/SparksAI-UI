@@ -146,24 +146,23 @@ export default function GenericKPIs({
   }
 
   return (
-    <div className="w-full overflow-visible">
-      <div className="flex flex-row flex-wrap gap-2 justify-start">
-        {metrics.map((metric) => (
-          <KPICard
-            key={metric.metric_id}
-            metricId={metric.metric_id}
-            label={metric.label}
-            value={metric.value}
-            tierStatus={metric.tier_status}
-            metricType={metric.metric_type || null}
-            description={metric.description}
-            tooltip={metric.tooltip}
-            trend={metric.trend}
-            onClick={() => handleKPIClick(metric)}
-          />
-        ))}
-      </div>
-    </div>
+    <>
+      {metrics.map((metric) => (
+        <KPICard
+          key={metric.metric_id}
+          metricId={metric.metric_id}
+          label={metric.label}
+          value={metric.value}
+          tierStatus={metric.tier_status}
+          metricType={metric.metric_type || null}
+          description={metric.description}
+          tooltip={metric.tooltip}
+          trend={metric.trend}
+          alternative_text={(metric as any).alternative_text || null}
+          onClick={() => handleKPIClick(metric)}
+        />
+      ))}
+    </>
   );
 }
 

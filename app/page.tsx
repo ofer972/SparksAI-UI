@@ -1314,27 +1314,27 @@ const IconGitHub = () => (
  { id: 'teams-and-meetings', label: 'Teams & Meetings', icon: <IconTeamsMeetings /> },
  ],
  },
- {
- title: 'Data Sync',
- items: [
- { id: 'etl-dashboard', label: 'Data Sync View', icon: <IconDatabase /> },
- { id: 'etl-sync', label: 'Data Sync & History', icon: <IconRefresh /> },
- { id: 'etl-settings', label: 'Data Sync Settings', icon: <IconCogAlt /> },
- ],
- },
+      {
+        title: 'Data Source Integration',
+        items: [
+          { id: 'etl-dashboard', label: 'Data Sync View', icon: <IconDatabase /> },
+          { id: 'etl-sync', label: 'Data Sync & History', icon: <IconRefresh /> },
+          { id: 'etl-settings', label: 'Data Sync Settings', icon: <IconCogAlt /> },
+        ],
+      },
  ]
  : []),
  ];
 
  // Track which accordion groups are expanded
- const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
- 'System Dashboards': true,
- 'Goals': true,
- 'My Dashboards': true,
- Management: true,
- Administration: true,
- 'Data Sync': true,
- });
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
+    'System Dashboards': true,
+    'Goals': true,
+    'My Dashboards': true,
+    Management: true,
+    Administration: true,
+    'Data Source Integration': true,
+  });
  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
  'custom-dashboards': true,
  });
@@ -2207,7 +2207,8 @@ sidebarCollapsed ? 'w-16' : 'w-56'
                     teamName={teamInsightsFilters.selectedTeam} 
                     isGroup={teamInsightsFilters.selectedTreeType === 'group'} 
                     singleRowLayout={true}
-                    selectedMetrics={['sprint_velocity', 'sprint_predictability', 'sprint_wip', 'sprint_completion', 'sprint_days_left']}
+                    selectedMetrics={['sprint_velocity', 'sprint_predictability', 'sprint_wip', 'sprint_completion', 'sprint_days_left', 'cycle_time', 'open_bugs']}
+                    layout="wide"
                     onOpenKPIDashboard={(data: SprintKPIDashboardData) => {
                       // Convert SprintKPIDashboardData to KPIDashboardData format
                       const kpiData: KPIDashboardData = {

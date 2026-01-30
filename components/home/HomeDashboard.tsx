@@ -453,9 +453,8 @@ export default function HomeDashboard({
         </div>
       </div>
 
-      {/* DORA & Generic KPIs Row - 50/50 split */}
-      <div className="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {/* DORA KPIs Panel - 50% width */}
+      {/* General KPIs Row - Full Width */}
+      <div className="mt-3">
         <div className="bg-surface border border-outline rounded-xl shadow-sm overflow-hidden">
           <div className="px-3 py-1.5 border-b border-outline bg-gradient-to-r from-teal-50 to-teal-100 dark:from-teal-950/50 dark:to-teal-900/40">
             <div className="flex items-center justify-between">
@@ -463,44 +462,30 @@ export default function HomeDashboard({
                 <svg className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
-                <span className="text-xs font-semibold text-teal-700 dark:text-teal-300">DORA KPIs</span>
-                <span className="text-[10px] text-teal-600/70 dark:text-teal-400/70 hidden sm:inline">· Core KPIs</span>
+                <span className="text-xs font-semibold text-teal-700 dark:text-teal-300">General KPIs</span>
+                <span className="text-[10px] text-teal-600/70 dark:text-teal-400/70 hidden sm:inline">· DORA & Generic Metrics</span>
               </div>
               <button type="button" onClick={() => onNavigate('github-analysis')} className="text-[10px] text-teal-600 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-200 font-medium">
                 Open →
               </button>
             </div>
           </div>
-          <div className="p-3 min-h-[100px]" style={{ zoom: 0.9 }}>
-            <DORAKPIs 
-              singleRowLayout={true} 
-              onOpenKPIDashboard={onOpenKPIDashboard}
-              defaultTeamOrGroupName={defaultTeamOrGroupName}
-              defaultTreeType={defaultTreeType}
-              currentPIName={currentPIName}
-            />
-          </div>
-        </div>
-
-        {/* Generic KPIs Panel - 50% width */}
-        <div className="bg-surface border border-outline rounded-xl shadow-sm overflow-hidden">
-          <div className="px-3 py-1.5 border-b border-outline bg-gradient-to-r from-teal-50 to-teal-100 dark:from-teal-950/50 dark:to-teal-900/40">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="text-xs font-semibold text-teal-700 dark:text-teal-300">Generic KPIs</span>
-              </div>
+          <div className="p-3" style={{ zoom: 0.9 }}>
+            <div className="flex flex-wrap gap-2 justify-start">
+              <DORAKPIs 
+                singleRowLayout={true} 
+                onOpenKPIDashboard={onOpenKPIDashboard}
+                defaultTeamOrGroupName={defaultTeamOrGroupName}
+                defaultTreeType={defaultTreeType}
+                currentPIName={currentPIName}
+              />
+              <GenericKPIs 
+                defaultTeamOrGroupName={defaultTeamOrGroupName}
+                defaultTreeType={defaultTreeType}
+                currentPIName={currentPIName}
+                onOpenKPIDashboard={onOpenKPIDashboard}
+              />
             </div>
-          </div>
-          <div className="p-3 min-h-[100px]" style={{ zoom: 0.9 }}>
-            <GenericKPIs 
-              defaultTeamOrGroupName={defaultTeamOrGroupName}
-              defaultTreeType={defaultTreeType}
-              currentPIName={currentPIName}
-              onOpenKPIDashboard={onOpenKPIDashboard}
-            />
           </div>
         </div>
       </div>

@@ -33,6 +33,7 @@ interface MetricResponse {
     total?: number;
     percentage?: number;
   } | null;
+  alternative_text?: string | null;
   action?: {
     type: 'table' | 'report';
     target_id?: string;
@@ -241,7 +242,7 @@ export default function SprintKPIs({
     <>
       <div className="w-full overflow-visible">
         <div
-          className={`flex flex-wrap ${layout === 'wide' ? 'gap-4' : 'gap-2'} ${singleRowLayout ? 'justify-start' : 'justify-center'}`}
+          className={`flex flex-wrap ${layout === 'wide' ? 'gap-10' : 'gap-2'} ${singleRowLayout ? 'justify-start' : 'justify-center'}`}
         >
           {displayMetrics.map((metric) => (
             <KPICard
@@ -256,6 +257,7 @@ export default function SprintKPIs({
               trend={metric.trend || null}
               chart_data={metric.chart_data || null}
               layout={layout}
+              alternative_text={(metric as any).alternative_text || null}
               onClick={() => handleKPIClick(metric)}
             />
           ))}

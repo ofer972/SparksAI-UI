@@ -124,7 +124,7 @@ export default function TeamAIInsightsView({
                     isGroup={selectedTreeType === 'group'} 
                     singleRowLayout={true}
                     onOpenKPIDashboard={onOpenKPIDashboard}
-                    selectedMetrics={['sprint_velocity', 'sprint_predictability', 'sprint_wip', 'sprint_completion', 'sprint_days_left']}
+                    selectedMetrics={['sprint_velocity', 'sprint_predictability', 'sprint_wip', 'sprint_completion', 'sprint_days_left', 'cycle_time', 'open_bugs']}
                     layout="wide"
                   />
                 ) : mobileMetricsTab === 'pi' && selectedPI ? (
