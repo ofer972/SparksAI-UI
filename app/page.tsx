@@ -13,6 +13,7 @@ import { ApiService, verifyAdmin } from '@/lib/api';
 import TopBar from '@/components/TopBar';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 import { usePageSettings } from '@/hooks/usePageSettings';
+import { GitHubSettingsProvider, useGitHubSettings } from '@/contexts/GitHubSettingsContext';
 import TeamAIInsightsView from '@/components/views/TeamAIInsightsView';
 import TeamDashboardView from '@/components/views/TeamDashboardView';
 import SystemSettingsView from '@/components/views/SystemSettingsView';
@@ -45,9 +46,10 @@ import type { KPIDashboardData as SprintKPIDashboardData } from '@/components/Sp
 import type { BreadcrumbItem, NavItemId } from '@/lib/nav';
 import type { AICard } from '@/lib/config';
 
-export default function Home() {
+function HomeContent() {
  const router = useRouter();
  const { groups, teams, loading: teamsLoading } = useTeamsGroups();
+ const { isDORAEnabled } = useGitHubSettings();
  
  // Page settings hooks for insights pages
  const teamInsightSettings = usePageSettings('team-insight');
@@ -1087,7 +1089,7 @@ const navigationItems = [
   { id: 'team-ai-insights', label: 'AI Insights', icon: '💡' },
   { id: 'team-dashboard', label: 'Team Dashboard', icon: '📊' },
   { id: 'pi-dashboard', label: 'PI Dashboard', icon: '📈' },
-  { id: 'github-analysis', label: 'DORA Metrics', icon: '📊' },
+  ...(isDORAEnabled() ? [{ id: 'github-analysis', label: 'DORA Metrics', icon: '📊' }] : []),
   { id: 'user-settings', label: 'Settings', icon: '👤' },
  { id: 'settings', label: 'System Settings', icon: '⚙️' },
  { id: 'general-data', label: 'View General Data', icon: '📁' },
@@ -1285,7 +1287,7 @@ const IconJira = () => (
       { id: 'team-ai-insights', label: 'AI Insights', icon: <IconLightbulb /> },
       { id: 'team-dashboard', label: 'Team Dashboard', icon: <IconChartBar /> },
       { id: 'pi-dashboard', label: 'PI Dashboard', icon: <IconTrendingUp /> },
-      { id: 'github-analysis', label: 'DORA Metrics', icon: <IconGitHub /> },
+      ...(isDORAEnabled() ? [{ id: 'github-analysis', label: 'DORA Metrics', icon: <IconGitHub /> }] : []),
     ],
   },
  {
@@ -2414,4 +2416,12 @@ sidebarCollapsed ? 'w-16' : 'w-56'
  Loading...
  </div>
  );
+}
+
+export default function Home() {
+  return (
+    <GitHubSettingsProvider>
+      <HomeContent />
+    </GitHubSettingsProvider>
+  );
 }

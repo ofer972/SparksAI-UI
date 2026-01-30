@@ -181,18 +181,13 @@ export default function DORAKPIs({
     );
   }
 
-  if (error) {
+  if (error || metrics.length === 0) {
     return (
       <div className="flex items-center justify-center h-32">
-        <div className="text-xs text-danger-text">Error: {error}</div>
-      </div>
-    );
-  }
-
-  if (metrics.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-32">
-        <div className="text-xs text-content-tertiary">No KPIs available.</div>
+        <div className="text-center px-4">
+          <div className="text-sm text-content-secondary">DORA Metrics are currently disabled.</div>
+          <div className="text-xs text-content-tertiary mt-1">Enable GitHub Integration in Settings to view metrics.</div>
+        </div>
       </div>
     );
   }
