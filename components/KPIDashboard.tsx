@@ -14,10 +14,10 @@ interface MetricResponse {
   metric_id: string;
   label: string;
   value: string;
-  tier_status: 'elite' | 'high' | 'medium' | 'low';
+  tier_status: 'elite' | 'high' | 'medium' | 'low' | '';
   description: string;
   tooltip: string;
-  trend?: Trend;
+  trend?: Trend | null;
   action?: {
     type: 'table' | 'report';
     target_id?: string;
@@ -32,9 +32,9 @@ interface MetricResponse {
 export interface KPIDashboardProps {
   title: string;
   value: string;
-  tierStatus?: 'elite' | 'high' | 'medium' | 'low';
+  tierStatus?: 'elite' | 'high' | 'medium' | 'low' | '';
   description?: string;
-  trend?: Trend;
+  trend?: Trend | null;
   reportIds: string[];
   initialFilters?: Record<string, any>;
   metric?: MetricResponse;
@@ -169,8 +169,8 @@ export default function KPIDashboard({
     };
   }, [title, reportIds, initialFilters, reportFiltersState]);
 
-  const colors = tierColors[tierStatus] || tierColors.low;
-  const tierLabel = tierStatus.charAt(0).toUpperCase() + tierStatus.slice(1);
+  const colors = (tierStatus && (tierStatus as string) !== '' && tierStatus in tierColors) ? tierColors[tierStatus as 'elite' | 'high' | 'medium' | 'low'] : tierColors.low;
+  const tierLabel = tierStatus && (tierStatus as string) !== '' ? tierStatus.charAt(0).toUpperCase() + tierStatus.slice(1) : 'Low';
 
   // Trend arrow mapping - same as KPICard
   const getTrendArrow = (direction: string) => {

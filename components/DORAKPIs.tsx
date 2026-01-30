@@ -17,11 +17,11 @@ interface MetricResponse {
   metric_id: string;
   label: string;
   value: string;
-  tier_status: 'elite' | 'high' | 'medium' | 'low';
+  tier_status: 'elite' | 'high' | 'medium' | 'low' | '';
   metric_type?: 'dora' | 'sprint' | 'pi';
   description: string;
   tooltip: string;
-  trend?: Trend;
+  trend?: Trend | null;
   action?: {
     type: 'table' | 'report';
     target_id?: string;
@@ -36,9 +36,9 @@ interface MetricResponse {
 export interface KPIDashboardData {
   title: string;
   value: string;
-  tierStatus: 'elite' | 'high' | 'medium' | 'low';
+  tierStatus: 'elite' | 'high' | 'medium' | 'low' | '';
   description: string;
-  trend?: Trend;
+  trend?: Trend | null;
   reportIds: string[];
   initialFilters?: Record<string, any>;
   metric?: MetricResponse;

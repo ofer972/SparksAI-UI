@@ -49,7 +49,7 @@ export interface KPIDashboardData {
   value: string;
   tierStatus: 'elite' | 'high' | 'medium' | 'low' | '';
   description: string;
-  trend?: Trend;
+  trend?: Trend | null;
   reportIds: string[];
   initialFilters?: Record<string, any>;
   metric?: MetricResponse;
@@ -93,7 +93,7 @@ export default function SprintKPIs({
   }, [refreshKey, refetch]);
 
   // Handle opening KPI dashboard - called by KPICard when clicked
-  const handleKPIClick = (kpiData: KPIDashboardData) => {
+  const handleKPIClick = (kpiData: any) => {
     // If callback is provided, use it to navigate to detail page
     // Otherwise fall back to local state (for backward compatibility)
     if (onOpenKPIDashboard) {

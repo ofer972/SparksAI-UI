@@ -39,15 +39,19 @@ interface ActionData {
 interface KPIDashboardData {
   title: string;
   value: string;
-  tierStatus: 'elite' | 'high' | 'medium' | 'low' | string;
+  tierStatus: 'elite' | 'high' | 'medium' | 'low' | '';
   description: string;
   trend?: Trend | null;
   reportIds: string[];
   initialFilters: Record<string, any>;
-  metric: {
+  metric?: {
     metric_id: string;
     label: string;
     value: string;
+    tier_status?: 'elite' | 'high' | 'medium' | 'low' | '';
+    description?: string;
+    tooltip?: string;
+    trend?: Trend | null;
   };
 }
 
@@ -181,7 +185,7 @@ export default function KPICard({
   const tierColors = isSprintOrPI ? sprintTierColors : doraTierColors;
 
   // Use neutral colors when tier is not provided
-  const hasTier = tierStatus && tierStatus !== '';
+  const hasTier = tierStatus && tierStatus !== '' as string && tierStatus !== null && tierStatus !== undefined;
   // Get tier color - backend now sends correct tier names for each metric type
   const getTierColor = (tier: string) => {
     if (tier in tierColors) {
@@ -391,9 +395,8 @@ export default function KPICard({
                         const data = payload[0].payload;
                         return (
                           <div className="bg-gray-800 text-white text-xs rounded px-2 py-1 shadow-lg">
-                            <p className="font-semibold">Sprint: {data.sprint_id}</p>
+                            <p className="font-semibold">{data.date ? new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown'}</p>
                             <p className="text-blue-300">Velocity: {data.value}</p>
-                            {data.date && <p className="text-gray-400 text-[10px]">{new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>}
                           </div>
                         );
                       }

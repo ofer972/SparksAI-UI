@@ -1474,26 +1474,30 @@ const IconGitHub = () => (
  selectedPI={teamInsightsFilters.selectedPI}
  selectedTeam={teamInsightsFilters.selectedTeam}
  selectedTreeType={teamInsightsFilters.selectedTreeType}
- selectedCategories={teamInsightsFilters.selectedCategories}
- isLoading={teamInsightSettings.isLoading}
- isReady={teamInsightsReadyRef.current && teamInsightsReady}
- onOpenKPIDashboard={(data: SprintKPIDashboardData) => {
-   // Convert SprintKPIDashboardData to KPIDashboardData format
-   const kpiData: KPIDashboardData = {
-     title: data.title,
-     value: data.value,
-     tierStatus: data.tierStatus || 'medium',
-     description: data.description,
-     trend: data.trend,
-     reportIds: data.reportIds,
-     initialFilters: data.initialFilters,
-     metric: data.metric,
-   };
-   setSelectedKPIDashboard(kpiData);
-   setHomeDetail(null);
-   setSelectedInsightCard(null);
-   setActiveNavItem('home-detail');
- }}
+              selectedCategories={teamInsightsFilters.selectedCategories}
+              isLoading={teamInsightSettings.isLoading}
+              isReady={teamInsightsReadyRef.current && teamInsightsReady}
+              onOpenKPIDashboard={(data: SprintKPIDashboardData) => {
+                // Convert SprintKPIDashboardData to KPIDashboardData format
+                const kpiData: KPIDashboardData = {
+                  title: data.title,
+                  value: data.value,
+                  tierStatus: (data.tierStatus === '' ? 'medium' : data.tierStatus) as 'elite' | 'high' | 'medium' | 'low',
+                  description: data.description,
+                  trend: data.trend,
+                  reportIds: data.reportIds,
+                  initialFilters: data.initialFilters,
+                  metric: data.metric ? {
+                    ...data.metric,
+                    tier_status: (data.metric.tier_status === '' ? 'medium' : data.metric.tier_status) as 'elite' | 'high' | 'medium' | 'low',
+                    trend: data.metric.trend || undefined
+                  } : undefined,
+                };
+                setSelectedKPIDashboard(kpiData);
+                setHomeDetail(null);
+                setSelectedInsightCard(null);
+                setActiveNavItem('home-detail');
+              }}
  />
  );
  case 'team-dashboard':
@@ -2214,12 +2218,16 @@ sidebarCollapsed ? 'w-16' : 'w-56'
                       const kpiData: KPIDashboardData = {
                         title: data.title,
                         value: data.value,
-                        tierStatus: data.tierStatus || 'medium',
+                        tierStatus: (data.tierStatus === '' ? 'medium' : data.tierStatus) as 'elite' | 'high' | 'medium' | 'low',
                         description: data.description,
                         trend: data.trend,
                         reportIds: data.reportIds,
                         initialFilters: data.initialFilters,
-                        metric: data.metric,
+                        metric: data.metric ? {
+                          ...data.metric,
+                          tier_status: (data.metric.tier_status === '' ? 'medium' : data.metric.tier_status) as 'elite' | 'high' | 'medium' | 'low',
+                          trend: data.metric.trend || undefined
+                        } : undefined,
                       };
                       setSelectedKPIDashboard(kpiData);
                       setHomeDetail(null);
@@ -2239,12 +2247,12 @@ sidebarCollapsed ? 'w-16' : 'w-56'
                       const kpiData: KPIDashboardData = {
                         title: data.title,
                         value: data.value,
-                        tierStatus: data.tierStatus,
+                        tierStatus: data.tierStatus as 'elite' | 'high' | 'medium' | 'low',
                         description: data.description,
-                        trend: data.trend,
+                        trend: data.trend || undefined,
                         reportIds: data.reportIds,
                         initialFilters: data.initialFilters,
-                        metric: data.metric,
+                        metric: data.metric as any,
                       };
                       setSelectedKPIDashboard(kpiData);
                       setHomeDetail(null);

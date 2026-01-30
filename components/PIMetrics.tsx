@@ -11,19 +11,26 @@ interface Trend {
   improved: boolean;
 }
 
+interface MetricResponse {
+  metric_id: string;
+  label: string;
+  value: string;
+  tier_status: 'elite' | 'high' | 'medium' | 'low' | '';
+  metric_type?: 'dora' | 'sprint' | 'pi';
+  description: string;
+  tooltip: string;
+  trend?: Trend | null;
+}
+
 interface KPIDashboardData {
   title: string;
   value: string;
-  tierStatus: 'elite' | 'high' | 'medium' | 'low' | string;
+  tierStatus: 'elite' | 'high' | 'medium' | 'low' | '';
   description: string;
   trend?: Trend | null;
   reportIds: string[];
   initialFilters: Record<string, any>;
-  metric: {
-    metric_id: string;
-    label: string;
-    value: string;
-  };
+  metric?: MetricResponse;
 }
 
 interface PIMetricsProps {
@@ -62,7 +69,7 @@ export default function PIMetrics({
     }
   }, [refreshKey, refetch]);
   
-  const handleKPIClick = (kpiData: KPIDashboardData) => {
+  const handleKPIClick = (kpiData: any) => {
     if (onOpenKPIDashboard) {
       onOpenKPIDashboard(kpiData);
     }
