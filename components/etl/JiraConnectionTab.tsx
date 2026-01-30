@@ -20,6 +20,14 @@ export default function JiraConnectionTab({ settings, onSaved, onShowToast }: Ji
   const [validationSuccess, setValidationSuccess] = useState<string | null>(null);
   const [isValidated, setIsValidated] = useState<boolean>(false);
   
+  const [enableSync, setEnableSync] = useState<boolean>(() => {
+    if (typeof settings.enable_sync === 'boolean') return settings.enable_sync;
+    if (typeof settings.enable_sync === 'string') {
+      const normalized = settings.enable_sync.toLowerCase().trim();
+      return normalized === 'true' || normalized === '1' || normalized === 'yes';
+    }
+    return false;
+  });
   const [jiraUrl, setJiraUrl] = useState<string>(settings.jira_url || '');
   const [email, setEmail] = useState<string>(settings.jira_email || '');
   const [apiToken, setApiToken] = useState<string>('');
@@ -27,6 +35,14 @@ export default function JiraConnectionTab({ settings, onSaved, onShowToast }: Ji
 
   // Store original values to track changes
   const originalValuesRef = useRef({
+    enableSync: (() => {
+      if (typeof settings.enable_sync === 'boolean') return settings.enable_sync;
+      if (typeof settings.enable_sync === 'string') {
+        const normalized = settings.enable_sync.toLowerCase().trim();
+        return normalized === 'true' || normalized === '1' || normalized === 'yes';
+      }
+      return false;
+    })(),
     jiraUrl: settings.jira_url || '',
     email: settings.jira_email || '',
     jiraCloud: settings.jira_cloud !== undefined ? settings.jira_cloud : true,
@@ -43,8 +59,9 @@ export default function JiraConnectionTab({ settings, onSaved, onShowToast }: Ji
   const hasChanges = () => {
     const original = originalValuesRef.current;
     
-    // Check if URL, email, or cloud setting changed
-    if (jiraUrl.trim() !== original.jiraUrl ||
+    // Check if Enable Sync, URL, email, or cloud setting changed
+    if (enableSync !== original.enableSync ||
+        jiraUrl.trim() !== original.jiraUrl ||
         email.trim() !== original.email ||
         jiraCloud !== original.jiraCloud) {
       return true;
@@ -132,6 +149,7 @@ export default function JiraConnectionTab({ settings, onSaved, onShowToast }: Ji
       setError(null);
       
       const settingsUpdate: { [key: string]: any } = {
+        enable_sync: enableSync ? 'true' : 'false',
         jira_url: jiraUrl || null,
         jira_email: email || null,
         jira_cloud: jiraCloud,
@@ -151,6 +169,7 @@ export default function JiraConnectionTab({ settings, onSaved, onShowToast }: Ji
       
       // Update original values after successful save
       originalValuesRef.current = {
+        enableSync: enableSync,
         jiraUrl: jiraUrl.trim(),
         email: email.trim(),
         jiraCloud: jiraCloud,
@@ -185,6 +204,25 @@ export default function JiraConnectionTab({ settings, onSaved, onShowToast }: Ji
         </p>
         
         <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+            <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
+              Enable Sync:
+            </label>
+            <div className="flex-1 flex items-center space-x-3">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={enableSync}
+                  onChange={(e) => setEnableSync(e.target.checked)}
+                  className="w-4 h-4 text-brand border-outline rounded focus:ring-brand"
+                />
+                <span className="text-sm text-content-secondary">
+                  {enableSync ? 'System is active' : 'System is paused'}
+                </span>
+              </label>
+            </div>
+          </div>
+
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
             <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
               JIRA URL *:
@@ -282,20 +320,20 @@ export default function JiraConnectionTab({ settings, onSaved, onShowToast }: Ji
       <div className="flex justify-start gap-2">
         <button
           onClick={handleSave}
-          disabled={loading || !isValidated || !hasChanges()}
+          disabled={loading || !hasChanges()}
           className="px-4 py-2 bg-brand text-white rounded hover:bg-brand-hover disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           {loading ? 'Saving...' : '💾 Save'}
         </button>
       </div>
-      {!isValidated && (
-        <p className="text-xs text-content-tertiary mt-2">
-          Please validate the JIRA configuration before saving.
-        </p>
-      )}
-      {isValidated && !hasChanges() && (
+      {!hasChanges() && (
         <p className="text-xs text-content-tertiary mt-2">
           No changes to save. Settings are already saved.
+        </p>
+      )}
+      {hasChanges() && !isValidated && (
+        <p className="text-xs text-content-tertiary mt-2">
+          You can save without validation. Use Validate button to test your connection.
         </p>
       )}
     </div>

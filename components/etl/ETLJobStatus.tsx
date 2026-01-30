@@ -8,6 +8,8 @@ interface ETLJobStatusProps {
   showHeader?: boolean;
   refreshingStatus?: boolean;
   onRefresh?: () => void;
+  onResetQueue?: () => void;
+  resettingQueue?: boolean;
 }
 
 export default function ETLJobStatus({ 
@@ -15,7 +17,9 @@ export default function ETLJobStatus({
   lastHistoryBackfill,
   showHeader = false,
   refreshingStatus = false,
-  onRefresh
+  onRefresh,
+  onResetQueue,
+  resettingQueue = false
 }: ETLJobStatusProps) {
   const renderContent = () => {
     if (!jobStatus) {
@@ -116,20 +120,34 @@ export default function ETLJobStatus({
   };
 
   return (
-    <div className="bg-surface rounded-lg shadow-sm p-4">
+    <div className="bg-surface rounded-lg shadow-sm border border-outline p-4 h-full">
       {showHeader && (
-        <div className="flex items-center gap-3 mb-3">
+        <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-content-primary">Data Sync Job Status</h3>
-          {onRefresh && (
-            <button
-              onClick={onRefresh}
-              disabled={refreshingStatus}
-              className="px-2.5 py-1 bg-brand text-content-primary text-xs rounded hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-            >
-              <span className={refreshingStatus ? 'animate-spin' : ''}>🔄</span>
-              <span>Refresh</span>
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {onRefresh && (
+              <button
+                onClick={onRefresh}
+                disabled={refreshingStatus}
+                className="px-4 py-2 bg-brand text-white text-sm rounded hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                title="Refresh job status"
+              >
+                <span className={refreshingStatus ? 'animate-spin' : ''}>🔄</span>
+                <span>Refresh</span>
+              </button>
+            )}
+            {onResetQueue && (
+              <button
+                onClick={onResetQueue}
+                disabled={resettingQueue}
+                className="px-4 py-2 bg-danger-text text-white text-sm rounded hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                title="Clear jobs waiting"
+              >
+                <span>⚠️</span>
+                <span>Reset Queue</span>
+              </button>
+            )}
+          </div>
         </div>
       )}
       {renderContent()}

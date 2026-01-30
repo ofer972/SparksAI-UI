@@ -20,7 +20,8 @@ import CreateAgentJobView from '@/components/views/CreateAgentJobView';
 import UploadTranscriptsView from '@/components/views/UploadTranscriptsView';
 import UsersAdminView from '@/components/views/UsersAdminView';
 import TeamsAndMeetingsView from '@/components/views/TeamsAndMeetingsView';
-import DataSyncView from '@/components/views/DataSyncView';
+import JiraSettingsView from '@/components/views/JiraSettingsView';
+import GitHubSettingsView from '@/components/views/GitHubSettingsView';
 import UserSettingsView from '@/components/views/UserSettingsView';
 import UnsavedChangesModal from '@/components/UnsavedChangesModal';
 import JiraSetupModal from '@/components/JiraSetupModal';
@@ -737,12 +738,12 @@ export default function Home() {
  }, [authChecked, welcomeModalChecked, preferencesLoading, preferences]);
 
  const handleJiraSetupConfirm = () => {
- setShowJiraSetupModal(false);
- if (isAdmin) {
- // Navigate to sync settings
- userNavigatedRef.current = true; // User has navigated, allow normal rendering
- setActiveNavItem('etl-settings');
- }
+  setShowJiraSetupModal(false);
+  if (isAdmin) {
+    // Navigate to Jira settings
+    userNavigatedRef.current = true; // User has navigated, allow normal rendering
+    setActiveNavItem('jira-settings');
+  }
  };
 
  // Listen for dashboard settings state changes
@@ -1098,9 +1099,8 @@ const navigationItems = [
  ...(isAdmin ? [
  { id: 'users-admin', label: 'Users', icon: '👥' },
  { id: 'teams-and-meetings', label: 'Teams & Meetings', icon: '📅' },
- { id: 'etl-dashboard', label: 'Data Sync View', icon: '🗄️' },
- { id: 'etl-sync', label: 'Data Sync & History', icon: '🔄' },
- { id: 'etl-settings', label: 'Data Sync Settings', icon: '⚙️' }
+ { id: 'jira-settings', label: 'Jira Settings', icon: '🔷' },
+ { id: 'github-settings', label: 'GitHub Settings', icon: '🐙' }
  ] : []),
  ];
 
@@ -1268,6 +1268,14 @@ const IconGitHub = () => (
   </SidebarIcon>
 );
 
+const IconJira = () => (
+  <SidebarIcon>
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+    </svg>
+  </SidebarIcon>
+);
+
 
  // Accordion navigation groups for the sidebar UI (beautified)
  const navigationGroups: Array<{ title: string; items: Array<{ id: string; label: string; icon: React.ReactNode; children?: Array<{ id: string; label: string; icon: React.ReactNode }> }> }> = [
@@ -1317,9 +1325,8 @@ const IconGitHub = () => (
       {
         title: 'Data Source Integration',
         items: [
-          { id: 'etl-dashboard', label: 'Data Sync View', icon: <IconDatabase /> },
-          { id: 'etl-sync', label: 'Data Sync & History', icon: <IconRefresh /> },
-          { id: 'etl-settings', label: 'Data Sync Settings', icon: <IconCogAlt /> },
+          { id: 'jira-settings', label: 'Jira Settings', icon: <IconJira /> },
+          { id: 'github-settings', label: 'GitHub Settings', icon: <IconGitHub /> },
         ],
       },
  ]
@@ -1357,9 +1364,8 @@ const IconGitHub = () => (
  'upload-transcripts': 'SparksAI-Upload Transcripts',
  'users-admin': 'SparksAI-Users',
  'teams-and-meetings': 'SparksAI-Teams & Meetings',
- 'etl-dashboard': 'SparksAI-',
- 'etl-sync': 'SparksAI-Sync & History',
- 'etl-settings': 'SparksAI-Sync Settings',
+ 'jira-settings': 'SparksAI-Jira Settings',
+ 'github-settings': 'SparksAI-GitHub Settings',
  };
 
  useEffect(() => {
@@ -1542,12 +1548,10 @@ const IconGitHub = () => (
  return <UsersAdminView />;
  case 'teams-and-meetings':
  return <TeamsAndMeetingsView />;
- case 'etl-dashboard':
- return <DataSyncView activeSubView="dashboard" />;
- case 'etl-sync':
- return <DataSyncView activeSubView="sync" />;
- case 'etl-settings':
- return <DataSyncView activeSubView="settings" />;
+ case 'jira-settings':
+ return <JiraSettingsView />;
+ case 'github-settings':
+ return <GitHubSettingsView />;
  case 'user-settings':
  return <UserSettingsView />;
  case 'goal-progress':

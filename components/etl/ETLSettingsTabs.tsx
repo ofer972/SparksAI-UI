@@ -11,13 +11,22 @@ interface ETLSettingsTabsProps {
   settings: ETLSettings;
   customFields: { [field_id: string]: string };
   onSaved: () => void;
+  initialTab?: string;
+  hideNavigation?: boolean;
 }
 
 type TabType = 'jira-connection' | 'projects' | 'jql' | 'fields' | 'history' | 'derived' | 'pi';
 
-export default function ETLSettingsTabs({ settings, customFields, onSaved }: ETLSettingsTabsProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('jira-connection');
+export default function ETLSettingsTabs({ settings, customFields, onSaved, initialTab, hideNavigation = false }: ETLSettingsTabsProps) {
+  const [activeTab, setActiveTab] = useState<TabType>((initialTab as TabType) || 'jira-connection');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Update activeTab when initialTab prop changes
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab as TabType);
+    }
+  }, [initialTab]);
 
   const tabs = [
     { 
@@ -96,7 +105,7 @@ export default function ETLSettingsTabs({ settings, customFields, onSaved }: ETL
   }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="h-full flex flex-col overflow-hidden p-6">
+    <div className={`h-full flex flex-col overflow-hidden ${hideNavigation ? '' : 'p-6'}`}>
       {/* Toast Message */}
       {toastMessage && (
         <div className="fixed top-4 right-4 z-50 p-4 bg-green-50 border border-green-200 rounded-lg shadow-lg text-green-800">
@@ -104,30 +113,32 @@ export default function ETLSettingsTabs({ settings, customFields, onSaved }: ETL
         </div>
       )}
 
-      {/* Tab Navigation */}
-      <nav className="flex-shrink-0 flex space-x-1 bg-surface px-4 pt-4">
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`
-                flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg border transition-colors
-                ${isActive 
-                  ? 'bg-surface text-brand border-x border-t border-outline border-b-white -mb-px relative z-10' 
-                  : 'bg-surface-elevated text-content-secondary border border-outline hover:bg-surface-secondary'}
-              `}
-            >
-                {tab.icon}
-                <span className="whitespace-nowrap">{tab.label}</span>
-            </button>
-          );
-        })}
-      </nav>
+      {/* Tab Navigation - Only show if not hidden */}
+      {!hideNavigation && (
+        <nav className="flex-shrink-0 flex space-x-1 bg-surface px-4 pt-4">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg border transition-colors
+                  ${isActive 
+                    ? 'bg-surface text-brand border-x border-t border-outline border-b-white -mb-px relative z-10' 
+                    : 'bg-surface-elevated text-content-secondary border border-outline hover:bg-surface-secondary'}
+                `}
+              >
+                  {tab.icon}
+                  <span className="whitespace-nowrap">{tab.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
 
       {/* Tab Content Area with Border */}
-      <div className="flex-1 overflow-y-auto bg-surface border border-outline rounded-tr-lg rounded-b-lg shadow-sm p-6">
+      <div className={`flex-1 overflow-y-auto bg-surface ${hideNavigation ? 'p-6' : 'border border-outline rounded-tr-lg rounded-b-lg shadow-sm p-6'}`}>
         {activeTab === 'jira-connection' && (
           <div className="w-full max-w-[50%]">
             <JiraConnectionTab settings={settings} onSaved={onSaved} onShowToast={showToast} />
