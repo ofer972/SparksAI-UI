@@ -2234,6 +2234,7 @@ sidebarCollapsed ? 'w-16' : 'w-56'
                     isGroup={teamInsightsFilters.selectedTreeType === 'group'} 
                     singleRowLayout={true}
                     selectedMetrics={['pi_completion', 'pi_wip', 'epic_cycle_time', 'pi_outbound_dependencies', 'pi_inbound_dependencies']}
+                    layout="wide"
                     onOpenKPIDashboard={(data) => {
                       const kpiData: KPIDashboardData = {
                         title: data.title,

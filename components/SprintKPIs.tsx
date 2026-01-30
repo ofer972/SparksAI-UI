@@ -128,21 +128,36 @@ export default function SprintKPIs({
 
   if (loading) {
     const loadingCount = selectedMetrics && selectedMetrics.length > 0 ? selectedMetrics.length : 5;
-    
+
     return (
       <div className="w-full overflow-visible">
-        <div className={`flex flex-wrap ${layout === 'wide' ? 'gap-10' : 'gap-2'} ${singleRowLayout ? 'justify-start' : 'justify-center'}`}>
-          {[...Array(loadingCount)].map((_, i) => (
-            <div 
-              key={i} 
-              className="w-[171px] h-32 bg-gradient-to-br from-surface to-surface-elevated rounded-lg border border-outline shadow-sm p-2 sm:p-3 flex flex-col items-center text-center animate-pulse"
-            >
-              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-200 bg-surface-elevated rounded mb-1 sm:mb-2"></div>
-              <div className="h-4 sm:h-5 w-12 sm:w-16 bg-gray-200 bg-surface-elevated rounded mb-1 sm:mb-1.5"></div>
-              <div className="h-2 sm:h-3 w-16 sm:w-20 bg-gray-200 bg-surface-elevated rounded"></div>
-            </div>
-          ))}
-        </div>
+        {layout === 'wide' ? (
+          <div className="grid gap-10 w-full" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))' }}>
+            {[...Array(loadingCount)].map((_, i) => (
+              <div
+                key={i}
+                className="h-32 bg-gradient-to-br from-surface to-surface-elevated rounded-lg border border-outline shadow-sm p-2 sm:p-3 flex flex-col items-center text-center animate-pulse"
+              >
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-200 bg-surface-elevated rounded mb-1 sm:mb-2"></div>
+                <div className="h-4 sm:h-5 w-12 sm:w-16 bg-gray-200 bg-surface-elevated rounded mb-1 sm:mb-1.5"></div>
+                <div className="h-2 sm:h-3 w-16 sm:w-20 bg-gray-200 bg-surface-elevated rounded"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className={`flex flex-wrap gap-2 ${singleRowLayout ? 'justify-start' : 'justify-center'}`}>
+            {[...Array(loadingCount)].map((_, i) => (
+              <div
+                key={i}
+                className="w-[170px] h-32 bg-gradient-to-br from-surface to-surface-elevated rounded-lg border border-outline shadow-sm p-2 sm:p-3 flex flex-col items-center text-center animate-pulse"
+              >
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-200 bg-surface-elevated rounded mb-1 sm:mb-2"></div>
+                <div className="h-4 sm:h-5 w-12 sm:w-16 bg-gray-200 bg-surface-elevated rounded mb-1 sm:mb-1.5"></div>
+                <div className="h-2 sm:h-3 w-16 sm:w-20 bg-gray-200 bg-surface-elevated rounded"></div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -171,31 +186,55 @@ export default function SprintKPIs({
   return (
     <>
       <div className="w-full overflow-visible">
-        <div
-          className={`flex flex-wrap ${layout === 'wide' ? 'gap-10' : 'gap-2'} ${singleRowLayout ? 'justify-start' : 'justify-center'}`}
-        >
-          {displayMetrics.map((metric) => (
-            <KPICard
-              key={metric.metric_id}
-              metricId={metric.metric_id}
-              label={metric.label}
-              value={metric.value}
-              tierStatus={metric.tier_status || null}
-              metricType={metric.metric_type || null}
-              description={metric.description}
-              tooltip={metric.tooltip}
-              trend={metric.trend || null}
-              chart_data={metric.chart_data || null}
-              layout={layout}
-              alternative_text={(metric as any).alternative_text || null}
-              action={metric.action || null}
-              onOpenDashboard={handleKPIClick}
-              defaultTeamOrGroupName={defaultTeamOrGroupName}
-              defaultTreeType={defaultTreeType}
-              currentPIName={currentPIName}
-            />
-          ))}
-        </div>
+        {layout === 'wide' ? (
+          <div className="grid gap-10 w-full" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))' }}>
+            {displayMetrics.map((metric) => (
+              <KPICard
+                key={metric.metric_id}
+                metricId={metric.metric_id}
+                label={metric.label}
+                value={metric.value}
+                tierStatus={metric.tier_status || null}
+                metricType={metric.metric_type || null}
+                description={metric.description}
+                tooltip={metric.tooltip}
+                trend={metric.trend || null}
+                chart_data={metric.chart_data || null}
+                layout={layout}
+                alternative_text={(metric as any).alternative_text || null}
+                action={metric.action || null}
+                onOpenDashboard={handleKPIClick}
+                defaultTeamOrGroupName={defaultTeamOrGroupName}
+                defaultTreeType={defaultTreeType}
+                currentPIName={currentPIName}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className={`flex flex-wrap gap-2 ${singleRowLayout ? 'justify-start' : 'justify-center'}`}>
+            {displayMetrics.map((metric) => (
+              <KPICard
+                key={metric.metric_id}
+                metricId={metric.metric_id}
+                label={metric.label}
+                value={metric.value}
+                tierStatus={metric.tier_status || null}
+                metricType={metric.metric_type || null}
+                description={metric.description}
+                tooltip={metric.tooltip}
+                trend={metric.trend || null}
+                chart_data={metric.chart_data || null}
+                layout={layout}
+                alternative_text={(metric as any).alternative_text || null}
+                action={metric.action || null}
+                onOpenDashboard={handleKPIClick}
+                defaultTeamOrGroupName={defaultTeamOrGroupName}
+                defaultTreeType={defaultTreeType}
+                currentPIName={currentPIName}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </>
   );

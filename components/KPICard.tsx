@@ -315,7 +315,7 @@ export default function KPICard({
             hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700 hover:scale-[1.02] cursor-pointer
             focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-300
             flex flex-col
-            w-[171px]
+            ${layout === 'wide' ? 'w-full' : 'w-[170px]'}
           `}
         >
         {/* Header with label and tier badge in top-right - fixed height for consistency */}
