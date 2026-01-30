@@ -76,6 +76,11 @@ export default function JiraSettingsView() {
   ];
 
   const renderContent = () => {
+    // Safety check - should not happen due to early returns above
+    if (!etlData.settings) {
+      return null;
+    }
+
     if (activeTab === 'dashboard') {
       return (
         <ETLDashboard
