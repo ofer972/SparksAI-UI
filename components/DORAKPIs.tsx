@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { authFetch } from '@/lib/api';
-import KPICard from '@/components/github/KPICard';
+import KPICard from '@/components/KPICard';
 import PRListReportDialog from '@/components/github/PRListReportDialog';
 import KPIDashboard from '@/components/KPIDashboard';
 
@@ -18,6 +18,7 @@ interface MetricResponse {
   label: string;
   value: string;
   tier_status: 'elite' | 'high' | 'medium' | 'low';
+  metric_type?: 'dora' | 'sprint' | 'pi';
   description: string;
   tooltip: string;
   trend?: Trend;
@@ -209,6 +210,7 @@ export default function DORAKPIs({
               label={metric.label}
               value={metric.value}
               tierStatus={metric.tier_status}
+              metricType={metric.metric_type || null}
               description={metric.description}
               tooltip={metric.tooltip}
               trend={metric.trend}

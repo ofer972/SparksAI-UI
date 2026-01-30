@@ -111,7 +111,7 @@ export default function MultiIssueTypeFilter({
       />
       <div
         ref={dropdownRef}
-        className="fixed bg-surface border border-outline rounded shadow-lg z-[9999]"
+        className="fixed bg-surface text-content-primary border border-outline rounded shadow-lg z-[9999]"
         style={{
           ...position,
           left: buttonRect ? `${buttonRect.left}px` : '0px',
@@ -126,18 +126,18 @@ export default function MultiIssueTypeFilter({
           <div className="px-3 py-2 text-sm text-content-tertiary whitespace-nowrap">No issue types available</div>
         ) : (
           <>
-            <div className="flex items-center justify-between px-3 py-2 border-b bg-surface-elevated">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-outline bg-surface-elevated">
               <button
                 type="button"
                 onClick={handleSelectAll}
-                className="text-xs text-brand hover:text-blue-800 font-medium"
+                className="text-xs text-brand hover:text-brand-hover font-medium transition-colors"
               >
                 Select All
               </button>
               <button
                 type="button"
                 onClick={handleClearAll}
-                className="text-xs text-content-secondary hover:text-content-primary font-medium"
+                className="text-xs text-content-secondary hover:text-content-primary font-medium transition-colors"
               >
                 Clear All
               </button>
@@ -147,8 +147,8 @@ export default function MultiIssueTypeFilter({
               return (
                 <div
                   key={type}
-                  className={`px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer whitespace-nowrap flex items-center gap-2 ${
-                    isSelected ? 'bg-blue-100' : ''
+                  className={`px-3 py-2 text-sm hover:bg-surface-elevated cursor-pointer whitespace-nowrap flex items-center gap-2 transition-colors ${
+                    isSelected ? 'bg-surface-secondary' : ''
                   }`}
                   onClick={() => handleTypeToggle(type)}
                 >

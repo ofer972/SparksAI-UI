@@ -140,15 +140,15 @@ export default function CycleTimeView({
     }
   }, []); // Only run once on mount
 
-  // Auto-select all issue types on initial load only
+  // Auto-select Bug and Story issue types on initial load only
   const hasInitializedRef = React.useRef(false);
   useEffect(() => {
     if (!hasInitializedRef.current && availableIssueTypes.length > 0) {
       hasInitializedRef.current = true;
       // Only set if not already set from filters (for initial load from saved state)
       if (!filters.selectedIssueTypes || !Array.isArray(filters.selectedIssueTypes) || filters.selectedIssueTypes.length === 0) {
-        const newSelected = [...availableIssueTypes];
-        setSelectedIssueTypes(newSelected);
+        const defaultTypes = availableIssueTypes.filter(type => type === 'Bug' || type === 'Story');
+        setSelectedIssueTypes(defaultTypes);
         // Not calling setFilters to avoid triggering backend refetch
       } else {
         // Use existing from filters (for initial load from saved state)

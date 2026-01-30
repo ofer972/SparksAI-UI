@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAccessToken, refreshAccessToken, clearTokens, getCurrentUser, logout } from '@/lib/auth';
 import SparksAILogo from '@/components/SparksAILogo';
-import TeamMetrics from '@/components/TeamMetrics';
+import SprintKPIs from '@/components/SprintKPIs';
 import PIMetrics from '@/components/PIMetrics';
 import PIDashboardView from '@/components/PIDashboardView';
 import GeneralDataView from '@/components/GeneralDataView';
@@ -40,6 +40,7 @@ import InsightDashboard from '../components/home/InsightDashboard';
 import GitHubAnalysisView from '@/components/GitHubAnalysisView';
 import KPIDashboard from '@/components/KPIDashboard';
 import type { KPIDashboardData } from '@/components/DORAKPIs';
+import type { KPIDashboardData as SprintKPIDashboardData } from '@/components/SprintKPIs';
 import type { BreadcrumbItem, NavItemId } from '@/lib/nav';
 import type { AICard } from '@/lib/config';
 
@@ -1476,6 +1477,23 @@ const IconGitHub = () => (
  selectedCategories={teamInsightsFilters.selectedCategories}
  isLoading={teamInsightSettings.isLoading}
  isReady={teamInsightsReadyRef.current && teamInsightsReady}
+ onOpenKPIDashboard={(data: SprintKPIDashboardData) => {
+   // Convert SprintKPIDashboardData to KPIDashboardData format
+   const kpiData: KPIDashboardData = {
+     title: data.title,
+     value: data.value,
+     tierStatus: data.tierStatus || 'medium',
+     description: data.description,
+     trend: data.trend,
+     reportIds: data.reportIds,
+     initialFilters: data.initialFilters,
+     metric: data.metric,
+   };
+   setSelectedKPIDashboard(kpiData);
+   setHomeDetail(null);
+   setSelectedInsightCard(null);
+   setActiveNavItem('home-detail');
+ }}
  />
  );
  case 'team-dashboard':
@@ -2184,12 +2202,30 @@ sidebarCollapsed ? 'w-16' : 'w-56'
  {/* Metrics Content */}
  <div className="flex-1 border-t border-r border-outline-strong rounded-tl-lg bg-surface" style={{ zoom: 0.90, overflow: 'visible' }}>
  <div className="px-3 md:px-4 py-2 md:py-2.5 w-full" style={{ overflow: 'visible' }}>
- {insightMetricsTab === 'team' && teamInsightsFilters.selectedTeam ? (
- <TeamMetrics 
- teamName={teamInsightsFilters.selectedTeam} 
- isGroup={teamInsightsFilters.selectedTreeType === 'group'} 
- singleRowLayout={true} 
- />
+                {insightMetricsTab === 'team' && teamInsightsFilters.selectedTeam ? (
+                  <SprintKPIs 
+                    teamName={teamInsightsFilters.selectedTeam} 
+                    isGroup={teamInsightsFilters.selectedTreeType === 'group'} 
+                    singleRowLayout={true}
+                    selectedMetrics={['sprint_velocity', 'sprint_predictability', 'sprint_wip', 'sprint_completion', 'sprint_days_left']}
+                    onOpenKPIDashboard={(data: SprintKPIDashboardData) => {
+                      // Convert SprintKPIDashboardData to KPIDashboardData format
+                      const kpiData: KPIDashboardData = {
+                        title: data.title,
+                        value: data.value,
+                        tierStatus: data.tierStatus || 'medium',
+                        description: data.description,
+                        trend: data.trend,
+                        reportIds: data.reportIds,
+                        initialFilters: data.initialFilters,
+                        metric: data.metric,
+                      };
+                      setSelectedKPIDashboard(kpiData);
+                      setHomeDetail(null);
+                      setSelectedInsightCard(null);
+                      setActiveNavItem('home-detail');
+                    }}
+                  />
  ) : insightMetricsTab === 'pi' && teamInsightsFilters.selectedPI ? (
  <PIMetrics 
  piName={teamInsightsFilters.selectedPI} 

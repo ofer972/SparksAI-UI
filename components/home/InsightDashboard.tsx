@@ -363,7 +363,8 @@ export default function InsightDashboard({ card, onBack }: InsightDashboardProps
                               <tr>
                                 {columns.map((column) => {
                                   const isGoalColumn = column.toLowerCase().includes('goal');
-                                  const width = isGoalColumn ? '50%' : 'auto';
+                                  // Give all non-goal columns equal width
+                                  const width = isGoalColumn ? '40%' : `${60 / (columns.length - 1)}%`;
                                   return (
                                     <th
                                       key={column}

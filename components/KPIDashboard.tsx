@@ -260,7 +260,7 @@ export default function KPIDashboard({
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
-                Back
+                Back to Home
               </button>
             </div>
           </div>

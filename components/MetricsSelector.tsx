@@ -18,12 +18,12 @@ interface MetricsSelectorProps {
 }
 
 const TEAM_METRICS = [
- { id: 'velocity', label: 'Avg Sprint Velocity' },
- { id: 'cycleTime', label: 'Avg Story/Task Cycle Time' },
- { id: 'predictability', label: 'Avg Sprint Predictability' },
- { id: 'wip', label: 'Sprint Work in Progress' },
- { id: 'completion', label: 'Sprint Completion' },
- { id: 'daysLeft', label: 'Days Left in Sprint' },
+ { id: 'sprint_velocity', label: 'Avg Sprint Velocity' },
+ { id: 'cycle_time', label: 'Avg Story/Task Cycle Time' },
+ { id: 'sprint_predictability', label: 'Avg Sprint Predictability' },
+ { id: 'sprint_wip', label: 'Sprint WIP' },
+ { id: 'sprint_completion', label: 'Sprint Completion' },
+ { id: 'sprint_days_left', label: 'Days Left in Sprint' },
 ];
 
 const PI_METRICS = [

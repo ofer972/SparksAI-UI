@@ -3,9 +3,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { CustomDashboard, AICard } from '@/lib/config';
 import type { NavItemId } from '@/lib/nav';
-import TeamMetrics from '@/components/TeamMetrics';
+import SprintKPIs from '@/components/SprintKPIs';
 import PIMetrics from '@/components/PIMetrics';
 import DORAKPIs, { KPIDashboardData } from '@/components/DORAKPIs';
+import GenericKPIs from '@/components/GenericKPIs';
 import ReportRenderer from '@/components/ReportRenderer';
 import SprintInsightsPreview from './SprintInsightsPreview';
 import PIInsightsPreview from './PIInsightsPreview';
@@ -275,7 +276,13 @@ export default function HomeDashboard({
           </div>
           <div className="p-3 min-h-[100px]" style={{ zoom: 0.9 }}>
             {hasDefaultContext ? (
-              <TeamMetrics teamName={contextLabel} isGroup={isGroup} singleRowLayout={true} />
+              <SprintKPIs 
+                teamName={contextLabel} 
+                isGroup={isGroup} 
+                singleRowLayout={true}
+                onOpenKPIDashboard={onOpenKPIDashboard}
+                selectedMetrics={['sprint_velocity', 'sprint_predictability', 'sprint_wip', 'sprint_completion', 'sprint_days_left']}
+              />
             ) : (
               <div className="text-xs text-content-tertiary">Set a default team/group to view metrics.</div>
             )}
@@ -300,7 +307,13 @@ export default function HomeDashboard({
           </div>
           <div className="p-3 min-h-[100px]" style={{ zoom: 0.9 }}>
             {hasDefaultContext && currentPIName ? (
-              <PIMetrics piName={currentPIName} teamName={contextLabel} isGroup={isGroup} singleRowLayout={true} />
+              <PIMetrics 
+                piName={currentPIName} 
+                teamName={contextLabel} 
+                isGroup={isGroup} 
+                singleRowLayout={true}
+                selectedMetrics={['epicClosure', 'outboundDependencies', 'inboundDependencies', 'inProgress']}
+              />
             ) : (
               <div className="text-xs text-content-tertiary">
                 {hasDefaultContext ? 'Loading PI…' : 'Set a default team/group to view metrics.'}
@@ -440,8 +453,9 @@ export default function HomeDashboard({
         </div>
       </div>
 
-      {/* DORA KPIs Row */}
-      <div className="mt-3">
+      {/* DORA & Generic KPIs Row - 50/50 split */}
+      <div className="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {/* DORA KPIs Panel - 50% width */}
         <div className="bg-surface border border-outline rounded-xl shadow-sm overflow-hidden">
           <div className="px-3 py-1.5 border-b border-outline bg-gradient-to-r from-teal-50 to-teal-100 dark:from-teal-950/50 dark:to-teal-900/40">
             <div className="flex items-center justify-between">
@@ -464,6 +478,28 @@ export default function HomeDashboard({
               defaultTeamOrGroupName={defaultTeamOrGroupName}
               defaultTreeType={defaultTreeType}
               currentPIName={currentPIName}
+            />
+          </div>
+        </div>
+
+        {/* Generic KPIs Panel - 50% width */}
+        <div className="bg-surface border border-outline rounded-xl shadow-sm overflow-hidden">
+          <div className="px-3 py-1.5 border-b border-outline bg-gradient-to-r from-teal-50 to-teal-100 dark:from-teal-950/50 dark:to-teal-900/40">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-xs font-semibold text-teal-700 dark:text-teal-300">Generic KPIs</span>
+              </div>
+            </div>
+          </div>
+          <div className="p-3 min-h-[100px]" style={{ zoom: 0.9 }}>
+            <GenericKPIs 
+              defaultTeamOrGroupName={defaultTeamOrGroupName}
+              defaultTreeType={defaultTreeType}
+              currentPIName={currentPIName}
+              onOpenKPIDashboard={onOpenKPIDashboard}
             />
           </div>
         </div>

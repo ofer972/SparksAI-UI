@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import TeamMetrics from './TeamMetrics';
+import SprintKPIs from './SprintKPIs';
 import PIMetrics from './PIMetrics';
 import type { MetricsSelection } from './MetricsSelector';
 
@@ -40,7 +40,7 @@ export default function MetricsWidget({
 
   if (metricsType === 'team') {
     if (!teamName) return null;
-    return <TeamMetrics teamName={teamName} isGroup={isGroup} selectedMetrics={selectedMetrics} refreshKey={refreshKey} />;
+    return <SprintKPIs teamName={teamName} isGroup={isGroup} selectedMetrics={selectedMetrics} />;
   } else {
     if (!piName || !teamName) return null;
     return <PIMetrics piName={piName} teamName={teamName} isGroup={isGroup} selectedMetrics={selectedMetrics} refreshKey={refreshKey} />;

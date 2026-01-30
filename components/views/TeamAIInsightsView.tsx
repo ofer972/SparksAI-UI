@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import AICards from '@/components/AICards';
-import TeamMetrics from '@/components/TeamMetrics';
+import SprintKPIs, { type KPIDashboardData } from '@/components/SprintKPIs';
 import PIMetrics from '@/components/PIMetrics';
 
 interface TeamAIInsightsViewProps {
@@ -12,6 +12,7 @@ interface TeamAIInsightsViewProps {
  selectedCategories: string[];
  isLoading: boolean;
  isReady: boolean;
+ onOpenKPIDashboard?: (data: KPIDashboardData) => void;
 }
 
 export default function TeamAIInsightsView({
@@ -21,6 +22,7 @@ export default function TeamAIInsightsView({
  selectedCategories,
  isLoading,
  isReady,
+ onOpenKPIDashboard,
 }: TeamAIInsightsViewProps) {
  const [mobileMetricsTab, setMobileMetricsTab] = useState<'team' | 'pi'>('team');
  
@@ -116,9 +118,16 @@ export default function TeamAIInsightsView({
  {/* Metrics Content */}
  <div className="border-t border-outline-strong" style={{ zoom: 0.90, overflow: 'visible' }}>
  <div className="px-3 py-2 bg-surface" style={{ overflow: 'visible' }}>
- {mobileMetricsTab === 'team' && selectedTeam ? (
- <TeamMetrics teamName={selectedTeam} isGroup={selectedTreeType === 'group'} singleRowLayout={true} />
- ) : mobileMetricsTab === 'pi' && selectedPI ? (
+                {mobileMetricsTab === 'team' && selectedTeam ? (
+                  <SprintKPIs 
+                    teamName={selectedTeam} 
+                    isGroup={selectedTreeType === 'group'} 
+                    singleRowLayout={true}
+                    onOpenKPIDashboard={onOpenKPIDashboard}
+                    selectedMetrics={['sprint_velocity', 'sprint_predictability', 'sprint_wip', 'sprint_completion', 'sprint_days_left']}
+                    layout="wide"
+                  />
+                ) : mobileMetricsTab === 'pi' && selectedPI ? (
  <PIMetrics piName={selectedPI} teamName={selectedTeam} isGroup={selectedTreeType === 'group'} singleRowLayout={true} />
  ) : null}
  </div>
