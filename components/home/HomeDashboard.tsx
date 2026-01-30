@@ -312,7 +312,11 @@ export default function HomeDashboard({
                 teamName={contextLabel} 
                 isGroup={isGroup} 
                 singleRowLayout={true}
-                selectedMetrics={['epicClosure', 'outboundDependencies', 'inboundDependencies', 'inProgress']}
+                selectedMetrics={['pi_completion', 'pi_wip', 'epic_cycle_time', 'pi_outbound_dependencies', 'pi_inbound_dependencies']}
+                onOpenKPIDashboard={onOpenKPIDashboard}
+                defaultTeamOrGroupName={defaultTeamOrGroupName}
+                defaultTreeType={defaultTreeType}
+                currentPIName={currentPIName}
               />
             ) : (
               <div className="text-xs text-content-tertiary">
@@ -471,7 +475,7 @@ export default function HomeDashboard({
             </div>
           </div>
           <div className="p-3" style={{ zoom: 0.9 }}>
-            <div className="flex flex-wrap gap-2 justify-start">
+            <div className="flex flex-wrap gap-4 justify-start">
               <DORAKPIs 
                 singleRowLayout={true} 
                 onOpenKPIDashboard={onOpenKPIDashboard}

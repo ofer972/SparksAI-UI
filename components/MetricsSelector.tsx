@@ -27,11 +27,11 @@ const TEAM_METRICS = [
 ];
 
 const PI_METRICS = [
- { id: 'epicClosure', label: 'Epic Closure' },
- { id: 'cycleTime', label: 'Average Epic Cycle Time' },
- { id: 'outboundDependencies', label: 'PI Outbound Dependencies' },
- { id: 'inboundDependencies', label: 'PI Inbound Dependencies' },
- { id: 'inProgress', label: 'In Progress Epics' },
+  { id: 'pi_completion', label: 'PI Completion' },
+  { id: 'pi_wip', label: 'PI WIP' },
+  { id: 'epic_cycle_time', label: 'Average Epic Cycle Time' },
+  { id: 'pi_outbound_dependencies', label: 'PI Outbound Dependencies' },
+  { id: 'pi_inbound_dependencies', label: 'PI Inbound Dependencies' },
 ];
 
 export default function MetricsSelector({

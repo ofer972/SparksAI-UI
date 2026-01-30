@@ -128,8 +128,14 @@ export default function TeamAIInsightsView({
                     layout="wide"
                   />
                 ) : mobileMetricsTab === 'pi' && selectedPI ? (
- <PIMetrics piName={selectedPI} teamName={selectedTeam} isGroup={selectedTreeType === 'group'} singleRowLayout={true} />
- ) : null}
+                  <PIMetrics 
+                    piName={selectedPI} 
+                    teamName={selectedTeam} 
+                    isGroup={selectedTreeType === 'group'} 
+                    singleRowLayout={true}
+                    selectedMetrics={['pi_completion', 'pi_wip', 'epic_cycle_time', 'pi_outbound_dependencies', 'pi_inbound_dependencies']}
+                  />
+                ) : null}
  </div>
  </div>
  </div>

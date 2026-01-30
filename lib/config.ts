@@ -27,7 +27,6 @@ export const API_CONFIG = {
       getBurndown: '/pis/burndown',
       getScopeChanges: '/pis/scope-changes',
       getPIStatusForToday: '/pis/get-pi-status-for-today',
-      getTopDependenciesSummary: '/pis/top-dependencies-summary',
       getAverageEpicCycleTime: '/pis/average-epic-cycle-time',
     },
     
@@ -68,6 +67,7 @@ export const API_CONFIG = {
       currentSprintProgress: '/team-metrics/current-sprint-progress',
       closedSprints: '/team-metrics/closed-sprints',
       issuesTrend: '/team-metrics/issues-trend',
+      generalKpis: '/team-metrics/general-kpis',
     },
     
     // General Data endpoints
@@ -650,35 +650,6 @@ export interface Team {
   group_keys: number[];  // Changed from group_key to group_keys (array)
   group_names?: string[];  // Changed from group_name to group_names (array)
   ai_insight?: boolean;
-}
-
-export interface TopInboundDependency {
-  assignee_team: string;
-  volume_of_work_relied_upon: number;
-  completed_issues_dependent_count: number;
-  uncompleted_issues: number;
-}
-
-export interface TopOutboundDependency {
-  owned_team: string;
-  number_of_epics_owned: number;
-  number_of_dependent_issues: number;
-  completed_dependent_issues_count: number;
-  uncompleted_issues: number;
-}
-
-export interface TopDependenciesSummaryResponse {
-  success: boolean;
-  data: {
-    top_inbound_dependencies: TopInboundDependency[];
-    top_outbound_dependencies: TopOutboundDependency[];
-    pi: string;
-    count: {
-      inbound: number;
-      outbound: number;
-    };
-  };
-  message: string;
 }
 
 export interface AverageEpicCycleTimeResponse {

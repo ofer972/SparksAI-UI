@@ -12,7 +12,7 @@ interface Trend {
 }
 
 interface ChartData {
-  type: 'line' | 'progress';
+  type: 'line' | 'progress' | 'bar';
   points?: Array<{
     sprint_id: string;
     value: number;
@@ -21,6 +21,34 @@ interface ChartData {
   current?: number;
   total?: number;
   percentage?: number;
+  items?: Array<{
+    label: string;
+    value: number;
+    completed?: number;
+    total?: number;
+  }>;
+  total_count?: number;
+}
+
+interface ActionData {
+  type: 'report' | 'table';
+  report_ids?: string[];
+  params?: Record<string, any>;
+}
+
+interface KPIDashboardData {
+  title: string;
+  value: string;
+  tierStatus: 'elite' | 'high' | 'medium' | 'low' | string;
+  description: string;
+  trend?: Trend | null;
+  reportIds: string[];
+  initialFilters: Record<string, any>;
+  metric: {
+    metric_id: string;
+    label: string;
+    value: string;
+  };
 }
 
 interface KPICardProps {
@@ -35,7 +63,13 @@ interface KPICardProps {
   chart_data?: ChartData | null;
   layout?: 'normal' | 'wide';
   alternative_text?: string | null;
-  onClick: () => void;
+  action?: ActionData | null;
+  onOpenDashboard?: (data: KPIDashboardData) => void;
+  onClick?: () => void;  // Optional for backward compatibility
+  // Context from parent for merging filters
+  defaultTeamOrGroupName?: string | null;
+  defaultTreeType?: 'team' | 'group' | null;
+  currentPIName?: string | null;
 }
 
 export default function KPICard({
@@ -50,7 +84,12 @@ export default function KPICard({
   chart_data,
   layout = 'normal',
   alternative_text,
+  action,
+  onOpenDashboard,
   onClick,
+  defaultTeamOrGroupName,
+  defaultTreeType,
+  currentPIName,
 }: KPICardProps) {
   // DEBUG: Log chart_data for days_left metric
   useEffect(() => {
@@ -210,6 +249,55 @@ export default function KPICard({
     return trend.improved ? 'text-green-600' : 'text-red-600';
   };
 
+  // Handle click - smart logic based on action field
+  const handleClick = () => {
+    // If custom onClick provided (backward compatibility), use it
+    if (onClick) {
+      onClick();
+      return;
+    }
+    
+    // If no action data or no callback, do nothing
+    if (!action || !onOpenDashboard) return;
+    
+    // Handle report action
+    if (action.type === 'report' && action.report_ids && action.report_ids.length > 0) {
+      // Merge action params with default context from parent
+      const mergedFilters: Record<string, any> = {
+        ...action.params,
+      };
+      
+      // Add default team/group if available
+      if (defaultTeamOrGroupName) {
+        mergedFilters.team_name = defaultTeamOrGroupName;
+        mergedFilters.isGroup = defaultTreeType === 'group';
+      }
+      
+      // Add current PI if available
+      if (currentPIName) {
+        mergedFilters.pi = currentPIName;
+      }
+      
+      const dashboardData: KPIDashboardData = {
+        title: label,
+        value: value,
+        tierStatus: tierStatus || 'medium',
+        description: description,
+        trend: trend || null,
+        reportIds: action.report_ids,
+        initialFilters: mergedFilters,
+        metric: {
+          metric_id: metricId,
+          label: label,
+          value: value,
+        },
+      };
+      
+      onOpenDashboard(dashboardData);
+    }
+    // Could handle other action types here (table, external, etc.)
+  };
+
   return (
     <>
       <div 
@@ -219,7 +307,7 @@ export default function KPICard({
       >
         <button
           ref={buttonRef}
-          onClick={onClick}
+          onClick={handleClick}
           className={`
             h-32 rounded-lg border transition-all relative
             bg-gradient-to-br from-surface to-surface-elevated
@@ -245,17 +333,46 @@ export default function KPICard({
           )}
         </div>
 
-        {/* Value with tier color - centered in remaining space */}
+        {/* Value OR Bar Chart - centered in remaining space */}
         <div className="flex-1 flex items-center justify-center px-2">
-          <div className={`text-lg sm:text-xl font-bold ${colors.valueText}`}>
-            {value}
-          </div>
+          {chart_data?.type === 'bar' && chart_data.items && chart_data.items.length > 0 ? (
+            <div className="w-full space-y-2">
+              {chart_data.items.slice(0, 2).map((item, idx) => {
+                const maxValue = Math.max(...chart_data.items!.map(d => d.value), 1);
+                const percentage = (item.value / maxValue) * 100;
+                
+                return (
+                  <div key={idx} className="w-full">
+                    <div className="text-xs truncate mb-0.5" title={item.label}>
+                      {item.label}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div 
+                          className="bg-orange-400 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      <span className="text-xs font-medium w-4 text-right">
+                        {item.value}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className={`text-lg sm:text-xl font-bold ${colors.valueText}`}>
+              {value}
+            </div>
+          )}
         </div>
 
-        {/* Bottom section: Chart OR Trend (never both) - fixed height for consistency */}
+        {/* Bottom section: Alternative Text OR Chart OR Trend - fixed height for consistency */}
         <div className="flex items-center justify-center gap-1.5 text-[10px] sm:text-xs text-content-secondary px-2 pb-2 flex-shrink-0 font-semibold leading-tight h-7">
-          {/* Line chart for velocity (replaces trend) */}
-          {chart_data?.type === 'line' && chart_data.points && chart_data.points.length > 0 ? (
+          {alternative_text ? (
+            <span className="text-content-secondary">{alternative_text}</span>
+          ) : chart_data?.type === 'line' && chart_data.points && chart_data.points.length > 0 ? (
             <div className="w-full" style={{ height: '28px' }}>
               <ResponsiveContainer width="100%" height={28}>
                 <LineChart data={chart_data.points} margin={{ top: 0, right: 4, left: 4, bottom: 0 }}>
@@ -287,7 +404,6 @@ export default function KPICard({
               </ResponsiveContainer>
             </div>
           ) : chart_data?.type === 'progress' && chart_data.total && chart_data.total > 0 ? (
-            /* Progress bar for days left (replaces trend) */
             <div className="w-full">
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 shadow-inner">
                 <div
@@ -297,7 +413,6 @@ export default function KPICard({
               </div>
             </div>
           ) : trend && trend.direction ? (
-            /* Trend indicator (only if no chart) */
             <>
               <span className={`font-bold leading-none ${getTrendColor()}`} style={{ fontSize: '0.875rem', lineHeight: '1' }}>
                 {getTrendArrow(trend.direction)}
@@ -305,9 +420,6 @@ export default function KPICard({
               <span className={`font-semibold ${getTrendColor()}`}>{trend.percentage}%</span>
               <span className="text-content-secondary">{trend.label}</span>
             </>
-          ) : alternative_text ? (
-            /* Alternative text when no trend or chart */
-            <span className="text-content-secondary">{alternative_text}</span>
           ) : null}
         </div>
       </button>

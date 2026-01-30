@@ -2227,14 +2227,34 @@ sidebarCollapsed ? 'w-16' : 'w-56'
                       setActiveNavItem('home-detail');
                     }}
                   />
- ) : insightMetricsTab === 'pi' && teamInsightsFilters.selectedPI ? (
- <PIMetrics 
- piName={teamInsightsFilters.selectedPI} 
- teamName={teamInsightsFilters.selectedTeam} 
- isGroup={teamInsightsFilters.selectedTreeType === 'group'} 
- singleRowLayout={true} 
- />
- ) : null}
+                ) : insightMetricsTab === 'pi' && teamInsightsFilters.selectedPI ? (
+                  <PIMetrics 
+                    piName={teamInsightsFilters.selectedPI} 
+                    teamName={teamInsightsFilters.selectedTeam} 
+                    isGroup={teamInsightsFilters.selectedTreeType === 'group'} 
+                    singleRowLayout={true}
+                    selectedMetrics={['pi_completion', 'pi_wip', 'epic_cycle_time', 'pi_outbound_dependencies', 'pi_inbound_dependencies']}
+                    onOpenKPIDashboard={(data) => {
+                      const kpiData: KPIDashboardData = {
+                        title: data.title,
+                        value: data.value,
+                        tierStatus: data.tierStatus,
+                        description: data.description,
+                        trend: data.trend,
+                        reportIds: data.reportIds,
+                        initialFilters: data.initialFilters,
+                        metric: data.metric,
+                      };
+                      setSelectedKPIDashboard(kpiData);
+                      setHomeDetail(null);
+                      setSelectedInsightCard(null);
+                      setActiveNavItem('home-detail');
+                    }}
+                    defaultTeamOrGroupName={teamInsightsFilters.selectedTeam}
+                    defaultTreeType={teamInsightsFilters.selectedTreeType}
+                    currentPIName={teamInsightsFilters.selectedPI}
+                  />
+                ) : null}
  </div>
  </div>
 

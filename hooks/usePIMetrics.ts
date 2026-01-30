@@ -1,30 +1,21 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiService } from '@/lib/api';
-import { PIStatusForTodayItem } from '@/lib/config';
+
+interface PIMetric {
+  metric_id: string;
+  label: string;
+  value: string;
+  tier_status?: 'high' | 'medium' | 'low' | null;
+  metric_type?: 'dora' | 'sprint' | 'pi' | null;
+  description: string;
+  tooltip: string;
+  trend?: any | null;
+  chart_data?: any | null;
+  alternative_text?: string | null;
+}
 
 interface PIMetricsData {
-  epicClosure: {
-    value?: number;
-    color?: 'red' | 'yellow' | 'green';
-    remainingEpics?: number;
-    idealRemaining?: number;
-    totalEpics?: number;
-  };
-  inProgressEpics: {
-    count?: number;
-    percentage?: number;
-    status?: 'red' | 'yellow' | 'green';
-    totalEpics?: number;
-  };
-  dependencies: {
-    outbound?: Array<{ team: string; uncompletedIssues: number }>;
-    inbound?: Array<{ team: string; uncompletedIssues: number }>;
-  };
-  averageCycleTime: {
-    value?: number;
-    color?: 'red' | 'yellow' | 'green';
-    epicCount?: number;
-  };
+  kpiMetrics: PIMetric[];
 }
 
 interface UsePIMetricsReturn {
@@ -68,76 +59,10 @@ export function usePIMetrics(piName?: string, teamName?: string, isGroup?: boole
       
       console.log('[usePIMetrics] Fetching metrics with:', { piName, teamName, isGroup, bypassCache });
       
-      // Fetch all metrics in parallel
-      const [piStatusResponse, dependenciesResponse, cycleTimeResponse] = await Promise.allSettled([
-        apiService.getPIStatusForToday(piName, teamName, isGroup, bypassCache),
-        apiService.getTopDependenciesSummary(piName, teamName, isGroup || false, bypassCache),
-        apiService.getAverageEpicCycleTime(6, teamName, isGroup, bypassCache),
-      ]);
-      
-      // Process PI Status data
-      let epicClosureData: PIMetricsData['epicClosure'] = {};
-      let inProgressData: PIMetricsData['inProgressEpics'] = {};
-      
-      if (piStatusResponse.status === 'fulfilled' && piStatusResponse.value.data && piStatusResponse.value.data.length > 0) {
-        const firstItem = piStatusResponse.value.data[0] as PIStatusForTodayItem;
-        
-        const statusValue = firstItem.progress_delta_pct_status;
-        const progressValue = firstItem.progress_delta_pct;
-        const plannedEpics = firstItem.planned_epics || 0;
-        const addedEpics = firstItem.added_epics || 0;
-        const removedEpics = firstItem.removed_epics || 0;
-        const totalEpics = plannedEpics + addedEpics - removedEpics;
-        const inProgressPct = firstItem.in_progress_percentage;
-        const inProgressCount = totalEpics > 0 && inProgressPct !== undefined 
-          ? Math.round(totalEpics * (inProgressPct / 100))
-          : undefined;
-        
-        epicClosureData = {
-          value: progressValue,
-          color: statusValue,
-          remainingEpics: firstItem.remaining_epics,
-          idealRemaining: firstItem.ideal_remaining,
-          totalEpics: totalEpics,
-        };
-        
-        inProgressData = {
-          count: inProgressCount,
-          percentage: inProgressPct,
-          status: firstItem.count_in_progress_status,
-          totalEpics: totalEpics,
-        };
-      }
-      
-      // Process Dependencies data
-      let dependenciesData: PIMetricsData['dependencies'] = {};
-      if (dependenciesResponse.status === 'fulfilled' && dependenciesResponse.value.success && dependenciesResponse.value.data) {
-        const outbound = dependenciesResponse.value.data.top_outbound_dependencies.map(dep => ({
-          team: dep.owned_team,
-          uncompletedIssues: dep.uncompleted_issues
-        }));
-        const inbound = dependenciesResponse.value.data.top_inbound_dependencies.map(dep => ({
-          team: dep.assignee_team,
-          uncompletedIssues: dep.uncompleted_issues
-        }));
-        dependenciesData = { outbound, inbound };
-      }
-      
-      // Process Cycle Time data
-      let cycleTimeData: PIMetricsData['averageCycleTime'] = {};
-      if (cycleTimeResponse.status === 'fulfilled' && cycleTimeResponse.value.success && cycleTimeResponse.value.data) {
-        cycleTimeData = {
-          value: cycleTimeResponse.value.data.average_epic_cycle_time,
-          color: cycleTimeResponse.value.data.average_epic_cycle_time_status,
-          epicCount: cycleTimeResponse.value.data.epic_count,
-        };
-      }
+      const kpiMetrics = await apiService.getGeneralKPIs('pi', teamName || '', isGroup || false, piName, undefined, 5, bypassCache);
       
       setMetrics({
-        epicClosure: epicClosureData,
-        inProgressEpics: inProgressData,
-        dependencies: dependenciesData,
-        averageCycleTime: cycleTimeData,
+        kpiMetrics: Array.isArray(kpiMetrics) ? kpiMetrics : [],
       });
     } catch (err) {
       console.error('Error fetching PI metrics:', err);

@@ -28,7 +28,6 @@ import {
   Team,
   PIStatusForTodayResponse,
   PIStatusForTodayItem,
-  TopDependenciesSummaryResponse,
   AverageEpicCycleTimeResponse,
   IssueTypesHierarchyResponse,
   CycleTimeIssuesResponse,
@@ -463,31 +462,6 @@ export class ApiService {
     return { data: [], count: 0, message: '' };
   }
 
-  // Top Dependencies Summary API
-  async getTopDependenciesSummary(pi: string, teamName?: string, isGroup: boolean = false, bypassCache?: boolean): Promise<TopDependenciesSummaryResponse> {
-    const params = new URLSearchParams();
-    params.append('pi', pi);
-    
-    if (teamName) {
-      params.append('team_name', teamName);
-    }
-    
-    params.append('isGroup', isGroup.toString());
-    
-    if (bypassCache === true) {
-      params.append('bypass_cache', 'true');
-    }
-    
-    const url = `${buildBackendUrl(API_CONFIG.endpoints.pis.getTopDependenciesSummary)}?${params}`;
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch top dependencies summary: ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
   // Average Epic Cycle Time API
   async getAverageEpicCycleTime(months: number = 6, teamName?: string, isGroup?: boolean, bypassCache?: boolean): Promise<AverageEpicCycleTimeResponse> {
     const params = new URLSearchParams();
@@ -784,6 +758,45 @@ export class ApiService {
 
     const result: ApiResponse<SprintMetrics> = await response.json();
     return result.data;
+  }
+
+  async getGeneralKPIs(
+    scope: 'sprint' | 'pi',
+    teamName: string,
+    isGroup: boolean,
+    pi?: string,
+    metrics?: string,
+    sprintCount: number = 5,
+    bypassCache?: boolean
+  ): Promise<any[]> {
+    const params = new URLSearchParams({
+      scope,
+      team_name: teamName,
+      isGroup: isGroup.toString(),
+      sprint_count: sprintCount.toString(),
+    });
+    
+    if (pi) {
+      params.set('pi', pi);
+    }
+    
+    if (metrics) {
+      params.set('metrics', metrics);
+    }
+    
+    if (bypassCache === true) {
+      params.set('bypass_cache', 'true');
+    }
+    
+    const response = await fetch(`${buildBackendUrl(API_CONFIG.endpoints.teamMetrics.generalKpis)}?${params.toString()}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to fetch ${scope} KPIs: ${errorText || response.statusText}`);
+    }
+
+    // Response is an array of metric objects
+    return await response.json();
   }
 
   async getCompletionRate(teamName: string, isGroup?: boolean, bypassCache?: boolean): Promise<CompletionRate> {

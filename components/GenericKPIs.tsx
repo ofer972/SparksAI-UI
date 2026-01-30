@@ -59,14 +59,15 @@ export default function GenericKPIs({
       setError(null);
 
       try {
-        // Fetch cycle_time, epic_cycle_time, and open_bugs from sprint-kpis endpoint
+        // Fetch cycle_time, epic_cycle_time, and open_bugs from general-kpis endpoint
         const params = new URLSearchParams({
+          scope: 'sprint',
           team_name: defaultTeamOrGroupName,
           isGroup: (defaultTreeType === 'group').toString(),
           metrics: 'cycle_time,epic_cycle_time,open_bugs'
         });
         
-        const response = await authFetch(`/api/v1/team-metrics/sprint-kpis?${params.toString()}`);
+        const response = await authFetch(`/api/v1/team-metrics/general-kpis?${params.toString()}`);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch metrics: ${response.statusText}`);
@@ -87,37 +88,10 @@ export default function GenericKPIs({
     fetchMetrics();
   }, [defaultTeamOrGroupName, defaultTreeType, currentPIName]);
 
-  const handleKPIClick = (metric: MetricResponse) => {
-    if (!metric.action || !onOpenKPIDashboard) return;
-
-    if (metric.action.type === 'report') {
-      if (metric.action.report_ids && metric.action.report_ids.length > 0) {
-        const mergedFilters: Record<string, any> = {
-          ...metric.action.params,
-        };
-        
-        if (defaultTeamOrGroupName) {
-          mergedFilters.team_name = defaultTeamOrGroupName;
-          mergedFilters.isGroup = defaultTreeType === 'group';
-        }
-        
-        if (currentPIName) {
-          mergedFilters.pi = currentPIName;
-        }
-        
-        const kpiData = {
-          title: metric.label,
-          value: metric.value,
-          tierStatus: metric.tier_status,
-          description: metric.description,
-          trend: metric.trend,
-          reportIds: metric.action.report_ids,
-          initialFilters: mergedFilters,
-          metric: metric,
-        };
-        
-        onOpenKPIDashboard(kpiData);
-      }
+  // Handle opening KPI dashboard - called by KPICard when clicked
+  const handleKPIClick = (kpiData: any) => {
+    if (onOpenKPIDashboard) {
+      onOpenKPIDashboard(kpiData);
     }
   };
 
@@ -159,7 +133,11 @@ export default function GenericKPIs({
           tooltip={metric.tooltip}
           trend={metric.trend}
           alternative_text={(metric as any).alternative_text || null}
-          onClick={() => handleKPIClick(metric)}
+          action={metric.action || null}
+          onOpenDashboard={handleKPIClick}
+          defaultTeamOrGroupName={defaultTeamOrGroupName}
+          defaultTreeType={defaultTreeType}
+          currentPIName={currentPIName}
         />
       ))}
     </>

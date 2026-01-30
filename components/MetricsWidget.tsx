@@ -40,7 +40,7 @@ export default function MetricsWidget({
 
   if (metricsType === 'team') {
     if (!teamName) return null;
-    return <SprintKPIs teamName={teamName} isGroup={isGroup} selectedMetrics={selectedMetrics} />;
+    return <SprintKPIs teamName={teamName} isGroup={isGroup} selectedMetrics={selectedMetrics} refreshKey={refreshKey} />;
   } else {
     if (!piName || !teamName) return null;
     return <PIMetrics piName={piName} teamName={teamName} isGroup={isGroup} selectedMetrics={selectedMetrics} refreshKey={refreshKey} />;

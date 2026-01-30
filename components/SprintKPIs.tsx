@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { authFetch } from '@/lib/api';
+import { useSprintMetrics } from '@/hooks';
 import KPICard from '@/components/KPICard';
-import PRListReportDialog from '@/components/github/PRListReportDialog';
 import KPIDashboard from '@/components/KPIDashboard';
 
 interface Trend {
@@ -66,6 +65,7 @@ interface SprintKPIsProps {
   currentPIName?: string | null;
   selectedMetrics?: string[]; // Optional: Array of metric IDs to display
   layout?: 'normal' | 'wide';
+  refreshKey?: number; // Trigger refetch with bypass_cache when this changes
 }
 
 export default function SprintKPIs({ 
@@ -78,112 +78,29 @@ export default function SprintKPIs({
   currentPIName,
   selectedMetrics,
   layout = 'normal',
+  refreshKey,
 }: SprintKPIsProps) {
-  const [metrics, setMetrics] = useState<MetricResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedMetric, setSelectedMetric] = useState<{
-    metric: string;
-    title: string;
-  } | null>(null);
+  const { metrics, loading, error, refetch } = useSprintMetrics(teamName, isGroup, refreshKey);
+  
   // Only use local state when no callback is provided (for backward compatibility)
   const [selectedKPIDashboard, setSelectedKPIDashboard] = useState<KPIDashboardData | null>(null);
 
   useEffect(() => {
-    const fetchMetrics = async () => {
-      if (!teamName) {
-        console.log('[SprintKPIs] No teamName provided, skipping fetch');
-        setLoading(false);
-        return;
-      }
-      
-      console.log('[SprintKPIs] Fetching metrics for:', { teamName, isGroup });
-      setLoading(true);
-      setError(null);
-
-      try {
-        const params = new URLSearchParams({
-          team_name: teamName,
-          isGroup: isGroup.toString()
-        });
-        const url = `/api/v1/team-metrics/sprint-kpis?${params.toString()}`;
-        console.log('[SprintKPIs] Fetching from:', url);
-        const response = await authFetch(url);
-
-        console.log('[SprintKPIs] Response status:', response.status);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch metrics: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        console.log('[SprintKPIs] Received metrics:', data);
-        setMetrics(data || []);
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Failed to fetch metrics';
-        console.error('[SprintKPIs] Error fetching metrics:', err);
-        setError(errorMessage);
-        setMetrics([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMetrics();
-  }, [teamName, isGroup]);
-
-  const handleKPIClick = (metric: MetricResponse) => {
-    if (!metric.action) return;
-
-    if (metric.action.type === 'table') {
-      if (metric.action.params?.metric) {
-        setSelectedMetric({
-          metric: metric.action.params.metric,
-          title: metric.label,
-        });
-      }
-    } else if (metric.action.type === 'report') {
-      if (metric.action.report_ids && metric.action.report_ids.length > 0) {
-        // Merge action params with default team/PI context from home screen
-        const mergedFilters: Record<string, any> = {
-          ...metric.action.params,
-        };
-        
-        // Add default team/group if available from home screen context
-        if (defaultTeamOrGroupName) {
-          mergedFilters.team_name = defaultTeamOrGroupName;
-          mergedFilters.isGroup = defaultTreeType === 'group';
-        }
-        
-        // Add current PI if available from home screen context
-        if (currentPIName) {
-          mergedFilters.pi = currentPIName;
-        }
-        
-        const kpiData: KPIDashboardData = {
-          title: metric.label,
-          value: metric.value,
-          tierStatus: metric.tier_status || 'medium', // Default to medium if empty for KPIDashboard
-          description: metric.description,
-          trend: metric.trend || undefined,
-          reportIds: metric.action.report_ids,
-          initialFilters: mergedFilters,
-          metric: metric,
-        };
-        
-        // If callback is provided, use it to navigate to detail page
-        // Otherwise fall back to local state (for backward compatibility)
-        if (onOpenKPIDashboard) {
-          onOpenKPIDashboard(kpiData);
-        } else {
-          setSelectedKPIDashboard(kpiData);
-        }
-      }
+    if (refreshKey !== undefined && refreshKey > 0) {
+      console.log('[SprintKPIs] Refetching metrics with bypass_cache due to refreshKey change:', refreshKey);
+      refetch(true);
     }
-  };
+  }, [refreshKey, refetch]);
 
-  const handleCloseDialog = () => {
-    setSelectedMetric(null);
+  // Handle opening KPI dashboard - called by KPICard when clicked
+  const handleKPIClick = (kpiData: KPIDashboardData) => {
+    // If callback is provided, use it to navigate to detail page
+    // Otherwise fall back to local state (for backward compatibility)
+    if (onOpenKPIDashboard) {
+      onOpenKPIDashboard(kpiData);
+    } else {
+      setSelectedKPIDashboard(kpiData);
+    }
   };
 
   const handleCloseKPIDashboard = () => {
@@ -210,9 +127,22 @@ export default function SprintKPIs({
   }
 
   if (loading) {
+    const loadingCount = selectedMetrics && selectedMetrics.length > 0 ? selectedMetrics.length : 5;
+    
     return (
-      <div className="flex items-center justify-center h-32">
-        <div className="text-xs text-content-tertiary">Loading KPIs...</div>
+      <div className="w-full overflow-visible">
+        <div className={`flex flex-wrap ${layout === 'wide' ? 'gap-10' : 'gap-2'} ${singleRowLayout ? 'justify-start' : 'justify-center'}`}>
+          {[...Array(loadingCount)].map((_, i) => (
+            <div 
+              key={i} 
+              className="w-[171px] h-32 bg-gradient-to-br from-surface to-surface-elevated rounded-lg border border-outline shadow-sm p-2 sm:p-3 flex flex-col items-center text-center animate-pulse"
+            >
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-200 bg-surface-elevated rounded mb-1 sm:mb-2"></div>
+              <div className="h-4 sm:h-5 w-12 sm:w-16 bg-gray-200 bg-surface-elevated rounded mb-1 sm:mb-1.5"></div>
+              <div className="h-2 sm:h-3 w-16 sm:w-20 bg-gray-200 bg-surface-elevated rounded"></div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -258,21 +188,15 @@ export default function SprintKPIs({
               chart_data={metric.chart_data || null}
               layout={layout}
               alternative_text={(metric as any).alternative_text || null}
-              onClick={() => handleKPIClick(metric)}
+              action={metric.action || null}
+              onOpenDashboard={handleKPIClick}
+              defaultTeamOrGroupName={defaultTeamOrGroupName}
+              defaultTreeType={defaultTreeType}
+              currentPIName={currentPIName}
             />
           ))}
         </div>
       </div>
-
-      {/* PR List Report Dialog */}
-      {selectedMetric && (
-        <PRListReportDialog
-          isOpen={true}
-          onClose={handleCloseDialog}
-          metric={selectedMetric.metric}
-          title={selectedMetric.title}
-        />
-      )}
     </>
   );
 }
