@@ -67,6 +67,21 @@ export default function IssuesDialog<T extends Record<string, any>>({
     }
   }, [jiraUrl]);
 
+  const handleOpenAllInJira = useCallback(() => {
+    if (!jiraUrl || issues.length === 0) return;
+    
+    const issueKeys = issues
+      .map(issue => (issue as any).issue_key)
+      .filter((key): key is string => Boolean(key));
+    
+    if (issueKeys.length === 0) return;
+    
+    const keysParam = issueKeys.join(',');
+    const jql = encodeURIComponent(`key IN (${keysParam})`);
+    const jiraLink = `${jiraUrl}/issues/?jql=${jql}`;
+    window.open(jiraLink, '_blank', 'noopener,noreferrer');
+  }, [jiraUrl, issues]);
+
   const handleSort = useCallback((key: string) => {
     setSortConfig(prev => {
       if (prev.key === key) {
@@ -171,7 +186,16 @@ export default function IssuesDialog<T extends Record<string, any>>({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-outline px-6 py-4 flex justify-end items-center">
+        <div className="border-t border-outline px-6 py-4 flex justify-end items-center gap-3">
+          {jiraUrl && issues.length > 0 && (
+            <button
+              onClick={handleOpenAllInJira}
+              className="px-4 py-2 border border-outline text-content-primary rounded-md hover:bg-surface-secondary transition-colors"
+              disabled={!jiraUrl || issues.length === 0}
+            >
+              Open all in Jira
+            </button>
+          )}
           <button
             onClick={onClose}
             className="px-4 py-2 bg-brand text-white rounded-md hover:bg-brand-hover transition-colors"

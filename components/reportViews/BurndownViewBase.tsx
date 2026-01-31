@@ -264,7 +264,7 @@ const BurndownViewBase: React.FC<BurndownViewBaseProps> = ({
         title={dialogTitle}
         columns={burndownIssueColumns}
         fetchFunction={fetchIssuesFunction}
-        jiraUrl={API_CONFIG.jiraUrl}
+        jiraUrl={meta?.jira_url || API_CONFIG.jiraUrl}
         emptyMessage="No issues found for the selected criteria."
         rowKey={(row, index) => `${row.issue_key}-${index}`}
       />

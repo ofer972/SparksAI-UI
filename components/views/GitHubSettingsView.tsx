@@ -7,6 +7,7 @@ import DataTable from '../DataTable';
 
 interface GitHubSettings {
   github_enabled: string;
+  github_token?: string;
   github_sync_interval_minutes?: string;
   github_sync_lookback_days?: string;
   github_sync_max_concurrent_repos?: string;
@@ -50,10 +51,13 @@ export default function GitHubSettingsView() {
 
   // Form state
   const [githubEnabled, setGithubEnabled] = useState(false);
+  const [githubToken, setGithubToken] = useState<string>('');
   const [syncInterval, setSyncInterval] = useState<number>(30);
   const [lookbackDays, setLookbackDays] = useState<number>(90);
   const [maxConcurrentRepos, setMaxConcurrentRepos] = useState<number>(2);
   const [availableReposType, setAvailableReposType] = useState<string>('all');
+
+  const MASK = '********';
 
   // Remote repositories state
   const [remoteRepos, setRemoteRepos] = useState<RemoteRepository[]>([]);
@@ -76,6 +80,13 @@ export default function GitHubSettingsView() {
     maxConcurrentRepos: 2,
     availableReposType: 'all',
   });
+
+  // Initialize API token mask if token exists
+  useEffect(() => {
+    if (settings?.github_token && !githubToken) {
+      setGithubToken(MASK);
+    }
+  }, [settings?.github_token, githubToken]);
 
   useEffect(() => {
     fetchSettings();
@@ -113,6 +124,11 @@ export default function GitHubSettingsView() {
         maxConcurrentRepos: maxConcurrentValue,
         availableReposType: reposTypeValue,
       };
+
+      // Initialize token mask if token exists
+      if (data.settings.github_token) {
+        setGithubToken(MASK);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load settings');
     } finally {
@@ -307,12 +323,15 @@ export default function GitHubSettingsView() {
   // Check if any fields have changed
   const hasChanges = () => {
     const original = originalValuesRef.current;
+    // Check if token was changed (not MASK and not empty)
+    const tokenChanged = githubToken && githubToken !== MASK && githubToken !== '';
     return (
       githubEnabled !== original.githubEnabled ||
       syncInterval !== original.syncInterval ||
       lookbackDays !== original.lookbackDays ||
       maxConcurrentRepos !== original.maxConcurrentRepos ||
-      availableReposType !== original.availableReposType
+      availableReposType !== original.availableReposType ||
+      tokenChanged
     );
   };
 
@@ -354,6 +373,10 @@ export default function GitHubSettingsView() {
       if (availableReposType !== originalValuesRef.current.availableReposType) {
         settingsToUpdate.github_available_repos_type = availableReposType;
       }
+      // Only include token if it was changed by the user (not MASK and not empty)
+      if (githubToken && githubToken !== MASK && githubToken !== '') {
+        settingsToUpdate.github_token = githubToken;
+      }
 
       // Batch update all changed settings in one request
       const response = await authFetch('/api/v1/github-service/settings', {
@@ -364,6 +387,14 @@ export default function GitHubSettingsView() {
 
       if (!response.ok) {
         throw new Error('Failed to save settings');
+      }
+
+      // After save, refresh settings from database to update the UI
+      await fetchSettings();
+
+      // After save, update token state - if a token was sent, mark it as saved (show MASK)
+      if (settingsToUpdate.github_token) {
+        setGithubToken(MASK);
       }
 
       // Update original values after successful save
@@ -452,6 +483,13 @@ export default function GitHubSettingsView() {
         </div>
       )}
 
+      {/* Token Missing Warning */}
+      {!settings?.github_token && (
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded text-yellow-800">
+          <strong>Warning:</strong> GitHub API token is required. Please set it in the General Settings section below.
+        </div>
+      )}
+
       {/* Success Message */}
       {successMessage && (
         <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded text-green-800">
@@ -483,6 +521,25 @@ export default function GitHubSettingsView() {
                     {githubEnabled ? 'Enabled - Sync operations are active' : 'Disabled - Sync operations are paused'}
                   </span>
                 </label>
+              </div>
+            </div>
+
+            {/* GitHub API Token */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+              <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
+                GitHub API Token *:
+              </label>
+              <div className="flex-1">
+                <input
+                  type="password"
+                  value={githubToken}
+                  onChange={(e) => setGithubToken(e.target.value)}
+                  placeholder="Enter GitHub personal access token"
+                  className="w-full px-2 py-1.5 border border-outline rounded text-sm focus:ring-brand focus:border-brand"
+                />
+                {!settings?.github_token && (
+                  <p className="text-xs text-red-600 mt-1">GitHub API token is required</p>
+                )}
               </div>
             </div>
 
