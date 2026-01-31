@@ -134,14 +134,14 @@ export default function WIPOverTimeView({
     }
   }, []); // Only run once on mount
 
-  // Auto-select all issue types on initial load only
+  // Auto-select all issue types except Epic on initial load only
   const hasInitializedRef = React.useRef(false);
   useEffect(() => {
     if (!hasInitializedRef.current && availableIssueTypes.length > 0) {
       hasInitializedRef.current = true;
       // Only set if not already set from filters (for initial load from saved state)
       if (!filters.selectedIssueTypes || !Array.isArray(filters.selectedIssueTypes) || filters.selectedIssueTypes.length === 0) {
-        const newSelected = [...availableIssueTypes];
+        const newSelected = availableIssueTypes.filter(type => type !== 'Epic');
         setSelectedIssueTypes(newSelected);
         // Not calling setFilters to avoid triggering backend refetch
       } else {
