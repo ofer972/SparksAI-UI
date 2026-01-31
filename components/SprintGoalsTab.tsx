@@ -66,59 +66,31 @@ export default function SprintGoalsTab() {
  selectedTeamName || undefined,
  selectedTeamType === 'group'
  );
- if (response.success && response.data?.sprints) {
- // Filter sprints based on date criteria:
- // - Current: start_date <= today <= end_date
- // - Upcoming: start_date - 14 days <= today < start_date
- const today = new Date();
- today.setHours(0, 0, 0, 0);
+         if (response.success && response.data?.sprints) {
+         // Display what the backend returns - no additional filtering
+         const sprints = response.data.sprints;
+         
+         setAvailableSprints(sprints);
  
- const filteredSprints = response.data.sprints.filter((sprint: Sprint) => {
- if (!sprint.start_date || !sprint.end_date) return false;
- 
- const startDate = new Date(sprint.start_date);
- startDate.setHours(0, 0, 0, 0);
- const endDate = new Date(sprint.end_date);
- endDate.setHours(0, 0, 0, 0);
- 
- // Current sprint: today between start and end
- const isCurrent = startDate <= today && today <= endDate;
- 
- // Upcoming sprint: today is up to 14 days before start
- const fourteenDaysBeforeStart = new Date(startDate);
- fourteenDaysBeforeStart.setDate(fourteenDaysBeforeStart.getDate() - 14);
- const isUpcoming = today >= fourteenDaysBeforeStart && today < startDate;
- 
- return isCurrent || isUpcoming;
- });
- 
- // Sort by start_date ascending
- filteredSprints.sort((a: Sprint, b: Sprint) => {
- if (!a.start_date || !b.start_date) return 0;
- return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
- });
- 
- setAvailableSprints(filteredSprints);
- 
- // Preserve selected sprint if it exists in new list, otherwise select first sprint
- setSelectedSprintId((currentSprintId) => {
- if (currentSprintId !== null) {
- const sprintExists = filteredSprints.some((s: Sprint) => s.sprint_id === currentSprintId);
- if (sprintExists) {
- // Selected sprint exists in new list - preserve it
- return currentSprintId;
- } else if (filteredSprints.length > 0) {
- // Selected sprint not in new list - auto-select first sprint
- return filteredSprints[0].sprint_id;
- }
- // No sprints available - clear selection
- return null;
- } else if (filteredSprints.length > 0) {
- // No sprint selected - auto-select first sprint
- return filteredSprints[0].sprint_id;
- }
- return null;
- });
+         // Preserve selected sprint if it exists in new list, otherwise select first sprint
+         setSelectedSprintId((currentSprintId) => {
+           if (currentSprintId !== null) {
+             const sprintExists = sprints.some((s: Sprint) => s.sprint_id === currentSprintId);
+             if (sprintExists) {
+               // Selected sprint exists in new list - preserve it
+               return currentSprintId;
+             } else if (sprints.length > 0) {
+               // Selected sprint not in new list - auto-select first sprint
+               return sprints[0].sprint_id;
+             }
+             // No sprints available - clear selection
+             return null;
+           } else if (sprints.length > 0) {
+             // No sprint selected - auto-select first sprint
+             return sprints[0].sprint_id;
+           }
+           return null;
+         });
  }
  } catch (err) {
  console.error('Error fetching sprints:', err);
