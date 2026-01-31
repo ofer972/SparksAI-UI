@@ -186,85 +186,6 @@ const parseInformationJson = (jsonString: string | undefined): InformationItem[]
  }
 };
 
-const parseSprintGoalJson = (jsonString: string | undefined): Record<string, any>[] | null => {
- if (!jsonString || jsonString.trim() === '') {
- return null;
- }
- 
- try {
- const parsed = JSON.parse(jsonString);
- 
- // Handle direct array (already in table format)
- if (Array.isArray(parsed) && parsed.length > 0) {
- return parsed as Record<string, any>[];
- }
- 
- // Handle object containing DashboardSummary or other arrays
- if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
- // Check for DashboardSummary first (most common for Sprint Goals)
- if (parsed.DashboardSummary && Array.isArray(parsed.DashboardSummary) && parsed.DashboardSummary.length > 0) {
- // Transform from flat format [{header:"Goal", text:"..."}, {header:"Linkage", text:"3"}, ...] 
- // to table format [{Goal:"...", Linkage:"3", Progress:"0%", Alert:"🔴"}, ...]
- const flatArray = parsed.DashboardSummary;
- const tableRows: Record<string, any>[] = [];
- 
- // Group items by chunks - every 4 items form a row (Goal, Linkage, Progress, Alert)
- // Limit to 8 rows maximum (32 items)
- const maxItems = Math.min(flatArray.length, 32);
- for (let i = 0; i < maxItems; i += 4) {
- if (i + 3 < maxItems) {
- const goalItem = flatArray[i];
- const linkageItem = flatArray[i + 1];
- const progressItem = flatArray[i + 2];
- const alertItem = flatArray[i + 3];
- 
- // Extract the field name from header (remove emoji and normalize)
- const getFieldName = (header: string) => {
- const lower = header.toLowerCase();
- if (lower.includes('goal')) return 'Goal';
- if (lower.includes('linkage') || lower.includes('link')) return 'Linkage';
- if (lower.includes('progress')) return 'Progress';
- if (lower.includes('alert')) return 'Alert';
- return header; // fallback
- };
- 
- const row: Record<string, any> = {};
- row[getFieldName(goalItem.header)] = String(goalItem.text || '').trim();
- row[getFieldName(linkageItem.header)] = String(linkageItem.text || '').trim();
- row[getFieldName(progressItem.header)] = String(progressItem.text || '').trim();
- row[getFieldName(alertItem.header)] = String(alertItem.text || '').trim();
- 
- tableRows.push(row);
- }
- }
- 
- if (tableRows.length > 0) {
- return tableRows;
- }
- }
- 
- // Check other common property names that might contain arrays
- const arrayKeys = ['items', 'data', 'goals', 'sprint_goals', 'rows', 'records'];
- for (const key of arrayKeys) {
- if (parsed[key] && Array.isArray(parsed[key]) && parsed[key].length > 0) {
- return parsed[key] as Record<string, any>[];
- }
- }
- 
- // If object itself is an array-like structure, try to extract values
- const values = Object.values(parsed);
- if (values.length > 0 && Array.isArray(values[0]) && values[0].length > 0) {
- return values[0] as Record<string, any>[];
- }
- }
- 
- return null;
- } catch (error) {
- console.error('Error parsing Sprint Goal information_json:', error);
- return null;
- }
-};
-
 export default function AICardsInsight({ 
  cards, 
  loading, 
@@ -592,19 +513,14 @@ export default function AICardsInsight({
  );
  }
 
- // Decide which cards have meaningful content to show
- const hasContent = (c: AICard) => {
- if (c && typeof c.description === 'string' && c.description.trim().length > 0) return true;
- // Check parsed JSON content
- const cardType = c.insight_type || c.card_type; // Support both field names
- if (cardType === 'Sprint Goal') {
- const sprintGoalItems = parseSprintGoalJson(c.information_json);
- if (sprintGoalItems && sprintGoalItems.length > 0) return true;
- }
- const informationItems = parseInformationJson(c.information_json);
- if (informationItems && informationItems.length > 0) return true;
- return false;
- };
+// Decide which cards have meaningful content to show
+const hasContent = (c: AICard) => {
+if (c && typeof c.description === 'string' && c.description.trim().length > 0) return true;
+// Check parsed JSON content - use same method for all cards
+const informationItems = parseInformationJson(c.information_json);
+if (informationItems && informationItems.length > 0) return true;
+return false;
+};
 
  const visibleCards = Array.isArray(cards) ? cards.filter(hasContent) : [];
  
@@ -742,147 +658,9 @@ export default function AICardsInsight({
  </div>
  <div className={`flex-1 overflow-auto ${showHeader ? 'px-5 pt-0 pb-2' : 'px-4 pt-0 pb-2 mt-3'}`}>
  <div className={`${dynamicTextSize} ${dynamicLineHeight} text-content-secondary max-w-none w-full break-words whitespace-normal hyphens-auto`}>
- {(() => {
- // Handle Sprint Goal cards with JSON table format
- const cardType = card.insight_type || card.card_type; // Support both field names
- if (cardType === 'Sprint Goal') {
- const sprintGoalItems = parseSprintGoalJson(card.information_json);
- 
- if (sprintGoalItems && sprintGoalItems.length > 0) {
- // Get column headers dynamically from the first item
- const firstItem = sprintGoalItems[0];
- let columns = firstItem && typeof firstItem === 'object' ? Object.keys(firstItem) : [];
- 
- if (columns.length === 0) {
- // Fallback if no columns found
- return null;
- }
- 
- // Check if"Goal" column exists (case-insensitive) and move it to first position
- const goalColumnIndex = columns.findIndex(col => col.toLowerCase().includes('goal'));
- if (goalColumnIndex !== -1) {
- const goalColumn = columns[goalColumnIndex];
- columns = [goalColumn, ...columns.filter(col => col !== goalColumn)];
- }
- 
- return (
- <div className="w-full overflow-auto rounded-lg border-2 border-outline mb-4 shadow-sm bg-gradient-to-r from-surface to-surface-elevated" style={{ maxHeight: '150px' }}>
- <table 
- className="text-sm border-collapse w-full" 
- style={{ tableLayout: 'auto' }}
- >
-        <thead className="sticky top-0 bg-gradient-to-r from-surface to-surface-elevated z-10">
- <tr>
- {columns.map((column) => {
- const isGoalColumn = column.toLowerCase().includes('goal');
- const isAlertColumn = column.toLowerCase() === 'alert';
- return (
- <th 
- key={column} 
- className={`border-b-2 border-outline px-3 py-2 font-semibold text-content-primary text-xs ${
- isGoalColumn || isAlertColumn ? 'text-left' : 'text-center'
- }`}
- style={isGoalColumn ? { minWidth: '200px' } : { minWidth: '80px' }}
- >
- {column.charAt(0).toUpperCase() + column.slice(1)}
- </th>
- );
- })}
- </tr>
- </thead>
- <tbody className="bg-surface">
- {sprintGoalItems.map((item, index) => (
- <tr key={index} className="hover:bg-blue-50/50 hover:bg-surface-elevated/50 transition-colors border-b border-outline">
- {columns.map((column) => {
- const isGoalColumn = column.toLowerCase().includes('goal');
- const isAlertColumn = column.toLowerCase() === 'alert';
- const value = item[column];
- return (
- <td 
- key={column} 
- className={`px-3 py-2 text-xs text-content-secondary ${
- isGoalColumn || isAlertColumn
- ? 'whitespace-normal break-words text-left' 
- : 'text-center'
- } ${
- isAlertColumn 
- ? 'text-base' 
- : ''
- }`}
- >
- {column.toLowerCase() === 'progress' && typeof value === 'number'
- ? `${value}%`
- : String(value ?? '').trim()
- }
- </td>
- );
- })}
- </tr>
- ))}
- </tbody>
- </table>
- </div>
- );
- }
- 
- // Fallback to description (markdown) for Sprint Goal cards when information_json is empty
- return (
- <div className="mb-4">
- <ReactMarkdown
- remarkPlugins={[remarkGfm]}
- components={{
- p: ({ children }) => <p className={`${dynamicTextSize} ${dynamicLineHeight} text-content-secondary mb-1`}>{children}</p>,
- strong: ({ children }) => <strong className="font-semibold text-content-primary">{children}</strong>,
- em: ({ children }) => <em className="italic">{children}</em>,
- ul: ({ children }) => <ul className={`list-disc list-inside ${dynamicTextSize} text-content-secondary`}>{children}</ul>,
- ol: ({ children }) => <ol className={`list-decimal list-inside ${dynamicTextSize} text-content-secondary`}>{children}</ol>,
- li: ({ children }) => <li className={`${dynamicTextSize} text-content-secondary`}>{children}</li>,
- code: ({ children }) => <code className={`bg-surface-secondary px-1 rounded text-brand ${dynamicTextSize}`}>{children}</code>,
- pre: ({ children }) => <pre className={`bg-surface-secondary p-2 rounded ${dynamicTextSize} overflow-x-auto border-2 border-outline`}>{children}</pre>,
- h1: ({ children }) => <h1 className={`${dynamicTextSize} font-bold text-content-primary mb-1`}>{children}</h1>,
- h2: ({ children }) => <h2 className={`${dynamicTextSize} font-bold text-content-primary mb-1`}>{children}</h2>,
- h3: ({ children }) => <h3 className={`${dynamicTextSize} font-semibold text-content-primary mb-1`}>{children}</h3>,
- blockquote: ({ children }) => <blockquote className={`border-l-2 border-blue-400 pl-2 italic text-content-secondary ${dynamicTextSize}`}>{children}</blockquote>,
- table: ({ children }) => <table className={`w-full ${dynamicTextSize} border-collapse border-2 border-outline table-fixed h-full`}>{children}</table>,
- thead: ({ children }) => <thead>{children}</thead>,
- tbody: ({ children }) => <tbody className="h-full">{children}</tbody>,
- tr: ({ children }) => <tr>{children}</tr>,
- th: ({ children }) => {
- const text = children?.toString() || '';
- if (text.includes('Goal') || text.includes('🎯')) {
- return <th className="border-2 border-outline px-1 py-0.5 bg-surface-secondary font-semibold text-left w-2/3">{children}</th>;
- }
- return <th className="border-2 border-outline px-1 py-0.5 bg-surface-secondary font-semibold text-center">{children}</th>;
- },
- td: ({ children }) => {
- const text = children?.toString() || '';
- 
- // Apply goal cell styling only for"Sprint Goal" card type
- const cardType = card.insight_type || card.card_type; // Support both field names
- if (cardType === 'Sprint Goal') {
- // For sprint goal cards, ensure full text, left-aligned
- return <td className="border-2 border-outline px-1 py-0.5 text-left w-2/3 whitespace-normal break-words overflow-visible">{children}</td>;
- }
- 
- // Other card types remain center-aligned
- return <td className="border-2 border-outline px-1 py-0.5 text-center">{children}</td>;
- },
- }}
- >
- {(() => {
- // Apply character limit
- if (card.description.length > CARD_DESCRIPTION_MAX_LENGTH) {
- return `${card.description.substring(0, CARD_DESCRIPTION_MAX_LENGTH)}...`;
- }
- return card.description;
- })()}
- </ReactMarkdown>
- </div>
- );
- }
- 
- // Parse information_json for non-Sprint Goal cards
- const informationItems = parseInformationJson(card.information_json);
+{(() => {
+// Parse information_json for all cards using the same method
+const informationItems = parseInformationJson(card.information_json);
  
  if (informationItems && informationItems.length > 0) {
  return (
@@ -890,67 +668,73 @@ export default function AICardsInsight({
  {informationItems.map((item, index) => (
  <div key={index} className={`py-2.5 border-b border-outline last:border-b-0 hover:bg-blue-50/50 hover:bg-surface-elevated/50 transition-colors rounded-md px-2 -mx-2 ${index === 0 ? 'border-t-0' : ''}`}>
  <span className="font-semibold text-blue-800 dark:text-brand text-sm">{item.header}:</span>
- <span className="text-content-secondary text-sm leading-relaxed ml-2">{item.text}</span>
- </div>
- ))}
- </div>
- );
- }
- 
- // Fallback to description (markdown) for other card types when information_json is empty
- return (
- <div className="mb-4">
+ <span className="text-content-secondary text-sm leading-relaxed ml-2">
  <ReactMarkdown
  remarkPlugins={[remarkGfm]}
  components={{
- p: ({ children }) => <p className={`${dynamicTextSize} ${dynamicLineHeight} text-content-secondary mb-1`}>{children}</p>,
+ p: ({ children }) => <span className="inline">{children}</span>,
  strong: ({ children }) => <strong className="font-semibold text-content-primary">{children}</strong>,
  em: ({ children }) => <em className="italic">{children}</em>,
  ul: ({ children }) => <ul className={`list-disc list-inside ${dynamicTextSize} text-content-secondary`}>{children}</ul>,
  ol: ({ children }) => <ol className={`list-decimal list-inside ${dynamicTextSize} text-content-secondary`}>{children}</ol>,
  li: ({ children }) => <li className={`${dynamicTextSize} text-content-secondary`}>{children}</li>,
  code: ({ children }) => <code className={`bg-surface-secondary px-1 rounded text-brand ${dynamicTextSize}`}>{children}</code>,
- pre: ({ children }) => <pre className={`bg-surface-secondary p-2 rounded ${dynamicTextSize} overflow-x-auto border-2 border-outline`}>{children}</pre>,
- h1: ({ children }) => <h1 className={`${dynamicTextSize} font-bold text-content-primary mb-1`}>{children}</h1>,
- h2: ({ children }) => <h2 className={`${dynamicTextSize} font-bold text-content-primary mb-1`}>{children}</h2>,
- h3: ({ children }) => <h3 className={`${dynamicTextSize} font-semibold text-content-primary mb-1`}>{children}</h3>,
- blockquote: ({ children }) => <blockquote className={`border-l-2 border-blue-400 pl-2 italic text-content-secondary ${dynamicTextSize}`}>{children}</blockquote>,
- table: ({ children }) => <table className={`w-full ${dynamicTextSize} border-collapse border-2 border-outline table-fixed h-full`}>{children}</table>,
- thead: ({ children }) => <thead>{children}</thead>,
- tbody: ({ children }) => <tbody className="h-full">{children}</tbody>,
- tr: ({ children }) => <tr>{children}</tr>,
- th: ({ children }) => {
- const text = children?.toString() || '';
- if (text.includes('Goal') || text.includes('🎯')) {
- return <th className="border-2 border-outline px-1 py-0.5 bg-surface-secondary font-semibold text-left w-2/3">{children}</th>;
- }
- return <th className="border-2 border-outline px-1 py-0.5 bg-surface-secondary font-semibold text-center">{children}</th>;
- },
- td: ({ children }) => {
- const text = children?.toString() || '';
- 
- // Apply goal cell styling only for"Sprint Goal" card type
- const cardType = card.insight_type || card.card_type; // Support both field names
- if (cardType === 'Sprint Goal') {
- // For sprint goal cards, ensure full text, left-aligned
- return <td className="border-2 border-outline px-1 py-0.5 text-left w-2/3 whitespace-normal break-words overflow-visible">{children}</td>;
- }
- 
- // Other card types remain center-aligned
- return <td className="border-2 border-outline px-1 py-0.5 text-center">{children}</td>;
- },
  }}
  >
- {(() => {
- // Apply character limit
- if (card.description.length > CARD_DESCRIPTION_MAX_LENGTH) {
- return `${card.description.substring(0, CARD_DESCRIPTION_MAX_LENGTH)}...`;
- }
- return card.description;
- })()}
+ {item.text}
  </ReactMarkdown>
+ </span>
+ </div>
+ ))}
  </div>
  );
+ }
+ 
+// Fallback to description (markdown) for all card types when information_json is empty
+return (
+<div className="mb-4">
+<ReactMarkdown
+remarkPlugins={[remarkGfm]}
+components={{
+p: ({ children }) => <p className={`${dynamicTextSize} ${dynamicLineHeight} text-content-secondary mb-1`}>{children}</p>,
+strong: ({ children }) => <strong className="font-semibold text-content-primary">{children}</strong>,
+em: ({ children }) => <em className="italic">{children}</em>,
+ul: ({ children }) => <ul className={`list-disc list-inside ${dynamicTextSize} text-content-secondary`}>{children}</ul>,
+ol: ({ children }) => <ol className={`list-decimal list-inside ${dynamicTextSize} text-content-secondary`}>{children}</ol>,
+li: ({ children }) => <li className={`${dynamicTextSize} text-content-secondary`}>{children}</li>,
+code: ({ children }) => <code className={`bg-surface-secondary px-1 rounded text-brand ${dynamicTextSize}`}>{children}</code>,
+pre: ({ children }) => <pre className={`bg-surface-secondary p-2 rounded ${dynamicTextSize} overflow-x-auto border-2 border-outline`}>{children}</pre>,
+h1: ({ children }) => <h1 className={`${dynamicTextSize} font-bold text-content-primary mb-1`}>{children}</h1>,
+h2: ({ children }) => <h2 className={`${dynamicTextSize} font-bold text-content-primary mb-1`}>{children}</h2>,
+h3: ({ children }) => <h3 className={`${dynamicTextSize} font-semibold text-content-primary mb-1`}>{children}</h3>,
+blockquote: ({ children }) => <blockquote className={`border-l-2 border-blue-400 pl-2 italic text-content-secondary ${dynamicTextSize}`}>{children}</blockquote>,
+table: ({ children }) => <table className={`w-full ${dynamicTextSize} border-collapse border-2 border-outline table-fixed h-full`}>{children}</table>,
+thead: ({ children }) => <thead>{children}</thead>,
+tbody: ({ children }) => <tbody className="h-full">{children}</tbody>,
+tr: ({ children }) => <tr>{children}</tr>,
+th: ({ children }) => {
+const text = children?.toString() || '';
+if (text.includes('Goal') || text.includes('🎯')) {
+return <th className="border-2 border-outline px-1 py-0.5 bg-surface-secondary font-semibold text-left w-2/3">{children}</th>;
+}
+return <th className="border-2 border-outline px-1 py-0.5 bg-surface-secondary font-semibold text-center">{children}</th>;
+},
+td: ({ children }) => {
+// Unified styling for all card types - center-aligned
+return <td className="border-2 border-outline px-1 py-0.5 text-center">{children}</td>;
+},
+}}
+>
+{(() => {
+// Apply character limit
+if (card.description.length > CARD_DESCRIPTION_MAX_LENGTH) {
+return `${card.description.substring(0, CARD_DESCRIPTION_MAX_LENGTH)}...`;
+}
+return card.description;
+})()}
+</ReactMarkdown>
+</div>
+);
  })()}
  </div>
  </div>

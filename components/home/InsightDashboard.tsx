@@ -30,7 +30,7 @@ interface InformationItem {
   text: string;
 }
 
-// Parse information_json for non-Sprint Goal cards (header/text format)
+// Parse information_json for all cards (header/text format)
 function parseInformationJson(jsonString: string | undefined): InformationItem[] | null {
   if (!jsonString || jsonString.trim() === '') {
     return null;
@@ -60,72 +60,6 @@ function parseInformationJson(jsonString: string | undefined): InformationItem[]
     return null;
   } catch (error) {
     console.error('Error parsing information_json:', error);
-    return null;
-  }
-}
-
-// Parse Sprint Goal JSON into table format (copied from AICardsInsight.tsx)
-function parseSprintGoalJson(jsonString?: string): Record<string, any>[] | null {
-  if (!jsonString || typeof jsonString !== 'string') return null;
-
-  try {
-    const parsed = JSON.parse(jsonString);
-
-    // Handle direct array (already in table format)
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed as Record<string, any>[];
-    }
-
-    // Handle object containing DashboardSummary or other arrays
-    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-      // Check for DashboardSummary first (most common for Sprint Goals)
-      if (parsed.DashboardSummary && Array.isArray(parsed.DashboardSummary) && parsed.DashboardSummary.length > 0) {
-        // Transform from flat format to table format
-        const flatArray = parsed.DashboardSummary;
-        const tableRows: Record<string, any>[] = [];
-
-        // Limit to 8 rows maximum (32 items)
-        const maxItems = Math.min(flatArray.length, 32);
-        for (let i = 0; i < maxItems; i += 4) {
-          const goalItem = flatArray[i];
-          const linkageItem = flatArray[i + 1];
-          const progressItem = flatArray[i + 2];
-          const alertItem = flatArray[i + 3];
-
-          if (!goalItem || !linkageItem || !progressItem || !alertItem) {
-            break;
-          }
-
-          // Normalize field names
-          const getFieldName = (header: string): string => {
-            return String(header || '').trim().replace(/ /g, '_');
-          };
-
-          const row: Record<string, any> = {};
-          row[getFieldName(goalItem.header)] = String(goalItem.text || '').trim();
-          row[getFieldName(linkageItem.header)] = String(linkageItem.text || '').trim();
-          row[getFieldName(progressItem.header)] = String(progressItem.text || '').trim();
-          row[getFieldName(alertItem.header)] = String(alertItem.text || '').trim();
-
-          tableRows.push(row);
-        }
-
-        if (tableRows.length > 0) {
-          return tableRows;
-        }
-      }
-
-      // Check other common property names that might contain arrays
-      const arrayKeys = ['items', 'data', 'goals', 'sprint_goals', 'rows', 'records'];
-      for (const key of arrayKeys) {
-        if (parsed[key] && Array.isArray(parsed[key]) && parsed[key].length > 0) {
-          return parsed[key] as Record<string, any>[];
-        }
-      }
-    }
-
-    return null;
-  } catch (e) {
     return null;
   }
 }
@@ -334,86 +268,8 @@ export default function InsightDashboard({ card, onBack }: InsightDashboardProps
             <div className="text-xs font-semibold text-content-tertiary uppercase tracking-wider mb-2">Details</div>
             <div className="text-sm text-content-secondary max-w-none">
               {(() => {
-                // Handle cards with JSON table format
-                const cardType = card.insight_type || (card as any).card_type;
-                const isSprintGoal = cardType === 'Sprint Goal';
-                
+                // Parse and render all cards with header/text format
                 if ((card as any).information_json) {
-                  // Sprint Goal: Parse and render as table
-                  if (isSprintGoal) {
-                    const items = parseSprintGoalJson((card as any).information_json);
-
-                    if (items && items.length > 0) {
-                      // Extract column names
-                      let columns = Object.keys(items[0]);
-                      
-                      // Reorder columns: Goal first, Alert last
-                      const goalColumn = columns.find(col => col.toLowerCase().includes('goal'));
-                      const alertColumn = columns.find(col => col.toLowerCase().includes('alert'));
-                      
-                      // Build new column order
-                      columns = columns.filter(col => col !== goalColumn && col !== alertColumn);
-                      if (goalColumn) columns.unshift(goalColumn);
-                      if (alertColumn) columns.push(alertColumn);
-
-                      return (
-                        <div className="w-full overflow-auto rounded-lg border border-outline shadow-sm">
-                          <table className="text-sm border-collapse w-full">
-                            <thead className="sticky top-0 z-10">
-                              <tr>
-                                {columns.map((column) => {
-                                  const isGoalColumn = column.toLowerCase().includes('goal');
-                                  // Give all non-goal columns equal width
-                                  const width = isGoalColumn ? '40%' : `${60 / (columns.length - 1)}%`;
-                                  return (
-                                    <th
-                                      key={column}
-                                      className="px-3 py-2.5 text-left text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider border-b border-outline bg-surface-elevated"
-                                      style={{ width }}
-                                    >
-                                      {column.replace(/_/g, ' ')}
-                                    </th>
-                                  );
-                                })}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {items.map((row, idx) => (
-                                <tr 
-                                  key={idx} 
-                                  className={`${
-                                    idx % 2 === 0 ? 'bg-surface' : 'bg-surface-elevated/50'
-                                  } hover:bg-surface-secondary transition-colors`}
-                                >
-                                  {columns.map((column) => {
-                                    const isGoalColumn = column.toLowerCase().includes('goal');
-                                    const isAlertColumn = column.toLowerCase().includes('alert');
-                                    const value = row[column];
-                                    return (
-                                      <td
-                                        key={column}
-                                        className={`px-3 py-2.5 border-b border-outline ${
-                                          isGoalColumn 
-                                            ? 'font-medium text-content-primary' 
-                                            : isAlertColumn 
-                                            ? 'text-amber-600 dark:text-amber-400'
-                                            : 'text-content-secondary'
-                                        }`}
-                                      >
-                                        {String(value)}
-                                      </td>
-                                    );
-                                  })}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      );
-                    }
-                  }
-                  
-                  // Non-Sprint Goal: Parse and render with header/text format (like AICardsInsight)
                   const informationItems = parseInformationJson((card as any).information_json);
                   
                   if (informationItems && informationItems.length > 0) {
@@ -426,7 +282,22 @@ export default function InsightDashboard({ card, onBack }: InsightDashboardProps
                               className={`py-2.5 border-b border-outline last:border-b-0 hover:bg-surface-elevated/50 transition-colors rounded-md px-2 -mx-2 ${index === 0 ? 'border-t-0' : ''}`}
                             >
                               <span className="font-semibold text-blue-600 dark:text-blue-400 text-sm">{item.header}:</span>
-                              <span className="text-content-secondary text-sm leading-relaxed ml-2">{item.text}</span>
+                              <span className="text-content-secondary text-sm leading-relaxed ml-2">
+                                <ReactMarkdown
+                                  remarkPlugins={[remarkGfm]}
+                                  components={{
+                                    p: ({ children }) => <span className="inline">{children}</span>,
+                                    strong: ({ children }) => <strong className="font-semibold text-content-primary">{children}</strong>,
+                                    em: ({ children }) => <em className="italic">{children}</em>,
+                                    ul: ({ children }) => <ul className="list-disc list-inside text-sm text-content-secondary">{children}</ul>,
+                                    ol: ({ children }) => <ol className="list-decimal list-inside text-sm text-content-secondary">{children}</ol>,
+                                    li: ({ children }) => <li className="text-sm text-content-secondary">{children}</li>,
+                                    code: ({ children }) => <code className="bg-surface-secondary px-1 rounded text-brand text-sm">{children}</code>,
+                                  }}
+                                >
+                                  {item.text}
+                                </ReactMarkdown>
+                              </span>
                             </div>
                           ))}
                         </div>
