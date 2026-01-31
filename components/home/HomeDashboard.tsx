@@ -75,30 +75,8 @@ export default function HomeDashboard({
  end_date: string | null;
  }> = response?.data?.sprints || [];
 
- const today = new Date();
- today.setHours(0, 0, 0, 0);
-
- const filtered = sprints
- .filter((s) => {
- if (!s.start_date || !s.end_date) return false;
- const startDate = new Date(s.start_date);
- startDate.setHours(0, 0, 0, 0);
- const endDate = new Date(s.end_date);
- endDate.setHours(0, 0, 0, 0);
-
- const isCurrent = startDate <= today && today <= endDate;
- const fourteenDaysBeforeStart = new Date(startDate);
- fourteenDaysBeforeStart.setDate(fourteenDaysBeforeStart.getDate() - 14);
- const isUpcoming = today >= fourteenDaysBeforeStart && today < startDate;
-
- return isCurrent || isUpcoming;
- })
- .sort((a, b) => {
- if (!a.start_date || !b.start_date) return 0;
- return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
- });
-
- const selected = filtered[0];
+ // Display what the backend returns - no additional filtering
+ const selected = sprints[0];
  if (cancelled) return;
 
  if (selected) {

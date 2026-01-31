@@ -116,29 +116,8 @@ const GoalProgressView: React.FC<GoalProgressViewProps> = ({
           setLoadingSprints(true);
           const response = await apiService.getAvailableSprints(teamName, isGroup);
           if (response.success && response.data?.sprints) {
-            // Filter to current and upcoming sprints (within 14 days)
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
+            // Display what the backend returns - no additional filtering
             const filteredSprints = response.data.sprints
-              .filter((sprint: any) => {
-                if (!sprint.start_date || !sprint.end_date) return false;
-                const startDate = new Date(sprint.start_date);
-                startDate.setHours(0, 0, 0, 0);
-                const endDate = new Date(sprint.end_date);
-                endDate.setHours(0, 0, 0, 0);
-                
-                const isCurrent = startDate <= today && today <= endDate;
-                const fourteenDaysBeforeStart = new Date(startDate);
-                fourteenDaysBeforeStart.setDate(fourteenDaysBeforeStart.getDate() - 14);
-                const isUpcoming = today >= fourteenDaysBeforeStart && today < startDate;
-                
-                return isCurrent || isUpcoming;
-              })
-              .sort((a: any, b: any) => {
-                if (!a.start_date || !b.start_date) return 0;
-                return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
-              })
               .map((sprint: any) => ({
                 value: sprint.sprint_name,
                 label: sprint.sprint_name,

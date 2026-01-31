@@ -94,28 +94,8 @@ export default function GoalProgressTab() {
  selectedTeamType === 'group'
  );
  if (response.success && response.data?.sprints) {
- const today = new Date();
- today.setHours(0, 0, 0, 0);
-
- const filteredSprints = response.data.sprints
- .filter((sprint: Sprint) => {
- if (!sprint.start_date || !sprint.end_date) return false;
- const startDate = new Date(sprint.start_date);
- startDate.setHours(0, 0, 0, 0);
- const endDate = new Date(sprint.end_date);
- endDate.setHours(0, 0, 0, 0);
-
- const isCurrent = startDate <= today && today <= endDate;
- const fourteenDaysBeforeStart = new Date(startDate);
- fourteenDaysBeforeStart.setDate(fourteenDaysBeforeStart.getDate() - 14);
- const isUpcoming = today >= fourteenDaysBeforeStart && today < startDate;
-
- return isCurrent || isUpcoming;
- })
- .sort((a: Sprint, b: Sprint) => {
- if (!a.start_date || !b.start_date) return 0;
- return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
- });
+ // Display what the backend returns - no additional filtering
+ const filteredSprints = response.data.sprints;
 
  setAvailableSprints(filteredSprints);
  }
