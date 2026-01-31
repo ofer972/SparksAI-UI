@@ -58,7 +58,7 @@ export default function SprintInsightsPreview({
             const anyCard = card as any;
             const badgeCls = priorityBadgeClass(card.priority, anyCard.priority_color);
             const summary = (anyCard.short_summary || card.description || '').trim();
-            const short = summary.length > 120 ? `${summary.slice(0, 120)}…` : summary;
+            const short = summary.length > 200 ? `${summary.slice(0, 200)}…` : summary;
 
             return (
               <button
