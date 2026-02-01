@@ -20,6 +20,7 @@ import WIPOverTimeView from './reportViews/WIPOverTimeView';
 import CycleTimeView from './reportViews/CycleTimeView';
 import GoalProgressView from './reportViews/GoalProgressView';
 import PIRoadmapView from './reportViews/PIRoadmapView';
+import DependencyHeatmapView from './reportViews/DependencyHeatmapView';
 import DeploymentFrequencyCard from './github/DeploymentFrequencyCard';
 import ChangeFailureRateCard from './github/ChangeFailureRateCard';
 import RecoveryTimeCard from './github/RecoveryTimeCard';
@@ -441,6 +442,34 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
       filters,
       refresh,
     }),
+  },
+  'dependency-heatmap': {
+    component: DependencyHeatmapView,
+    requiredFilters: ['pi'],
+    mapProps: ({ result, loading, error, meta, filters, refresh }) => {
+      // Handle response format where result is { data: {...}, meta: {...} }
+      let heatmapData = null;
+      
+      if (result) {
+        // If result has a 'data' property, extract it (full response format)
+        if (result.data && typeof result.data === 'object') {
+          heatmapData = result.data;
+        } 
+        // Otherwise, result might already be the data (if report system extracted it)
+        else if (result.heatmap_data || result.owning_teams || result.blocking_teams) {
+          heatmapData = result;
+        }
+      }
+      
+      return {
+        data: heatmapData,
+        loading,
+        error,
+        meta,
+        filters,
+        refresh,
+      };
+    },
   },
   'dora-deployment-frequency': {
     component: DeploymentFrequencyCard,
