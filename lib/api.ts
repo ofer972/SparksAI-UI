@@ -2462,6 +2462,72 @@ export class ApiService {
     const result: IssueTypesHierarchyResponse = await response.json();
     return result;
   }
+
+  // Issues List API
+  async getIssuesList(params: {
+    team_name?: string;
+    isGroup?: boolean;
+    pi?: string;
+    issue_type?: string;
+    status?: string;
+    dependency?: boolean;
+    flagged?: boolean;
+    sprint_id?: number;
+    limit?: number;
+  }): Promise<{ success: boolean; data: { issues: any[]; count: number }; message?: string }> {
+    const queryParams = new URLSearchParams();
+    if (params.team_name) queryParams.append('team_name', params.team_name);
+    if (params.isGroup) queryParams.append('isGroup', 'true');
+    if (params.pi) queryParams.append('pi', params.pi);
+    if (params.issue_type) queryParams.append('issue_type', params.issue_type);
+    if (params.status) queryParams.append('status', params.status);
+    if (params.dependency !== undefined) queryParams.append('dependency', String(params.dependency));
+    if (params.flagged !== undefined) queryParams.append('flagged', String(params.flagged));
+    if (params.sprint_id !== undefined) queryParams.append('sprint_id', String(params.sprint_id));
+    if (params.limit !== undefined) queryParams.append('limit', String(params.limit));
+
+    const url = buildBackendUrl(`/issues/list?${queryParams.toString()}`);
+    const response = await authFetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch issues list: ${response.statusText}`);
+    }
+
+    return await response.json();
+  }
+
+  // Get Sprints List API
+  async getSprintsList(params: {
+    team_name?: string;
+    isGroup?: boolean;
+    months_back?: number;
+  }): Promise<{ success: boolean; data: { sprints: Array<{ sprint_id: number; sprint_name: string; start_date: string | null; end_date: string | null }>; count: number }; message?: string }> {
+    const queryParams = new URLSearchParams();
+    if (params.team_name) queryParams.append('team_name', params.team_name);
+    if (params.isGroup) queryParams.append('isGroup', 'true');
+    if (params.months_back !== undefined) queryParams.append('months_back', String(params.months_back));
+
+    const url = buildBackendUrl(`/goals/sprints/list?${queryParams.toString()}`);
+    const response = await authFetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch sprints list: ${response.statusText}`);
+    }
+
+    return await response.json();
+  }
+
+  // Get Issue from Jira API
+  async getIssueFromJira(issueKey: string): Promise<{ success: boolean; data: any; message?: string }> {
+    const url = buildBackendUrl(`/issues/jira/${issueKey}`);
+    const response = await authFetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch issue from Jira: ${response.statusText}`);
+    }
+
+    return await response.json();
+  }
 }
 
 export interface UserDto {
@@ -2896,6 +2962,94 @@ export async function deleteDashboard(userId: string, dashboardId: string): Prom
 
 // Widget operations are now handled through dashboard updates
 // All widget data is stored in layout_config
+
+// Epics by PI API
+export interface EpicByPiItem {
+  epic_key: string;
+  epic_name: string;
+  epic_status_category: string;
+  dependent_issues_total: number;
+  [key: string]: any;
+}
+
+export interface EpicsByPiResponse {
+  success: boolean;
+  data: {
+    epics: EpicByPiItem[];
+    count: number;
+  };
+  message?: string;
+}
+
+export async function getEpicsByPi(
+  pi: string,
+  teamName?: string,
+  isGroup: boolean = false
+): Promise<EpicsByPiResponse> {
+  const params = new URLSearchParams({ pi });
+  if (teamName) {
+    params.append('team_name', teamName);
+    if (isGroup) {
+      params.append('isGroup', 'true');
+    }
+  }
+  
+  const url = buildBackendUrl(`/issues/epics-by-pi?${params.toString()}`);
+  const res = await authFetch(url);
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Failed to fetch epics by PI');
+  }
+  return await res.json();
+}
+
+export async function getEpicsByPiSummary(
+  pi: string,
+  teamName?: string,
+  isGroup: boolean = false
+): Promise<EpicsByPiResponse> {
+  const params = new URLSearchParams({ pi });
+  if (teamName) {
+    params.append('team_name', teamName);
+    if (isGroup) {
+      params.append('isGroup', 'true');
+    }
+  }
+  
+  const url = buildBackendUrl(`/issues/epics-by-pi-summary?${params.toString()}`);
+  const res = await authFetch(url);
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Failed to fetch epics by PI summary');
+  }
+  return await res.json();
+}
+
+export async function getDependencyHeatmapStories(
+  pi: string,
+  owningTeam: string,
+  blockingTeam?: string
+): Promise<{
+  success: boolean;
+  data: { issues: any[] };
+  message?: string;
+}> {
+  const params = new URLSearchParams({
+    pi,
+    owning_team: owningTeam,
+  });
+  if (blockingTeam) {
+    params.append('blocking_team', blockingTeam);
+  }
+  
+  const url = buildBackendUrl(`/issues/dependency-heatmap-stories?${params.toString()}`);
+  const res = await authFetch(url);
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Failed to fetch dependency heatmap stories: ${res.status} ${res.statusText} - ${errorText}`);
+  }
+  return await res.json();
+}
 
 // Legacy class for backward compatibility
 export class BurndownApiService {
