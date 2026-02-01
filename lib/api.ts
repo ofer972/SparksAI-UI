@@ -1394,9 +1394,22 @@ export class ApiService {
     if (!response.ok) {
       const errorText = await response.text();
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      
+      // Handle 429 (rate limit) errors with user-friendly message
+      if (response.status === 429) {
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.detail || errorJson.message || errorJson.error || errorMessage;
+          throw new Error(errorMessage);
+        } catch (parseError) {
+          throw new Error('The AI service is currently experiencing high demand. Please try again in a few moments.');
+        }
+      }
+      
+      // Handle other errors
       try {
         const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.message || errorJson.error || errorMessage;
+        errorMessage = errorJson.detail || errorJson.message || errorJson.error || errorMessage;
       } catch {
         if (errorText && errorText.length < 200) {
           errorMessage = errorText;
