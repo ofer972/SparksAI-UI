@@ -76,7 +76,7 @@ const DependencyHeatmapView: React.FC<DependencyHeatmapViewProps> = ({
   // Extract filters
   const pi = (filters?.pi as string) || '';
   const teamName = (filters?.team_name as string) || undefined;
-  const isGroup = (filters?.isGroup as boolean) || false;
+  const isGroup = (filters?.isGroup as boolean) ?? false;
 
   // Toggle state for switching rows/columns (local state, not a filter)
   const [transposed, setTransposed] = useState<boolean>(false);
@@ -211,6 +211,18 @@ const DependencyHeatmapView: React.FC<DependencyHeatmapViewProps> = ({
           placeholder="Select team or group"
           allowClear={true}
         />
+      </ReportFilterField>
+
+      <ReportFilterField label="View">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={transposed}
+            onChange={(e) => setTransposed(e.target.checked)}
+            className="w-4 h-4 text-brand rounded focus:ring-brand"
+          />
+          <span className="text-sm text-content-primary">Switch Rows/Columns</span>
+        </label>
       </ReportFilterField>
     </ReportFiltersRow>
   );
@@ -411,25 +423,33 @@ const DependencyHeatmapView: React.FC<DependencyHeatmapViewProps> = ({
       )}
 
       {!loading && !error && pi && heatmapData && heatmapMatrix && rowTeams && columnTeams && (
-        <div className="space-y-4">
-          {/* Toggle Switch Rows/Columns */}
-          <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={transposed}
-                onChange={(e) => setTransposed(e.target.checked)}
-                className="w-4 h-4 text-brand rounded focus:ring-brand"
-              />
-              <span className="text-sm text-content-primary font-medium">Switch Rows/Columns</span>
-            </label>
-            <span className="text-xs text-content-tertiary">
-              {transposed ? '(Blocking Teams as rows, Owning Teams as columns)' : '(Owning Teams as rows, Blocking Teams as columns)'}
-            </span>
-          </div>
+        <div className="flex flex-col h-full" style={{ minHeight: '600px', height: '600px' }}>
+          {/* Legend - moved to top */}
+          {heatmapData.legend && (
+            <div className="flex-shrink-0 mb-2 p-2 bg-surface-secondary rounded-lg">
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                {heatmapData.legend.map((item, index) => (
+                  <div key={index} className="flex items-center gap-1.5">
+                    {item.status === 'icon' ? (
+                      <span className="flex items-center justify-center w-3 h-3 rounded-full bg-red-600 text-white font-bold text-[8px] leading-none">!</span>
+                    ) : (
+                      <div className={`w-3 h-3 rounded ${
+                        item.status === 'completed' ? 'bg-green-700' :
+                        item.status === 'low' ? 'bg-yellow-200' :
+                        item.status === 'medium' ? 'bg-orange-500' :
+                        item.status === 'critical' ? 'bg-red-500' :
+                        item.status === 'none' ? 'bg-surface-secondary border-2 border-gray-400 dark:border-gray-300' : 'bg-gray-300'
+                      }`}></div>
+                    )}
+                    <span className="text-content-secondary text-xs">{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-          {/* Heatmap */}
-          <div className="flex-1 overflow-auto">
+          {/* Heatmap - scrollable */}
+          <div className="flex-1 min-h-0 overflow-auto">
             <div className="inline-block min-w-full">
               <table className="border-collapse">
                 <thead>
@@ -455,7 +475,7 @@ const DependencyHeatmapView: React.FC<DependencyHeatmapViewProps> = ({
                         </th>
                         <th rowSpan={2} className="border border-outline dark:border-outline-strong p-2 text-center align-top font-semibold text-content-primary bg-surface-elevated" style={{ width: '80px', minWidth: '80px', maxWidth: '80px' }}>
                           <div className="text-sm">Epics</div>
-                          <div className="text-xs font-normal text-content-tertiary mt-1">w/ Dependencies</div>
+                          <div className="text-xs font-normal text-content-tertiary mt-1">w/ Depend.</div>
                         </th>
                       </>
                     )}
@@ -610,30 +630,6 @@ const DependencyHeatmapView: React.FC<DependencyHeatmapViewProps> = ({
               </table>
             </div>
           </div>
-
-          {/* Legend */}
-          {heatmapData.legend && (
-            <div className="mt-1 p-2 bg-surface-secondary rounded-lg">
-              <div className="flex flex-wrap items-center gap-2 text-xs">
-                {heatmapData.legend.map((item, index) => (
-                  <div key={index} className="flex items-center gap-1.5">
-                    {item.status === 'icon' ? (
-                      <span className="flex items-center justify-center w-3 h-3 rounded-full bg-red-600 text-white font-bold text-[8px] leading-none">!</span>
-                    ) : (
-                      <div className={`w-3 h-3 rounded ${
-                        item.status === 'completed' ? 'bg-green-700' :
-                        item.status === 'low' ? 'bg-yellow-200' :
-                        item.status === 'medium' ? 'bg-orange-500' :
-                        item.status === 'critical' ? 'bg-red-500' :
-                        item.status === 'none' ? 'bg-surface-secondary border-2 border-gray-400 dark:border-gray-300' : 'bg-gray-300'
-                      }`}></div>
-                    )}
-                    <span className="text-content-secondary text-xs">{item.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
 
