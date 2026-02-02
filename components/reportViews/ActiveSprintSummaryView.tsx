@@ -86,11 +86,17 @@ const ActiveSprintSummaryView: React.FC<ActiveSprintSummaryViewProps> = ({
  // Build columns for DataTable
  const columns = useMemo<Column<ActiveSprintSummaryItem>[]>(() => {
  if (data.length === 0) {
- return [];
+   return [];
  }
 
  const jiraUrl = meta?.jira_url;
  const firstItem = data[0];
+ 
+ // Safety check: ensure firstItem exists and is an object
+ if (!firstItem || typeof firstItem !== 'object') {
+   return [];
+ }
+ 
  const allKeys = Object.keys(firstItem);
 
  // Filter out fields that shouldn't be displayed as dynamic columns
@@ -110,6 +116,7 @@ const ActiveSprintSummaryView: React.FC<ActiveSprintSummaryViewProps> = ({
  'board_id',
  'project_key',
  'active_sprint_url',
+ 'sprint_goal',
  ];
 
  const otherKeys = allKeys.filter(key =>
@@ -357,6 +364,10 @@ const ActiveSprintSummaryView: React.FC<ActiveSprintSummaryViewProps> = ({
 
  // Add all other fields dynamically
  otherKeys.forEach(key => {
+ // Safety check: ensure key exists in firstItem
+ if (!(key in firstItem)) {
+   return;
+ }
  const value = firstItem[key];
 
  let column: Column<ActiveSprintSummaryItem>;
