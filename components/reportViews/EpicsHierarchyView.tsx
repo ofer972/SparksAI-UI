@@ -10,7 +10,6 @@ import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
 import TeamGroupFilter from '../TeamGroupFilter';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
-import MultiPIFilter from '../MultiPIFilter';
 import IssueTypesHierarchyFilter from '../IssueTypesHierarchyFilter';
 
 interface EpicsHierarchyResult {
@@ -105,16 +104,17 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
  }
  }, [teamName, isGroup, groups, teams]);
  
- const piNames = useMemo(() => {
+ const piName = useMemo(() => {
  const pi = filters.pi;
  if (Array.isArray(pi)) {
- return pi;
+   // Handle legacy array format - take first item
+   return pi.length > 0 ? pi[0] : '';
  }
  if (typeof pi === 'string' && pi.trim()) {
- return [pi.trim()];
+   return pi.trim();
  }
- return [];
- }, [filters.pi]);
+ return '';
+}, [filters.pi]);
  
  const hierarchyLevel = useMemo(() => {
  const level = filters.hierarchy_level;
@@ -128,12 +128,12 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
  return undefined;
  }, [filters.hierarchy_level]);
 
- const handlePIsChange = useCallback((selectedPIs: string[]) => {
+ const handlePIsChange = useCallback((selectedPI: string | null) => {
  setFilters?.((prev) => ({
- ...prev,
- pi: selectedPIs.length > 0 ? selectedPIs : null,
+   ...prev,
+   pi: selectedPI || null,
  }));
- }, [setFilters]);
+}, [setFilters]);
 
  const handleTeamNameChange = useCallback((value: string | null, type: 'group' | 'team', name: string) => {
  if (value === null) {
@@ -161,14 +161,19 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
 
  const filterRow = (
  <ReportFiltersRow>
- <ReportFilterField label="PIs">
- <MultiPIFilter
- selectedPIs={piNames}
- onPIsChange={handlePIsChange}
- maxSelections={100}
- autoSelectFirst={false}
- pis={availablePIs}
- />
+ <ReportFilterField label="PI">
+ <select
+   value={piName}
+   onChange={(event) => handlePIsChange(event.target.value || null)}
+   className="px-2 py-1 border border-outline-strong bg-surface-elevated text-content-primary rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand min-w-[140px]"
+ >
+   <option value="">Select PI</option>
+   {availablePIs.map((pi) => (
+     <option key={pi} value={pi}>
+       {pi}
+     </option>
+   ))}
+ </select>
  </ReportFilterField>
 
  <ReportFilterField label="Team/Group">
@@ -274,13 +279,13 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
  const filterBadges = useMemo(() => {
  const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
  
- if (piNames.length > 0) {
- badges.push({
- label: 'PI',
- value: piNames.join(', '),
- filterKey: 'pi',
- isPinned: pinnedFilters.includes('pi'),
- });
+ if (piName) {
+   badges.push({
+     label: 'PI',
+     value: piName,
+     filterKey: 'pi',
+     isPinned: pinnedFilters.includes('pi'),
+   });
  }
  
  if (teamName) {
@@ -302,11 +307,11 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
  }
  
  return badges;
- }, [piNames, teamName, hierarchyLevel, isGroup, pinnedFilters]);
+}, [piName, teamName, hierarchyLevel, isGroup, pinnedFilters]);
 
  return (
  <ReportCard
- title="Epics Hierarchy"
+ title="PI Epic Progress"
  reportId={componentProps?.reportId}
  filters={filterRow}
  filterBadges={filterBadges}
