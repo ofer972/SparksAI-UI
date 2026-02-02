@@ -39,24 +39,24 @@ const getPriorityColorFromColor = (priorityColor?: string) => {
  switch (priorityColor) {
  case 'Red':
  return {
- headerGradient: 'bg-gradient-to-r from-red-50 to-red-100 dark:from-red-950/40 dark:to-red-900/40',
+ headerGradient: 'bg-gradient-to-r from-red-100 to-red-200 dark:from-red-950/40 dark:to-red-900/40',
  border: 'border-danger-border',
- iconBorder: 'border-red-400 dark:border-red-600',
+ iconBorder: 'border-red-500 dark:border-red-600',
  text: 'text-danger-text'
  };
  case 'Yellow':
  return {
- headerGradient: 'bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-950/40 dark:to-yellow-900/40',
- border: 'border-yellow-200 dark:border-yellow-800',
- iconBorder: 'border-yellow-400 dark:border-yellow-600',
- text: 'text-yellow-700 dark:text-yellow-300'
+ headerGradient: 'bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-amber-700/60 dark:to-amber-600/60',
+ border: 'border-yellow-200 dark:border-amber-400',
+ iconBorder: 'border-yellow-400 dark:border-amber-400',
+ text: 'text-yellow-700 dark:text-amber-100'
  };
  case 'Green':
  return {
- headerGradient: 'bg-gradient-to-r from-green-50 to-green-100 dark:from-green-950/40 dark:to-green-900/40',
+ headerGradient: 'bg-gradient-to-r from-green-50 to-green-100 dark:from-green-800/50 dark:to-green-700/50',
  border: 'border-positive-border',
- iconBorder: 'border-green-400 dark:border-green-600',
- text: 'text-green-700 dark:text-green-300'
+ iconBorder: 'border-green-400 dark:border-green-500',
+ text: 'text-green-700 dark:text-green-200'
  };
  default: // Gray or undefined
  return {
