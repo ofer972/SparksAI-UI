@@ -7,6 +7,7 @@ import MetricCardWrapper from './MetricCardWrapper';
 import { registerChartComponents } from '@/utils/chartRegistration';
 import ChartContainer from './metrics/shared/ChartContainer';
 import { createScatterChartOptions } from './utils/chartOptions';
+import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 
 registerChartComponents(false);
 
@@ -46,6 +47,8 @@ const DEFAULT_FILTERS = {
 };
 
 export default function RecoveryTimeCard(props?: RecoveryTimeCardProps) {
+  const { groups, teams } = useTeamsGroups();
+
   // Use dual-mode hook (only for hook mode and for repositories/environments list)
   const { data, loading, error, isReportMode, hookData } = useDualModeMetricData<RecoveryTimeData>({
     data: props?.data,
@@ -62,12 +65,16 @@ export default function RecoveryTimeCard(props?: RecoveryTimeCardProps) {
     githubRepoIds: hookData.githubRepoIds,
     months: hookData.months,
     environment: (hookData as any).environment,
+    teamName: (hookData as any).teamName,
+    isGroup: (hookData as any).isGroup,
   };
 
   // Get filter values with defaults
   const githubRepoIds = (currentFilters.githubRepoIds as number[]) || DEFAULT_FILTERS.githubRepoIds;
   const months = (currentFilters.months as number) || DEFAULT_FILTERS.months;
   const environment = (currentFilters.environment as string) ?? DEFAULT_FILTERS.environment;
+  const teamName = (currentFilters.team_name as string) || (currentFilters.teamName as string) || null;
+  const isGroup = (currentFilters.isGroup as boolean) || false;
 
   // Filter change handlers that work in both modes
   const handleGithubRepoIdsChange = (ids: number[]) => {
@@ -93,6 +100,42 @@ export default function RecoveryTimeCard(props?: RecoveryTimeCardProps) {
       (hookData as any).setEnvironment(env);
     }
   };
+
+  const handleTeamGroupChange = (value: string | null, type: 'group' | 'team', name: string) => {
+    if (isReportMode && props?.setFilters) {
+      if (value === null) {
+        props.setFilters(prev => ({
+          ...prev,
+          team_name: null,
+          teamName: null,
+          isGroup: false,
+        }));
+      } else {
+        props.setFilters(prev => ({
+          ...prev,
+          team_name: name,
+          teamName: name,
+          isGroup: type === 'group',
+        }));
+      }
+    } else {
+      (hookData as any).setTeamName(name || null);
+      (hookData as any).setIsGroup(type === 'group');
+    }
+  };
+
+  // Look up ID from name to construct proper teamValue for filter
+  const teamValue = useMemo(() => {
+    if (!teamName) return null;
+    
+    if (isGroup) {
+      const group = groups.find(g => g.group_name === teamName);
+      return group ? `group:${group.group_key}` : null;
+    } else {
+      const team = teams.find(t => t.team_name === teamName);
+      return team ? `team:${team.team_key}` : null;
+    }
+  }, [teamName, isGroup, groups, teams]);
 
   // Initialize default filters in report mode on mount
   useEffect(() => {
@@ -227,9 +270,12 @@ export default function RecoveryTimeCard(props?: RecoveryTimeCardProps) {
       githubRepoIds={githubRepoIds}
       environment={environment}
       months={months}
+      teamName={teamName}
+      isGroup={isGroup}
       onGithubRepoIdsChange={handleGithubRepoIdsChange}
       onEnvironmentChange={handleEnvironmentChange}
       onMonthsChange={handleMonthsChange}
+      onTeamGroupChange={handleTeamGroupChange}
       filterBadges={isReportMode ? undefined : hookData.filterBadges}
       onRefresh={isReportMode ? props?.refresh : (hookData.fetchData as () => void)}
       loading={loading}

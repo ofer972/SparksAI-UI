@@ -15,9 +15,12 @@ interface DORAMetricCardProps {
   githubRepoIds: number[];
   environment: string;
   months: number;
+  teamName?: string | null;
+  isGroup?: boolean;
   onGithubRepoIdsChange: (ids: number[]) => void;
   onEnvironmentChange: (env: string) => void;
   onMonthsChange: (months: number) => void;
+  onTeamGroupChange?: (value: string | null, type: 'group' | 'team', name: string) => void;
   filterBadges: Array<{ label: string; value: string }>;
   onRefresh: () => void;
   loading: boolean;
@@ -41,9 +44,12 @@ export default function DORAMetricCard({
   githubRepoIds,
   environment,
   months,
+  teamName,
+  isGroup = false,
   onGithubRepoIdsChange,
   onEnvironmentChange,
   onMonthsChange,
+  onTeamGroupChange,
   filterBadges,
   onRefresh,
   loading,
@@ -69,9 +75,12 @@ export default function DORAMetricCard({
           githubRepoIds={githubRepoIds}
           environment={environment}
           months={months}
+          teamName={teamName}
+          isGroup={isGroup}
           onGithubRepoIdsChange={onGithubRepoIdsChange}
           onEnvironmentChange={onEnvironmentChange}
           onMonthsChange={onMonthsChange}
+          onTeamGroupChange={onTeamGroupChange}
           availableRepositories={repositories}
           availableEnvironments={availableEnvironments}
         />

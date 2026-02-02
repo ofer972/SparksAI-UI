@@ -5,6 +5,7 @@ import DORAMetricCard from './DORAMetricCard';
 import PRWorkflowMetricCard from './PRWorkflowMetricCard';
 import MetricCard from './metrics/shared/MetricCard';
 import PRWorkflowFilters from './PRWorkflowFilters';
+import DORAFilters from './DORAFilters';
 import { 
   generateDORAReportFilterBadges, 
   generatePRWorkflowReportFilterBadges 
@@ -105,23 +106,33 @@ export default function MetricCardWrapper({
         });
   }, [isReportMode, filters, cardType, repositories, pinnedFilters]);
 
-  // Create filter handlers for report mode (PR workflow only)
+  // Create filter handlers for report mode (PR workflow and DORA)
   const reportModeFilterHandlers = useMemo(() => {
-    if (!isReportMode || !setFilters || cardType !== 'pr-workflow') {
+    if (!isReportMode || !setFilters || (cardType !== 'pr-workflow' && cardType !== 'dora')) {
       return null;
     }
 
     // Extract filter values from filters prop
     const currentGithubRepoIds = (filters?.githubRepoIds as number[]) || (filters?.github_repo_ids as number[]) || [];
     const currentMonths = (filters?.months as number) || 1;
-    const currentPrState = (filters?.prState as string) || (filters?.pr_state as string) || 'all';
     const currentTeamName = (filters?.team_name as string) || (filters?.teamName as string) || null;
     const currentIsGroup = (filters?.isGroup as boolean) || false;
+
+    // PR workflow specific
+    const currentPrState = cardType === 'pr-workflow' 
+      ? ((filters?.prState as string) || (filters?.pr_state as string) || 'all')
+      : undefined;
+
+    // DORA specific
+    const currentEnvironment = cardType === 'dora'
+      ? ((filters?.environment as string) || '')
+      : undefined;
 
     return {
       githubRepoIds: currentGithubRepoIds,
       months: currentMonths,
       prState: currentPrState,
+      environment: currentEnvironment,
       teamName: currentTeamName,
       isGroup: currentIsGroup,
       onGithubRepoIdsChange: (ids: number[]) => {
@@ -131,7 +142,14 @@ export default function MetricCardWrapper({
         setFilters((prev) => ({ ...prev, months: newMonths }));
       },
       onPrStateChange: (state: string) => {
-        setFilters((prev) => ({ ...prev, prState: state, pr_state: state }));
+        if (cardType === 'pr-workflow') {
+          setFilters((prev) => ({ ...prev, prState: state, pr_state: state }));
+        }
+      },
+      onEnvironmentChange: (env: string) => {
+        if (cardType === 'dora') {
+          setFilters((prev) => ({ ...prev, environment: env }));
+        }
       },
       onTeamGroupChange: (value: string | null, type: 'group' | 'team', name: string) => {
         if (!setFilters) {
@@ -156,27 +174,49 @@ export default function MetricCardWrapper({
     };
   }, [isReportMode, setFilters, cardType, filters]);
 
-  // Create filters component for report mode (PR workflow only)
+  // Create filters component for report mode (PR workflow and DORA)
   const reportModeFilters = useMemo(() => {
-    if (!isReportMode || cardType !== 'pr-workflow' || !reportModeFilterHandlers || !repositories) {
+    if (!isReportMode || !reportModeFilterHandlers || !repositories) {
       return undefined;
     }
 
-    return (
-      <PRWorkflowFilters
-        githubRepoIds={reportModeFilterHandlers.githubRepoIds}
-        months={reportModeFilterHandlers.months}
-        prState={reportModeFilterHandlers.prState}
-        teamName={reportModeFilterHandlers.teamName}
-        isGroup={reportModeFilterHandlers.isGroup}
-        onGithubRepoIdsChange={reportModeFilterHandlers.onGithubRepoIdsChange}
-        onMonthsChange={reportModeFilterHandlers.onMonthsChange}
-        onPrStateChange={reportModeFilterHandlers.onPrStateChange}
-        onTeamGroupChange={reportModeFilterHandlers.onTeamGroupChange}
-        availableRepositories={repositories}
-      />
-    );
-  }, [isReportMode, cardType, reportModeFilterHandlers, repositories]);
+    if (cardType === 'pr-workflow') {
+      return (
+        <PRWorkflowFilters
+          githubRepoIds={reportModeFilterHandlers.githubRepoIds}
+          months={reportModeFilterHandlers.months}
+          prState={reportModeFilterHandlers.prState!}
+          teamName={reportModeFilterHandlers.teamName}
+          isGroup={reportModeFilterHandlers.isGroup}
+          onGithubRepoIdsChange={reportModeFilterHandlers.onGithubRepoIdsChange}
+          onMonthsChange={reportModeFilterHandlers.onMonthsChange}
+          onPrStateChange={reportModeFilterHandlers.onPrStateChange!}
+          onTeamGroupChange={reportModeFilterHandlers.onTeamGroupChange}
+          availableRepositories={repositories}
+        />
+      );
+    }
+
+    if (cardType === 'dora') {
+      return (
+        <DORAFilters
+          githubRepoIds={reportModeFilterHandlers.githubRepoIds}
+          environment={reportModeFilterHandlers.environment || ''}
+          months={reportModeFilterHandlers.months}
+          teamName={reportModeFilterHandlers.teamName}
+          isGroup={reportModeFilterHandlers.isGroup}
+          onGithubRepoIdsChange={reportModeFilterHandlers.onGithubRepoIdsChange}
+          onEnvironmentChange={reportModeFilterHandlers.onEnvironmentChange!}
+          onMonthsChange={reportModeFilterHandlers.onMonthsChange}
+          onTeamGroupChange={reportModeFilterHandlers.onTeamGroupChange}
+          availableRepositories={repositories}
+          availableEnvironments={availableEnvironments || []}
+        />
+      );
+    }
+
+    return undefined;
+  }, [isReportMode, cardType, reportModeFilterHandlers, repositories, availableEnvironments]);
   
   // Report mode: use MetricCard component (which uses ReportCard)
   if (isReportMode) {
@@ -215,9 +255,12 @@ export default function MetricCardWrapper({
         githubRepoIds={githubRepoIds!}
         environment={environment!}
         months={months!}
+        teamName={teamName}
+        isGroup={isGroup}
         onGithubRepoIdsChange={onGithubRepoIdsChange!}
         onEnvironmentChange={onEnvironmentChange!}
         onMonthsChange={onMonthsChange!}
+        onTeamGroupChange={onTeamGroupChange}
         filterBadges={filterBadges!}
         onRefresh={onRefresh!}
         loading={loading}

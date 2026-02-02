@@ -19,9 +19,13 @@ interface UseDORAMetricsReturn {
   githubRepoIds: number[];
   environment: string;
   months: number;
+  teamName: string | null;
+  isGroup: boolean;
   setGithubRepoIds: (ids: number[]) => void;
   setEnvironment: (env: string) => void;
   setMonths: (months: number) => void;
+  setTeamName: (name: string | null) => void;
+  setIsGroup: (isGroup: boolean) => void;
   filterBadges: Array<{ label: string; value: string }>;
   fetchData: (endpoint: string) => Promise<any>;
   loading: boolean;
@@ -37,6 +41,8 @@ export function useDORAMetrics(): UseDORAMetricsReturn {
   const [githubRepoIds, setGithubRepoIds] = useState<number[]>([]);
   const [environment, setEnvironment] = useState<string>('production');
   const [months, setMonths] = useState<number>(1);
+  const [teamName, setTeamName] = useState<string | null>(null);
+  const [isGroup, setIsGroup] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -117,6 +123,11 @@ export function useDORAMetrics(): UseDORAMetricsReturn {
         filters.environment = environment;
       }
       
+      if (teamName) {
+        filters.team_name = teamName;
+        filters.isGroup = isGroup;
+      }
+      
       // Use report API
       const apiService = new ApiService();
       const reportData = await apiService.getReport(reportId, filters);
@@ -130,17 +141,25 @@ export function useDORAMetrics(): UseDORAMetricsReturn {
     } finally {
       setLoading(false);
     }
-  }, [githubRepoIds, environment, months]);
+  }, [githubRepoIds, environment, months, teamName, isGroup]);
 
-  const filterBadges = useMemo(() => 
-    generateDORAFilterBadges({
+  const filterBadges = useMemo(() => {
+    const badges = generateDORAFilterBadges({
       githubRepoIds,
       environment,
       months,
       repositories,
-    }),
-    [githubRepoIds, environment, months, repositories]
-  );
+    });
+    
+    if (teamName) {
+      badges.push({
+        label: isGroup ? 'Group' : 'Team',
+        value: teamName,
+      });
+    }
+    
+    return badges;
+  }, [githubRepoIds, environment, months, repositories, teamName, isGroup]);
 
   return {
     repositories,
@@ -148,9 +167,13 @@ export function useDORAMetrics(): UseDORAMetricsReturn {
     githubRepoIds,
     environment,
     months,
+    teamName,
+    isGroup,
     setGithubRepoIds,
     setEnvironment,
     setMonths,
+    setTeamName,
+    setIsGroup,
     filterBadges,
     fetchData,
     loading,
