@@ -240,13 +240,14 @@ const ActiveSprintSummaryView: React.FC<ActiveSprintSummaryViewProps> = ({
  );
  },
  },
- {
- key: 'overall_progress_pct',
- label: 'Progress %',
- align: 'center',
- sortable: true,
- width: '150px',
- render: (value, row) => {
+      {
+        key: 'overall_progress_pct',
+        label: 'Progress %',
+        align: 'center',
+        sortable: true,
+        width: '150px',
+        tooltip: 'Sprint progress relative to days elapsed:\n• Green = On track or ahead\n• Yellow = Slightly behind\n• Red = Significantly behind',
+        render: (value, row) => {
  const val = value as number | null;
  const item = row;
  const progressColor = item.overall_progress_pct_color;
@@ -406,23 +407,26 @@ const ActiveSprintSummaryView: React.FC<ActiveSprintSummaryViewProps> = ({
  key === 'flagged_issues'
  );
 
- // Custom labels for specific fields
- let customLabel = key.toUpperCase().replace(/_/g, ' ');
- if (key === 'issues_at_start') {
- customLabel = '# Planned';
- } else if (key === 'issues_added') {
- customLabel = '# Added';
- } else if (key === 'flagged_issues') {
- customLabel = '# Flagged';
- }
+        // Custom labels for specific fields
+        let customLabel = key.toUpperCase().replace(/_/g, ' ');
+        if (key === 'issues_at_start') {
+          customLabel = '# Planned';
+        } else if (key === 'issues_added') {
+          customLabel = '# Added';
+        } else if (key === 'flagged_issues') {
+          customLabel = '# Flagged';
+        } else if (key === 'progress_delta_pct') {
+          customLabel = 'PROGRESS DELTA PCT';
+        }
 
- column = {
- key,
- label: customLabel,
- align: 'center',
- sortable: true,
- width: '120px',
- render: (val, row) => {
+        column = {
+          key,
+          label: customLabel,
+          align: 'center',
+          sortable: true,
+          width: '120px',
+          tooltip: key === 'progress_delta_pct' ? 'Progress (burn down):\n• Positive = Ahead of schedule\n• Zero = On track\n• Negative = Behind schedule' : undefined,
+          render: (val, row) => {
  const numVal = val as number;
  if (numVal === null || numVal === undefined) {
  return <div className="text-sm text-content-muted text-center">-</div>;

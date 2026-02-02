@@ -12,6 +12,7 @@ export interface Column<T> {
  width?: string;
  expandable?: boolean;
  maxLength?: number; // Character limit before showing"read more"
+ tooltip?: string; // Tooltip text to show on column header hover
 }
 
 export interface SortConfig {
@@ -314,6 +315,7 @@ function DataTable<T extends Record<string, any>>({
  (onSort as (key: string) => void)(column.key);
  }
  }}
+ title={column.tooltip || undefined}
  >
  <div className={`flex items-center gap-1.5 ${
  column.align === 'right' ? 'justify-end' :
@@ -328,6 +330,11 @@ function DataTable<T extends Record<string, any>>({
  <span className="leading-tight whitespace-nowrap">
  {column.label}
  </span>
+ )}
+ {column.tooltip && (
+ <svg className="w-3.5 h-3.5 text-content-tertiary hover:text-content-secondary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ pointerEvents: 'none' }}>
+ <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+ </svg>
  )}
  {column.sortable !== false && onSort && column.key !== '__actions__' && (
  <SortIcon columnKey={column.key} />
