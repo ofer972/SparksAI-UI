@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { authFetch } from '@/lib/api';
+import { useGitHubSettings } from '@/contexts/GitHubSettingsContext';
 import GoalsConfirmationModal from '../pigoals/GoalsConfirmationModal';
 import DataTable from '../DataTable';
 
@@ -12,6 +13,7 @@ interface GitHubSettings {
   github_sync_lookback_days?: string;
   github_sync_max_concurrent_repos?: string;
   github_available_repos_type?: string;
+  github_deployments_enabled?: string;
 }
 
 interface RemoteRepository {
@@ -43,6 +45,7 @@ interface SyncedRepository {
 }
 
 export default function GitHubSettingsView() {
+  const { refetch: refetchContextSettings } = useGitHubSettings();
   const [settings, setSettings] = useState<GitHubSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -56,6 +59,7 @@ export default function GitHubSettingsView() {
   const [lookbackDays, setLookbackDays] = useState<number>(90);
   const [maxConcurrentRepos, setMaxConcurrentRepos] = useState<number>(2);
   const [availableReposType, setAvailableReposType] = useState<string>('all');
+  const [deploymentsEnabled, setDeploymentsEnabled] = useState<boolean>(true);
 
   const MASK = '********';
 
@@ -79,7 +83,11 @@ export default function GitHubSettingsView() {
     lookbackDays: 90,
     maxConcurrentRepos: 2,
     availableReposType: 'all',
+    deploymentsEnabled: true,
   });
+
+  // Flag to prevent reloading when navigating back to tab (pattern from usePageSettings)
+  const initialLoadDone = useRef(false);
 
   // Initialize API token mask if token exists
   useEffect(() => {
@@ -94,6 +102,9 @@ export default function GitHubSettingsView() {
   }, []);
 
   const fetchSettings = async () => {
+    // Only load once - prevent reloading when navigating back to tab
+    if (initialLoadDone.current) return;
+
     try {
       setLoading(true);
       setError(null);
@@ -110,12 +121,17 @@ export default function GitHubSettingsView() {
       const maxConcurrentValue = parseInt(data.settings.github_sync_max_concurrent_repos || '2');
       const reposTypeValue = data.settings.github_available_repos_type || 'all';
       
+      // Process deployments enabled setting (default to true if not set)
+      const deploymentsEnabledValue = data.settings.github_deployments_enabled === 'true' || 
+        data.settings.github_deployments_enabled === undefined;
+      
       setSettings(data.settings);
       setGithubEnabled(enabled);
       setSyncInterval(syncIntervalValue);
       setLookbackDays(lookbackDaysValue);
       setMaxConcurrentRepos(maxConcurrentValue);
       setAvailableReposType(reposTypeValue);
+      setDeploymentsEnabled(deploymentsEnabledValue);
 
       originalValuesRef.current = {
         githubEnabled: enabled,
@@ -123,12 +139,16 @@ export default function GitHubSettingsView() {
         lookbackDays: lookbackDaysValue,
         maxConcurrentRepos: maxConcurrentValue,
         availableReposType: reposTypeValue,
+        deploymentsEnabled: deploymentsEnabledValue,
       };
 
       // Initialize token mask if token exists
       if (data.settings.github_token) {
         setGithubToken(MASK);
       }
+
+      // Mark as loaded - won't reload when navigating back to tab
+      initialLoadDone.current = true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load settings');
     } finally {
@@ -331,6 +351,7 @@ export default function GitHubSettingsView() {
       lookbackDays !== original.lookbackDays ||
       maxConcurrentRepos !== original.maxConcurrentRepos ||
       availableReposType !== original.availableReposType ||
+      deploymentsEnabled !== original.deploymentsEnabled ||
       tokenChanged
     );
   };
@@ -373,6 +394,9 @@ export default function GitHubSettingsView() {
       if (availableReposType !== originalValuesRef.current.availableReposType) {
         settingsToUpdate.github_available_repos_type = availableReposType;
       }
+      if (deploymentsEnabled !== originalValuesRef.current.deploymentsEnabled) {
+        settingsToUpdate.github_deployments_enabled = deploymentsEnabled ? 'true' : 'false';
+      }
       // Only include token if it was changed by the user (not MASK and not empty)
       if (githubToken && githubToken !== MASK && githubToken !== '') {
         settingsToUpdate.github_token = githubToken;
@@ -390,7 +414,12 @@ export default function GitHubSettingsView() {
       }
 
       // After save, refresh settings from database to update the UI
+      // Reset flag to allow refresh after save
+      initialLoadDone.current = false;
       await fetchSettings();
+
+      // Also refresh the context so navigation menu updates immediately
+      await refetchContextSettings();
 
       // After save, update token state - if a token was sent, mark it as saved (show MASK)
       if (settingsToUpdate.github_token) {
@@ -404,6 +433,7 @@ export default function GitHubSettingsView() {
         lookbackDays,
         maxConcurrentRepos,
         availableReposType,
+        deploymentsEnabled,
       };
 
       setSuccessMessage(
@@ -567,14 +597,14 @@ export default function GitHubSettingsView() {
               <button
                 onClick={handleSyncDelta}
                 disabled={!githubEnabled}
-                className="flex-1 px-4 py-2 bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 px-2 py-1.5 text-sm bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
                 🔄 Sync Delta
               </button>
               <button
                 onClick={() => setShowFullSyncConfirm(true)}
                 disabled={!githubEnabled}
-                className="flex-1 px-4 py-2 bg-orange-600 dark:bg-orange-700 hover:bg-orange-700 dark:hover:bg-orange-600 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 px-2 py-1.5 text-sm bg-orange-600 dark:bg-orange-700 hover:bg-orange-700 dark:hover:bg-orange-600 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
                 ⚡ Full Sync
               </button>
@@ -658,6 +688,27 @@ export default function GitHubSettingsView() {
                 <span className="text-xs text-content-tertiary">
                   Maximum repositories to sync simultaneously. Higher values sync faster but use more API rate limits.
                 </span>
+              </div>
+            </div>
+
+            {/* Deployments Enabled */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+              <label className="text-sm font-medium text-content-secondary w-full sm:w-48 flex-shrink-0">
+                Deployments are in GitHub:
+              </label>
+              <div className="flex-1 flex items-center space-x-3">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={deploymentsEnabled}
+                    onChange={(e) => setDeploymentsEnabled(e.target.checked)}
+                    disabled={!githubEnabled}
+                    className="w-4 h-4 text-brand border-outline rounded focus:ring-brand disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  />
+                  <span className="text-sm text-content-secondary">
+                    {deploymentsEnabled ? 'Enabled - Deployment sync is active' : 'Disabled - Deployment sync is skipped'}
+                  </span>
+                </label>
               </div>
             </div>
           </div>

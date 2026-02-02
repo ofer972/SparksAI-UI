@@ -1,10 +1,11 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { authFetch } from '@/lib/api';
 
 interface GitHubSettings {
   github_enabled: string;
+  github_deployments_enabled?: string;
 }
 
 interface GitHubSettingsContextType {
@@ -12,6 +13,7 @@ interface GitHubSettingsContextType {
   loading: boolean;
   error: string | null;
   isDORAEnabled: () => boolean;
+  refetch: () => Promise<void>;
 }
 
 const GitHubSettingsContext = createContext<GitHubSettingsContextType | undefined>(undefined);
@@ -21,12 +23,7 @@ export function GitHubSettingsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Fetch settings ONCE on mount
-    fetchSettings();
-  }, []); // Empty deps = only once on startup
-
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -49,18 +46,29 @@ export function GitHubSettingsProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Empty deps - function is stable
+
+  useEffect(() => {
+    // Fetch settings ONCE on mount
+    fetchSettings();
+  }, [fetchSettings]); // Only depends on fetchSettings which is stable
 
   const isDORAEnabled = () => {
     // If loading or error, assume disabled (fail closed)
     if (loading || !settings) {
       return false;
     }
-    return settings.github_enabled === 'true';
+    
+    // Both must be enabled for DORA to be available
+    const githubEnabled = settings.github_enabled === 'true';
+    // Default to true if not set (backward compatibility for existing installations)
+    const deploymentsEnabled = settings.github_deployments_enabled !== 'false';
+    
+    return githubEnabled && deploymentsEnabled;
   };
 
   return (
-    <GitHubSettingsContext.Provider value={{ settings, loading, error, isDORAEnabled }}>
+    <GitHubSettingsContext.Provider value={{ settings, loading, error, isDORAEnabled, refetch: fetchSettings }}>
       {children}
     </GitHubSettingsContext.Provider>
   );
