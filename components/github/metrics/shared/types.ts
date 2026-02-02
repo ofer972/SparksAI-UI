@@ -259,6 +259,17 @@ export function generatePRWorkflowReportFilterBadges(params: {
       isPinned: pinnedFilters.includes('months'),
     });
   }
+
+  const teamNameValue = (filters.team_name as string) || (filters.teamName as string) || undefined;
+  const isGroupValue = (filters.isGroup as boolean) || false;
+  if (teamNameValue) {
+    badges.push({
+      label: isGroupValue ? 'Group' : 'Team',
+      value: teamNameValue,
+      filterKey: 'team_name',
+      isPinned: pinnedFilters.includes('team_name'),
+    });
+  }
   
   return badges;
 }

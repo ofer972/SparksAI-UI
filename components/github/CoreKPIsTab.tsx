@@ -1,10 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { authFetch } from '@/lib/api';
 import KPICard from '@/components/KPICard';
 import PRListReportDialog from './PRListReportDialog';
 import KPIDashboard from '@/components/KPIDashboard';
+import { useUser } from '@/contexts/UserContext';
+import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
+import TeamGroupFilter from '@/components/filters/TeamGroupSelect';
+import ReportFiltersRow from '@/components/reporting/ReportFiltersRow';
+import ReportFilterField from '@/components/reporting/ReportFilterField';
 
 interface Trend {
   direction: 'up' | 'down' | 'flat';
@@ -34,9 +39,13 @@ interface MetricResponse {
 }
 
 export default function CoreKPIsTab() {
+  const { preferences } = useUser();
+  const { groups, teams } = useTeamsGroups();
   const [metrics, setMetrics] = useState<MetricResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [teamName, setTeamName] = useState<string | null>(null);
+  const [isGroup, setIsGroup] = useState<boolean>(false);
   const [selectedMetric, setSelectedMetric] = useState<{
     metric: string;
     title: string;
@@ -51,13 +60,52 @@ export default function CoreKPIsTab() {
     initialFilters?: Record<string, any>;
   } | null>(null);
 
+  // Initialize with user's default team from profile
+  useEffect(() => {
+    if (preferences?.default_team_or_group && preferences.default_type) {
+      let teamGroupName = preferences.default_team_or_group;
+      // Clean if has old format
+      if (teamGroupName.includes(':')) {
+        teamGroupName = teamGroupName.split(':')[1] || teamGroupName;
+      }
+      setTeamName(teamGroupName);
+      setIsGroup(preferences.default_type === 'group');
+    }
+  }, [preferences]);
+
+  // Look up ID from name to construct proper teamValue
+  const teamValue = useMemo(() => {
+    if (!teamName) return null;
+    
+    if (isGroup) {
+      const group = groups.find(g => g.group_name === teamName);
+      return group ? `group:${group.group_key}` : null;
+    } else {
+      const team = teams.find(t => t.team_name === teamName);
+      return team ? `team:${team.team_key}` : null;
+    }
+  }, [teamName, isGroup, groups, teams]);
+
+  const handleTeamGroupChange = (value: string | null, type: 'group' | 'team', name: string) => {
+    setTeamName(name || null);
+    setIsGroup(type === 'group');
+  };
+
   useEffect(() => {
     const fetchMetrics = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const response = await authFetch('/api/v1/github-service/KPIs');
+        // Build query parameters
+        const params = new URLSearchParams();
+        if (teamName) {
+          params.append('team_name', teamName);
+          params.append('isGroup', isGroup.toString());
+        }
+
+        const url = `/api/v1/github-service/KPIs${params.toString() ? '?' + params.toString() : ''}`;
+        const response = await authFetch(url);
 
         if (!response.ok) {
           throw new Error(`Failed to fetch metrics: ${response.statusText}`);
@@ -76,7 +124,7 @@ export default function CoreKPIsTab() {
     };
 
     fetchMetrics();
-  }, []);
+  }, [teamName, isGroup]);
 
   const handleKPIClick = (metric: MetricResponse) => {
     if (!metric.action) return;
@@ -155,11 +203,51 @@ export default function CoreKPIsTab() {
     );
   }
 
+  // Generate filter badges
+  const filterBadges = useMemo(() => {
+    const badges: Array<{ label: string; value: string }> = [];
+    if (teamName) {
+      badges.push({
+        label: isGroup ? 'Group' : 'Team',
+        value: teamName,
+      });
+    }
+    return badges;
+  }, [teamName, isGroup]);
+
   return (
     <>
       <div className="h-full flex flex-col overflow-hidden">
+        {/* Team Filter */}
+        <div className="px-4 pt-2 pb-2 border-b border-outline">
+          <ReportFiltersRow>
+            <ReportFilterField label="Team/Group">
+              <TeamGroupFilter
+                value={teamValue}
+                onChange={handleTeamGroupChange}
+                placeholder="Select team or group"
+                allowClear={true}
+                size="xs"
+              />
+            </ReportFilterField>
+          </ReportFiltersRow>
+          {/* Filter Badges */}
+          {filterBadges.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {filterBadges.map((badge, idx) => (
+                <span
+                  key={idx}
+                  className="inline-flex items-center px-2 py-1 rounded text-xs bg-surface-elevated border border-outline text-content-secondary"
+                >
+                  {badge.label}: {badge.value}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="flex-1 overflow-y-auto">
-          <div className="flex flex-row gap-2 pb-2 pt-2">
+          <div className="flex flex-row gap-2 pb-2 pt-2 px-4">
             {metrics.map((metric) => (
               <KPICard
                 key={metric.metric_id}

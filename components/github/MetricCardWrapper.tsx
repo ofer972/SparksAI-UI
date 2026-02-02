@@ -1,9 +1,10 @@
 'use client';
 
-import { ReactNode, useMemo } from 'react';
+import { ReactNode, useMemo, useCallback } from 'react';
 import DORAMetricCard from './DORAMetricCard';
 import PRWorkflowMetricCard from './PRWorkflowMetricCard';
 import MetricCard from './metrics/shared/MetricCard';
+import PRWorkflowFilters from './PRWorkflowFilters';
 import { 
   generateDORAReportFilterBadges, 
   generatePRWorkflowReportFilterBadges 
@@ -39,9 +40,13 @@ interface MetricCardWrapperProps {
   // PR Workflow-specific props
   prState?: string;
   onPrStateChange?: (state: string) => void;
+  teamName?: string | null;
+  isGroup?: boolean;
+  onTeamGroupChange?: (value: string | null, type: 'group' | 'team', name: string) => void;
   
   // Report mode props (from ReportPanel)
   filters?: Record<string, any>;
+  setFilters?: (filters: Record<string, any> | ((prev: Record<string, any>) => Record<string, any>)) => void;
   togglePin?: (filterKey: string) => void;
   pinnedFilters?: string[];
   componentProps?: Record<string, any>;
@@ -73,8 +78,12 @@ export default function MetricCardWrapper({
   // PR props
   prState,
   onPrStateChange,
+  teamName,
+  isGroup,
+  onTeamGroupChange,
   // Report mode props
   filters,
+  setFilters,
   togglePin,
   pinnedFilters = [],
   componentProps,
@@ -95,6 +104,79 @@ export default function MetricCardWrapper({
           pinnedFilters,
         });
   }, [isReportMode, filters, cardType, repositories, pinnedFilters]);
+
+  // Create filter handlers for report mode (PR workflow only)
+  const reportModeFilterHandlers = useMemo(() => {
+    if (!isReportMode || !setFilters || cardType !== 'pr-workflow') {
+      return null;
+    }
+
+    // Extract filter values from filters prop
+    const currentGithubRepoIds = (filters?.githubRepoIds as number[]) || (filters?.github_repo_ids as number[]) || [];
+    const currentMonths = (filters?.months as number) || 1;
+    const currentPrState = (filters?.prState as string) || (filters?.pr_state as string) || 'all';
+    const currentTeamName = (filters?.team_name as string) || (filters?.teamName as string) || null;
+    const currentIsGroup = (filters?.isGroup as boolean) || false;
+
+    return {
+      githubRepoIds: currentGithubRepoIds,
+      months: currentMonths,
+      prState: currentPrState,
+      teamName: currentTeamName,
+      isGroup: currentIsGroup,
+      onGithubRepoIdsChange: (ids: number[]) => {
+        setFilters((prev) => ({ ...prev, githubRepoIds: ids, github_repo_ids: ids }));
+      },
+      onMonthsChange: (newMonths: number) => {
+        setFilters((prev) => ({ ...prev, months: newMonths }));
+      },
+      onPrStateChange: (state: string) => {
+        setFilters((prev) => ({ ...prev, prState: state, pr_state: state }));
+      },
+      onTeamGroupChange: (value: string | null, type: 'group' | 'team', name: string) => {
+        if (!setFilters) {
+          return;
+        }
+        if (value === null) {
+          setFilters((prev) => ({
+            ...prev,
+            team_name: null,
+            teamName: null,
+            isGroup: false,
+          }));
+        } else {
+          setFilters((prev) => ({
+            ...prev,
+            team_name: name,
+            teamName: name,
+            isGroup: type === 'group',
+          }));
+        }
+      },
+    };
+  }, [isReportMode, setFilters, cardType, filters]);
+
+  // Create filters component for report mode (PR workflow only)
+  const reportModeFilters = useMemo(() => {
+    if (!isReportMode || cardType !== 'pr-workflow' || !reportModeFilterHandlers || !repositories) {
+      return undefined;
+    }
+
+    return (
+      <PRWorkflowFilters
+        githubRepoIds={reportModeFilterHandlers.githubRepoIds}
+        months={reportModeFilterHandlers.months}
+        prState={reportModeFilterHandlers.prState}
+        teamName={reportModeFilterHandlers.teamName}
+        isGroup={reportModeFilterHandlers.isGroup}
+        onGithubRepoIdsChange={reportModeFilterHandlers.onGithubRepoIdsChange}
+        onMonthsChange={reportModeFilterHandlers.onMonthsChange}
+        onPrStateChange={reportModeFilterHandlers.onPrStateChange}
+        onTeamGroupChange={reportModeFilterHandlers.onTeamGroupChange}
+        availableRepositories={repositories}
+      />
+    );
+  }, [isReportMode, cardType, reportModeFilterHandlers, repositories]);
   
   // Report mode: use MetricCard component (which uses ReportCard)
   if (isReportMode) {
@@ -105,6 +187,7 @@ export default function MetricCardWrapper({
         tier={tier}
         tierLabel={tierLabel}
         filterBadges={reportModeFilterBadges}
+        filters={reportModeFilters}
         onRefresh={onRefresh || (() => {})}
         loading={loading}
         error={error}
@@ -156,9 +239,12 @@ export default function MetricCardWrapper({
         githubRepoIds={githubRepoIds!}
         months={months!}
         prState={prState!}
+        teamName={teamName}
+        isGroup={isGroup}
         onGithubRepoIdsChange={onGithubRepoIdsChange!}
         onMonthsChange={onMonthsChange!}
         onPrStateChange={onPrStateChange!}
+        onTeamGroupChange={onTeamGroupChange}
         filterBadges={filterBadges!}
         onRefresh={onRefresh!}
         loading={loading}

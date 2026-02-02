@@ -10,6 +10,8 @@ import { formatChartDateLabel } from '@/utils/dateFormatting';
 import ChartContainer from './metrics/shared/ChartContainer';
 import { createTimeSeriesChartOptions } from './utils/chartOptions';
 import CommitListReportDialog from './CommitListReportDialog';
+import { useUser } from '@/contexts/UserContext';
+import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 
 registerChartComponents(true);
 
@@ -61,16 +63,23 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
     endpoint: '/api/v1/github-service/pr-workflow/rework-rate',
   });
 
+  const { preferences } = useUser();
+  const { groups, teams } = useTeamsGroups();
+
   // In report mode, use filters from props; in hook mode, use hookData
   const currentFilters = isReportMode ? (props?.filters || {}) : {
     githubRepoIds: hookData.githubRepoIds,
     months: hookData.months,
     prState: 'all', // ReworkRate doesn't use prState
+    teamName: (hookData as any).teamName,
+    isGroup: (hookData as any).isGroup,
   };
 
   // Get filter values with defaults
   const githubRepoIds = (currentFilters.githubRepoIds as number[]) || DEFAULT_FILTERS.githubRepoIds;
   const months = (currentFilters.months as number) || DEFAULT_FILTERS.months;
+  const teamName = (currentFilters.team_name as string) || (currentFilters.teamName as string) || null;
+  const isGroup = (currentFilters.isGroup as boolean) || false;
 
   // Initialize default filters in report mode on mount
   useEffect(() => {
@@ -88,11 +97,22 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
         needsUpdate = true;
       }
 
+      // Initialize team from user preferences if not set
+      if (props?.filters?.team_name === undefined && props?.filters?.teamName === undefined && preferences?.default_team_or_group) {
+        let teamGroupName = preferences.default_team_or_group;
+        if (teamGroupName.includes(':')) {
+          teamGroupName = teamGroupName.split(':')[1] || teamGroupName;
+        }
+        filtersToSet.team_name = teamGroupName;
+        filtersToSet.isGroup = preferences.default_type === 'group';
+        needsUpdate = true;
+      }
+
       if (needsUpdate) {
         props.setFilters(prev => ({ ...prev, ...filtersToSet }));
       }
     }
-  }, [isReportMode]); // Only run on mount/mode change, not on filter changes
+  }, [isReportMode, preferences]); // Only run on mount/mode change, not on filter changes
 
   // Filter change handlers that work in both modes
   const handleGithubRepoIdsChange = (ids: number[]) => {
@@ -110,6 +130,40 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
       hookData.setMonths(newMonths);
     }
   };
+
+  const handleTeamGroupChange = (value: string | null, type: 'group' | 'team', name: string) => {
+    if (isReportMode && props?.setFilters) {
+      if (value === null) {
+        props.setFilters(prev => ({
+          ...prev,
+          team_name: null,
+          isGroup: false,
+        }));
+      } else {
+        props.setFilters(prev => ({
+          ...prev,
+          team_name: name,
+          isGroup: type === 'group',
+        }));
+      }
+    } else {
+      (hookData as any).setTeamName(name || null);
+      (hookData as any).setIsGroup(type === 'group');
+    }
+  };
+
+  // Look up ID from name to construct proper teamValue for filter
+  const teamValue = useMemo(() => {
+    if (!teamName) return null;
+    
+    if (isGroup) {
+      const group = groups.find(g => g.group_name === teamName);
+      return group ? `group:${group.group_key}` : null;
+    } else {
+      const team = teams.find(t => t.team_name === teamName);
+      return team ? `team:${team.team_key}` : null;
+    }
+  }, [teamName, isGroup, groups, teams]);
 
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -256,15 +310,19 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
       githubRepoIds={githubRepoIds}
       months={months}
       prState="all"
+      teamName={teamName}
+      isGroup={isGroup}
       onGithubRepoIdsChange={handleGithubRepoIdsChange}
       onMonthsChange={handleMonthsChange}
       onPrStateChange={() => {}}
+      onTeamGroupChange={handleTeamGroupChange}
       filterBadges={isReportMode ? undefined : hookData.filterBadges}
       onRefresh={isReportMode ? props?.refresh : (hookData.fetchData as () => void)}
       loading={loading}
       error={error}
       loadingText="Loading code churn rate data..."
       filters={props?.filters}
+      setFilters={props?.setFilters}
       togglePin={props?.togglePin}
       pinnedFilters={props?.pinnedFilters}
       componentProps={props?.componentProps}

@@ -14,9 +14,12 @@ interface PRWorkflowMetricCardProps {
   githubRepoIds: number[];
   months: number;
   prState: string;
+  teamName?: string | null;
+  isGroup?: boolean;
   onGithubRepoIdsChange: (ids: number[]) => void;
   onMonthsChange: (months: number) => void;
   onPrStateChange: (state: string) => void;
+  onTeamGroupChange?: (value: string | null, type: 'group' | 'team', name: string) => void;
   filterBadges: Array<{ label: string; value: string }>;
   onRefresh: () => void;
   loading: boolean;
@@ -39,9 +42,12 @@ export default function PRWorkflowMetricCard({
   githubRepoIds,
   months,
   prState,
+  teamName,
+  isGroup = false,
   onGithubRepoIdsChange,
   onMonthsChange,
   onPrStateChange,
+  onTeamGroupChange,
   filterBadges,
   onRefresh,
   loading,
@@ -67,9 +73,12 @@ export default function PRWorkflowMetricCard({
           githubRepoIds={githubRepoIds}
           months={months}
           prState={prState}
+          teamName={teamName}
+          isGroup={isGroup}
           onGithubRepoIdsChange={onGithubRepoIdsChange}
           onMonthsChange={onMonthsChange}
           onPrStateChange={onPrStateChange}
+          onTeamGroupChange={onTeamGroupChange}
           availableRepositories={repositories}
         />
       }

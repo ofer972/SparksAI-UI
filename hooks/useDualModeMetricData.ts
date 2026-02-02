@@ -37,7 +37,7 @@ export function useDualModeMetricData<T>({
   // Build dependencies array based on hook type
   const dependencies = useDORA
     ? [hookData.githubRepoIds, (hookData as any).environment, hookData.months]
-    : [hookData.githubRepoIds, hookData.months, (hookData as any).prState];
+    : [hookData.githubRepoIds, hookData.months, (hookData as any).prState, (hookData as any).teamName, (hookData as any).isGroup];
   
   // Create a no-op fetch function for report mode to avoid errors
   const noOpFetch = async (endpoint: string) => {
