@@ -439,7 +439,7 @@ export default function MeetingsManagementTab() {
       <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
         {/* Team/Group Hierarchy */}
         <div className="bg-surface rounded-lg border border-outline shadow-sm flex flex-col min-h-0">
-          <div className="flex items-center justify-between p-3 border-b border-outline flex-shrink-0 bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex items-center justify-between p-3 border-b border-outline flex-shrink-0 bg-surface-elevated">
             <h3 className="text-base font-semibold text-content-primary">Teams & Groups</h3>
             <button
               onClick={() => {
@@ -491,7 +491,7 @@ export default function MeetingsManagementTab() {
 
         {/* Meetings Panel */}
         <div className="bg-surface border border-outline rounded-lg shadow-sm flex flex-col min-h-0">
-          <div className="flex items-center justify-between p-3 border-b border-outline flex-shrink-0 bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex items-center justify-between p-3 border-b border-outline flex-shrink-0 bg-surface-elevated">
             <h3 className="text-base font-semibold text-content-primary">
               {selectedNode ? `Meetings - ${selectedNode.name}` : 'Meetings'}
             </h3>
@@ -529,7 +529,7 @@ export default function MeetingsManagementTab() {
                     >
                       {/* Header with Meeting Type */}
                       <div className={`flex items-center justify-between px-3 py-2 border-b ${
-                        isGenerated ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100' : 'bg-gradient-to-r from-gray-50 to-gray-100 border-outline'
+                        isGenerated ? 'bg-brand/10 border-brand/20' : 'bg-surface-elevated border-outline'
                       }`}>
                         <div className="flex items-center gap-2">
                           <svg className="w-4 h-4 text-content-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">

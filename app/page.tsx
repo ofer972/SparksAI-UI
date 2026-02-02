@@ -1325,7 +1325,7 @@ const IconJira = () => (
  ],
  },
       {
-        title: 'Data Source Integration',
+        title: 'Data Sources',
         items: [
           { id: 'jira-settings', label: 'Jira Settings', icon: <IconJira /> },
           { id: 'github-settings', label: 'GitHub Settings', icon: <IconGitHub /> },
@@ -1336,13 +1336,13 @@ const IconJira = () => (
  ];
 
  // Track which accordion groups are expanded
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
+   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     'System Dashboards': true,
     'Goals': true,
     'My Dashboards': true,
     Management: true,
     Administration: true,
-    'Data Source Integration': true,
+    'Datasource Settings': true,
   });
  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
  'custom-dashboards': true,
