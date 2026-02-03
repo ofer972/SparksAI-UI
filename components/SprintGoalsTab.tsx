@@ -7,6 +7,7 @@ import { useAISprintGoals } from '@/hooks/useAISprintGoals';
 import { useUserSprintGoals } from '@/hooks/useUserSprintGoals';
 import GoalsPanel from './GoalsPanel';
 import GoalsConfirmationModal from './pigoals/GoalsConfirmationModal';
+import ErrorModal from './ErrorModal';
 import { useDefaultTeamGroup } from '@/hooks/useDefaultTeamGroup';
 
 interface Sprint {
@@ -23,9 +24,10 @@ export default function SprintGoalsTab() {
  const [loadingSprints, setLoadingSprints] = useState(true);
  const [selectedTeamValue, setSelectedTeamValue] = useState<string | null>(null);
  const [selectedTeamType, setSelectedTeamType] = useState<'team' | 'group' | null>(null);
- const [selectedTeamName, setSelectedTeamName] = useState<string | null>(null);
- const [showConfirmModal, setShowConfirmModal] = useState(false);
- const [loading, setLoading] = useState(false);
+  const [selectedTeamName, setSelectedTeamName] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
  const apiService = new ApiService();
  const hasInitializedRef = useRef(false);
@@ -124,6 +126,7 @@ export default function SprintGoalsTab() {
  const handleConfirm = async () => {
  setShowConfirmModal(false);
  setLoading(true);
+ setErrorMessage(null);
 
  try {
  await apiService.generateSprintGoals(
@@ -135,7 +138,8 @@ export default function SprintGoalsTab() {
  refetchAIGoals();
  refetchUserGoals();
  } catch (err) {
- console.error('Error generating Sprint goals:', err);
+ const errorMsg = err instanceof Error ? err.message : 'Failed to generate Sprint goals';
+ setErrorMessage(errorMsg);
  } finally {
  setLoading(false);
  }
@@ -282,6 +286,15 @@ export default function SprintGoalsTab() {
  variant="info"
  isLoading={loading}
  />
+
+ {/* Error Modal */}
+ {errorMessage && (
+ <ErrorModal
+ title="Can't Suggest Goals"
+ message={errorMessage}
+ onClose={() => setErrorMessage(null)}
+ />
+ )}
  </div>
  );
 }

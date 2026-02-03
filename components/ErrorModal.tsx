@@ -3,9 +3,10 @@
 interface ErrorModalProps {
   message: string;
   onClose: () => void;
+  title?: string;
 }
 
-export default function ErrorModal({ message, onClose }: ErrorModalProps) {
+export default function ErrorModal({ message, onClose, title = 'Error' }: ErrorModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-surface rounded-lg shadow-xl max-w-md w-full mx-4">
@@ -24,7 +25,7 @@ export default function ErrorModal({ message, onClose }: ErrorModalProps) {
                 d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <h3 className="text-lg font-semibold text-red-900">Error</h3>
+            <h3 className="text-lg font-semibold text-red-900">{title}</h3>
           </div>
         </div>
         <div className="px-6 py-4">

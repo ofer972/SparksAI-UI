@@ -1826,13 +1826,13 @@ export class ApiService {
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         try {
           const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.message || errorJson.error || errorMessage;
+          errorMessage = errorJson.detail || errorJson.message || errorJson.error || errorMessage;
         } catch {
           if (errorText && errorText.length < 200) {
             errorMessage = errorText;
           }
         }
-        throw new Error(`Failed to generate Sprint goals: ${errorMessage}`);
+        throw new Error(errorMessage);
       }
       
       return response.json();
