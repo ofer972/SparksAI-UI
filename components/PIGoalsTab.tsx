@@ -178,19 +178,18 @@ export default function PIGoalsTab() {
  <label className="text-sm font-medium text-content-secondary whitespace-nowrap">
  PI <span className="text-danger-text">*</span>
  </label>
- <select
- value={selectedPI}
- onChange={(e) => setSelectedPI(e.target.value)}
- disabled={loadingPIs}
- className="w-32 md:w-40 px-2 py-1 border border-outline-strong rounded text-xs bg-surface-elevated text-content-primary hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand disabled:opacity-50 disabled:cursor-not-allowed h-[34px]"
- >
- <option value="">Select PI</option>
- {availablePIs.map((pi) => (
- <option key={pi} value={pi}>
- {pi}
- </option>
- ))}
- </select>
+              <select
+                value={selectedPI}
+                onChange={(e) => setSelectedPI(e.target.value)}
+                disabled={loadingPIs}
+                className="w-32 md:w-40 px-2 py-1 border border-outline-strong rounded text-xs bg-surface-elevated text-content-primary hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand disabled:opacity-50 disabled:cursor-not-allowed h-[34px]"
+              >
+                {availablePIs.map((pi) => (
+                  <option key={pi} value={pi}>
+                    {pi}
+                  </option>
+                ))}
+              </select>
  </div>
 
  {/* Team/Group Filter - Label and field in one line */}
