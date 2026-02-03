@@ -108,13 +108,11 @@ export function createBaseChartOptions(
     
     return {
       ...axisConfig,
-      // Add color to ticks if ticks exist
-      ...(axisConfig.ticks ? {
-        ticks: {
-          ...axisConfig.ticks,
-          color: axisTextColor,
-        }
-      } : {}),
+      // Add color to ticks (always include ticks if axis exists)
+      ticks: {
+        ...(axisConfig.ticks || {}),
+        color: axisTextColor,
+      },
       // Add color to title if title exists
       ...(axisConfig.title ? {
         title: {
@@ -122,13 +120,11 @@ export function createBaseChartOptions(
           color: axisTextColor,
         }
       } : {}),
-      // Add color to grid if grid exists
-      ...(axisConfig.grid ? {
-        grid: {
-          ...axisConfig.grid,
-          color: gridColor,
-        }
-      } : {}),
+      // Always add grid color for visibility in all themes
+      grid: {
+        ...(axisConfig.grid || {}),
+        color: gridColor,
+      },
     };
   };
 
