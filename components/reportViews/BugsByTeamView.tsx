@@ -47,6 +47,19 @@ const COLOR_PALETTE = [
  '#0ea5e9',
 ];
 
+// Team name truncation constants
+const TEAM_NAME_TRUNCATE_AT = 15;  // Truncate to this length
+const TEAM_NAME_THRESHOLD = 17;     // Only truncate if longer than this
+
+const truncateTeamName = (name: string): string => {
+  // Only truncate if the name is longer than the threshold
+  if (name.length <= TEAM_NAME_THRESHOLD) {
+    return name;
+  }
+  // Truncate to the specified length and add ellipsis
+  return name.substring(0, TEAM_NAME_TRUNCATE_AT) + '...';
+};
+
 const buildTeamChartData = (teams?: IssuesByTeam[]) => {
  if (!Array.isArray(teams)) {
  return {
@@ -65,17 +78,19 @@ const buildTeamChartData = (teams?: IssuesByTeam[]) => {
  const sortedPriorities = Array.from(uniquePriorities).sort();
 
  const dataset = teams.map((team) => {
- const entry: any = {
- team_name: team.team_name ?? 'Unspecified',
- total_issues: team.total_issues ?? 0,
- };
+  const fullTeamName = team.team_name ?? 'Unspecified';
+  const entry: any = {
+   team_name: truncateTeamName(fullTeamName),  // Truncated for display on chart
+   full_team_name: fullTeamName,                // Keep full name for tooltip
+   total_issues: team.total_issues ?? 0,
+  };
 
- sortedPriorities.forEach((priorityName) => {
- const match = team.priorities?.find((p) => p.priority === priorityName);
- entry[priorityName] = match?.issue_count ?? 0;
- });
+  sortedPriorities.forEach((priorityName) => {
+   const match = team.priorities?.find((p) => p.priority === priorityName);
+   entry[priorityName] = match?.issue_count ?? 0;
+  });
 
- return entry;
+  return entry;
  });
 
  return {
@@ -187,24 +202,24 @@ const IssuesByTeamView: React.FC<IssuesByTeamViewProps> = ({
  );
 
  const barTooltip = ({ active, payload }: any) => {
- if (active && payload && payload.length) {
- return (
- <div className="bg-surface p-3 border border-outline rounded-lg shadow-lg text-sm">
- <p className="font-semibold text-content-primary mb-2">{payload[0].payload.team_name}</p>
- {payload.map((entry: any) => {
- if (entry.value > 0) {
- return (
- <p key={entry.dataKey} className="text-content-secondary" style={{ color: entry.fill }}>
- {entry.dataKey}: {entry.value}
- </p>
- );
- }
- return null;
- })}
- </div>
- );
- }
- return null;
+  if (active && payload && payload.length) {
+   return (
+    <div className="bg-surface p-3 border border-outline rounded-lg shadow-lg text-sm">
+     <p className="font-semibold text-content-primary mb-2">{payload[0].payload.full_team_name}</p>
+     {payload.map((entry: any) => {
+      if (entry.value > 0) {
+       return (
+        <p key={entry.dataKey} className="text-content-secondary" style={{ color: entry.fill }}>
+         {entry.dataKey}: {entry.value}
+        </p>
+       );
+      }
+      return null;
+     })}
+    </div>
+   );
+  }
+  return null;
  };
 
  return (
