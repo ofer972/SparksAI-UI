@@ -248,7 +248,7 @@ const TeamVelocityView: React.FC<TeamVelocityViewProps> = ({
 
   return (
     <ReportCard
-      title="Team Velocity"
+      title="Sprint Team Velocity"
       reportId={componentProps?.reportId}
       filters={filtersContent}
       filterBadges={filterBadges}
@@ -288,7 +288,7 @@ const TeamVelocityView: React.FC<TeamVelocityViewProps> = ({
               data={chartData}
               title={chartTitle}
               yAxisLabel="# of Issues"
-              xAxisLabel="Sprint"
+              xAxisLabel=""
               colorScheme={sprintScopeColors}
               jiraUrl={meta?.jira_url}
               loading={false}
