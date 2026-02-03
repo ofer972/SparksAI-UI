@@ -2541,6 +2541,55 @@ export class ApiService {
 
     return await response.json();
   }
+
+  // Validation Reports APIs
+  async getValidationSummaryMetrics(params?: {
+    days_back?: number;
+    team_name?: string;
+    isGroup?: boolean;
+    pi?: string;
+  }): Promise<any[]> {
+    const queryParams = new URLSearchParams();
+    if (params?.days_back) queryParams.append('days_back', params.days_back.toString());
+    if (params?.team_name) queryParams.append('team_name', params.team_name);
+    if (params?.isGroup) queryParams.append('isGroup', 'true');
+    if (params?.pi) queryParams.append('pi', params.pi);
+
+    const url = buildBackendUrl(`/issues/validations/summary?${queryParams.toString()}`);
+    const response = await authFetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch validation summary: ${response.statusText}`);
+    }
+
+    return await response.json();
+  }
+
+  async getValidationIssues(params: {
+    validation_type?: string;
+    days_back?: number;
+    team_name?: string;
+    isGroup?: boolean;
+    pi?: string;
+    hierarchy_level?: number;
+  }): Promise<any> {
+    const queryParams = new URLSearchParams();
+    if (params.validation_type) queryParams.append('validation_type', params.validation_type);
+    if (params.days_back) queryParams.append('days_back', params.days_back.toString());
+    if (params.team_name) queryParams.append('team_name', params.team_name);
+    if (params.isGroup) queryParams.append('isGroup', 'true');
+    if (params.pi) queryParams.append('pi', params.pi);
+    if (params.hierarchy_level !== undefined) queryParams.append('hierarchy_level', params.hierarchy_level.toString());
+
+    const url = buildBackendUrl(`/issues/validations/issues?${queryParams.toString()}`);
+    const response = await authFetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch validation issues: ${response.statusText}`);
+    }
+
+    return await response.json();
+  }
 }
 
 export interface UserDto {

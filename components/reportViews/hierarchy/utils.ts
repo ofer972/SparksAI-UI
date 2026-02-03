@@ -93,15 +93,3 @@ export function getStatusCategoryColor(statusCategory: string): string {
   return 'bg-gray-100 text-gray-800 border-gray-200';
 }
 
-export function getTypeColor(type: string): string {
-  const typeLower = (type || '').toLowerCase();
-  const colorMap: Record<string, string> = {
-    epic: 'bg-purple-100 text-purple-800 border-purple-200',
-    story: 'bg-blue-100 text-blue-800 border-blue-200',
-    task: 'bg-green-100 text-green-800 border-green-200',
-    bug: 'bg-red-100 text-red-800 border-red-200',
-  };
-
-  return colorMap[typeLower] || 'bg-gray-100 text-gray-800 border-gray-200';
-}
-

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ApiService } from '@/lib/api';
-import { getTypeColor } from '../hierarchyTable/utils';
+import { getTypeColor } from '@/lib/colorUtils';
 
 interface ConnectIssuesDialogProps {
  isOpen: boolean;

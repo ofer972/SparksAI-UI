@@ -12,7 +12,8 @@ import {
 } from '@tanstack/react-table';
 import type { HierarchyItem } from '@/lib/config';
 import type { ColumnConfig, TreeNode } from '../hierarchyTable/types';
-import { buildTree, flattenTree, getStatusCategoryColor, getTypeColor, getProgressColor } from '../hierarchyTable/utils';
+import { buildTree, flattenTree, getStatusCategoryColor, getProgressColor } from '../hierarchyTable/utils';
+import { getTypeColor } from '@/lib/colorUtils';
 import type { HierarchyGanttTableProps, GanttViewMode, TimelineDate, GanttConfig, PIData, ReleaseData } from './types';
 import {
   getTimelineDates,

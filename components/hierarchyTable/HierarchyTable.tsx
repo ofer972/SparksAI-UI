@@ -17,8 +17,8 @@ import {
  flattenTree,
  getProgressColor,
  getStatusCategoryColor,
- getTypeColor,
 } from './utils';
+import { getTypeColor } from '@/lib/colorUtils';
 
 const HierarchyTable: React.FC<HierarchyTableProps> = ({
  data,

@@ -74,6 +74,7 @@ interface KPICardProps {
   defaultTeamOrGroupName?: string | null;
   defaultTreeType?: 'team' | 'group' | null;
   currentPIName?: string | null;
+  size?: 'normal' | 'large';
 }
 
 export default function KPICard({
@@ -94,6 +95,7 @@ export default function KPICard({
   defaultTeamOrGroupName,
   defaultTreeType,
   currentPIName,
+  size = 'normal',
 }: KPICardProps) {
   // DEBUG: Log chart_data for days_left metric
   useEffect(() => {
@@ -313,18 +315,18 @@ export default function KPICard({
           ref={buttonRef}
           onClick={handleClick}
           className={`
-            h-32 rounded-lg border transition-all relative
+            ${size === 'large' ? 'h-[140.8px]' : 'h-32'} rounded-lg border transition-all relative
             bg-gradient-to-br from-surface to-surface-elevated
             border-outline shadow-sm
             hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700 hover:scale-[1.02] cursor-pointer
             focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-300
             flex flex-col
-            ${layout === 'wide' ? 'w-full' : 'w-[170px]'}
+            ${layout === 'wide' ? 'w-full' : size === 'large' ? 'w-[187px]' : 'w-[170px]'}
           `}
         >
         {/* Header with label and tier badge in top-right - fixed height for consistency */}
         <div className="flex items-start justify-between px-2 pt-2 flex-shrink-0 h-7">
-          <h3 className="text-xs font-medium text-content-secondary">{label}</h3>
+          <h3 className={`${size === 'large' ? 'text-sm' : 'text-xs'} font-medium text-content-secondary`}>{label}</h3>
           {hasTier && (
             <span
               className={`
@@ -366,7 +368,7 @@ export default function KPICard({
               })}
             </div>
           ) : (
-            <div className={`text-lg sm:text-xl font-bold ${colors.valueText}`}>
+            <div className={`${size === 'large' ? 'text-2xl sm:text-3xl' : 'text-lg sm:text-xl'} font-bold ${colors.valueText}`}>
               {value}
             </div>
           )}

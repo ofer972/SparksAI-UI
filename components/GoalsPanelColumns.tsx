@@ -5,7 +5,8 @@ import type { ColumnConfig } from './hierarchyTable/types';
 import type { TreeNode } from './hierarchyTable/types';
 import type { HierarchyItem } from '@/lib/config';
 import { API_CONFIG } from '@/lib/config';
-import { getStatusCategoryColor, getTypeColor } from './hierarchyTable/utils';
+import { getStatusCategoryColor } from './hierarchyTable/utils';
+import { getTypeColor } from '@/lib/colorUtils';
 
 // Progress Bar Component (following Release Predictability style)
 interface ProgressBarProps {

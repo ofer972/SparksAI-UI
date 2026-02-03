@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { EntityConfig, ColumnConfig } from '@/lib/entityConfig';
+import { getTypeColor } from '@/lib/colorUtils';
 
 export interface Column<T> {
  key: string;
@@ -296,7 +297,7 @@ function DataTable<T extends Record<string, any>>({
  )}
 
  {/* Table Container with Sticky Header */}
- <div className="flex-1 overflow-auto min-h-0" style={{ marginBottom: 0, paddingBottom: 0 }}>
+ <div className="flex-1 overflow-auto min-h-0" style={{ marginBottom: 0, paddingBottom: 0, maxHeight }}>
  <table className="w-full border-collapse">
  <thead className="bg-surface-elevated border-b border-outline sticky top-0 z-10 shadow-sm">
  <tr>
@@ -477,6 +478,17 @@ function DataTable<T extends Record<string, any>>({
  );
  };
 
+ // Issue type badge renderer
+ const renderIssueTypeBadge = (raw: any) => {
+ const val = String(raw ?? '-');
+ const colorClasses = getTypeColor(val);
+ return (
+ <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${colorClasses}`}>
+ {val}
+ </span>
+ );
+ };
+
  // Boolean checkbox renderer
  const renderBoolean = (checked: boolean) => {
  return (
@@ -519,6 +531,8 @@ function DataTable<T extends Record<string, any>>({
  rendered = renderBoolean(deriveBoolean(value));
  } else if (isDateLikeKey || (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value))) {
  rendered = formatHumanDate(value);
+ } else if (column.key === 'issue_type') {
+ rendered = renderIssueTypeBadge(value);
  } else if (isStatusLikeKey) {
  rendered = renderStatusBadge(value);
  } else {

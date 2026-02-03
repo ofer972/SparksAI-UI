@@ -12,7 +12,8 @@ import {
 } from '@tanstack/react-table';
 import { HierarchyItem } from '@/lib/config';
 import { ColumnConfig, HierarchyTableProps, TreeNode } from './types';
-import { buildTree, flattenTree, getStatusCategoryColor, getTypeColor } from './utils';
+import { buildTree, flattenTree, getStatusCategoryColor } from './utils';
+import { getTypeColor } from '@/lib/colorUtils';
 
 export default function HierarchyTable({
   data,
