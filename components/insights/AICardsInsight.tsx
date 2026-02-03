@@ -664,11 +664,11 @@ const informationItems = parseInformationJson(card.information_json);
  
  if (informationItems && informationItems.length > 0) {
  return (
- <div className="space-y-0 mb-4">
- {informationItems.map((item, index) => (
- <div key={index} className={`py-2.5 border-b border-outline last:border-b-0 hover:bg-blue-50/50 hover:bg-surface-elevated/50 transition-colors rounded-md px-2 -mx-2 ${index === 0 ? 'border-t-0' : ''}`}>
- <span className="font-semibold text-blue-800 dark:text-brand text-sm">{item.header}:</span>
- <span className="text-content-secondary text-sm leading-relaxed ml-2">
+                <div className="space-y-0 mb-4">
+                  {informationItems.map((item, index) => (
+                    <div key={index} className={`py-2.5 border-b border-outline last:border-b-0 hover:bg-blue-50/50 hover:bg-surface-elevated/50 transition-colors rounded-md px-2 -mx-2 ${index === 0 ? 'border-t-0' : ''}`}>
+                      <span className="font-semibold text-blue-800 dark:text-brand text-sm">{item.header}</span>
+                      <span className="text-content-secondary text-sm leading-relaxed ml-2">
  <ReactMarkdown
  remarkPlugins={[remarkGfm]}
  components={{
