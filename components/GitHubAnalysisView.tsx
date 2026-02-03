@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import DORAAnalysisTab from './github/DORAAnalysisTab';
 import PRQualityMetricsTab from './github/PRQualityMetricsTab';
+import { useGitHubSettings } from '@/contexts/GitHubSettingsContext';
 
 interface TabItem {
   id: string;
@@ -10,7 +11,7 @@ interface TabItem {
   icon: React.ReactNode;
 }
 
-const tabs: TabItem[] = [
+const allTabs: TabItem[] = [
   { 
     id: 'pr-quality-metrics', 
     label: 'PR Quality Metrics', 
@@ -32,7 +33,23 @@ const tabs: TabItem[] = [
 ];
 
 export default function GitHubAnalysisView() {
+  const { settings } = useGitHubSettings();
   const [activeTab, setActiveTab] = useState('pr-quality-metrics');
+
+  // Filter tabs: always show PR Quality Metrics, only show DORA Metrics if deployments are enabled
+  const tabs = useMemo(() => {
+    const deploymentsEnabled = settings?.github_deployments_enabled !== 'false';
+    return allTabs.filter(tab => 
+      tab.id === 'pr-quality-metrics' || (tab.id === 'dora-insights' && deploymentsEnabled)
+    );
+  }, [settings?.github_deployments_enabled]);
+
+  // If active tab is DORA Metrics but it's now hidden, switch to PR Quality Metrics
+  useEffect(() => {
+    if (activeTab === 'dora-insights' && !tabs.find(t => t.id === 'dora-insights')) {
+      setActiveTab('pr-quality-metrics');
+    }
+  }, [activeTab, tabs]);
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -59,7 +76,7 @@ export default function GitHubAnalysisView() {
       <div className="flex-shrink-0 mt-4">
         <div className="px-4 md:pl-0 md:pr-6">
           {/* Mobile: tabs grid */}
-          <nav className="grid grid-cols-2 gap-1 md:hidden">
+          <nav className={`grid ${tabs.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-1 md:hidden`}>
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id;
               return (

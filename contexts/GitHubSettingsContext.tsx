@@ -59,12 +59,10 @@ export function GitHubSettingsProvider({ children }: { children: ReactNode }) {
       return false;
     }
     
-    // Both must be enabled for DORA to be available
+    // Only check if GitHub is enabled (deployment check moved to tab visibility)
     const githubEnabled = settings.github_enabled === 'true';
-    // Default to true if not set (backward compatibility for existing installations)
-    const deploymentsEnabled = settings.github_deployments_enabled !== 'false';
     
-    return githubEnabled && deploymentsEnabled;
+    return githubEnabled;
   };
 
   return (
