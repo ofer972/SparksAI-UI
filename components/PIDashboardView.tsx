@@ -812,7 +812,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           <div className="text-6xl mb-4">🎯</div>
           <h2 className="text-2xl font-semibold text-content-primary mb-2">Select a PI</h2>
           <p className="text-content-secondary max-w-md mx-auto">
-            Please select a PI from the dropdown above to view dashboard insights and reports.
+            Click the filter button at the top right, then select a PI to view dashboard insights and reports.
           </p>
         </div>
       </div>

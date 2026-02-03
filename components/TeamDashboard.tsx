@@ -590,7 +590,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
           <div className="text-6xl mb-4">👥</div>
           <h2 className="text-2xl font-semibold text-content-primary mb-2">Select a Team or Group</h2>
           <p className="text-content-secondary max-w-md mx-auto">
-            Please select a team or group from the dropdown above to view dashboard insights and reports.
+            Click the filter button at the top right, then select a team or group to view dashboard insights and reports.
           </p>
         </div>
       </div>
