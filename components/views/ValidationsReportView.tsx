@@ -10,7 +10,7 @@ interface ValidationMetric {
   metric_id: string;
   label: string;
   value: string;
-  tier_status: string;
+  tier_status: 'elite' | 'high' | 'medium' | 'low' | '' | null;
   description: string;
   tooltip: string;
   alternative_text?: string | null;
@@ -118,7 +118,7 @@ export default function ValidationsReportView() {
               metricId={metric.metric_id}
               label={metric.label}
               value={metric.value}
-              tierStatus={metric.tier_status || null}
+              tierStatus={metric.tier_status as 'elite' | 'high' | 'medium' | 'low' | '' | null || null}
               description={metric.description}
               tooltip={metric.tooltip}
               alternative_text={metric.alternative_text || null}
