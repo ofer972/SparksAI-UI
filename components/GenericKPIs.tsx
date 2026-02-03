@@ -59,12 +59,12 @@ export default function GenericKPIs({
       setError(null);
 
       try {
-        // Fetch cycle_time, epic_cycle_time, and open_bugs from general-kpis endpoint
+        // Fetch open_bugs, cycle_time, and epic_cycle_time from general-kpis endpoint
         const params = new URLSearchParams({
           scope: 'sprint',
           team_name: defaultTeamOrGroupName,
           isGroup: (defaultTreeType === 'group').toString(),
-          metrics: 'cycle_time,epic_cycle_time,open_bugs'
+          metrics: 'open_bugs,cycle_time,epic_cycle_time'
         });
         
         const response = await authFetch(`/api/v1/team-metrics/general-kpis?${params.toString()}`);
