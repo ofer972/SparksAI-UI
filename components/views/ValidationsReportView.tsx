@@ -68,6 +68,7 @@ export default function ValidationsReportView() {
       <ValidationIssuesView
         validationType={selectedMetric.action.params.validation_type}
         metricLabel={selectedMetric.label}
+        tooltip={selectedMetric.tooltip}
         filters={selectedMetric.action.params}
         onBack={handleBack}
         jiraUrl={jiraUrl}

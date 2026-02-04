@@ -18,6 +18,7 @@ interface ValidationIssue {
 interface ValidationIssuesViewProps {
   validationType: string;
   metricLabel: string;
+  tooltip?: string;
   filters: Record<string, any>;
   onBack: () => void;
   jiraUrl?: string;
@@ -26,6 +27,7 @@ interface ValidationIssuesViewProps {
 export default function ValidationIssuesView({
   validationType,
   metricLabel,
+  tooltip,
   filters,
   onBack,
   jiraUrl,
@@ -177,9 +179,25 @@ export default function ValidationIssuesView({
           </button>
           <div>
             <h1 className="text-2xl font-bold text-content-primary">{metricLabel}</h1>
-            <p className="text-sm text-content-secondary mt-1">
-              {issues.length} {issues.length === 1 ? 'issue' : 'issues'} found
-            </p>
+            {tooltip && (
+              <p className="text-sm text-content-secondary mt-1">
+                {tooltip}
+              </p>
+            )}
+            <div className="flex items-center gap-3 mt-2">
+              <p className="text-sm text-content-secondary">
+                {issues.length} {issues.length === 1 ? 'issue' : 'issues'} found
+              </p>
+              {effectiveJiraUrl && issues.length > 0 && (
+                <button
+                  onClick={handleOpenAllInJira}
+                  className="px-3 py-1.5 text-sm bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded transition-colors"
+                  disabled={!effectiveJiraUrl || issues.length === 0}
+                >
+                  Open all in Jira
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -193,23 +211,10 @@ export default function ValidationIssuesView({
         loading={loading}
         error={error}
         emptyMessage="No issues found for this validation"
-        maxHeight="calc((100vh - 280px) * 0.9)"
+        maxHeight="calc((100vh - 280px) * 0.9 - 30px)"
         striped
         hoverable
       />
-
-      {/* Footer */}
-      <div className="px-6 py-2 flex justify-start items-center gap-3 mt-2">
-        {effectiveJiraUrl && issues.length > 0 && (
-          <button
-            onClick={handleOpenAllInJira}
-            className="px-3 py-1.5 text-sm bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded transition-colors"
-            disabled={!effectiveJiraUrl || issues.length === 0}
-          >
-            Open all in Jira
-          </button>
-        )}
-      </div>
     </div>
   );
 }
