@@ -15,6 +15,8 @@ import ReportCard from './reporting/ReportCard';
 import ReportPanel from './ReportPanel';
 import InsightTypeWidget from './InsightTypeWidget';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
+import DashboardTemplateModal from './DashboardTemplateModal';
+import { configCache } from '@/lib/configCache';
 
 // Component to render real dashboard snapshot preview
 const DashboardLayoutPreview: React.FC<{ 
@@ -135,8 +137,7 @@ export default function CustomDashboardsView({ onSelectDashboard, onDashboardCre
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
  const [isCreating, setIsCreating] = useState(false);
- const [newDashboardName, setNewDashboardName] = useState('');
- const [newDashboardDescription, setNewDashboardDescription] = useState('');
+ const [templateModalOpen, setTemplateModalOpen] = useState(false);
  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
  const [dashboardToDelete, setDashboardToDelete] = useState<{ id: string; name: string } | null>(null);
 
@@ -162,21 +163,25 @@ export default function CustomDashboardsView({ onSelectDashboard, onDashboardCre
  }
  };
 
- const handleCreateDashboard = async () => {
- if (!newDashboardName.trim()) {
- setError('Dashboard name is required');
- return;
- }
+ const handleTemplateSelect = async (
+   templateId: 'team' | 'pi' | 'blank',
+   dashboardName: string,
+   dashboardDescription: string
+ ) => {
+   if (!dashboardName.trim()) {
+     setError('Dashboard name is required');
+     return;
+   }
 
- if (!user?.id && !user?.user_id) {
- setError('User not found');
- return;
- }
+   if (!user?.id && !user?.user_id) {
+     setError('User not found');
+     return;
+   }
 
- setIsCreating(true);
- setError(null);
- try {
- const userId = (user?.id || user?.user_id) as string;
+   setIsCreating(true);
+   setError(null);
+   try {
+     const userId = (user?.id || user?.user_id) as string;
  
  // Get user's default team/group from preferences
  let defaultFilters: Record<string, any> = {};
@@ -266,40 +271,92 @@ export default function CustomDashboardsView({ onSelectDashboard, onDashboardCre
  }
  } else {
  console.log('[CustomDashboardsView] PI already set in defaultFilters:', defaultFilters.selectedPI);
- }
- 
- const dashboardData: CreateDashboardRequest = {
- name: newDashboardName.trim(),
- description: newDashboardDescription.trim() || undefined,
- layout_config: {
- layoutConfig: { rows: [] },
- pinnedFilters: {},
- reportFilters: {},
- topBarFilters: defaultFilters,
- },
- };
- 
- console.log('[CustomDashboardsView] Creating dashboard with filters:', defaultFilters);
- const newDashboard = await createDashboard(userId, dashboardData);
- console.log('[CustomDashboardsView] Created dashboard:', newDashboard);
- setDashboards([newDashboard, ...dashboards]);
- setNewDashboardName('');
- setNewDashboardDescription('');
- setIsCreating(false);
- 
- // Notify parent to refresh dashboards list (for left menu panel)
- if (onDashboardCreated) {
- onDashboardCreated();
- }
- 
- // If callback provided, navigate to the new dashboard
- if (onSelectDashboard) {
- onSelectDashboard(newDashboard.id);
- }
- } catch (err: any) {
- setError(err.message || 'Failed to create dashboard');
- setIsCreating(false);
- }
+     }
+
+     // Load template layout if not blank
+     let templateLayout: { rows: any[] } = { rows: [] };
+     if (templateId !== 'blank') {
+       try {
+         console.log(`[CustomDashboardsView] Loading ${templateId} dashboard template...`);
+         const apiService = new ApiService();
+         const configs = await configCache.getDashboardConfigs(() => apiService.getDashboardViewConfigs());
+         
+         const viewName = templateId === 'team' ? 'team-dashboard' : 'pi-dashboard';
+         const templateConfig = configs.find(cfg => cfg.view === viewName);
+         
+         if (templateConfig && templateConfig.reportIds && templateConfig.reportIds.length > 0) {
+           console.log(`[CustomDashboardsView] Found ${templateId} template with reports:`, templateConfig.reportIds);
+           
+           // Convert system dashboard reports to custom dashboard widgets
+           const widgets: DashboardWidget[] = templateConfig.reportIds.map((reportId, idx) => ({
+             id: `widget-${idx}-${Date.now()}`,
+             type: 'report' as const,
+             widget_id: reportId,
+           }));
+           
+           // Create layout from template - use template layout_config if available, otherwise single row
+           if (templateConfig.layout_config?.rows) {
+             // Convert system layout to custom dashboard layout
+             templateLayout = {
+               rows: templateConfig.layout_config.rows.map((row: any, rowIdx: number) => ({
+                 id: `row-${rowIdx}-${Date.now()}`,
+                 widgets: row.reportIds?.map((reportId: string, widgetIdx: number) => ({
+                   id: `widget-${rowIdx}-${widgetIdx}-${Date.now()}`,
+                   type: 'report' as const,
+                   widget_id: reportId,
+                 })) || [],
+               })),
+             };
+           } else {
+             // Single row with all widgets
+             templateLayout = {
+               rows: [{
+                 id: `row-0-${Date.now()}`,
+                 widgets,
+               }],
+             };
+           }
+           
+           console.log('[CustomDashboardsView] Created template layout:', templateLayout);
+         } else {
+           console.warn(`[CustomDashboardsView] No template config found for ${viewName}, creating blank dashboard`);
+         }
+       } catch (templateErr) {
+         console.error('[CustomDashboardsView] Failed to load template:', templateErr);
+         // Continue with blank template
+       }
+     }
+     
+     const dashboardData: CreateDashboardRequest = {
+       name: dashboardName.trim(),
+       description: dashboardDescription.trim() || undefined,
+       layout_config: {
+         layoutConfig: templateLayout,
+         pinnedFilters: {},
+         reportFilters: {},
+         topBarFilters: defaultFilters,
+       },
+     };
+     
+     console.log('[CustomDashboardsView] Creating dashboard with template:', templateId, dashboardData);
+     const newDashboard = await createDashboard(userId, dashboardData);
+     console.log('[CustomDashboardsView] Created dashboard:', newDashboard);
+     setDashboards([newDashboard, ...dashboards]);
+     setIsCreating(false);
+     
+     // Notify parent to refresh dashboards list (for left menu panel)
+     if (onDashboardCreated) {
+       onDashboardCreated();
+     }
+     
+     // If callback provided, navigate to the new dashboard
+     if (onSelectDashboard) {
+       onSelectDashboard(newDashboard.id);
+     }
+   } catch (err: any) {
+     setError(err.message || 'Failed to create dashboard');
+     setIsCreating(false);
+   }
  };
 
  const handleDeleteDashboard = (dashboardId: string, dashboardName: string) => {
@@ -377,66 +434,31 @@ export default function CustomDashboardsView({ onSelectDashboard, onDashboardCre
  </div>
  )}
 
- {/* Create Dashboard Card - Inline in header */}
+ {/* Create Dashboard Card - Button to open template modal */}
  <div className="bg-surface/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-outline/20 p-6">
- <div className="flex items-center gap-3 mb-4">
+ <div className="flex items-center justify-between">
+ <div className="flex items-center gap-3">
  <div className="p-2 bg-brand rounded-lg">
  <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
  </svg>
  </div>
+ <div>
  <h2 className="text-xl font-bold text-content-primary">Create New Dashboard</h2>
- </div>
- <div className="grid md:grid-cols-2 gap-4">
- <div>
- <label className="block text-sm font-semibold text-content-secondary mb-2">
- Dashboard Name <span className="text-danger-text">*</span>
- </label>
- <input
- type="text"
- value={newDashboardName}
- onChange={(e) => setNewDashboardName(e.target.value)}
- placeholder="Enter dashboard name"
- className="w-full px-4 py-3 bg-surface-elevated border-2 border-outline rounded-xl focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand text-sm text-content-primary placeholder-content-muted transition-all"
- disabled={isCreating}
- />
- </div>
- <div>
- <label className="block text-sm font-semibold text-content-secondary mb-2">
- Description <span className="text-content-muted font-normal">(optional)</span>
- </label>
- <input
- type="text"
- value={newDashboardDescription}
- onChange={(e) => setNewDashboardDescription(e.target.value)}
- placeholder="Add a description..."
- className="w-full px-4 py-3 bg-surface-elevated border-2 border-outline rounded-xl focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand text-sm text-content-primary placeholder-content-muted transition-all"
- disabled={isCreating}
- />
+ <p className="text-sm text-content-secondary mt-0.5">Choose a template or start from scratch</p>
  </div>
  </div>
  <button
- onClick={handleCreateDashboard}
- disabled={isCreating || !newDashboardName.trim()}
- className="mt-4 w-full md:w-auto px-6 py-3 bg-gradient-to-r from-brand to-brand text-white rounded-xl hover:from-brand-hover hover:to-brand-hover disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-bold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+ onClick={() => setTemplateModalOpen(true)}
+ disabled={isCreating}
+ className="px-6 py-3 bg-gradient-to-r from-brand to-brand text-white rounded-xl hover:from-brand-hover hover:to-brand-hover disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-bold flex items-center gap-2 shadow-lg hover:shadow-xl"
  >
- {isCreating ? (
- <>
- <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
- </svg>
- <span>Creating Dashboard...</span>
- </>
- ) : (
- <>
  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
  </svg>
- <span>Create Dashboard</span>
- </>
- )}
+ <span>New Dashboard</span>
  </button>
+ </div>
  </div>
  </div>
  </div>
@@ -525,6 +547,13 @@ export default function CustomDashboardsView({ onSelectDashboard, onDashboardCre
  )}
  </div>
  </div>
+
+ {/* Template Selection Modal */}
+ <DashboardTemplateModal
+ isOpen={templateModalOpen}
+ onClose={() => setTemplateModalOpen(false)}
+ onSelectTemplate={handleTemplateSelect}
+ />
 
  {/* Delete Confirmation Modal */}
  <DeleteConfirmationModal

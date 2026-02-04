@@ -3,10 +3,8 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import ReportPanel from './ReportPanel';
 import DraggableResizableGrid from './DraggableResizableGrid';
-import AddReportsModal from './AddReportsModal';
 import { ApiService } from '@/lib/api';
 import type { ReportDefinition, LayoutConfig } from '@/lib/config';
-import { useDashboardSettings } from '@/hooks/useDashboardSettings';
 import { configCache } from '@/lib/configCache';
 
 interface PIDashboardViewProps {
@@ -28,11 +26,6 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   const [layoutConfig, setLayoutConfig] = useState<LayoutConfig | null>(null);
   const [configLoaded, setConfigLoaded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [isAddReportsModalOpen, setIsAddReportsModalOpen] = useState(false);
-  const [availableReports, setAvailableReports] = useState<ReportDefinition[]>([]);
-  
-  // Dashboard settings hook
-  const dashboardSettings = useDashboardSettings('pi-dashboard');
 
   // Detect mobile screen size
   useEffect(() => {
@@ -45,34 +38,13 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     
     return () => {
       window.removeEventListener('resize', checkMobile);
-      // Reset refs on unmount so settings can be reapplied when returning to dashboard
-      settingsAppliedRef.current = false;
       configLoadedRef.current = false;
-      prevLayoutRef.current = null;
       prevFiltersRef.current = { selectedPI: '', selectedTeam: '', selectedTreeType: 'team' };
     };
   }, []);
 
-  // Listen for open modal event from top bar
-  useEffect(() => {
-    const handleOpenModal = () => {
-      console.log('PIDashboardView: Received open-add-reports-modal event');
-      // Use functional update to avoid stale closure
-      setIsAddReportsModalOpen(prev => {
-        console.log('PIDashboardView: Current modal state:', prev);
-        console.log('PIDashboardView: Setting modal state to true');
-        return true;
-      });
-    };
-    
-    window.addEventListener('open-add-reports-modal', handleOpenModal);
-    console.log('PIDashboardView: Event listener attached');
-    return () => window.removeEventListener('open-add-reports-modal', handleOpenModal);
-  }, []); // Empty dependency array - only run once
-
   const configLoadedRef = useRef(false);
   const systemConfigRef = useRef<{ config: any, definitionMap: Record<string, ReportDefinition> } | null>(null);
-  const settingsAppliedRef = useRef(false);
   
   // Refs for latest values to avoid stale closures
   const selectedPIRef = useRef(selectedPI);
@@ -88,7 +60,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     reportOrderRef.current = reportOrder;
   }, [selectedPI, selectedTeam, selectedTreeType, reportOrder]);
 
-  // Load system config and report definitions once
+  // Load system config and use only system defaults
   useEffect(() => {
     if (configLoadedRef.current) return;
     
@@ -97,7 +69,10 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
       try {
         const api = new ApiService();
         
-        // Use cache to prevent duplicate API calls
+        // Clear dashboard configs cache to ensure fresh data from system settings
+        configCache.clearDashboardConfigs();
+        
+        // Fetch fresh configuration
         const [configs, definitions] = await Promise.all([
           configCache.getDashboardConfigs(() => api.getDashboardViewConfigs()),
           configCache.getReportDefinitions(() => api.getReportDefinitions()),
@@ -110,60 +85,14 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           definitionMap[definition.report_id] = definition;
         });
 
-        // Filter reports for PI dashboard (exclude removed reports)
-        const piReports = definitions.filter((r) => {
-          // Explicitly exclude removed reports
-          if (r.report_id === 'pi-metrics-summary-by-team') {
-            return false;
-          }
-          const allowedViews = r.meta_schema?.allowed_views || ['every-dashboard'];
-          return allowedViews.includes('every-dashboard') || allowedViews.includes('pi-dashboard');
-        });
-        setAvailableReports(piReports);
-
         const viewConfig = configs.find((cfg) => cfg.view === 'pi-dashboard');
+        console.log('[PIDashboard] System config loaded:', viewConfig);
+        console.log('[PIDashboard] System config reportIds:', viewConfig?.reportIds);
         systemConfigRef.current = { config: viewConfig, definitionMap };
-        configLoadedRef.current = true;
-      } catch (error) {
-        if (!cancelled) {
-          console.error('Failed to load PI dashboard config', error);
-        }
-      }
-    };
-
-    loadSystemConfig();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const restoringFiltersRef = useRef(false);
-
-  // Check if we need to restore filters BEFORE rendering (synchronous check)
-  const needsRestore = useMemo(() => {
-    if (dashboardSettings.isLoading || !dashboardSettings.savedState?.topBarFilters) {
-      // If settings are loading, assume we might need to restore (be conservative)
-      return dashboardSettings.isLoading;
-    }
-    const savedTeam = dashboardSettings.savedState.topBarFilters.selectedTeam || dashboardSettings.savedState.topBarFilters.team_name;
-    const savedPI = dashboardSettings.savedState.topBarFilters.selectedPI;
-    return (savedTeam && savedTeam !== selectedTeam) || (savedPI && savedPI !== selectedPI);
-  }, [dashboardSettings.isLoading, dashboardSettings.savedState, selectedTeam, selectedPI]);
-
-  // Set restoring flag immediately if restore is needed OR if settings are still loading
-  if ((needsRestore || dashboardSettings.isLoading) && !restoringFiltersRef.current && !selectedPI) {
-    restoringFiltersRef.current = true;
-  }
-
-  // Apply saved settings when they become available (only once)
-  useEffect(() => {
-    if (!configLoadedRef.current || dashboardSettings.isLoading || settingsAppliedRef.current) return;
-    
-    const viewConfig = systemConfigRef.current?.config;
-    const definitionMap = systemConfigRef.current?.definitionMap || {};
-
+        
+        // Use system defaults only
         const normalizeAllowedViews = (report?: ReportDefinition): string[] => {
-      if (!report) return ['every-dashboard'];
+          if (!report) return ['every-dashboard'];
           const raw = Array.isArray(report.meta_schema?.allowed_views)
             ? report.meta_schema.allowed_views
             : ['every-dashboard'];
@@ -177,7 +106,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           const unique: string[] = [];
           const seen = new Set<string>();
           reportIds.forEach((reportId) => {
-        if (seen.has(reportId)) return;
+            if (seen.has(reportId)) return;
             // Explicitly exclude removed reports
             if (reportId === 'pi-metrics-summary-by-team') {
               return;
@@ -192,123 +121,52 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           return unique;
         };
 
-    // Apply saved top bar filters
-    if (dashboardSettings.savedState?.topBarFilters && 
-        Object.keys(dashboardSettings.savedState.topBarFilters).length > 0) {
-      console.log('[PIDashboard] Applying saved top bar filters:', dashboardSettings.savedState.topBarFilters);
-      
-      // Only dispatch event if current props don't match saved settings
-      const savedTeam = dashboardSettings.savedState.topBarFilters.selectedTeam || dashboardSettings.savedState.topBarFilters.team_name;
-      const savedPI = dashboardSettings.savedState.topBarFilters.selectedPI;
-      
-      const needsRestoreInEffect = (savedTeam && savedTeam !== selectedTeam) || (savedPI && savedPI !== selectedPI);
-      
-      if (needsRestoreInEffect) {
-        console.log('[PIDashboard] Props mismatch, dispatching restore event');
-        restoringFiltersRef.current = true; // Mark that we're waiting for filter restore
-          window.dispatchEvent(new CustomEvent('restore-dashboard-filters', {
-            detail: {
-              dashboard: 'pi-dashboard',
-              filters: dashboardSettings.savedState.topBarFilters
-            }
-          }));
-      }
+        // Use system config or defaults
+        const configuredReports = Array.isArray(viewConfig?.reportIds)
+          ? filterReportsForView(viewConfig!.reportIds, 'pi-dashboard')
+          : [];
+        const fallbackReports = filterReportsForView(PI_DASHBOARD_DEFAULTS, 'pi-dashboard');
+
+        if (configuredReports.length > 0) {
+          setReportOrder(configuredReports);
+          setLayoutConfig(viewConfig?.layout_config || null);
+        } else if (fallbackReports.length > 0) {
+          setReportOrder(fallbackReports);
+          setLayoutConfig(null);
+        } else {
+          setReportOrder(PI_DASHBOARD_DEFAULTS);
+          setLayoutConfig(null);
         }
         
-    // Apply saved layout or fall back to system config
-    if (dashboardSettings.savedState?.layoutConfig) {
-          setLayoutConfig(dashboardSettings.savedState.layoutConfig);
-      const reportIds = dashboardSettings.savedState.layoutConfig.rows.flatMap((row: any) => row.reportIds);
-          const filteredReports = filterReportsForView(reportIds, 'pi-dashboard');
-          setReportOrder(filteredReports.length > 0 ? filteredReports : PI_DASHBOARD_DEFAULTS);
-        } else {
-          // Fall back to system config
-          const configuredReports = Array.isArray(viewConfig?.reportIds)
-            ? filterReportsForView(viewConfig!.reportIds, 'pi-dashboard')
-            : [];
-          const fallbackReports = filterReportsForView(PI_DASHBOARD_DEFAULTS, 'pi-dashboard');
-
-          if (configuredReports.length > 0) {
-            setReportOrder(configuredReports);
-            setLayoutConfig(viewConfig?.layout_config || null);
-          } else if (fallbackReports.length > 0) {
-            setReportOrder(fallbackReports);
-            setLayoutConfig(null);
-          } else {
-            setReportOrder(PI_DASHBOARD_DEFAULTS);
-            setLayoutConfig(null);
-          }
-        }
-    
-    settingsAppliedRef.current = true; // Mark as applied to prevent re-runs
+        configLoadedRef.current = true;
+        setConfigLoaded(true);
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to load PI dashboard config', error);
+          // Fallback to defaults on error
+          setReportOrder(PI_DASHBOARD_DEFAULTS);
+          setLayoutConfig(null);
           setConfigLoaded(true);
-  }, [dashboardSettings.isLoading, dashboardSettings.savedState]);
-
-  // Clear restoring flag when PI is actually set OR when PI is cleared (user deselected) OR when there's no saved PI to restore
-  useEffect(() => {
-    const hasValidPI = selectedPI && typeof selectedPI === 'string' && selectedPI.trim().length > 0;
-    if (restoringFiltersRef.current) {
-      if (hasValidPI) {
-        console.log('[PIDashboard] PI restored, clearing restoring flag');
-        restoringFiltersRef.current = false;
-      } else if (!dashboardSettings.isLoading && settingsAppliedRef.current) {
-        // PI was deselected by user or no PI to restore (not during initial load), clear the flag
-        console.log('[PIDashboard] PI deselected by user or no PI to restore, clearing restoring flag');
-        restoringFiltersRef.current = false;
-      } else if (!dashboardSettings.isLoading && !dashboardSettings.savedState?.topBarFilters?.selectedPI && !dashboardSettings.savedState?.topBarFilters?.pi) {
-        // No saved PI to restore, clear the flag immediately
-        console.log('[PIDashboard] No saved PI to restore, clearing restoring flag');
-        restoringFiltersRef.current = false;
+        }
       }
-    }
-  }, [selectedPI, dashboardSettings.isLoading, dashboardSettings.savedState]);
+    };
+
+    loadSystemConfig();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   
-  const prevLayoutRef = useRef<string | null>(null);
   const prevFiltersRef = useRef({ selectedPI, selectedTeam, selectedTreeType });
 
-  // Track layout config changes (only after settings have been applied and only if actually different from previous)
-  useEffect(() => {
-    if (!dashboardSettings.isLoading && layoutConfig !== null && settingsAppliedRef.current) {
-      const layoutStr = JSON.stringify(layoutConfig);
-      
-      if (prevLayoutRef.current !== layoutStr) {
-        console.log('[PIDashboard] Layout changed, updating state');
-      dashboardSettings.updateCurrentState({ layoutConfig });
-        prevLayoutRef.current = layoutStr;
-      }
-    }
-  }, [layoutConfig, dashboardSettings.isLoading]);
-  
-  // Track top bar filters changes (only after settings have been applied and only if actually different from previous)
-  useEffect(() => {
-    if (!dashboardSettings.isLoading && settingsAppliedRef.current) {
-      const newFilters = {
-          selectedPI,
-        selectedTeam,
-          selectedTreeType,
-      };
-      
-      const prev = prevFiltersRef.current;
-      const isDifferent = prev.selectedPI !== newFilters.selectedPI ||
-        prev.selectedTeam !== newFilters.selectedTeam ||
-        prev.selectedTreeType !== newFilters.selectedTreeType;
-      
-      if (isDifferent) {
-        console.log('[PIDashboard] Top bar filters changed, updating state');
-        dashboardSettings.updateCurrentState({ topBarFilters: newFilters });
-        prevFiltersRef.current = newFilters;
-      }
-    }
-  }, [selectedPI, selectedTeam, selectedTreeType, dashboardSettings.isLoading]);
-  
   // Create refs to hold latest values for event handlers
   const latestValuesRef = useRef({
     layoutConfig,
     selectedPI,
     selectedTeam,
     selectedTreeType,
-    reportFilters: dashboardSettings.currentState.reportFilters,
-    pinnedFilters: dashboardSettings.currentState.pinnedFilters,
+    reportFilters: {} as Record<string, Record<string, any>>,
+    pinnedFilters: {} as Record<string, string[]>,
   });
   
   // Update refs whenever values change
@@ -318,45 +176,13 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
       selectedPI,
       selectedTeam,
       selectedTreeType,
-      reportFilters: dashboardSettings.currentState.reportFilters,
-      pinnedFilters: dashboardSettings.currentState.pinnedFilters,
+      reportFilters: {},
+      pinnedFilters: {},
     };
-  }, [layoutConfig, selectedPI, selectedTeam, selectedTreeType, dashboardSettings.currentState.reportFilters, dashboardSettings.currentState.pinnedFilters]);
+  }, [layoutConfig, selectedPI, selectedTeam, selectedTreeType]);
   
   // Set up event listeners once
   useEffect(() => {
-    const handleSaveRequest = async () => {
-      try {
-        console.log('[PIDashboard] Save requested');
-        
-        // The tracking useEffects should have already updated the state
-        // Just save what's in the current state
-        await dashboardSettings.saveSettings();
-        
-        console.log('[PIDashboard] Save completed');
-        window.dispatchEvent(new CustomEvent('dashboard-settings-saved'));
-      } catch (err) {
-        console.error('[PIDashboard] Save failed:', err);
-        window.dispatchEvent(new CustomEvent('dashboard-settings-save-failed', { 
-          detail: { error: err } 
-        }));
-      }
-    };
-    
-    const handleResetRequest = async () => {
-      try {
-        await dashboardSettings.resetToDefaults();
-        // Reset the settings applied flag so settings can be reapplied
-        settingsAppliedRef.current = false;
-        // Force rerender by clearing layout config - it will reload from system defaults
-        setLayoutConfig(null);
-        setReportOrder(PI_DASHBOARD_DEFAULTS);
-        console.log('[PIDashboard] Reset completed, forcing rerender');
-      } catch (err) {
-        console.error('Failed to reset settings:', err);
-      }
-    };
-    
     const handleCollectDashboardData = () => {
       console.log('[PIDashboard] Dashboard data collection requested');
       // Use ref to access latest values
@@ -432,27 +258,13 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
       window.dispatchEvent(new CustomEvent('dashboard-data-collected', { detail: data }));
     };
     
-    window.addEventListener('save-dashboard-settings', handleSaveRequest as EventListener);
-    window.addEventListener('reset-dashboard-settings', handleResetRequest as EventListener);
+    // Only listen for collect-dashboard-data event (save/reset removed)
     window.addEventListener('collect-dashboard-data', handleCollectDashboardData as EventListener);
     
     return () => {
-      window.removeEventListener('save-dashboard-settings', handleSaveRequest as EventListener);
-      window.removeEventListener('reset-dashboard-settings', handleResetRequest as EventListener);
       window.removeEventListener('collect-dashboard-data', handleCollectDashboardData as EventListener);
     };
   }, []); // Empty deps - handlers access latest values via ref
-
-  // Dispatch state changes to parent only when settings state changes
-  useEffect(() => {
-    window.dispatchEvent(new CustomEvent('dashboard-settings-state', {
-      detail: {
-        hasChanges: dashboardSettings.hasChanges,
-        isSaving: dashboardSettings.isSaving,
-        error: dashboardSettings.error,
-      },
-    }));
-  }, [dashboardSettings.hasChanges, dashboardSettings.isSaving, dashboardSettings.error]);
 
   // Handler to open AI chat for a specific report
   const handleReportAIChat = useCallback((reportId: string) => {
@@ -595,10 +407,10 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   const buildPanelKey = (reportId: string) => reportId;
 
   const renderReportSection = (reportId: string, panelKey: string) => {
-    // Don't render reports if PI is not set (must be non-empty string) or we're restoring filters
+    // Don't render reports if PI is not set (must be non-empty string)
     const hasValidPI = selectedPI && typeof selectedPI === 'string' && selectedPI.trim().length > 0;
-    if (!hasValidPI || restoringFiltersRef.current || dashboardSettings.isLoading) {
-      console.log(`[PIDashboard] Blocking render of ${reportId}: selectedPI="${selectedPI}", hasValidPI=${hasValidPI}, restoring=${restoringFiltersRef.current}, loading=${dashboardSettings.isLoading}`);
+    if (!hasValidPI) {
+      console.log(`[PIDashboard] Blocking render of ${reportId}: selectedPI="${selectedPI}", hasValidPI=${hasValidPI}`);
       return (
         <div className="flex items-center justify-center h-full min-h-[400px]">
           <div className="text-center">
@@ -609,9 +421,9 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
       );
     }
 
-    // Get saved filters and pinned state for this report from user settings
-    const savedReportFilters = dashboardSettings.savedState?.reportFilters?.[reportId] || {};
-    const savedPinnedFilters = dashboardSettings.savedState?.pinnedFilters?.[reportId] || [];
+    // No saved filters - using system defaults only
+    const savedReportFilters = {};
+    const savedPinnedFilters: string[] = [];
     
     switch (reportId) {
       case 'pi-burndown':
@@ -633,8 +445,8 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
               isDashboard: true,
               onAIChat: () => handleReportAIChat(reportId),
             }}
-            onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
-            onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
+            onFiltersChange={() => {}} // No-op: filters not saved for system dashboards
+            onPinnedFiltersChange={() => {}} // No-op: pinned filters not saved for system dashboards
             {...commonPanelProps}
           />
         );
@@ -656,8 +468,8 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
               isDashboard: true,
               onAIChat: () => handleReportAIChat(reportId),
             }}
-            onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
-            onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
+            onFiltersChange={() => {}} // No-op: filters not saved for system dashboards
+            onPinnedFiltersChange={() => {}} // No-op: pinned filters not saved for system dashboards
             {...commonPanelProps}
           />
         );
@@ -679,8 +491,8 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
               isDashboard: true,
               onAIChat: () => handleReportAIChat(reportId),
             }}
-            onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
-            onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
+            onFiltersChange={() => {}} // No-op: filters not saved for system dashboards
+            onPinnedFiltersChange={() => {}} // No-op: pinned filters not saved for system dashboards
             {...commonPanelProps}
           />
         );
@@ -704,8 +516,8 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
               isDashboard: true,
               onAIChat: () => handleReportAIChat(reportId),
             }}
-            onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
-            onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
+            onFiltersChange={() => {}} // No-op: filters not saved for system dashboards
+            onPinnedFiltersChange={() => {}} // No-op: pinned filters not saved for system dashboards
             {...commonPanelProps}
           />
         );
@@ -727,8 +539,8 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
               isDashboard: true,
               onAIChat: () => handleReportAIChat(reportId),
             }}
-            onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
-            onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
+            onFiltersChange={() => {}} // No-op: filters not saved for system dashboards
+            onPinnedFiltersChange={() => {}} // No-op: pinned filters not saved for system dashboards
             {...commonPanelProps}
           />
         );
@@ -750,8 +562,8 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
               isDashboard: true,
               onAIChat: () => handleReportAIChat(reportId),
             }}
-            onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
-            onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
+            onFiltersChange={() => {}} // No-op: filters not saved for system dashboards
+            onPinnedFiltersChange={() => {}} // No-op: pinned filters not saved for system dashboards
             {...commonPanelProps}
           />
         );
@@ -774,45 +586,26 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
   const hasValidPI = selectedPI && typeof selectedPI === 'string' && selectedPI.trim().length > 0;
   const hasPIInFilters = controlledFiltersPI.pi === selectedPI;
   
-  // Check if user intentionally deselected PI (no PI, settings applied, not loading)
-  const userDeselectedPI = !hasValidPI && !dashboardSettings.isLoading && settingsAppliedRef.current;
-  
-  // Only show loading spinner if we're actually loading/restoring AND NOT if user intentionally deselected
-  const isActuallyLoading = dashboardSettings.isLoading;
-  const needsPIInFilters = hasValidPI && !hasPIInFilters; // Only wait for filters if we have a PI
-  // Only show "restoring" spinner if we're restoring AND we have a PI (not if user cleared it)
-  const isRestoringWithExpectedPI = restoringFiltersRef.current && (dashboardSettings.savedState?.topBarFilters?.selectedPI || dashboardSettings.savedState?.topBarFilters?.pi);
-  
-  // Show spinner only if actually loading OR actively restoring with expected PI OR if we have a PI but filters aren't ready yet
-  // But NEVER if user intentionally deselected (skip spinner check entirely)
-  if (userDeselectedPI) {
-    // If user intentionally deselected, skip spinner and show "Select a PI" message below
-  } else if (isActuallyLoading || isRestoringWithExpectedPI || needsPIInFilters) {
-    console.log(`[PIDashboard] Early return: hasValidPI=${hasValidPI}, hasPIInFilters=${hasPIInFilters}, isLoading=${dashboardSettings.isLoading}, restoring=${restoringFiltersRef.current}, expectedPI=${isRestoringWithExpectedPI}`);
+  // Show loading spinner while config is loading
+  if (!configLoaded) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="flex flex-col items-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-          <div className="text-sm text-content-secondary">
-            {dashboardSettings.isLoading ? 'Loading dashboard settings...' : 
-             isRestoringWithExpectedPI ? 'Restoring saved filters...' : 
-             needsPIInFilters ? 'Preparing filters...' :
-             'Loading PI selection...'}
-          </div>
+          <div className="text-sm text-content-secondary">Loading dashboard...</div>
         </div>
       </div>
     );
   }
 
-  // Show "Select a PI" message if no PI is selected (user intentionally deselected)
+  // Show "Loading PI" message if no PI is selected yet
   if (!hasValidPI) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
         <div className="text-center px-4">
-          <div className="text-6xl mb-4">🎯</div>
-          <h2 className="text-2xl font-semibold text-content-primary mb-2">Select a PI</h2>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400 mx-auto mb-4"></div>
           <p className="text-content-secondary max-w-md mx-auto">
-            Click the filter button at the top right, then select a PI to view dashboard insights and reports.
+            Loading current PI...
           </p>
         </div>
       </div>
@@ -821,15 +614,13 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
 
   // Render with layout configuration if available
   if (layoutConfig && layoutConfig.rows && layoutConfig.rows.length > 0) {
-    // Don't render reports if PI is not set or we're restoring filters
-    if (!selectedPI || restoringFiltersRef.current) {
+    // Don't render reports if PI is not set
+    if (!selectedPI) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="flex flex-col items-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-            <div className="text-sm text-content-secondary">
-              {restoringFiltersRef.current ? 'Restoring saved filters...' : 'Loading...'}
-            </div>
+            <div className="text-sm text-content-secondary">Loading...</div>
         </div>
       </div>
     );
@@ -852,25 +643,6 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             );
           })}
         </div>
-          
-          <AddReportsModal
-            isOpen={isAddReportsModalOpen}
-            onClose={() => {
-              console.log('PIDashboardView (mobile): Modal onClose called');
-              setIsAddReportsModalOpen(false);
-            }}
-            availableReports={availableReports}
-            currentReportIds={allReportIds}
-            onUpdateReports={(reportIds: string[]) => {
-              console.log('PIDashboard Mobile: handleUpdateReports called with:', reportIds);
-              // For mobile, update the layout to show selected reports
-              const newLayout: LayoutConfig = {
-                rows: [{ id: 'row-1', reportIds: reportIds }]
-              };
-              setLayoutConfig(newLayout);
-              localStorage.setItem(`dashboard-layout-pi-${selectedPI}-${selectedTeam}`, JSON.stringify(newLayout));
-            }}
-          />
         </>
       );
     }
@@ -958,14 +730,6 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             minRowHeight={500}
           />
         </div>
-
-        <AddReportsModal
-          isOpen={isAddReportsModalOpen}
-          onClose={() => setIsAddReportsModalOpen(false)}
-          availableReports={availableReports}
-          currentReportIds={currentReportIds}
-          onUpdateReports={handleUpdateReports}
-        />
       </div>
     );
   }
@@ -977,15 +741,13 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
     setReportOrder(reportIds);
   };
 
-  // Don't render reports if PI is not set or we're restoring filters
-  if (!selectedPI || restoringFiltersRef.current) {
+  // Don't render reports if PI is not set
+  if (!selectedPI) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="flex flex-col items-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-          <div className="text-sm text-content-secondary">
-            {restoringFiltersRef.current ? 'Restoring saved filters...' : 'Loading...'}
-          </div>
+          <div className="text-sm text-content-secondary">Loading...</div>
         </div>
       </div>
     );
@@ -1011,14 +773,6 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
           </div>
         )}
       </div>
-      
-      <AddReportsModal
-        isOpen={isAddReportsModalOpen}
-        onClose={() => setIsAddReportsModalOpen(false)}
-        availableReports={availableReports}
-        currentReportIds={reportOrder}
-        onUpdateReports={handleUpdateReportsFallback}
-      />
     </div>
   );
 };

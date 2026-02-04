@@ -173,16 +173,14 @@ function HomeContent() {
     }
   }, [activeNavItem]);
  
- // Function to check if current view has unsaved changes
- const hasUnsavedChanges = () => {
- if (activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') {
- return dashboardSettingsState.hasChanges;
- }
- if (activeNavItem === 'team-ai-insights') {
- return insightSettingsState.hasChanges;
- }
- return false;
- };
+// Function to check if current view has unsaved changes
+const hasUnsavedChanges = () => {
+// team-dashboard and pi-dashboard no longer have user customization/save functionality
+if (activeNavItem === 'team-ai-insights') {
+return insightSettingsState.hasChanges;
+}
+return false;
+};
  
  // Function to handle navigation with unsaved changes check
  const handleNavigation = (navItem: NavItemId | string) => {
@@ -211,33 +209,29 @@ function HomeContent() {
  }
  };
  
- // Handle save and navigate
- const handleSaveAndNavigate = async () => {
- try {
- // Trigger save based on current view
- if (activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard') {
- window.dispatchEvent(new CustomEvent('save-dashboard-settings'));
- // Wait a bit for save to complete
- await new Promise(resolve => setTimeout(resolve, 500));
- } else if (activeNavItem === 'team-ai-insights') {
- await teamInsightSettings.saveSettings();
- }
- 
- // Navigate to pending item
- if (pendingNavItem) {
- userNavigatedRef.current = true; // User has navigated, allow normal rendering
- setActiveNavItem(pendingNavItem);
- setMobileSidebarOpen(false);
- }
- } catch (err) {
- console.error('Error saving settings:', err);
- setMessage({ type: 'error', text: 'Failed to save settings' });
- setTimeout(() => setMessage(null), 3000);
- } finally {
- setShowUnsavedChangesModal(false);
- setPendingNavItem(null);
- }
- };
+// Handle save and navigate
+const handleSaveAndNavigate = async () => {
+try {
+// Trigger save based on current view (team-dashboard and pi-dashboard removed)
+if (activeNavItem === 'team-ai-insights') {
+await teamInsightSettings.saveSettings();
+}
+
+// Navigate to pending item
+if (pendingNavItem) {
+userNavigatedRef.current = true; // User has navigated, allow normal rendering
+setActiveNavItem(pendingNavItem);
+setMobileSidebarOpen(false);
+}
+} catch (err) {
+console.error('Error saving settings:', err);
+setMessage({ type: 'error', text: 'Failed to save settings' });
+setTimeout(() => setMessage(null), 3000);
+} finally {
+setShowUnsavedChangesModal(false);
+setPendingNavItem(null);
+}
+};
  
  // Handle discard and navigate
  const handleDiscardAndNavigate = () => {
@@ -366,8 +360,9 @@ function HomeContent() {
  // This ensures the correct team_key is used for the dropdown
  const topBarFilters = customDashboardData?.layout_config?.topBarFilters;
  console.log('[App] Custom dashboard data loaded, topBarFilters:', topBarFilters, 'Current filters:', customDashboardFilters);
- if (topBarFilters && (topBarFilters.selectedTreeValue || topBarFilters.selectedTeam || topBarFilters.selectedPI)) {
- // Dashboard has saved filters - look up the team/group to ensure correct treeValue
+ if (topBarFilters) {
+ // Dashboard has saved filters (even if empty - respect user's intentional choice)
+ // Look up the team/group to ensure correct treeValue
  const teamName = topBarFilters.selectedTeam;
  const treeType = topBarFilters.selectedTreeType || 'team';
  const savedPI = topBarFilters.selectedPI || '';
@@ -414,7 +409,7 @@ function HomeContent() {
  
  console.log('[App] Filter update check - PI needs update:', piNeedsUpdate, 'Team needs update:', teamNeedsUpdate, 'Saved PI:', savedPI, 'Current PI:', currentFilters.selectedPI);
  
- // Update filters if PI or team needs update
+ // Update filters if PI or team needs update, OR if filters are empty (intentional - user saved without filters)
  if (piNeedsUpdate || teamNeedsUpdate) {
  if (teamName && !teamsLoading && (teams.length > 0 || groups.length > 0)) {
  // Team found, set both team and PI
@@ -450,6 +445,10 @@ function HomeContent() {
  });
  customDashboardFiltersInitializedRef.current = true;
  }
+ } else {
+ // No updates needed, but mark as initialized since saved filters exist (even if empty)
+ console.log('[App] Custom dashboard has saved filters (possibly empty by choice), respecting saved state');
+ customDashboardFiltersInitializedRef.current = true;
  }
  return;
  }
@@ -660,12 +659,182 @@ function HomeContent() {
  selectedTreeLabel: piDashboardFilters.selectedTeam,
  }));
  }
- }
- }
- }, [teamsLoading, teams, teamDashboardFilters.selectedTreeValue, teamDashboardFilters.selectedTeam, piDashboardFilters.selectedTreeValue, piDashboardFilters.selectedTeam]);
+    }
+  }
+  }, [teamsLoading, teams, teamDashboardFilters.selectedTreeValue, teamDashboardFilters.selectedTeam, piDashboardFilters.selectedTreeValue, piDashboardFilters.selectedTeam]);
 
- // Switch to the appropriate dashboard filters when navigating or when filters change
- useEffect(() => {
+// Initialize dashboard filters with user's default team/group from preferences
+const teamDashboardInitializedRef = useRef(false);
+const piDashboardInitializedRef = useRef(false);
+
+useEffect(() => {
+  // Only initialize once when teams are loaded and no team is selected
+  if (teamDashboardInitializedRef.current || teamsLoading || teams.length === 0) return;
+  
+  // Skip if team is already selected
+  if (teamDashboardFilters.selectedTeam || teamDashboardFilters.selectedTreeValue) {
+    teamDashboardInitializedRef.current = true;
+    return;
+  }
+  
+  // Skip if a restore has already been applied (meaning saved settings existed)
+  // or if there's a pending restore waiting to be applied
+  if (appliedRestoreRef.current || pendingRestore) {
+    console.log('[App] Team Dashboard: Skipping default team load - restore applied or pending');
+    teamDashboardInitializedRef.current = true;
+    return;
+  }
+
+  teamDashboardInitializedRef.current = true;
+
+  const currentUser = getCurrentUser();
+  if (currentUser?.id) {
+    getUserPreferences(currentUser.id).then(preferences => {
+      if (preferences?.default_team_or_group && preferences.default_type) {
+        let teamGroupName = preferences.default_team_or_group;
+        if (teamGroupName.includes(':')) {
+          teamGroupName = teamGroupName.split(':')[1] || teamGroupName;
+        }
+
+        if (preferences.default_type === 'group') {
+          const group = groups.find(g => g.group_name === teamGroupName);
+          if (group) {
+            const treeValue = `group:${group.group_key}`;
+            console.log('[App] Team Dashboard: Loading default group (no saved settings):', teamGroupName);
+            setTeamDashboardFilters({
+              selectedTeam: teamGroupName,
+              selectedTreeValue: treeValue,
+              selectedTreeLabel: teamGroupName,
+              selectedTreeType: 'group',
+            });
+          }
+        } else {
+          const team = teams.find(t => t.team_name === teamGroupName);
+          if (team) {
+            const treeValue = `team:${team.team_key}`;
+            console.log('[App] Team Dashboard: Loading default team (no saved settings):', teamGroupName);
+            setTeamDashboardFilters({
+              selectedTeam: teamGroupName,
+              selectedTreeValue: treeValue,
+              selectedTreeLabel: teamGroupName,
+              selectedTreeType: 'team',
+            });
+          }
+        }
+      }
+    }).catch(err => {
+      console.warn('[App] Failed to load user preferences for team dashboard:', err);
+    });
+  }
+}, [teamsLoading, teams, groups, teamDashboardFilters.selectedTeam, teamDashboardFilters.selectedTreeValue]);
+
+useEffect(() => {
+  // Only initialize once when teams are loaded and no team is selected
+  if (piDashboardInitializedRef.current || teamsLoading || teams.length === 0) return;
+  
+  // Skip if team is already selected
+  if (piDashboardFilters.selectedTeam || piDashboardFilters.selectedTreeValue) {
+    piDashboardInitializedRef.current = true;
+    return;
+  }
+  
+  // Skip if a restore has already been applied (meaning saved settings existed)
+  // or if there's a pending restore waiting to be applied
+  if (appliedRestoreRef.current || pendingRestore) {
+    console.log('[App] PI Dashboard: Skipping default team load - restore applied or pending');
+    piDashboardInitializedRef.current = true;
+    return;
+  }
+
+  piDashboardInitializedRef.current = true;
+
+  const currentUser = getCurrentUser();
+  if (currentUser?.id) {
+    getUserPreferences(currentUser.id).then(preferences => {
+      if (preferences?.default_team_or_group && preferences.default_type) {
+        let teamGroupName = preferences.default_team_or_group;
+        if (teamGroupName.includes(':')) {
+          teamGroupName = teamGroupName.split(':')[1] || teamGroupName;
+        }
+
+        if (preferences.default_type === 'group') {
+          const group = groups.find(g => g.group_name === teamGroupName);
+          if (group) {
+            const treeValue = `group:${group.group_key}`;
+            console.log('[App] PI Dashboard: Loading default group (no saved settings):', teamGroupName);
+            setPiDashboardFilters(prev => ({
+              ...prev,
+              selectedTeam: teamGroupName,
+              selectedTreeValue: treeValue,
+              selectedTreeLabel: teamGroupName,
+              selectedTreeType: 'group',
+            }));
+          }
+        } else {
+          const team = teams.find(t => t.team_name === teamGroupName);
+          if (team) {
+            const treeValue = `team:${team.team_key}`;
+            console.log('[App] PI Dashboard: Loading default team (no saved settings):', teamGroupName);
+            setPiDashboardFilters(prev => ({
+              ...prev,
+              selectedTeam: teamGroupName,
+              selectedTreeValue: treeValue,
+              selectedTreeLabel: teamGroupName,
+              selectedTreeType: 'team',
+            }));
+          }
+        }
+      }
+    }).catch(err => {
+      console.warn('[App] Failed to load user preferences for PI dashboard:', err);
+    });
+  }
+}, [teamsLoading, teams, groups, piDashboardFilters.selectedTeam, piDashboardFilters.selectedTreeValue]);
+
+// Auto-select current PI for PI Dashboard when navigating to it
+const piDashboardPIInitializedRef = useRef(false);
+useEffect(() => {
+  // Only run when navigating to PI Dashboard
+  if (activeNavItem !== 'pi-dashboard') {
+    piDashboardPIInitializedRef.current = false;
+    return;
+  }
+  
+  // Skip if PI is already selected or already initialized
+  if (piDashboardFilters.selectedPI || piDashboardPIInitializedRef.current) {
+    return;
+  }
+  
+  piDashboardPIInitializedRef.current = true;
+  
+  // Auto-fetch and set current PI
+  const fetchCurrentPI = async () => {
+    try {
+      console.log('[App] PI Dashboard: Fetching current PI...');
+      const apiService = new ApiService();
+      const piResponse = await apiService.getCurrentAndNextPIs();
+      const currentPIs = (piResponse as any).current_pis || [];
+      
+      if (currentPIs.length > 0) {
+        const currentPIName = currentPIs[0].pi_name;
+        console.log('[App] PI Dashboard: Setting current PI to:', currentPIName);
+        setPiDashboardFilters(prev => ({
+          ...prev,
+          selectedPI: currentPIName,
+        }));
+      } else {
+        console.warn('[App] PI Dashboard: No current PI found');
+      }
+    } catch (err) {
+      console.error('[App] PI Dashboard: Failed to load current PI:', err);
+    }
+  };
+  
+  fetchCurrentPI();
+}, [activeNavItem, piDashboardFilters.selectedPI]);
+
+// Switch to the appropriate dashboard filters when navigating or when filters change
+useEffect(() => {
  if (activeNavItem === 'team-dashboard') {
  console.log('[App] Switching to team dashboard filters:', teamDashboardFilters);
  setSelectedTeam(teamDashboardFilters.selectedTeam);
@@ -967,8 +1136,64 @@ function HomeContent() {
  selectedCategories: saved.selectedCategories || [],
  }));
  }
+ 
+ // If saved state exists but has no team, respect that choice (user intentionally saved without a team)
+ console.log('[App] Saved team insight settings loaded. Team selection:', saved.topBarFilters?.selectedTeam || 'none (intentional)');
  } else {
- console.log('[App] No saved team insight settings found');
+ console.log('[App] No saved team insight settings found at all, loading user default team...');
+ // No saved settings at all - load user's default team from preferences
+ if (!teamsLoading && teams.length > 0) {
+ const currentUser = getCurrentUser();
+ if (currentUser?.id) {
+ getUserPreferences(currentUser.id).then(preferences => {
+ if (preferences?.default_team_or_group && preferences.default_type) {
+ let teamGroupName = preferences.default_team_or_group;
+ if (teamGroupName.includes(':')) {
+ teamGroupName = teamGroupName.split(':')[1] || teamGroupName;
+ }
+
+ let treeValue: string | null = null;
+ if (preferences.default_type === 'group') {
+ const group = groups.find(g => g.group_name === teamGroupName);
+ if (group) {
+ treeValue = `group:${group.group_key}`;
+ console.log('[App] Setting default group for AI Insights:', teamGroupName);
+ setTeamInsightsFilters(prev => ({
+ ...prev,
+ selectedTeam: teamGroupName,
+ selectedTreeValue: treeValue,
+ selectedTreeLabel: teamGroupName,
+ selectedTreeType: 'group',
+ }));
+ setSelectedTeam(teamGroupName);
+ setSelectedTreeValue(treeValue);
+ setSelectedTreeLabel(teamGroupName);
+ setSelectedTreeType('group');
+ }
+ } else {
+ const team = teams.find(t => t.team_name === teamGroupName);
+ if (team) {
+ treeValue = `team:${team.team_key}`;
+ console.log('[App] Setting default team for AI Insights:', teamGroupName);
+ setTeamInsightsFilters(prev => ({
+ ...prev,
+ selectedTeam: teamGroupName,
+ selectedTreeValue: treeValue,
+ selectedTreeLabel: teamGroupName,
+ selectedTreeType: 'team',
+ }));
+ setSelectedTeam(teamGroupName);
+ setSelectedTreeValue(treeValue);
+ setSelectedTreeLabel(teamGroupName);
+ setSelectedTreeType('team');
+ }
+ }
+ }
+ }).catch(err => {
+ console.warn('[App] Failed to load user preferences for AI Insights:', err);
+ });
+ }
+ }
  }
  
  // Mark as ready after settings are loaded (or if no settings exist)
@@ -976,7 +1201,7 @@ function HomeContent() {
  setTeamInsightsReady(true);
  console.log('[App] Team insights ready!');
  }
- }, [activeNavItem, teamInsightSettings.isLoading, teamInsightSettings.savedState, groups, teams]);
+}, [activeNavItem, teamInsightSettings.isLoading, teamInsightSettings.savedState, groups, teams, teamsLoading]);
 
  // Auto-fetch and set current PI for AI Insights - always use current PI from backend
  useEffect(() => {
@@ -1287,12 +1512,17 @@ const IconShield = () => (
 );
 
 
- // Accordion navigation groups for the sidebar UI (beautified)
- const navigationGroups: Array<{ title: string; items: Array<{ id: string; label: string; icon: React.ReactNode; children?: Array<{ id: string; label: string; icon: React.ReactNode }> }> }> = [
+// Accordion navigation groups for the sidebar UI (beautified)
+const navigationGroups: Array<{ title: string; items: Array<{ id: string; label: string; icon: React.ReactNode; children?: Array<{ id: string; label: string; icon: React.ReactNode }> }> }> = [
+  {
+    title: 'AI Insights',
+    items: [
+      { id: 'team-ai-insights', label: 'Teams Insights', icon: <IconLightbulb /> },
+    ],
+  },
   {
     title: 'System Dashboards',
     items: [
-      { id: 'team-ai-insights', label: 'AI Insights', icon: <IconLightbulb /> },
       { id: 'team-dashboard', label: 'Team Dashboard', icon: <IconChartBar /> },
       { id: 'pi-dashboard', label: 'PI Dashboard', icon: <IconTrendingUp /> },
       ...(isDORAEnabled() ? [{ id: 'github-analysis', label: 'DORA Metrics', icon: <IconGitHub /> }] : []),
@@ -1344,14 +1574,15 @@ const IconShield = () => (
  ];
 
  // Track which accordion groups are expanded
-   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
-    'System Dashboards': true,
-    'Goals': true,
-    'My Dashboards': true,
-    Management: true,
-    Administration: true,
-    'Datasource Settings': true,
-  });
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
+   'AI Insights': true,
+   'System Dashboards': true,
+   'Goals': true,
+   'My Dashboards': true,
+   Management: true,
+   Administration: true,
+   'Datasource Settings': true,
+ });
  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
  'custom-dashboards': true,
  });
@@ -2039,11 +2270,11 @@ sidebarCollapsed ? 'w-16' : 'w-56'
  }
  breadcrumbs={breadcrumbs}
  onToggleMobileSidebar={() => setMobileSidebarOpen(true)}
- dashboardSettings={(activeNavItem === 'team-dashboard' || activeNavItem === 'pi-dashboard' || activeNavItem === 'custom-dashboard-editor') ? {
- hasChanges: activeNavItem === 'custom-dashboard-editor' ? false : dashboardSettingsState.hasChanges,
- isSaving: activeNavItem === 'custom-dashboard-editor' ? false : dashboardSettingsState.isSaving,
- onSave: activeNavItem === 'custom-dashboard-editor' ? () => {} : handleSaveDashboardSettings,
- onReset: activeNavItem === 'custom-dashboard-editor' ? () => {} : () => setShowResetConfirm(true),
+ dashboardSettings={(activeNavItem === 'custom-dashboard-editor') ? {
+ hasChanges: false,
+ isSaving: false,
+ onSave: () => {},
+ onReset: () => {},
  } : undefined}
  insightSettings={(activeNavItem === 'team-ai-insights') ? {
  hasChanges: insightSettingsState.hasChanges,

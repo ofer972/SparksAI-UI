@@ -3,10 +3,9 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import ReportPanel from './ReportPanel';
 import DraggableResizableGrid from './DraggableResizableGrid';
-import AddReportsModal from './AddReportsModal';
 import type { ReportInstancePayload, LayoutConfig, ReportDefinition } from '@/lib/config';
 import { ApiService } from '@/lib/api';
-import { useDashboardSettings } from '@/hooks/useDashboardSettings';
+// Team Dashboard uses system settings only (no user customization hook needed)
 import { configCache } from '@/lib/configCache';
 
 interface TeamDashboardProps {
@@ -38,28 +37,15 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [configError, setConfigError] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [isAddReportsModalOpen, setIsAddReportsModalOpen] = useState(false);
-  const [availableReports, setAvailableReports] = useState<ReportDefinition[]>([]);
   
-  // Use a ref to track if modal should be open (persists across renders)
-  const modalShouldBeOpen = useRef(false);
-  const forceUpdate = useState(0)[1];
-  
-  console.log('TeamDashboard: Current isAddReportsModalOpen in render:', isAddReportsModalOpen);
-  console.log('TeamDashboard: modalShouldBeOpen.current:', modalShouldBeOpen.current);
-  
-  // Dashboard settings hook
-  const dashboardSettings = useDashboardSettings('team-dashboard');
+  // Team Dashboard uses system settings only (no user customization)
   
   // Track component lifecycle
   useEffect(() => {
     console.log('TeamDashboard: Component MOUNTED');
     return () => {
       console.log('TeamDashboard: Component UNMOUNTING');
-      // Reset refs on unmount so settings can be reapplied when returning to dashboard
-      settingsAppliedRef.current = false;
       configLoadedRef.current = false;
-      prevLayoutRef.current = null;
       prevFiltersRef.current = { selectedTeam: '', selectedTreeType: 'team', selectedSprint: '' };
     };
   }, []);
@@ -76,32 +62,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Listen for open modal event from top bar
-  useEffect(() => {
-    const handleOpenModal = () => {
-      console.log('TeamDashboard: Received open-add-reports-modal event');
-      console.log('TeamDashboard: Setting ref and state');
-      
-      // Set ref (persists across renders)
-      modalShouldBeOpen.current = true;
-      console.log('TeamDashboard: modalShouldBeOpen.current set to true');
-      
-      // Set state
-      setIsAddReportsModalOpen(true);
-      console.log('TeamDashboard: setIsAddReportsModalOpen(true) called');
-      
-      // Force re-render
-      forceUpdate(n => n + 1);
-      console.log('TeamDashboard: Forced re-render');
-    };
-    
-    window.addEventListener('open-add-reports-modal', handleOpenModal);
-    console.log('TeamDashboard: Event listener attached for team:', selectedTeam);
-    return () => {
-      console.log('TeamDashboard: Removing event listener for team:', selectedTeam);
-      window.removeEventListener('open-add-reports-modal', handleOpenModal);
-    };
-  }, []); // Empty dependency array - only run once
+  // No modal event listeners - Team Dashboard doesn't allow report customization
   
   const [selectedSprint, setSelectedSprint] = useState('');
   const [currentSprintName, setCurrentSprintName] = useState('');
@@ -135,21 +96,19 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
       try {
         const apiService = new ApiService();
         
-        // Use cache to prevent duplicate API calls
+        // Clear dashboard configs cache to ensure fresh data from system settings
+        configCache.clearDashboardConfigs();
+        
+        // Fetch fresh configuration
         const [config, reports] = await Promise.all([
           configCache.getDashboardConfigs(() => apiService.getDashboardViewConfigs()),
           configCache.getReportDefinitions(() => apiService.getReportDefinitions()),
         ]);
         
-        // Filter reports for team dashboard
-        const teamReports = reports.filter((r) => {
-          const allowedViews = r.meta_schema?.allowed_views || ['every-dashboard'];
-          return allowedViews.includes('every-dashboard') || allowedViews.includes('team-dashboard');
-        });
-        setAvailableReports(teamReports);
-        
         // Store system config for fallback
         const teamDashboardConfig = config.find((c) => c.view === 'team-dashboard');
+        console.log('[TeamDashboard] System config loaded:', teamDashboardConfig);
+        console.log('[TeamDashboard] System config reportIds:', teamDashboardConfig?.reportIds);
         systemConfigRef.current = teamDashboardConfig ? {
           reportIds: teamDashboardConfig.reportIds,
           layoutConfig: teamDashboardConfig.layout_config || null
@@ -166,137 +125,37 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
     fetchConfig();
   }, []);
 
-  const settingsAppliedRef = useRef(false);
-  const restoringFiltersRef = useRef(false);
-
-  // Check if we need to restore filters BEFORE rendering (synchronous check)
-  const needsRestore = useMemo(() => {
-    if (dashboardSettings.isLoading || !dashboardSettings.savedState?.topBarFilters) {
-      // If settings are loading, assume we might need to restore (be conservative)
-      return dashboardSettings.isLoading;
-    }
-    const savedTeam = dashboardSettings.savedState.topBarFilters.selectedTeam || dashboardSettings.savedState.topBarFilters.team_name;
-    return savedTeam && savedTeam !== selectedTeam;
-  }, [dashboardSettings.isLoading, dashboardSettings.savedState, selectedTeam]);
-
-  // Set restoring flag immediately if restore is needed OR if settings are still loading
-  if ((needsRestore || dashboardSettings.isLoading) && !restoringFiltersRef.current && !selectedTeam) {
-    restoringFiltersRef.current = true;
-  }
-
-  // Apply saved settings when they become available (only once)
+  // Apply system configuration (no user customization)
   useEffect(() => {
-    if (!configLoadedRef.current || dashboardSettings.isLoading || settingsAppliedRef.current) return;
+    if (!configLoadedRef.current || loadingConfig) return;
     
-    // Apply saved top bar filters
-    if (dashboardSettings.savedState?.topBarFilters && 
-            Object.keys(dashboardSettings.savedState.topBarFilters).length > 0) {
-      console.log('[TeamDashboard] Applying saved top bar filters:', dashboardSettings.savedState.topBarFilters);
-          
-          if (dashboardSettings.savedState.topBarFilters.selectedSprint !== undefined) {
-            setSelectedSprint(dashboardSettings.savedState.topBarFilters.selectedSprint);
-          }
-          
-      // Only dispatch event if current props don't match saved settings
-      const savedTeam = dashboardSettings.savedState.topBarFilters.selectedTeam || dashboardSettings.savedState.topBarFilters.team_name;
-      const savedTreeType = dashboardSettings.savedState.topBarFilters.selectedTreeType || dashboardSettings.savedState.topBarFilters.isGroup ? 'group' : 'team';
-      
-      if (savedTeam && savedTeam !== selectedTeam) {
-        console.log('[TeamDashboard] Team mismatch, dispatching restore event');
-        restoringFiltersRef.current = true; // Mark that we're waiting for filter restore
-          window.dispatchEvent(new CustomEvent('restore-dashboard-filters', {
-            detail: {
-              dashboard: 'team-dashboard',
-              filters: dashboardSettings.savedState.topBarFilters
-            }
-          }));
-      }
-        }
-        
-    // Apply saved layout or fall back to system config
-    if (dashboardSettings.savedState?.layoutConfig) {
-          setLayoutConfig(dashboardSettings.savedState.layoutConfig);
-      const reportIds = dashboardSettings.savedState.layoutConfig.rows.flatMap((row: any) => row.reportIds);
-          setDashboardReports(reportIds.length > 0 ? reportIds : TEAM_DASHBOARD_DEFAULTS);
-    } else if (systemConfigRef.current) {
-      setDashboardReports(systemConfigRef.current.reportIds);
+    // Always use system config
+    if (systemConfigRef.current) {
+      console.log('[TeamDashboard] Applying system config:', systemConfigRef.current);
+      setDashboardReports(systemConfigRef.current.reportIds || TEAM_DASHBOARD_DEFAULTS);
       setLayoutConfig(systemConfigRef.current.layoutConfig);
-          } else {
-            setDashboardReports(TEAM_DASHBOARD_DEFAULTS);
-            setLayoutConfig(null);
-          }
-    
-    settingsAppliedRef.current = true; // Mark as applied to prevent re-runs
-    console.log('[TeamDashboard] Settings applied. Current saved state:', dashboardSettings.savedState);
-  }, [dashboardSettings.isLoading, dashboardSettings.savedState]);
-
-  // Clear restoring flag when team is actually set OR when team is cleared (user deselected)
-  useEffect(() => {
-    const hasValidTeam = selectedTeam && typeof selectedTeam === 'string' && selectedTeam.trim().length > 0;
-    if (restoringFiltersRef.current) {
-      if (hasValidTeam) {
-        console.log('[TeamDashboard] Team restored, clearing restoring flag');
-        restoringFiltersRef.current = false;
-      } else if (!dashboardSettings.isLoading && settingsAppliedRef.current) {
-        // Team was deselected by user (not during initial load), clear the flag
-        console.log('[TeamDashboard] Team deselected by user, clearing restoring flag');
-        restoringFiltersRef.current = false;
-      }
+    } else {
+      console.log('[TeamDashboard] No system config, using defaults');
+      setDashboardReports(TEAM_DASHBOARD_DEFAULTS);
+      setLayoutConfig(null);
     }
-  }, [selectedTeam, dashboardSettings.isLoading]);
+  }, [configLoadedRef.current, loadingConfig]);
 
   useEffect(() => {
     setSelectedSprint('');
     setCurrentSprintName('');
   }, [selectedTeam]);
   
-  const prevLayoutRef = useRef<string | null>(null);
-
-  // Track layout config changes (only after settings have been applied and only if actually different from previous)
-  useEffect(() => {
-    if (!dashboardSettings.isLoading && layoutConfig !== null && settingsAppliedRef.current) {
-      const layoutStr = JSON.stringify(layoutConfig);
-      
-      if (prevLayoutRef.current !== layoutStr) {
-        console.log('[TeamDashboard] Layout changed, updating state');
-      dashboardSettings.updateCurrentState({ layoutConfig });
-        prevLayoutRef.current = layoutStr;
-      }
-    }
-  }, [layoutConfig, dashboardSettings.isLoading]);
-  
   const prevFiltersRef = useRef({ selectedTeam, selectedTreeType, selectedSprint });
 
-  // Track top bar filters changes (only after settings have been applied and only if actually different from previous)
-  useEffect(() => {
-    if (!dashboardSettings.isLoading && settingsAppliedRef.current) {
-      const newFilters = {
-        selectedTeam,
-          selectedTreeType,
-          selectedSprint,
-      };
-      
-      const prev = prevFiltersRef.current;
-      const isDifferent = prev.selectedTeam !== newFilters.selectedTeam ||
-        prev.selectedTreeType !== newFilters.selectedTreeType ||
-        prev.selectedSprint !== newFilters.selectedSprint;
-      
-      if (isDifferent) {
-        console.log('[TeamDashboard] Top bar filters changed, updating state');
-        dashboardSettings.updateCurrentState({ topBarFilters: newFilters });
-        prevFiltersRef.current = newFilters;
-      }
-    }
-  }, [selectedTeam, selectedTreeType, selectedSprint, dashboardSettings.isLoading]);
-  
   // Create refs to hold latest values for event handlers
   const latestValuesRef = useRef({
     layoutConfig,
     selectedTeam,
     selectedTreeType,
     selectedSprint,
-    reportFilters: dashboardSettings.currentState.reportFilters,
-    pinnedFilters: dashboardSettings.currentState.pinnedFilters,
+    reportFilters: {} as Record<string, Record<string, any>>,
+    pinnedFilters: {} as Record<string, string[]>,
   });
   
   // Update refs whenever values change
@@ -306,45 +165,13 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
       selectedTeam,
       selectedTreeType,
       selectedSprint,
-      reportFilters: dashboardSettings.currentState.reportFilters,
-      pinnedFilters: dashboardSettings.currentState.pinnedFilters,
+      reportFilters: {},
+      pinnedFilters: {},
     };
-  }, [layoutConfig, selectedTeam, selectedTreeType, selectedSprint, dashboardSettings.currentState.reportFilters, dashboardSettings.currentState.pinnedFilters]);
+  }, [layoutConfig, selectedTeam, selectedTreeType, selectedSprint]);
   
   // Set up event listeners once
   useEffect(() => {
-    const handleSaveRequest = async () => {
-      try {
-        console.log('[TeamDashboard] Save requested');
-        
-        // The tracking useEffects should have already updated the state
-        // Just save what's in the current state
-        await dashboardSettings.saveSettings();
-        
-        console.log('[TeamDashboard] Save completed');
-        window.dispatchEvent(new CustomEvent('dashboard-settings-saved'));
-      } catch (err) {
-        console.error('[TeamDashboard] Save failed:', err);
-        window.dispatchEvent(new CustomEvent('dashboard-settings-save-failed', { 
-          detail: { error: err } 
-        }));
-      }
-    };
-    
-    const handleResetRequest = async () => {
-      try {
-        await dashboardSettings.resetToDefaults();
-        // Reset the settings applied flag so settings can be reapplied
-        settingsAppliedRef.current = false;
-        // Force rerender by clearing layout config - it will reload from system defaults
-        setLayoutConfig(null);
-        setDashboardReports(TEAM_DASHBOARD_DEFAULTS);
-        console.log('[TeamDashboard] Reset completed, forcing rerender');
-      } catch (err) {
-        console.error('Failed to reset settings:', err);
-      }
-    };
-    
     const handleCollectDashboardData = () => {
       console.log('[TeamDashboard] Dashboard data collection requested');
       // Use ref to access latest values
@@ -400,27 +227,13 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
       window.dispatchEvent(new CustomEvent('dashboard-data-collected', { detail: data }));
     };
     
-    window.addEventListener('save-dashboard-settings', handleSaveRequest as EventListener);
-    window.addEventListener('reset-dashboard-settings', handleResetRequest as EventListener);
+    // Only listen for collect-dashboard-data event (save/reset removed)
     window.addEventListener('collect-dashboard-data', handleCollectDashboardData as EventListener);
     
     return () => {
-      window.removeEventListener('save-dashboard-settings', handleSaveRequest as EventListener);
-      window.removeEventListener('reset-dashboard-settings', handleResetRequest as EventListener);
       window.removeEventListener('collect-dashboard-data', handleCollectDashboardData as EventListener);
     };
   }, []); // Empty deps - handlers access latest values via ref
-
-  // Dispatch state changes to parent only when settings state changes
-  useEffect(() => {
-    window.dispatchEvent(new CustomEvent('dashboard-settings-state', {
-      detail: {
-        hasChanges: dashboardSettings.hasChanges,
-        isSaving: dashboardSettings.isSaving,
-        error: dashboardSettings.error,
-      },
-    }));
-  }, [dashboardSettings.hasChanges, dashboardSettings.isSaving, dashboardSettings.error]);
 
   const handleBurndownResolved = useCallback((payload: ReportInstancePayload) => {
     const sprintFromMeta = payload?.meta?.sprint_name;
@@ -433,9 +246,9 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
   const handleReportAIChat = useCallback((reportId: string) => {
     console.log('[TeamDashboard] Opening AI chat for report:', reportId);
     
-    // Get current dashboard data
-    const savedReportFilters = dashboardSettings.currentState.reportFilters[reportId] || {};
-    const savedPinnedFilters = dashboardSettings.currentState.pinnedFilters[reportId] || [];
+    // No saved filters - using system defaults only
+    const savedReportFilters = {};
+    const savedPinnedFilters: string[] = [];
     
     // Get controlled filters (current topbar values)
     const controlledFilters = {
@@ -462,7 +275,11 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
           reportIds: [reportId]
         }]
       },
-      topBarFilters: dashboardSettings.currentState.topBarFilters,
+      topBarFilters: {
+        selectedTeam,
+        selectedTreeType,
+        selectedSprint,
+      },
       reportFilters: {
         [reportId]: mergedReportFilters
       },
@@ -476,7 +293,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
     
     // Dispatch event to open AI chat with this specific report's data
     window.dispatchEvent(new CustomEvent('open-report-ai-chat', { detail: data }));
-  }, [dashboardSettings.currentState, selectedTeam, selectedTreeType]);
+  }, [selectedTeam, selectedTreeType, selectedSprint]);
 
   const commonPanelProps = useMemo(
     () => ({
@@ -554,43 +371,16 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
   // Also wait if we don't have a team yet (might be restoring) OR if controlledFilters doesn't have team_name yet
   const hasValidTeam = selectedTeam && typeof selectedTeam === 'string' && selectedTeam.trim().length > 0;
   
-  // Check if user intentionally deselected team (no team, settings applied, not loading)
-  const userDeselectedTeam = !hasValidTeam && !dashboardSettings.isLoading && settingsAppliedRef.current;
-  
-  // Only show loading spinner if we're actually loading/restoring AND NOT if user intentionally deselected
-  const isActuallyLoading = dashboardSettings.isLoading;
-  const needsTeamInFilters = hasValidTeam && !hasTeamInFilters; // Only wait for filters if we have a team
-  // Only show "restoring" spinner if we're restoring AND we have a team (not if user cleared it)
-  const isRestoringWithTeam = restoringFiltersRef.current && hasValidTeam;
-  
-  // Show spinner only if actually loading OR actively restoring with team OR if we have a team but filters aren't ready yet
-  // But NEVER if user intentionally deselected (skip spinner check entirely)
-  if (!userDeselectedTeam && (isActuallyLoading || isRestoringWithTeam || needsTeamInFilters)) {
-    console.log(`[TeamDashboard] Early return: hasValidTeam=${hasValidTeam}, hasTeamInFilters=${hasTeamInFilters}, isLoading=${dashboardSettings.isLoading}, restoring=${restoringFiltersRef.current}, userDeselected=${userDeselectedTeam}`);
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-          <div className="text-sm text-content-secondary">
-            {dashboardSettings.isLoading ? 'Loading dashboard settings...' : 
-             isRestoringWithTeam ? 'Restoring saved filters...' : 
-             needsTeamInFilters ? 'Preparing filters...' :
-             'Loading team selection...'}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // No additional loading checks needed - config and team are ready
 
-  // Show "Select a Team" message if no team is selected (user intentionally deselected)
+  // Show loading message if no team is selected yet
   if (!hasValidTeam) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
         <div className="text-center px-4">
-          <div className="text-6xl mb-4">👥</div>
-          <h2 className="text-2xl font-semibold text-content-primary mb-2">Select a Team or Group</h2>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400 mx-auto mb-4"></div>
           <p className="text-content-secondary max-w-md mx-auto">
-            Click the filter button at the top right, then select a team or group to view dashboard insights and reports.
+            Loading team...
           </p>
         </div>
       </div>
@@ -602,8 +392,8 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
     // Also ensure controlledFilters has team_name before rendering
     const hasValidTeam = selectedTeam && typeof selectedTeam === 'string' && selectedTeam.trim().length > 0;
     const filtersHaveTeam = controlledFilters.team_name && controlledFilters.team_name.trim().length > 0;
-    if (!hasValidTeam || !filtersHaveTeam || restoringFiltersRef.current || dashboardSettings.isLoading) {
-      console.log(`[TeamDashboard] Blocking render of ${reportId}: selectedTeam="${selectedTeam}", hasValidTeam=${hasValidTeam}, filtersHaveTeam=${filtersHaveTeam}, restoring=${restoringFiltersRef.current}, loading=${dashboardSettings.isLoading}`);
+    if (!hasValidTeam || !filtersHaveTeam) {
+      console.log(`[TeamDashboard] Blocking render of ${reportId}: selectedTeam="${selectedTeam}", hasValidTeam=${hasValidTeam}, filtersHaveTeam=${filtersHaveTeam}`);
       return (
         <div className="flex items-center justify-center h-full min-h-[400px]">
           <div className="text-center">
@@ -614,9 +404,9 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
       );
     }
 
-    // Get saved filters and pinned state for this report from user settings
-    const savedReportFilters = dashboardSettings.savedState?.reportFilters?.[reportId] || {};
-    const savedPinnedFilters = dashboardSettings.savedState?.pinnedFilters?.[reportId] || [];
+    // No saved filters - using system defaults only
+    const savedReportFilters = {};
+    const savedPinnedFilters: string[] = [];
     
     console.log(`[TeamDashboard] Rendering ${reportId} with saved filters:`, savedReportFilters);
     console.log(`[TeamDashboard] Saved pinned filters for ${reportId}:`, savedPinnedFilters);
@@ -641,8 +431,8 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             componentProps={{
               onAIChat: () => handleReportAIChat(reportId),
             }}
-            onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
-            onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
+            onFiltersChange={() => {}} // No-op: filters not saved for system dashboards
+            onPinnedFiltersChange={() => {}} // No-op: pinned filters not saved for system dashboards
             {...commonPanelProps}
           />
         );
@@ -664,8 +454,8 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
               onAIChat: () => handleReportAIChat(reportId),
             }}
             onResolved={handleBurndownResolved}
-            onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
-            onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
+            onFiltersChange={() => {}} // No-op: filters not saved for system dashboards
+            onPinnedFiltersChange={() => {}} // No-op: pinned filters not saved for system dashboards
             {...commonPanelProps}
           />
         );
@@ -686,8 +476,8 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             componentProps={{
               onAIChat: () => handleReportAIChat(reportId),
             }}
-            onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
-            onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
+            onFiltersChange={() => {}} // No-op: filters not saved for system dashboards
+            onPinnedFiltersChange={() => {}} // No-op: pinned filters not saved for system dashboards
             {...commonPanelProps}
           />
         );
@@ -702,8 +492,8 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             componentProps={{
               onAIChat: () => handleReportAIChat(reportId),
             }}
-            onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
-            onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
+            onFiltersChange={() => {}} // No-op: filters not saved for system dashboards
+            onPinnedFiltersChange={() => {}} // No-op: pinned filters not saved for system dashboards
             {...commonPanelProps}
           />
         );
@@ -720,8 +510,8 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
               ...savedReportFilters
             }}
             initialPinnedFilters={savedPinnedFilters}
-            onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
-            onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
+            onFiltersChange={() => {}} // No-op: filters not saved for system dashboards
+            onPinnedFiltersChange={() => {}} // No-op: pinned filters not saved for system dashboards
             controlledFilters={controlledFilters}
             enabled={Boolean(selectedTeam)}
             componentProps={{
@@ -745,8 +535,8 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             componentProps={{
               onAIChat: () => handleReportAIChat(reportId),
             }}
-            onFiltersChange={(filters) => dashboardSettings.updateReportFilters(reportId, filters)}
-            onPinnedFiltersChange={(pinnedKeys) => dashboardSettings.updatePinnedFilters(reportId, pinnedKeys)}
+            onFiltersChange={() => {}} // No-op: filters not saved for system dashboards
+            onPinnedFiltersChange={() => {}} // No-op: pinned filters not saved for system dashboards
             {...commonPanelProps}
           />
         );
@@ -755,15 +545,13 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
 
   // Render with layout configuration if available
   if (layoutConfig && layoutConfig.rows && layoutConfig.rows.length > 0) {
-    // Don't render reports if team is not set or we're restoring filters
-    if (!selectedTeam || restoringFiltersRef.current) {
+    // Don't render reports if team is not set
+    if (!selectedTeam) {
       return (
         <div className="flex items-center justify-center h-96">
           <div className="flex flex-col items-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-            <div className="text-sm text-content-secondary">
-              {restoringFiltersRef.current ? 'Restoring saved filters...' : 'Loading...'}
-            </div>
+            <div className="text-sm text-content-secondary">Loading...</div>
           </div>
         </div>
       );
@@ -775,7 +563,6 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
       const allReportIds = layoutConfig.rows.flatMap((row) => row.reportIds);
       
       return (
-        <>
         <div className="space-y-4 p-2">
           {allReportIds.map((reportId) => (
             <div key={reportId}>
@@ -783,27 +570,6 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             </div>
           ))}
         </div>
-          
-          <AddReportsModal
-            isOpen={isAddReportsModalOpen}
-            onClose={() => {
-              console.log('TeamDashboard (mobile): Modal onClose called');
-              modalShouldBeOpen.current = false;
-              setIsAddReportsModalOpen(false);
-            }}
-            availableReports={availableReports}
-            currentReportIds={allReportIds}
-            onUpdateReports={(reportIds: string[]) => {
-              console.log('Mobile: handleUpdateReports called with:', reportIds);
-              // For mobile, update the layout to show selected reports
-              const newLayout: LayoutConfig = {
-                rows: [{ id: 'row-1', reportIds: reportIds }]
-              };
-              setLayoutConfig(newLayout);
-              localStorage.setItem(`dashboard-layout-team-${selectedTeam}`, JSON.stringify(newLayout));
-            }}
-          />
-        </>
       );
     }
 
@@ -901,18 +667,6 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             minRowHeight={500}
           />
         </div>
-
-        <AddReportsModal
-          isOpen={isAddReportsModalOpen}
-          onClose={() => {
-            console.log('TeamDashboard: Modal onClose called');
-            modalShouldBeOpen.current = false;
-            setIsAddReportsModalOpen(false);
-          }}
-          availableReports={availableReports}
-          currentReportIds={currentReportIds}
-          onUpdateReports={handleUpdateReports}
-        />
       </div>
     );
   }
@@ -924,15 +678,13 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
     setDashboardReports(reportIds);
   };
 
-  // Don't render reports if team is not set or we're restoring filters
-  if (!selectedTeam || restoringFiltersRef.current) {
+  // Don't render reports if team is not set
+  if (!selectedTeam) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="flex flex-col items-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-          <div className="text-sm text-content-secondary">
-            {restoringFiltersRef.current ? 'Restoring saved filters...' : 'Loading...'}
-          </div>
+          <div className="text-sm text-content-secondary">Loading...</div>
         </div>
       </div>
     );
@@ -957,18 +709,6 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
           </div>
         )}
       </div>
-      
-      <AddReportsModal
-        isOpen={isAddReportsModalOpen}
-        onClose={() => {
-          console.log('TeamDashboard (fallback): Modal onClose called');
-          modalShouldBeOpen.current = false;
-          setIsAddReportsModalOpen(false);
-        }}
-        availableReports={availableReports}
-        currentReportIds={dashboardReports}
-        onUpdateReports={handleUpdateReportsFallback}
-      />
     </div>
   );
 }
