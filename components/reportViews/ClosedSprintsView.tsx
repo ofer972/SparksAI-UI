@@ -35,6 +35,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
   togglePin,
   pinnedFilters = [],
 }) => {
+  const isSprintPredictabilityAlias = componentProps?.reportId === 'sprint-predictability';
   const { groups, teams } = useTeamsGroups();
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: 'team_name',
@@ -160,6 +161,11 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
         }
         // Hide columns with "keys" in the name
         if (key.includes('keys')) {
+          return false;
+        }
+        // When this view is used for Sprint Predictability (aliased to Closed Sprints),
+        // hide Sprint Goal to match the requested column set.
+        if (isSprintPredictabilityAlias && key === 'sprint_goal') {
           return false;
         }
         // Hide bugs_planned_plus_added column
@@ -539,7 +545,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
 
   return (
     <ReportCard
-      title="Closed Sprints"
+      title={isSprintPredictabilityAlias ? 'Sprint Predictability' : 'Closed Sprints'}
       reportId={componentProps?.reportId}
       filters={filtersContent}
       filterBadges={filterBadges}

@@ -11,7 +11,6 @@ import EpicsHierarchyView from './reportViews/EpicsHierarchyView';
 import EpicDependenciesView from './reportViews/EpicDependenciesView';
 import ReleasePredictabilityView from './reportViews/ReleasePredictabilityView';
 import ReleaseBurndownView from './reportViews/ReleaseBurndownView';
-import SprintPredictabilityView from './reportViews/SprintPredictabilityView';
 import PIMetricsSummaryView from './reportViews/PIMetricsSummaryView';
 import CurrentSprintProgressView from './reportViews/CurrentSprintProgressView';
 import TeamVelocityView from './reportViews/TeamVelocityView';
@@ -314,7 +313,7 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
     }),
   },
   'sprint-predictability': {
-    component: SprintPredictabilityView,
+    component: ClosedSprintsView,
     mapProps: ({ result, loading, error, meta, filters, refresh }) => ({
       data: Array.isArray(result) ? (result as any[]) : [],
       loading,
