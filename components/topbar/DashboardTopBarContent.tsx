@@ -90,8 +90,8 @@ export default function DashboardTopBarContent({
  
  {/* Mobile Actions */}
  <div className="flex items-center gap-1.5 flex-shrink-0">
- {/* Filter Toggle Button (Mobile) - Only show if view has filters */}
- {hasFilters && (
+ {/* Filter Toggle Button (Mobile) - Hidden for team-dashboard and pi-dashboard */}
+ {hasFilters && activeNavItem !== 'team-dashboard' && activeNavItem !== 'pi-dashboard' && (
  <button
  onClick={onToggleFilters}
  className={`inline-flex items-center justify-center h-7 w-7 rounded-lg border transition-all ${
@@ -107,7 +107,8 @@ export default function DashboardTopBarContent({
  </button>
  )}
 
- {/* Manage Reports Button */}
+ {/* Manage Reports Button - Hidden for team-dashboard and pi-dashboard */}
+ {activeNavItem !== 'team-dashboard' && activeNavItem !== 'pi-dashboard' && (
  <button
  onClick={(e) => {
  e.preventDefault();
@@ -124,6 +125,7 @@ export default function DashboardTopBarContent({
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
  </svg>
  </button>
+ )}
  
  {/* AI Chat Button */}
  <DashboardAIMenu
@@ -163,8 +165,8 @@ export default function DashboardTopBarContent({
  </div>
  </div>
 
- {/* Filter Badges (Mobile) - Second Line */}
- {filterBadges.length > 0 && (
+ {/* Filter Badges (Mobile) - Second Line - Hidden for team-dashboard and pi-dashboard */}
+ {filterBadges.length > 0 && activeNavItem !== 'team-dashboard' && activeNavItem !== 'pi-dashboard' && (
  <div className="flex overflow-x-auto no-scrollbar gap-1 mt-1 pb-1 w-full">
  {filterBadges.map((badge, index) => (
  <span
@@ -208,8 +210,8 @@ export default function DashboardTopBarContent({
  </h1>
  </div>
 
- {/* Filter Badges - Always display active filters */}
- {filterBadges.length > 0 && (
+ {/* Filter Badges - Hidden for team-dashboard and pi-dashboard */}
+ {filterBadges.length > 0 && activeNavItem !== 'team-dashboard' && activeNavItem !== 'pi-dashboard' && (
  <div className="flex flex-wrap gap-1.5 items-center pb-1">
  {filterBadges.map((badge, index) => (
  <span
@@ -228,8 +230,8 @@ export default function DashboardTopBarContent({
 
       {/* Desktop Actions: Dashboard buttons, AI Chat, User, Logout */}
       <div className="flex items-center gap-2">
-        {/* Filter Toggle Button - Only show if view has filters */}
-        {hasFilters && (
+        {/* Filter Toggle Button - Hidden for team-dashboard and pi-dashboard */}
+        {hasFilters && activeNavItem !== 'team-dashboard' && activeNavItem !== 'pi-dashboard' && (
           <button
             onClick={onToggleFilters}
             className={`inline-flex items-center justify-center h-7 w-7 rounded-lg border-2 transition-all ${
@@ -246,7 +248,8 @@ export default function DashboardTopBarContent({
           </button>
         )}
         
-        {/* Manage Reports Button */}
+        {/* Manage Reports Button - Hidden for team-dashboard and pi-dashboard */}
+        {activeNavItem !== 'team-dashboard' && activeNavItem !== 'pi-dashboard' && (
         <button
           onClick={(e) => {
             e.preventDefault();
@@ -263,9 +266,10 @@ export default function DashboardTopBarContent({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
         </button>
+        )}
         
-        {/* Save Settings Button - for dashboards (not for custom dashboards) */}
-        {activeNavItem !== 'custom-dashboard-editor' && (
+        {/* Save Settings Button - Hidden for team-dashboard and pi-dashboard */}
+        {activeNavItem !== 'custom-dashboard-editor' && activeNavItem !== 'team-dashboard' && activeNavItem !== 'pi-dashboard' && (
           <button
             onClick={dashboardSettings.onSave}
             disabled={!dashboardSettings.hasChanges || dashboardSettings.isSaving}
@@ -290,20 +294,7 @@ export default function DashboardTopBarContent({
           </button>
         )}
         
-        {/* Reset to Defaults Button - for dashboards only */}
-        {(['team-dashboard', 'pi-dashboard'].includes(activeNavItem)) && (
-          <button
-            onClick={dashboardSettings.onReset}
-            disabled={dashboardSettings.isSaving}
-            className="hidden md:inline-flex items-center justify-center h-7 w-7 rounded-lg border border-outline-strong text-content-muted hover:text-red-600 dark:hover:text-red-400 hover:border-red-400 dark:hover:border-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Reset dashboard to defaults"
-            aria-label="Reset to defaults"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-            </svg>
-          </button>
-        )}
+        {/* Reset to Defaults Button - Removed for team-dashboard and pi-dashboard */}
  
  {/* AI Chat Button */}
  <DashboardAIMenu

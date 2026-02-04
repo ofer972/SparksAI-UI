@@ -536,6 +536,12 @@ export default function SettingsScreen() {
  setSelectedReportsByView(cloned);
  setOriginalReportsByView(cloneViewMap(sanitizedResponse));
  setLayoutDirty(false);
+ 
+ // Clear dashboard configs cache so dashboards reload with new configuration
+ const { configCache } = await import('@/lib/configCache');
+ configCache.clearDashboardConfigs();
+ console.log('[SettingsScreen] Dashboard configs cache cleared after save');
+ 
  setToastType('success');
  setToastMessage('Dashboard layout updated successfully');
  } catch (error) {

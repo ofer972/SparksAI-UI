@@ -105,10 +105,9 @@ export default function TopBar({
   }, []);
 
   // Determine if current view has filters
+  // team-dashboard and pi-dashboard removed - they use system defaults only
   const hasFilters = useMemo(() => {
     const viewsWithFilters = [
-      'team-dashboard',
-      'pi-dashboard',
       'team-ai-insights',
       'upload-transcripts',
       'custom-dashboard-editor',
@@ -117,18 +116,16 @@ export default function TopBar({
   }, [activeNavItem]);
 
   // Generate filter badges for active filters - only show badges for filters used in current view
+  // team-dashboard and pi-dashboard removed - they use system defaults only
   const filterBadges = useMemo((): FilterBadge[] => {
     const badges: FilterBadge[] = [];
 
     // Determine which filters are applicable for current view
-    const showPIFilter = activeNavItem === 'pi-dashboard' || 
-                         activeNavItem === 'team-ai-insights' ||
+    const showPIFilter = activeNavItem === 'team-ai-insights' ||
                          activeNavItem === 'upload-transcripts' ||
                          activeNavItem === 'custom-dashboard-editor';
     
-    const showTeamGroupFilter = activeNavItem === 'team-dashboard' || 
-                                activeNavItem === 'team-ai-insights' || 
-                                activeNavItem === 'pi-dashboard' ||
+    const showTeamGroupFilter = activeNavItem === 'team-ai-insights' || 
                                 activeNavItem === 'upload-transcripts' ||
                                 activeNavItem === 'custom-dashboard-editor';
 
