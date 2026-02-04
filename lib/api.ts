@@ -500,7 +500,7 @@ export class ApiService {
     const params = new URLSearchParams();
     params.append('period_start', periodStart);
     params.append('period_end', periodEnd);
-    issuetypes.forEach(type => params.append('issuetypes', type));
+    issuetypes.forEach(type => params.append('issue_type', type));
 
     if (teamName) {
       params.append('team_name', teamName);

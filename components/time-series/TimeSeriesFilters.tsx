@@ -51,6 +51,15 @@ export default function TimeSeriesFilters({
 }: TimeSeriesFiltersProps) {
   return (
     <ReportFiltersRow>
+      <ReportFilterField label="Team/Group">
+        <TeamGroupFilter
+          value={teamName}
+          onChange={onTeamChange}
+          placeholder="Select team or group"
+          allowClear={true}
+        />
+      </ReportFilterField>
+
       <ReportFilterField label="Time Period">
         <select
           value={months}
@@ -65,13 +74,16 @@ export default function TimeSeriesFilters({
         </select>
       </ReportFilterField>
 
-      <ReportFilterField label="Team/Group">
-        <TeamGroupFilter
-          value={teamName}
-          onChange={onTeamChange}
-          placeholder="Select team or group"
-          allowClear={true}
-        />
+      <ReportFilterField label="Group By">
+        <select
+          value={groupBy}
+          onChange={(e) => onGroupByChange(e.target.value as 'day' | 'week' | 'month')}
+          className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand"
+        >
+          <option value="day">Per Day</option>
+          <option value="week">Per Week</option>
+          <option value="month">Per Month</option>
+        </select>
       </ReportFilterField>
 
       <ReportFilterField label="Issue Types">
@@ -95,17 +107,7 @@ export default function TimeSeriesFilters({
         </label>
       </ReportFilterField>
 
-      <ReportFilterField label="Group By">
-        <select
-          value={groupBy}
-          onChange={(e) => onGroupByChange(e.target.value as 'day' | 'week' | 'month')}
-          className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand"
-        >
-          <option value="day">Per Day</option>
-          <option value="week">Per Week</option>
-          <option value="month">Per Month</option>
-        </select>
-      </ReportFilterField>
+      <div className="ml-4" />
 
       <ReportFilterField label="Chart Type">
         <select

@@ -14,6 +14,16 @@ const defaultColors = [
   '#0000ff', // Dark Blue
 ];
 
+// Map issue types to specific colors
+const getIssueTypeColor = (issueType: string): string => {
+  const colorMap: Record<string, string> = {
+    'Bug': '#cc0000',        // Dark red
+    'Story': '#4da6ff',      // Lighter blue
+    'Epic': '#b19cd9',       // Light purple
+  };
+  return colorMap[issueType] || defaultColors[0];
+};
+
 export interface UseTimeSeriesChartDataParams {
   groupedData: GroupedDataPoint[];
   chartPeriods: string[];
@@ -115,27 +125,31 @@ export function useTimeSeriesChartData({
       if (chartType === 'bar' && selectedTypes.length > 1) {
         return {
           labels,
-          datasets: selectedTypes.map((type, index) => ({
-            label: type,
-            data: allDataPoints[index].slice(0, endIndex).map(v => v ?? 0),
-            backgroundColor: defaultColors[index % defaultColors.length],
-            borderColor: defaultColors[index % defaultColors.length],
-            borderWidth: 1,
-            type: 'bar' as const,
-            stack: 'stack1',
-          })),
+          datasets: selectedTypes.map((type, index) => {
+            const color = getIssueTypeColor(type);
+            return {
+              label: type,
+              data: allDataPoints[index].slice(0, endIndex).map(v => v ?? 0),
+              backgroundColor: color,
+              borderColor: color,
+              borderWidth: 1,
+              type: 'bar' as const,
+              stack: 'stack1',
+            };
+          }),
         };
       } else {
         return {
           labels,
           datasets: selectedTypes.map((type, index) => {
+            const color = getIssueTypeColor(type);
             const baseConfig = {
               label: type,
               data: allDataPoints[index].slice(0, endIndex),
-              borderColor: defaultColors[index % defaultColors.length],
+              borderColor: color,
               backgroundColor: chartType === 'bar'
-                ? defaultColors[index % defaultColors.length]
-                : `${defaultColors[index % defaultColors.length]}40`,
+                ? color
+                : `${color}40`,
               borderWidth: 2,
             };
 

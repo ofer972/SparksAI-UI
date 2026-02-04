@@ -6,6 +6,7 @@ import {
   CategoryScale,
   LinearScale,
   LineElement,
+  LineController,
   BarElement,
   BarController,
   PointElement,
@@ -30,6 +31,7 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   LineElement,
+  LineController,
   BarElement,
   BarController,
   PointElement,
@@ -87,7 +89,7 @@ export default function CycleTimeView({
     (filters?.aggregate as boolean) ?? false
   );
   const [groupBy, setGroupBy] = useState<'day' | 'week' | 'month'>(() => 
-    (filters.groupBy as 'day' | 'week' | 'month') ?? 'month'
+    (filters.groupBy as 'day' | 'week' | 'month') ?? 'week'
   );
   const [chartType, setChartType] = useState<'line' | 'bar'>(() => 
     (filters.chartType as 'line' | 'bar') ?? 'bar'
@@ -133,6 +135,8 @@ export default function CycleTimeView({
       }
       if (filters.groupBy && ['day', 'week', 'month'].includes(filters.groupBy)) {
         setGroupBy(filters.groupBy as 'day' | 'week' | 'month');
+      } else {
+        setGroupBy('week'); // Default to week if not set
       }
       if (filters.chartType && ['line', 'bar'].includes(filters.chartType)) {
         setChartType(filters.chartType as 'line' | 'bar');
@@ -167,6 +171,31 @@ export default function CycleTimeView({
     countField: 'issue_count',
   });
 
+  // Calculate overall weighted average cycle time
+  const overallAverage = useMemo(() => {
+    if (!data || data.length === 0) return 0;
+    
+    // Filter by selected issue types if any are selected
+    const filteredData = selectedIssueTypes.length > 0
+      ? data.filter(d => selectedIssueTypes.includes(d.issuetype))
+      : data;
+    
+    if (filteredData.length === 0) return 0;
+    
+    // Calculate weighted average: (sum of avg_cycle_time × issue_count) / (sum of issue_count)
+    const totalValueCount = filteredData.reduce((sum, point) => {
+      const value = point.avg_cycle_time as number;
+      const count = point.issue_count as number;
+      return sum + (value * count);
+    }, 0);
+    
+    const totalCount = filteredData.reduce((sum, point) => {
+      return sum + (point.issue_count as number);
+    }, 0);
+    
+    return totalCount > 0 ? totalValueCount / totalCount : 0;
+  }, [data, selectedIssueTypes]);
+
   const chartData = useTimeSeriesChartData({
     groupedData,
     chartPeriods,
@@ -178,7 +207,57 @@ export default function CycleTimeView({
     aggregateLabel: 'Aggregated Cycle Time',
   });
 
-  const chartOptions = useTimeSeriesChart({
+  // Add overall average line to chart data
+  const chartDataWithAverage = useMemo(() => {
+    if (!chartData || !chartPeriods || chartPeriods.length === 0) return chartData;
+    
+    const averageValue = Math.round(overallAverage * 10) / 10; // Round to 1 decimal place
+    const averageData = chartPeriods.map(() => averageValue);
+    
+    // Find the last non-zero index from existing datasets
+    const existingDatasets = chartData.datasets || [];
+    let lastIndex = averageData.length - 1;
+    if (existingDatasets.length > 0 && existingDatasets[0].data) {
+      const firstDatasetData = existingDatasets[0].data as (number | null)[];
+      for (let i = firstDatasetData.length - 1; i >= 0; i--) {
+        if (firstDatasetData[i] !== null && firstDatasetData[i] !== 0) {
+          lastIndex = i;
+          break;
+        }
+      }
+    }
+    
+    // Use white/light color for dark mode, black for light mode
+    const lineColor = isDark ? '#ffffff' : '#000000';
+    
+    const averageDataset = {
+      type: 'line' as const,
+      label: `Average Cycle Time (${averageValue.toFixed(1)}d)`,
+      data: averageData.slice(0, lastIndex + 1),
+      borderColor: lineColor,
+      backgroundColor: lineColor,
+      borderWidth: 2,
+      borderDash: [5, 5], // Dashed line pattern
+      pointRadius: 0,
+      pointHoverRadius: 0,
+      pointHoverBorderWidth: 0,
+      fill: false,
+      tension: 0,
+      order: -1, // Draw line on top (lower order = higher z-index)
+      yAxisID: 'y',
+      z: 10, // Additional z-index to ensure it's on top
+      datalabels: {
+        display: false, // Hide numbers on the line - only show in legend
+      },
+    } as any;
+    
+    return {
+      ...chartData,
+      datasets: [...chartData.datasets, averageDataset],
+    };
+  }, [chartData, chartPeriods, overallAverage, isDark]);
+
+  const baseChartOptions = useTimeSeriesChart({
     groupBy,
     chartType,
     chartPeriods,
@@ -188,6 +267,27 @@ export default function CycleTimeView({
     valueDecimals: 1,
     isDark,
   });
+
+  // Extend chart options to hide data labels on average line (number only in legend)
+  const chartOptions = useMemo(() => {
+    return {
+      ...baseChartOptions,
+      plugins: {
+        ...baseChartOptions.plugins,
+        datalabels: {
+          ...baseChartOptions.plugins?.datalabels,
+          // Hide data labels for average line dataset - number only appears in legend
+          filter: (context: any) => {
+            if (context.dataset.label && context.dataset.label.includes('Average Cycle Time')) {
+              return false;
+            }
+            // For other datasets, use the default display setting
+            return baseChartOptions.plugins?.datalabels?.display ?? true;
+          },
+        },
+      },
+    };
+  }, [baseChartOptions]);
 
   const handleTimePeriodChange = useCallback((months: number) => {
     setFilters?.(prev => ({ ...prev, months }));
@@ -272,12 +372,12 @@ export default function CycleTimeView({
   }, [filterBadges, pinnedFilters]);
 
   const calculatePeriodDates = useCallback((period: string, groupByType: 'day' | 'week' | 'month'): { start: string; end: string } => {
-    const date = new Date(period);
-
     if (groupByType === 'day') {
+      const date = new Date(period);
       const dateStr = date.toISOString().split('T')[0];
       return { start: dateStr, end: dateStr };
     } else if (groupByType === 'week') {
+      const date = new Date(period);
       const weekStart = new Date(date);
       weekStart.setDate(date.getDate() - date.getDay());
       const weekEnd = new Date(weekStart);
@@ -287,17 +387,23 @@ export default function CycleTimeView({
         end: weekEnd.toISOString().split('T')[0],
       };
     } else {
-      const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
-      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      // For month mode, period is already in "YYYY-MM-01" format
+      // Parse directly from string to avoid timezone issues
+      const [year, month] = period.split('-').map(Number);
+      // Format dates directly without timezone conversion
+      const monthStartStr = `${year}-${String(month).padStart(2, '0')}-01`;
+      // Get last day of month: new Date(year, month, 0) gives last day of (month-1)
+      const lastDay = new Date(year, month, 0).getDate();
+      const monthEndStr = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
       return {
-        start: monthStart.toISOString().split('T')[0],
-        end: monthEnd.toISOString().split('T')[0],
+        start: monthStartStr,
+        end: monthEndStr,
       };
     }
   }, []);
 
   useEffect(() => {
-    if (!chartData || !chartPeriods) return;
+    if (!chartDataWithAverage || !chartPeriods) return;
 
     let canvas: HTMLCanvasElement | null = null;
     let cleanup: (() => void) | null = null;
@@ -336,11 +442,16 @@ export default function CycleTimeView({
 
           let clickedIssueTypes: string[] = [];
 
+          // Skip clicks on the average line (it's the last dataset)
+          const clickedDataset = chartDataWithAverage?.datasets?.[datasetIndex];
+          if (clickedDataset?.label?.includes('Average Cycle Time')) {
+            return; // Don't open dialog for average line clicks
+          }
+
           if (aggregate) {
             clickedIssueTypes = [...availableIssueTypes];
           } else {
             if (chartType === 'bar' && selectedIssueTypes.length > 1) {
-              const clickedDataset = chartData.datasets[datasetIndex];
               const datasetLabel = clickedDataset?.label;
               if (datasetLabel && selectedIssueTypes.includes(datasetLabel)) {
                 clickedIssueTypes = [datasetLabel];
@@ -375,7 +486,7 @@ export default function CycleTimeView({
         cleanup();
       }
     };
-  }, [chartData, chartPeriods, groupBy, aggregate, selectedIssueTypes, availableIssueTypes, chartType, calculatePeriodDates]);
+  }, [chartDataWithAverage, chartPeriods, groupBy, aggregate, selectedIssueTypes, availableIssueTypes, chartType, calculatePeriodDates]);
 
   return (
     <>
@@ -412,7 +523,7 @@ export default function CycleTimeView({
         <TimeSeriesChartContainer
           loading={loading}
           error={error}
-          chartData={chartData}
+          chartData={chartDataWithAverage}
           chartType={chartType}
           chartOptions={chartOptions}
           loadingMessage="Loading cycle time data..."
