@@ -157,20 +157,20 @@ export default function SprintGoalsTab() {
  const selectedSprint = availableSprints.find(s => s.sprint_id === selectedSprintId);
 
  return (
- <div className="h-full flex flex-col space-y-4">
- {/* Filters and Button Section - Same Row */}
- <div className="p-4 bg-surface-elevated rounded-lg border border-outline">
- <div className="flex flex-col md:flex-row gap-4 items-center">
- {/* Sprint Filter - Label and field in one line */}
- <div className="flex items-center gap-2">
- <label className="text-sm font-medium text-content-secondary whitespace-nowrap">
+ <div className="h-full flex flex-col space-y-2 md:space-y-4">
+ {/* Filters and Button Section - All on one row on desktop */}
+ <div className="p-3 md:p-4 bg-surface-elevated rounded-lg border border-outline">
+ <div className="flex flex-col md:flex-row md:flex-wrap gap-3 md:gap-4 md:items-center">
+ {/* Sprint Filter */}
+ <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2">
+ <label className="text-xs md:text-sm font-medium text-content-secondary whitespace-nowrap">
  Sprint <span className="text-danger-text">*</span>
  </label>
  <select
  value={selectedSprintId || ''}
  onChange={(e) => setSelectedSprintId(e.target.value ? parseInt(e.target.value, 10) : null)}
  disabled={loadingSprints}
- className="w-64 md:w-80 px-2 py-1 border border-outline-strong rounded text-xs bg-surface-elevated text-content-primary hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand disabled:opacity-50 disabled:cursor-not-allowed h-[34px]"
+ className="w-full md:w-80 px-2 py-1.5 md:py-1 border border-outline-strong rounded text-xs bg-surface-elevated text-content-primary hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand disabled:opacity-50 disabled:cursor-not-allowed h-[38px] md:h-[34px]"
  >
  <option value="">Select Sprint</option>
  {availableSprints.map((sprint) => (
@@ -183,12 +183,12 @@ export default function SprintGoalsTab() {
  </select>
  </div>
 
- {/* Team/Group Filter - Label and field in one line */}
- <div className="flex items-center gap-2">
- <label className="text-sm font-medium text-content-secondary whitespace-nowrap">
+ {/* Team/Group Filter */}
+ <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2">
+ <label className="text-xs md:text-sm font-medium text-content-secondary whitespace-nowrap">
  Team/Group <span className="text-danger-text">*</span>
  </label>
- <div className="w-64">
+ <div className="w-full md:w-64">
  <TeamGroupFilter
  value={selectedTeamValue}
  onChange={handleTeamGroupChange}
@@ -196,13 +196,14 @@ export default function SprintGoalsTab() {
  allowClear={false}
  />
  </div>
- {/* Suggest Goals Button - With padding after team/group filter */}
- <div className="flex-shrink-0 ml-4">
+ </div>
+
+ {/* Suggest Goals Button */}
  <button
  onClick={handleSuggestGoals}
  disabled={!isButtonEnabled || loading}
  className={`
- px-3 py-1 rounded-lg text-sm font-normal transition-colors whitespace-nowrap h-[26px]
+ w-full md:w-auto px-4 md:px-3 py-2 md:py-1 rounded-lg text-sm font-normal transition-colors whitespace-nowrap h-[38px] md:h-[26px]
  ${isButtonEnabled && !loading
  ? 'bg-brand text-white hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2'
  : 'bg-gray-300 bg-surface-secondary text-content-muted cursor-not-allowed'
@@ -213,14 +214,12 @@ export default function SprintGoalsTab() {
  </button>
  </div>
  </div>
- </div>
- </div>
 
  {/* Goals Table Section - Two Panels */}
  {selectedSprintId && (
- <div className="flex-1 flex flex-col min-h-0">
+ <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
  {/* Two Panels Side by Side - AI panel 35% width, User panel 65% width */}
- <div className="flex-1 grid grid-cols-1 lg:grid-cols-[35%_65%] gap-4 min-h-0">
+ <div className="flex-1 grid grid-cols-1 lg:grid-cols-[35%_65%] gap-2 md:gap-4 min-h-0 overflow-hidden">
  {/* AI Generated Goals Panel */}
  <GoalsPanel
  title="AI Generated Goals"
