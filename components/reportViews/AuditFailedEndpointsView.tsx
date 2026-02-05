@@ -138,21 +138,25 @@ const AuditFailedEndpointsView: React.FC<AuditFailedEndpointsViewProps> = ({
   );
 
   const filterBadges = useMemo(() => {
-    const badges: Array<{ label: string; onRemove: () => void }> = [];
+    const badges: Array<{ label: string; value: string }> = [];
     if (months !== 1) {
-      badges.push({
-        label: `${months} month${months > 1 ? 's' : ''}`,
-        onRemove: () => setFilters((prev) => ({ ...prev, months: 1 })),
-      });
+      const period = TIME_PERIOD_OPTIONS.find((opt) => opt.value === months);
+      if (period) {
+        badges.push({
+          label: 'Period',
+          value: period.label,
+        });
+      }
     }
     if (severity) {
+      const severityLabel = severityOptions.find((opt) => opt.value === severity)?.label || severity;
       badges.push({
-        label: `Severity: ${severity}`,
-        onRemove: () => setFilters((prev) => ({ ...prev, severity: '' })),
+        label: 'Severity',
+        value: severityLabel,
       });
     }
     return badges;
-  }, [months, severity, setFilters]);
+  }, [months, severity]);
 
   if (error) {
     return (
