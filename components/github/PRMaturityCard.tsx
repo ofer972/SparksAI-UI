@@ -279,9 +279,12 @@ export default function PRMaturityCard(props?: PRMaturityCardProps) {
           },
           ticks: {
             callback: function(value: any) {
+              // Only show ticks up to 100%
+              if (value > 100) {
+                return '';
+              }
               return `${value}%`;
             },
-            max: 100, // Only show ticks up to 100%
           },
         },
       },
