@@ -61,7 +61,7 @@ export default function InsightsTopBarContent({
  onNavigateToSettings,
 }: InsightsTopBarContentProps) {
  return (
- <div className="flex flex-col md:flex-row md:items-end gap-0 md:gap-4 flex-1 min-w-0 pr-3 md:px-0 md:py-2 w-full">
+ <div className="flex flex-col md:flex-row md:items-end gap-0 md:gap-3 flex-1 min-w-0 pr-3 md:px-0 md:py-2 w-full">
  {/* Mobile: Title, Actions, and Badges */}
  <div className="flex md:hidden flex-col w-full py-1">
  {breadcrumbs && breadcrumbs.length > 0 ? (
@@ -165,9 +165,9 @@ export default function InsightsTopBarContent({
  </div>
  
  {/* Desktop: View title */}
- <div className="hidden md:flex flex-col min-w-0 pb-0.5">
+ <div className="hidden md:flex flex-col min-w-0">
  {breadcrumbs && breadcrumbs.length > 0 ? (
- <div className="flex items-center gap-1 text-[11px] text-content-muted">
+ <div className="flex items-center gap-1 text-[11px] text-content-muted mb-1">
  {breadcrumbs.map((b, idx) => (
  <React.Fragment key={`${b.label}-${idx}`}>
  {idx > 0 ? <span className="text-gray-300 text-content-muted">/</span> : null}
@@ -186,7 +186,7 @@ export default function InsightsTopBarContent({
  ))}
  </div>
  ) : null}
- <h1 className="text-xl font-semibold text-content-primary whitespace-nowrap tracking-tight">
+ <h1 className="text-xl font-semibold text-content-primary whitespace-nowrap tracking-tight leading-none m-0">
  {viewTitle}
  </h1>
  </div>
@@ -197,7 +197,7 @@ export default function InsightsTopBarContent({
  {filterBadges.map((badge, index) => (
  <span
  key={index}
- className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-brand/20 text-blue-800 dark:text-blue-300 border border-blue-200 border-blue-700"
+ className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-brand/20 text-blue-800 dark:text-blue-300 border border-blue-200 border-blue-700 m-0"
  >
  <span className="font-semibold">{badge.label}:</span>
  <span>{badge.value}</span>
