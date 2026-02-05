@@ -211,6 +211,7 @@ export default function TopBar({
                 filters={filters}
                 insightChat={insightChat}
                 kpiDashboardChat={kpiDashboardChat}
+                dashboardChat={aiChat}
                 currentUser={currentUser}
                 onLogout={onLogout}
                 onToggleFilters={handleToggleFilters}

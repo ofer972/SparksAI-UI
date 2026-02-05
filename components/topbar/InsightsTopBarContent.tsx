@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import DashboardAIMenu from '@/components/DashboardAIMenu';
 import UserDropdownMenu from '../UserDropdownMenu';
 
 import type { BreadcrumbItem, NavItemId } from '@/lib/nav';
@@ -35,6 +36,13 @@ interface InsightsTopBarContentProps {
  kpiDashboardChat?: {
  onOpenChat: () => void;
  };
+ dashboardChat?: {
+ onOpenChat: (dashboardData?: any) => void;
+ prompts: any[];
+ selectedPrompt: string;
+ onPromptChange: (prompt: string) => void;
+ loadingPrompts: boolean;
+ };
  currentUser: any;
  onLogout: () => void;
  onToggleFilters: () => void;
@@ -52,6 +60,7 @@ export default function InsightsTopBarContent({
  filters,
  insightChat,
  kpiDashboardChat,
+ dashboardChat,
  currentUser,
  onLogout,
  onToggleFilters,
@@ -139,6 +148,32 @@ export default function InsightsTopBarContent({
  </svg>
  <span className="text-sm font-medium">AI</span>
  </button>
+ )}
+
+ {/* Dashboard AI Menu (Mobile) - For team-dashboard and pi-dashboard */}
+ {dashboardChat && (
+ <DashboardAIMenu
+ onOpenAIChat={dashboardChat.onOpenChat}
+ prompts={dashboardChat.prompts}
+ selectedPrompt={dashboardChat.selectedPrompt}
+ onPromptChange={dashboardChat.onPromptChange}
+ loadingPrompts={dashboardChat.loadingPrompts}
+ onCollectDashboardData={() => {
+ return new Promise<any>((resolve) => {
+ const handler = (e: Event) => {
+ const customEvent = e as CustomEvent;
+ window.removeEventListener('dashboard-data-collected', handler);
+ resolve(customEvent.detail);
+ };
+ window.addEventListener('dashboard-data-collected', handler);
+ window.dispatchEvent(new CustomEvent('collect-dashboard-data'));
+ setTimeout(() => {
+ window.removeEventListener('dashboard-data-collected', handler);
+ resolve(null);
+ }, 1000);
+ });
+ }}
+ />
  )}
 
           {/* Mobile User Menu */}
@@ -285,6 +320,32 @@ export default function InsightsTopBarContent({
  </svg>
  <span className="text-sm font-medium">AI</span>
  </button>
+ )}
+
+ {/* Dashboard AI Menu (Desktop) - For team-dashboard and pi-dashboard */}
+ {dashboardChat && (
+ <DashboardAIMenu
+ onOpenAIChat={dashboardChat.onOpenChat}
+ prompts={dashboardChat.prompts}
+ selectedPrompt={dashboardChat.selectedPrompt}
+ onPromptChange={dashboardChat.onPromptChange}
+ loadingPrompts={dashboardChat.loadingPrompts}
+ onCollectDashboardData={() => {
+ return new Promise<any>((resolve) => {
+ const handler = (e: Event) => {
+ const customEvent = e as CustomEvent;
+ window.removeEventListener('dashboard-data-collected', handler);
+ resolve(customEvent.detail);
+ };
+ window.addEventListener('dashboard-data-collected', handler);
+ window.dispatchEvent(new CustomEvent('collect-dashboard-data'));
+ setTimeout(() => {
+ window.removeEventListener('dashboard-data-collected', handler);
+ resolve(null);
+ }, 1000);
+ });
+ }}
+ />
  )}
  
           {/* User Dropdown Menu */}
