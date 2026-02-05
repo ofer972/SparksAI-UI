@@ -181,12 +181,17 @@ export default function TopBar({
         </button>
 
         {/* Conditional rendering based on view type */}
-            {isDashboardView && dashboardSettings && aiChat ? (
+            {isDashboardView && aiChat ? (
               <DashboardTopBarContent
                 activeNavItem={activeNavItem}
                 viewTitle={viewTitle}
                 breadcrumbs={breadcrumbs}
-                dashboardSettings={dashboardSettings}
+                dashboardSettings={dashboardSettings || {
+                  hasChanges: false,
+                  isSaving: false,
+                  onSave: () => {},
+                  onReset: () => {},
+                }}
                 filters={filters}
                 aiChat={aiChat}
                 currentUser={currentUser}
