@@ -228,7 +228,16 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
   const chartOptions = useMemo(() => {
     if (!data) return {};
     
+    // Calculate max value and add padding for top labels
+    const maxValue = Math.max(...data.time_series.map(d => d.rework_rate), data.summary.rework_rate);
+    const suggestedMax = Math.max(maxValue * 1.15, 10); // Add 15% padding at top for labels, minimum 10%
+    
     return createTimeSeriesChartOptions({
+      layout: {
+        padding: {
+          top: 20, // Add padding at top for data labels
+        },
+      },
       plugins: {
         datalabels: {
           formatter: (value: number, context: any) => {
@@ -253,6 +262,7 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
       scales: {
         y: {
           beginAtZero: true,
+          suggestedMax: suggestedMax,
           title: {
             display: true,
             text: 'Code Churn Rate (%)',

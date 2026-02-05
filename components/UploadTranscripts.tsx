@@ -66,18 +66,19 @@ const FileUploadArea = React.memo(({
  <div className="bg-surface rounded-lg shadow-sm border border-outline p-3">
  <h3 className="text-lg font-semibold mb-2 text-content-primary">{title}</h3>
  
- {/* Team-specific fields */}
- {isTeam && selectedTeam && (
- <div className="mt-2 space-y-2">
- <TeamFilter
- selectedTeam={selectedTeam}
- onTeamChange={onTeamChange || (() => {})}
- />
+ {/* Type selector */}
+ <div className="mt-2 mb-2">
  <div className="flex items-center space-x-2">
  <label className="text-sm font-medium text-content-secondary">Type:</label>
  <select
- value={teamType || 'Daily'}
- onChange={(e) => onTeamTypeChange?.(e.target.value as 'Daily' | 'PI Sync')}
+ value={(isTeam ? teamType : piType) || (isTeam ? 'Daily' : 'PI Sync')}
+ onChange={(e) => {
+ if (isTeam) {
+ onTeamTypeChange?.(e.target.value as 'Daily' | 'PI Sync');
+ } else {
+ onPITypeChange?.(e.target.value as 'Daily' | 'PI Sync');
+ }
+ }}
  className="px-2 py-1 border border-outline-strong rounded-md bg-surface-elevated text-content-primary focus:outline-none focus:ring-2 focus:ring-brand text-sm"
  >
  <option value="Daily">Daily</option>
@@ -85,28 +86,6 @@ const FileUploadArea = React.memo(({
  </select>
  </div>
  </div>
- )}
-
- {/* PI-specific fields */}
- {!isTeam && selectedPI && (
- <div className="mt-2 space-y-2">
- <PIFilter
- selectedPI={selectedPI}
- onPIChange={onPIChange || (() => {})}
- />
- <div className="flex items-center space-x-2">
- <label className="text-sm font-medium text-content-secondary">Type:</label>
- <select
- value={piType || 'PI Sync'}
- onChange={(e) => onPITypeChange?.(e.target.value as 'Daily' | 'PI Sync')}
- className="px-2 py-1 border border-outline-strong rounded-md bg-surface-elevated text-content-primary focus:outline-none focus:ring-2 focus:ring-brand text-sm"
- >
- <option value="Daily">Daily</option>
- <option value="PI Sync">PI Sync</option>
- </select>
- </div>
- </div>
- )}
 
  {/* File Selection Area */}
  <div
@@ -371,6 +350,27 @@ export default function UploadTranscripts({ selectedTeam, selectedPI, onTeamChan
 
  return (
  <div className="space-y-3">
+ {/* Filters Section */}
+ <div className="bg-surface rounded-lg shadow-sm border border-outline p-4">
+ <h2 className="text-xl font-semibold mb-4 text-content-primary">Upload Transcripts</h2>
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <div>
+ <label className="block text-sm font-medium text-content-secondary mb-2">Select Team</label>
+ <TeamFilter
+ selectedTeam={selectedTeam || ''}
+ onTeamChange={onTeamChange || (() => {})}
+ />
+ </div>
+ <div>
+ <label className="block text-sm font-medium text-content-secondary mb-2">Select PI</label>
+ <PIFilter
+ selectedPI={selectedPI || ''}
+ onPIChange={onPIChange || (() => {})}
+ />
+ </div>
+ </div>
+ </div>
+
  {/* Side by side containers */}
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
  {/* Team Transcripts Upload */}

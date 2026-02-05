@@ -243,6 +243,11 @@ export default function PRMaturityCard(props?: PRMaturityCardProps) {
     if (!data) return {};
     
     return createTimeSeriesChartOptions({
+      layout: {
+        padding: {
+          top: 20, // Add padding at top for data labels
+        },
+      },
       plugins: {
         datalabels: {
           formatter: (value: number, context: any) => {
@@ -267,13 +272,17 @@ export default function PRMaturityCard(props?: PRMaturityCardProps) {
       scales: {
         y: {
           beginAtZero: true,
-          max: 100,
+          max: 110, // Increase max to 110% to provide space for top labels
           title: {
             display: true,
             text: 'Maturity (%)',
           },
           ticks: {
             callback: function(value: any) {
+              // Only show ticks up to 100%
+              if (value > 100) {
+                return '';
+              }
               return `${value}%`;
             },
           },
