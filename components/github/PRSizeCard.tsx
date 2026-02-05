@@ -242,7 +242,16 @@ export default function PRSizeCard(props?: PRSizeCardProps) {
   const chartOptions = useMemo(() => {
     if (!data) return {};
     
+    // Calculate max value and add padding for top labels
+    const maxValue = Math.max(...data.time_series.map(d => d.median_lines), data.summary.median_lines);
+    const suggestedMax = maxValue * 1.15; // Add 15% padding at top for labels
+    
     return createTimeSeriesChartOptions({
+      layout: {
+        padding: {
+          top: 20, // Add padding at top for data labels
+        },
+      },
       plugins: {
         datalabels: {
           formatter: (value: number, context: any) => {
@@ -267,6 +276,7 @@ export default function PRSizeCard(props?: PRSizeCardProps) {
       scales: {
         y: {
           beginAtZero: true,
+          suggestedMax: suggestedMax,
           title: {
             display: true,
             text: 'Lines Changed',
