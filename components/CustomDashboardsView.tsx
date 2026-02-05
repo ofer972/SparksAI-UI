@@ -437,16 +437,9 @@ export default function CustomDashboardsView({ onSelectDashboard, onDashboardCre
  {/* Create Dashboard Card - Button to open template modal */}
  <div className="bg-surface/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-outline/20 p-6">
  <div className="flex items-center justify-between">
- <div className="flex items-center gap-3">
- <div className="p-2 bg-brand rounded-lg">
- <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
- </svg>
- </div>
  <div>
  <h2 className="text-xl font-bold text-content-primary">Create New Dashboard</h2>
  <p className="text-sm text-content-secondary mt-0.5">Choose a template or start from scratch</p>
- </div>
  </div>
  <button
  onClick={() => setTemplateModalOpen(true)}

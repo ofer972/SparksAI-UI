@@ -165,8 +165,8 @@ export default function DashboardTopBarContent({
  </div>
  </div>
 
- {/* Filter Badges (Mobile) - Second Line - Hidden for team-dashboard and pi-dashboard */}
- {filterBadges.length > 0 && activeNavItem !== 'team-dashboard' && activeNavItem !== 'pi-dashboard' && (
+ {/* Filter Badges (Mobile) - Second Line */}
+ {filterBadges.length > 0 && (
  <div className="flex overflow-x-auto no-scrollbar gap-1 mt-1 pb-1 w-full">
  {filterBadges.map((badge, index) => (
  <span
@@ -182,11 +182,11 @@ export default function DashboardTopBarContent({
  </div>
 
  {/* Desktop: Full Layout */}
- <div className="hidden md:flex md:items-end md:gap-4 w-full">
+ <div className="hidden md:flex md:items-end md:gap-3 w-full">
  {/* Title + breadcrumbs */}
- <div className="flex flex-col min-w-0 pb-0.5">
+ <div className="flex flex-col min-w-0">
  {breadcrumbs && breadcrumbs.length > 0 ? (
- <div className="flex items-center gap-1 text-[11px] text-content-muted">
+ <div className="flex items-center gap-1 text-[11px] text-content-muted mb-1">
  {breadcrumbs.map((b, idx) => (
  <React.Fragment key={`${b.label}-${idx}`}>
  {idx > 0 ? <span className="text-gray-300 text-content-muted">/</span> : null}
@@ -205,18 +205,18 @@ export default function DashboardTopBarContent({
  ))}
  </div>
  ) : null}
- <h1 className="text-xl font-semibold text-content-primary whitespace-nowrap tracking-tight">
+ <h1 className="text-xl font-semibold text-content-primary whitespace-nowrap tracking-tight leading-none m-0">
  {viewTitle}
  </h1>
  </div>
 
- {/* Filter Badges - Hidden for team-dashboard and pi-dashboard */}
- {filterBadges.length > 0 && activeNavItem !== 'team-dashboard' && activeNavItem !== 'pi-dashboard' && (
- <div className="flex flex-wrap gap-1.5 items-center pb-1">
+ {/* Filter Badges */}
+ {filterBadges.length > 0 && (
+ <div className="flex flex-wrap gap-1.5 items-center">
  {filterBadges.map((badge, index) => (
  <span
  key={index}
- className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-brand/20 text-blue-800 dark:text-blue-300 border border-blue-200 border-blue-700"
+ className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-brand/20 text-blue-800 dark:text-blue-300 border border-blue-200 border-blue-700 m-0"
  >
  <span className="font-semibold">{badge.label}:</span>
  <span>{badge.value}</span>

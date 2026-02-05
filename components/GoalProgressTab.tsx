@@ -209,19 +209,19 @@ export default function GoalProgressTab() {
  const refetch = scopeType === 'pi' ? refetchPIGoals : refetchSprintGoals;
 
  return (
- <div className="h-full flex flex-col space-y-4">
- {/* Filters Section */}
- <div className="p-4 bg-surface-elevated rounded-lg border border-outline">
- <div className="flex flex-col md:flex-row gap-4 items-center">
+ <div className="h-full flex flex-col space-y-2 md:space-y-4">
+ {/* Filters Section - All on one row on desktop */}
+ <div className="p-3 md:p-4 bg-surface-elevated rounded-lg border border-outline">
+ <div className="flex flex-col md:flex-row md:flex-wrap gap-3 md:gap-4 md:items-center">
  {/* Scope Type Filter */}
- <div className="flex items-center gap-2">
- <label className="text-sm font-medium text-content-secondary whitespace-nowrap">
+ <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2">
+ <label className="text-xs md:text-sm font-medium text-content-secondary whitespace-nowrap">
  Scope Type
  </label>
  <select
  value={scopeType}
  onChange={(e) => handleScopeTypeChange(e.target.value as 'pi' | 'sprint')}
- className="w-32 md:w-40 px-2 py-1 border border-outline-strong rounded text-xs bg-surface-elevated text-content-primary hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand h-[34px]"
+ className="w-full md:w-40 px-2 py-1.5 md:py-1 border border-outline-strong rounded text-xs bg-surface-elevated text-content-primary hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand h-[38px] md:h-[34px]"
  >
  <option value="pi">PI Goals</option>
  <option value="sprint">Sprint Goals</option>
@@ -230,15 +230,15 @@ export default function GoalProgressTab() {
 
  {/* PI Filter - Only show when scope is PI */}
  {scopeType === 'pi' && (
- <div className="flex items-center gap-2">
- <label className="text-sm font-medium text-content-secondary whitespace-nowrap">
+ <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2">
+ <label className="text-xs md:text-sm font-medium text-content-secondary whitespace-nowrap">
  PI <span className="text-danger-text">*</span>
  </label>
               <select
                 value={selectedPI}
                 onChange={(e) => setSelectedPI(e.target.value)}
                 disabled={loadingPIs}
-                className="w-32 md:w-40 px-2 py-1 border border-outline-strong rounded text-xs bg-surface-elevated text-content-primary hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand disabled:opacity-50 disabled:cursor-not-allowed h-[34px]"
+                className="w-full md:w-40 px-2 py-1.5 md:py-1 border border-outline-strong rounded text-xs bg-surface-elevated text-content-primary hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand disabled:opacity-50 disabled:cursor-not-allowed h-[38px] md:h-[34px]"
               >
                 {availablePIs.map((pi) => (
                   <option key={pi} value={pi}>
@@ -251,8 +251,8 @@ export default function GoalProgressTab() {
 
  {/* Sprint Filter - Only show when scope is Sprint */}
  {scopeType === 'sprint' && (
- <div className="flex items-center gap-2">
- <label className="text-sm font-medium text-content-secondary whitespace-nowrap">
+ <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2">
+ <label className="text-xs md:text-sm font-medium text-content-secondary whitespace-nowrap">
  Sprint <span className="text-danger-text">*</span>
  </label>
  <select
@@ -264,7 +264,7 @@ export default function GoalProgressTab() {
  setSelectedSprintName(sprint?.sprint_name || null);
  }}
  disabled={loadingSprints || !selectedTeamName}
- className="w-64 md:w-80 px-2 py-1 border border-outline-strong rounded text-xs bg-surface-elevated text-content-primary hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand disabled:opacity-50 disabled:cursor-not-allowed h-[34px]"
+ className="w-full md:w-80 px-2 py-1.5 md:py-1 border border-outline-strong rounded text-xs bg-surface-elevated text-content-primary hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand disabled:opacity-50 disabled:cursor-not-allowed h-[38px] md:h-[34px]"
  >
  <option value="">
  {loadingSprints ? 'Loading sprints...' : !selectedTeamName ? 'Select team/group first' : 'Select Sprint'}
@@ -281,11 +281,11 @@ export default function GoalProgressTab() {
  )}
 
  {/* Team/Group Filter */}
- <div className="flex items-center gap-2">
- <label className="text-sm font-medium text-content-secondary whitespace-nowrap">
+ <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2">
+ <label className="text-xs md:text-sm font-medium text-content-secondary whitespace-nowrap">
  Team/Group
  </label>
- <div className="w-64">
+ <div className="w-full md:w-64">
  <TeamGroupFilter
  value={selectedTeamValue}
  onChange={handleTeamGroupChange}
@@ -299,7 +299,7 @@ export default function GoalProgressTab() {
 
  {/* Goals Panel - Read Only */}
  {(scopeType === 'pi' ? selectedPI : selectedSprintId) && (
- <div className="flex-1 flex flex-col min-h-0">
+ <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
  <GoalsPanel
  title={panelTitle}
  hierarchyData={hierarchyData}

@@ -629,10 +629,10 @@ export default function GoalsPanel({
  )}
 
  <div className={`flex flex-col h-full bg-surface border border-outline rounded-lg overflow-hidden ${className}`} style={style}>
- <div className="p-4 border-b border-outline bg-surface-elevated flex-shrink-0">
- <div className="flex items-center justify-between">
+ <div className="p-2 md:p-4 border-b border-outline bg-surface-elevated flex-shrink-0">
+ <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-0 md:justify-between">
  <h3 className="text-sm font-semibold text-content-primary">{title}</h3>
- <div className="flex items-center gap-1.5">
+ <div className="flex items-center gap-1 md:gap-1.5 flex-wrap">
  {type === 'user' && actionOptions?.allowCreate !== false && (
  <button
  onClick={() => {
@@ -648,7 +648,7 @@ export default function GoalsPanel({
  });
  setIsCreateModalOpen(true);
  }}
- className="px-3 py-1 rounded-lg font-medium text-xs transition-colors whitespace-nowrap bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-md hover:shadow-lg"
+ className="px-2 md:px-3 py-1 md:py-1 rounded-lg font-medium text-xs transition-colors whitespace-nowrap bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-md hover:shadow-lg"
  >
  Add Goal
  </button>
@@ -659,7 +659,7 @@ export default function GoalsPanel({
  onClick={handleConfirmGoals}
  disabled={checkedGoalIds.size === 0 || isConfirming}
  className={`
- px-3 py-1 rounded-lg font-medium text-xs transition-colors whitespace-nowrap
+ px-2 md:px-3 py-1 rounded-lg font-medium text-xs transition-colors whitespace-nowrap
  ${checkedGoalIds.size > 0 && !isConfirming
  ? 'bg-brand text-white hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2'
  : 'bg-gray-300 bg-surface-secondary text-content-muted cursor-not-allowed'
@@ -690,7 +690,7 @@ export default function GoalsPanel({
  </div>
  </div>
  </div>
- <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 min-h-0">
+ <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 md:p-4 min-h-0">
  <style dangerouslySetInnerHTML={{
  __html: `
  .pi-goals-table-wrapper table thead tr th:first-child,

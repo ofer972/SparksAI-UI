@@ -9,10 +9,25 @@ interface GitHubMetricsTabProps {
 export default function GitHubMetricsTab({ 
   cards
 }: GitHubMetricsTabProps) {
-  // Organize cards into rows (2 per row)
+  // Detect mobile view
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Organize cards into rows (1 per row on mobile, 2 per row on desktop)
+  const cardsPerRow = isMobile ? 1 : 2;
   const rows: ReactNode[][] = [];
-  for (let i = 0; i < cards.length; i += 2) {
-    rows.push(cards.slice(i, i + 2));
+  for (let i = 0; i < cards.length; i += cardsPerRow) {
+    rows.push(cards.slice(i, i + cardsPerRow));
   }
 
   // State for column widths per row
@@ -173,18 +188,20 @@ export default function GitHubMetricsTab({
   const splitterHeightPx = splitterCount * 8; // 8px per splitter
 
   return (
-    <div className="flex-1 h-full flex flex-col overflow-hidden p-1 min-h-0">
+    <div className="flex-1 h-full flex flex-col overflow-hidden md:p-1 min-h-0">
       <div 
         ref={mainContainerRef}
-        className="flex-1 flex flex-col overflow-hidden min-h-0"
+        className={`flex-1 flex flex-col ${isMobile ? 'overflow-y-auto space-y-4 p-4' : 'overflow-hidden'} min-h-0`}
       >
         {rows.map((row, rowIdx) => (
           <React.Fragment key={rowIdx}>
-            {/* Row of cards - height controlled by rowHeights state */}
+            {/* Row of cards - height controlled by rowHeights state on desktop, auto on mobile */}
             <div 
               ref={(el) => { containerRefs.current[rowIdx] = el; }}
-              className="flex relative min-h-0 overflow-hidden flex-shrink-0"
-              style={{
+              className={`flex relative overflow-hidden ${
+                isMobile ? 'flex-shrink-0 min-h-[400px]' : 'min-h-0 flex-shrink-0'
+              }`}
+              style={isMobile ? {} : {
                 height: rowHeights.length > 0 
                   ? `calc(${rowHeights[rowIdx] || (100 / rows.length)}% - ${splitterHeightPx / rows.length}px)` 
                   : `calc(${100 / rows.length}% - ${splitterHeightPx / rows.length}px)`
@@ -204,8 +221,8 @@ export default function GitHubMetricsTab({
                       {card}
                     </div>
                   </div>
-                  {/* Column splitter (between columns) */}
-                  {row.length > 1 && colIdx < row.length - 1 && (
+                  {/* Column splitter (between columns) - only on desktop */}
+                  {!isMobile && row.length > 1 && colIdx < row.length - 1 && (
                     <div
                       className={`flex-shrink-0 w-1 cursor-col-resize transition-all relative group ${
                         isDraggingHorizontal && activeHorizontalResizer?.rowIdx === rowIdx && activeHorizontalResizer?.colIdx === colIdx
@@ -221,8 +238,8 @@ export default function GitHubMetricsTab({
                 </React.Fragment>
               ))}
             </div>
-            {/* Row splitter (between rows) */}
-            {rowIdx < rows.length - 1 && (
+            {/* Row splitter (between rows) - only on desktop */}
+            {!isMobile && rowIdx < rows.length - 1 && (
               <div
                 className={`flex-shrink-0 h-2 cursor-row-resize transition-all relative group ${
                   isDraggingVertical && activeVerticalResizer === rowIdx
