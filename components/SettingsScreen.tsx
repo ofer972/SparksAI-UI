@@ -9,6 +9,7 @@ import DashboardLayoutArranger, { DashboardLayout } from './DashboardLayoutArran
 import PromptsTab from './PromptsTab';
 import InsightTypesTab from './InsightTypesTab';
 import { configCache } from '../lib/configCache';
+import { piLabel } from '@/lib/piTerminology';
 
 const DASHBOARD_VIEWS = ['team-dashboard', 'pi-dashboard'];
 const DEFAULT_ALLOWED_VIEW = 'every-dashboard';
@@ -159,7 +160,7 @@ export default function SettingsScreen() {
  case 'team-dashboard':
  return 'Team Dashboard';
  case 'pi-dashboard':
- return 'PI Dashboard';
+      return piLabel('Dashboard');
  default:
  return view;
  }
@@ -922,9 +923,9 @@ export default function SettingsScreen() {
  ? 'bg-brand text-white'
  : 'text-content-secondary hover:bg-surface-secondary'
  }`}
- >
- PI Dashboard
- </button>
+            >
+            {piLabel('Dashboard')}
+            </button>
  </div>
  </div>
  

@@ -6,6 +6,7 @@ import { etlApiService } from '@/lib/etl';
 import { PIDefinition } from '@/lib/etl';
 import PIManagement from './PIManagement';
 import JiraConnectionTab from './JiraConnectionTab';
+import { getPITerminology, piLabel } from '@/lib/piTerminology';
 
 interface ETLSettingsTabsProps {
   settings: ETLSettings;
@@ -85,7 +86,7 @@ export default function ETLSettingsTabs({ settings, customFields, onSaved, initi
     },
     { 
       id: 'pi' as TabType, 
-      label: 'PI Dates', 
+      label: piLabel('Dates'), 
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -1059,7 +1060,7 @@ function PITab({ onSaved }: { onSaved: () => void }) {
           <table className="w-full border-collapse min-w-[600px]">
             <thead>
               <tr className="border-b border-outline">
-                <th className="text-left px-1.5 py-2 font-semibold">PI Name</th>
+                <th className="text-left px-1.5 py-2 font-semibold">{piLabel('Name')}</th>
                 <th className="text-left px-1.5 py-2 font-semibold">Start Date</th>
                 <th className="text-left px-1.5 py-2 font-semibold">End Date</th>
                 <th className="text-left px-1.5 py-2 font-semibold">
@@ -1115,13 +1116,13 @@ function PITab({ onSaved }: { onSaved: () => void }) {
       {editMode && (
         <div className="pt-6 bg-surface-elevated rounded-lg p-4 w-full max-w-[50%]">
           <h3 className="font-semibold mb-4">
-            {editMode === 'add' ? 'Add New PI' : `Edit PI: ${formData.name}`}
+            {editMode === 'add' ? `Add New ${getPITerminology()}` : `Edit ${getPITerminology()}: ${formData.name}`}
           </h3>
           <div className="space-y-3">
             {editMode === 'add' && (
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
                 <label className="text-sm font-medium text-content-secondary w-full sm:w-40 flex-shrink-0">
-                  PI Name *:
+                  {piLabel('Name')} *:
                 </label>
                 <input
                   type="text"
@@ -1206,7 +1207,7 @@ function PITab({ onSaved }: { onSaved: () => void }) {
           onClick={handleAdd}
           className="px-4 py-2 bg-brand text-white rounded hover:bg-brand-hover"
         >
-          ➕ Add New PI
+          {`➕ Add New ${getPITerminology()}`}
         </button>
       )}
 
@@ -1216,7 +1217,7 @@ function PITab({ onSaved }: { onSaved: () => void }) {
           <div className="bg-surface rounded-lg p-4 sm:p-6 max-w-md w-full">
             <h3 className="font-semibold text-lg mb-4">⚠️ Confirm Delete</h3>
             <p className="text-sm text-content-secondary mb-4">
-              Are you sure you want to delete PI &apos;{deleteConfirm}&apos;?
+              Are you sure you want to delete {getPITerminology()} &apos;{deleteConfirm}&apos;?
             </p>
             <div className="flex gap-2">
               <button

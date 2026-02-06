@@ -6,6 +6,7 @@ import EditInsightTypeModal from './EditInsightTypeModal';
 import Toast from './Toast';
 import { ApiService } from '@/lib/api';
 import { InsightType } from '@/lib/config';
+import { piLabel } from '@/lib/piTerminology';
 
 export default function InsightTypesTab() {
   const [insightTypes, setInsightTypes] = useState<InsightType[]>([]);
@@ -167,7 +168,7 @@ export default function InsightTypesTab() {
     { key: 'insight_type', label: 'Insight Type', sortable: true, width: '150px', align: 'left' as const },
     { key: 'insight_description', label: 'Description', sortable: true, width: '220px', align: 'left' as const },
     { key: 'categories', label: 'Categories', sortable: true, width: '260px' },
-    { key: 'pi_insight', label: 'PI Insight', sortable: true, width: '100px', align: 'center' as const },
+    { key: 'pi_insight', label: piLabel('Insight'), sortable: true, width: '100px', align: 'center' as const },
     { key: 'sprint_insight', label: 'Sprint Insight', sortable: true, width: '120px', align: 'center' as const },
     { key: 'team_insight', label: 'Team Insight', sortable: true, width: '110px', align: 'center' as const },
     { key: 'group_insight', label: 'Group Insight', sortable: true, width: '120px', align: 'center' as const },

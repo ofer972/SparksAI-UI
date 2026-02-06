@@ -11,6 +11,7 @@ import GoalsPanel from '../GoalsPanel';
 import { transformGoalsToHierarchy } from '../pigoals/utils';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 import { ApiService } from '@/lib/api';
+import { getPITerminology, getPITerminologyPlural, piLabel } from '@/lib/piTerminology';
 
 interface GoalProgressViewProps {
   data: any;
@@ -247,13 +248,13 @@ const GoalProgressView: React.FC<GoalProgressViewProps> = ({
           onChange={(e) => handleScopeTypeChange(e.target.value)}
           className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand"
         >
-          <option value="pi">PI Goals</option>
+          <option value="pi">{`${getPITerminology()} Goals`}</option>
           <option value="sprint">Sprint Goals</option>
         </select>
       </ReportFilterField>
 
       {scopeType === 'pi' && (
-        <ReportFilterField label="PI">
+        <ReportFilterField label={getPITerminology()}>
           <PIFilter
             selectedPI={piName || ''}
             onPIChange={handlePIChange}
@@ -298,14 +299,14 @@ const GoalProgressView: React.FC<GoalProgressViewProps> = ({
     
     badges.push({
       label: 'Scope',
-      value: scopeType === 'pi' ? 'PI Goals' : 'Sprint Goals',
+      value: scopeType === 'pi' ? `${getPITerminology()} Goals` : 'Sprint Goals',
       filterKey: 'scope_type',
       isPinned: pinnedFilters.includes('scope_type'),
     });
 
     if (scopeType === 'pi' && piName) {
       badges.push({
-        label: 'PI',
+        label: getPITerminology(),
         value: piName,
         filterKey: 'pi_name',
         isPinned: pinnedFilters.includes('pi_name') || pinnedFilters.includes('pi'),
@@ -335,7 +336,7 @@ const GoalProgressView: React.FC<GoalProgressViewProps> = ({
 
   // Calculate dynamic panel title based on scope type and selected PI/Sprint
   const panelTitle = useMemo(() => {
-    const scopeLabel = scopeType === 'pi' ? 'PI Goal Progress' : 'Sprint Goal Progress';
+    const scopeLabel = scopeType === 'pi' ? `${getPITerminology()} Goal Progress` : 'Sprint Goal Progress';
     const name = scopeType === 'pi' ? piName : sprintName;
     
     // If name exists, show in parentheses

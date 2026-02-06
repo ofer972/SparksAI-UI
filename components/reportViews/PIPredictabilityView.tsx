@@ -10,6 +10,7 @@ import ReportFilterField from '../reporting/ReportFilterField';
 import TeamGroupFilter from '../TeamGroupFilter';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 import MultiPIFilter from '../MultiPIFilter';
+import { getPITerminology, getPITerminologyPlural, piLabel } from '@/lib/piTerminology';
 
 export interface PIPredictabilityViewProps {
  data: PIPredictabilityData[];
@@ -119,7 +120,7 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
  let label = key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 
  if (label === 'Pi Predictability Percentage') {
- label = 'PI\nPredictability\nPercent';
+ label = `${getPITerminology()}\nPredictability\nPercent`;
  }
 
  if (label === 'Avg Cycle Time Completed Epics Days') {
@@ -131,7 +132,7 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
  }
 
  if (label === 'Issues Completed Within Pi Dates') {
- label = 'Epics\nCompleted\nduring PI';
+ label = `Epics\nCompleted\nduring ${getPITerminology()}`;
  }
 
  const order = preferredOrder.indexOf(key);
@@ -329,7 +330,7 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
 
  const filtersContent = (
  <ReportFiltersRow>
- <ReportFilterField label="PIs">
+ <ReportFilterField label={getPITerminologyPlural()}>
  <MultiPIFilter
  selectedPIs={piNames}
  onPIsChange={handlePIsChange}
@@ -378,7 +379,7 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
  
  if (piNames.length > 0) {
  badges.push({
- label: 'PIs',
+ label: getPITerminologyPlural(),
  value: `${piNames.length} selected`,
  filterKey: 'pi_names',
  isPinned: pinnedFilters.includes('pi_names'),
@@ -399,7 +400,7 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
 
  return (
  <ReportCard 
- title="PI Predictability" 
+ title={piLabel('Predictability')} 
  reportId={componentProps?.reportId}
  filters={filtersContent}
  filterBadges={filterBadges}
@@ -415,7 +416,7 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
  <div className="flex-1 flex items-center justify-center h-64">
  <div className="flex flex-col items-center">
  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 border-blue-400 mb-2"></div>
- <div className="text-sm text-content-tertiary">Loading PI predictability data...</div>
+ <div className="text-sm text-content-tertiary">{`Loading ${getPITerminology()} predictability data...`}</div>
  </div>
  </div>
  )}

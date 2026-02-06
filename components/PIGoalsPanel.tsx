@@ -12,6 +12,7 @@ import { ApiService } from '@/lib/api';
 import { EditRecordModal } from './EditRecordModal';
 import type { EditableEntityConfig, FormFieldConfig } from '@/lib/entityConfig';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
+import { getPITerminology, piLabel } from '@/lib/piTerminology';
 
 interface GoalsPanelProps {
   title: string;
@@ -122,12 +123,12 @@ export default function GoalsPanel({
           disabled: mode === 'edit', // Also disabled in edit mode
           options: mode === 'create' 
             ? [
-                { value: 'overall', label: scopeType === 'pi' ? 'Overall PI Goals' : scopeType === 'sprint' ? 'Overall Sprint Goals' : 'Overall Goals' },
+                { value: 'overall', label: scopeType === 'pi' ? `Overall ${piLabel('Goals')}` : scopeType === 'sprint' ? 'Overall Sprint Goals' : 'Overall Goals' },
                 { value: 'team', label: 'Team Goal' },
                 { value: 'group', label: 'Group Goal' },
               ]
             : [
-                { value: 'overall', label: scopeType === 'pi' ? 'Overall PI Goals' : scopeType === 'sprint' ? 'Overall Sprint Goals' : 'Overall Goals' },
+                { value: 'overall', label: scopeType === 'pi' ? `Overall ${piLabel('Goals')}` : scopeType === 'sprint' ? 'Overall Sprint Goals' : 'Overall Goals' },
                 ...(isTeamGoal ? [{ value: 'team', label: 'Team Goal' }] : []),
                 ...(isGroupGoal ? [{ value: 'group', label: 'Group Goal' }] : []),
               ],
@@ -246,7 +247,7 @@ export default function GoalsPanel({
         return [];
       },
       primaryKey: 'id',
-      title: scopeType === 'pi' ? 'PI Goal' : scopeType === 'sprint' ? 'Sprint Goal' : 'Goal',
+      title: scopeType === 'pi' ? piLabel('Goal') : scopeType === 'sprint' ? 'Sprint Goal' : 'Goal',
       editableFields,
     };
   }, [isGroup, availableTeams, availableGroups, editGoal, scopeType]);

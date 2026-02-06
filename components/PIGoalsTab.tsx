@@ -8,6 +8,7 @@ import { useUserGoals } from '@/hooks/useUserGoals';
 import GoalsPanel from './GoalsPanel';
 import GoalsConfirmationModal from './pigoals/GoalsConfirmationModal';
 import { useDefaultTeamGroup } from '@/hooks/useDefaultTeamGroup';
+import { getPITerminology } from '@/lib/piTerminology';
 
 export default function PIGoalsTab() {
  const [selectedPI, setSelectedPI] = useState<string>('');
@@ -176,8 +177,8 @@ export default function PIGoalsTab() {
  {/* PI Filter */}
  <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2">
  <label className="text-xs md:text-sm font-medium text-content-secondary whitespace-nowrap">
- PI <span className="text-danger-text">*</span>
- </label>
+                {getPITerminology()} <span className="text-danger-text">*</span>
+                </label>
               <select
                 value={selectedPI}
                 onChange={(e) => setSelectedPI(e.target.value)}
@@ -277,7 +278,7 @@ export default function PIGoalsTab() {
  message={
  <>
  <p className="mb-2">
- Do you want to suggest goals for PI <span className="font-semibold">{selectedPI}</span>
+                Do you want to suggest goals for {getPITerminology()} <span className="font-semibold">{selectedPI}</span>
  {selectedTeamName && (
  <> and {teamGroupText}</>
  )}

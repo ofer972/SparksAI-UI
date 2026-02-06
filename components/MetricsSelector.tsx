@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ApiService } from '@/lib/api';
 import TeamGroupFilter from './TeamGroupFilter';
+import { getPITerminology, piLabel } from '@/lib/piTerminology';
 
 export interface MetricsSelection {
  metricsType: 'team' | 'pi';
@@ -27,11 +28,11 @@ const TEAM_METRICS = [
 ];
 
 const PI_METRICS = [
-  { id: 'pi_completion', label: 'PI Completion' },
-  { id: 'pi_wip', label: 'PI WIP' },
+  { id: 'pi_completion', label: `${getPITerminology()} Completion` },
+  { id: 'pi_wip', label: `${getPITerminology()} WIP` },
   { id: 'epic_cycle_time', label: 'Average Epic Cycle Time' },
-  { id: 'pi_outbound_dependencies', label: 'PI Outbound Dependencies' },
-  { id: 'pi_inbound_dependencies', label: 'PI Inbound Dependencies' },
+  { id: 'pi_outbound_dependencies', label: `${getPITerminology()} Outbound Dependencies` },
+  { id: 'pi_inbound_dependencies', label: `${getPITerminology()} Inbound Dependencies` },
 ];
 
 export default function MetricsSelector({
@@ -191,8 +192,8 @@ export default function MetricsSelector({
  : 'bg-surface-elevated text-content-tertiary border border-outline hover:bg-surface-secondary hover:bg-surface-secondary'}
  `}
  >
- PI Metrics
- </button>
+            {piLabel('Metrics')}
+            </button>
  </nav>
  {/* Tab Content Area */}
  <div className="bg-surface border border-outline-strong rounded-tr-lg rounded-b-lg shadow-sm -mt-px">
@@ -201,14 +202,14 @@ export default function MetricsSelector({
  {metricsType === 'pi' && (
  <div>
  <label className="block text-sm font-medium text-content-secondary mb-2">
- PI
- </label>
+                    {getPITerminology()}
+                    </label>
  <select
  value={selectedPI}
  onChange={(e) => setSelectedPI(e.target.value)}
  className="w-full px-3 py-2 border border-outline-strong bg-surface-elevated text-content-primary rounded-md focus:outline-none focus:ring-2 focus:ring-brand"
  >
- <option value="">Select PI</option>
+                <option value="">{`Select ${getPITerminology()}`}</option>
  {availablePIs.map(pi => (
  <option key={pi} value={pi}>
  {pi}
@@ -267,11 +268,11 @@ export default function MetricsSelector({
  >
  <div className="flex-1">
  <div className="text-sm font-medium text-content-secondary">
- {selection.metricsType === 'team' ? 'Team' : 'PI'} Metrics
+                    {selection.metricsType === 'team' ? 'Team' : getPITerminology()} Metrics
  </div>
  <div className="text-xs text-content-tertiary">
  {selection.teamName && `Team: ${selection.teamName}`}
- {selection.piName && ` | PI: ${selection.piName}`}
+                    {selection.piName && ` | ${getPITerminology()}: ${selection.piName}`}
  {` | ${selection.selectedMetrics.length} metric(s)`}
  </div>
  </div>

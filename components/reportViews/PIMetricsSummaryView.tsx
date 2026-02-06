@@ -9,6 +9,7 @@ import TeamGroupFilter from '../TeamGroupFilter';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 import { ApiService } from '@/lib/api';
 import { PIMetricsSummaryData } from '@/lib/config';
+import { getPITerminology, getPITerminologyPlural, piLabel } from '@/lib/piTerminology';
 
 interface PiStatusTodayRecord {
   progress_delta_pct?: number;
@@ -181,13 +182,13 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
 
   const filterRow = (
     <ReportFiltersRow>
-      <ReportFilterField label="PI">
+      <ReportFilterField label={getPITerminology()}>
         <select
             value={piName}
           onChange={(event) => handleFilterChange('pi', event.target.value || null)}
           className="px-2 py-1 border border-outline rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand min-w-[140px]"
         >
-          <option value="">Select PI</option>
+          <option value="">{`Select ${getPITerminology()}`}</option>
             {availablePIs.map((pi) => (
             <option key={pi} value={pi}>
               {pi}
@@ -227,7 +228,7 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
     
     if (piName) {
       badges.push({
-        label: 'PI',
+        label: getPITerminology(),
         value: piName,
         filterKey: 'pi',
         isPinned: pinnedFilters.includes('pi'),
@@ -248,7 +249,7 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
 
   return (
     <ReportCard 
-      title="PI Metrics Summary" 
+      title={piLabel('Metrics Summary')} 
       reportId={componentProps?.reportId}
       filters={filterRow} 
       filterBadges={filterBadges}
@@ -297,7 +298,7 @@ const PIMetricsSummaryView: React.FC<PIMetricsSummaryViewProps> = ({
             />
 
             <MetricCard
-              title="PI Predictability"
+              title={piLabel('Predictability')}
               description="Predictability across the last three PIs"
               value={formatPercent(wipRecord?.avg_pi_predictability)}
               color={getStatusColor(wipRecord?.avg_pi_predictability_status)}

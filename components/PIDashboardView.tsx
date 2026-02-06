@@ -6,6 +6,7 @@ import DraggableResizableGrid from './DraggableResizableGrid';
 import { ApiService } from '@/lib/api';
 import type { ReportDefinition, LayoutConfig } from '@/lib/config';
 import { configCache } from '@/lib/configCache';
+import { getPITerminology, piLabel } from '@/lib/piTerminology';
 
 interface PIDashboardViewProps {
   selectedPI?: string;
@@ -605,7 +606,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
         <div className="text-center px-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400 mx-auto mb-4"></div>
           <p className="text-content-secondary max-w-md mx-auto">
-            Loading current PI...
+            {`Loading current ${getPITerminology()}...`}
           </p>
         </div>
       </div>
@@ -758,7 +759,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
       <div className="flex-1 overflow-auto p-4">
         {reportOrder.length === 0 ? (
           <div className="p-4 text-content-tertiary">
-            No reports are configured for the PI dashboard yet.
+            {`No reports are configured for the ${piLabel('dashboard')} yet.`}
           </div>
         ) : (
           <div className="space-y-4">

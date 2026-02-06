@@ -8,6 +8,7 @@ import GoalsPanel from './GoalsPanel';
 import { ApiService } from '@/lib/api';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 import { useDefaultTeamGroup } from '@/hooks/useDefaultTeamGroup';
+import { getPITerminology, piLabel } from '@/lib/piTerminology';
 
 interface Sprint {
  sprint_id: number;
@@ -168,7 +169,7 @@ export default function GoalProgressTab() {
 
  // Calculate panel title
  const panelTitle = useMemo(() => {
- const scopeLabel = scopeType === 'pi' ? 'PI Goal Progress' : 'Sprint Goal Progress';
+    const scopeLabel = scopeType === 'pi' ? `${getPITerminology()} Goal Progress` : 'Sprint Goal Progress';
  const name = scopeType === 'pi' ? selectedPI : selectedSprintName;
  if (name) {
  return `${scopeLabel} (${name})`;
@@ -223,7 +224,7 @@ export default function GoalProgressTab() {
  onChange={(e) => handleScopeTypeChange(e.target.value as 'pi' | 'sprint')}
  className="w-full md:w-40 px-2 py-1.5 md:py-1 border border-outline-strong rounded text-xs bg-surface-elevated text-content-primary hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand h-[38px] md:h-[34px]"
  >
- <option value="pi">PI Goals</option>
+                <option value="pi">{`${getPITerminology()} Goals`}</option>
  <option value="sprint">Sprint Goals</option>
  </select>
  </div>
@@ -232,7 +233,7 @@ export default function GoalProgressTab() {
  {scopeType === 'pi' && (
  <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2">
  <label className="text-xs md:text-sm font-medium text-content-secondary whitespace-nowrap">
- PI <span className="text-danger-text">*</span>
+                {getPITerminology()} <span className="text-danger-text">*</span>
  </label>
               <select
                 value={selectedPI}

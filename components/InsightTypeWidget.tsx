@@ -15,6 +15,7 @@ import type { AICard } from '@/lib/aiCardsConfig';
 import PIFilter from './PIFilter';
 import { TeamSelect, GroupSelect } from './filters';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
+import { getPITerminology } from '@/lib/piTerminology';
 
 interface InsightTypeWidgetProps {
  insightTypeId: string;
@@ -552,9 +553,9 @@ export default function InsightTypeWidget({
  
  if (localFilters.pi) {
  badges.push({
- label: 'PI',
- value: localFilters.pi,
- filterKey: 'pi',
+      label: getPITerminology(),
+      value: localFilters.pi,
+      filterKey: 'pi',
  isPinned: pinnedFilters.has('pi'),
  });
  }
@@ -874,7 +875,7 @@ export default function InsightTypeWidget({
  <div className="flex flex-wrap items-center gap-3">
  {insightTypeMetadata.requirePI && (
  <div className="flex items-center gap-2 min-w-[150px]">
- <label className="text-xs font-semibold text-content-secondary whitespace-nowrap">PI:</label>
+      <label className="text-xs font-semibold text-content-secondary whitespace-nowrap">{getPITerminology()}:</label>
  <PIFilter
  selectedPI={localFilters.pi || ''}
  onPIChange={handlePIFilterChange}

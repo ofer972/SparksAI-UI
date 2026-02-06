@@ -12,6 +12,7 @@ import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
 import TeamGroupFilter from '../TeamGroupFilter';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
+import { getPITerminology, getPITerminologyPlural, piLabel } from '@/lib/piTerminology';
 
 const epicScopeColors = {
   'Epics Planned': '#0066cc',
@@ -211,7 +212,7 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
 
   const filtersContent = (
     <ReportFiltersRow>
-      <ReportFilterField label="PI Selection">
+      <ReportFilterField label={piLabel('Selection')}>
         <MultiPIFilter
           selectedPIs={selectedPIs}
           onPIsChange={handlePIsChange}
@@ -238,7 +239,7 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
     
     if (selectedPIs.length > 0) {
       badges.push({
-        label: 'PIs',
+        label: getPITerminologyPlural(),
         value: `${selectedPIs.length} selected`,
         filterKey: 'pi_names',
         isPinned: pinnedFilters.includes('pi_names'),

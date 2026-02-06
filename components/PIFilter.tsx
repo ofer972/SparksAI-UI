@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ApiService } from '@/lib/api';
+import { getPITerminologyPlural } from '@/lib/piTerminology';
 
 interface PIFilterProps {
  selectedPI: string;
@@ -94,7 +95,7 @@ export default function PIFilter({ selectedPI, onPIChange, className = '' }: PIF
  if (loading) {
  return (
  <select className={`w-full border border-outline-strong rounded-lg px-4 py-1 text-sm bg-surface-elevated text-content-primary ${className}`} disabled>
- <option>Loading PIs...</option>
+        <option>{`Loading ${getPITerminologyPlural()}...`}</option>
  </select>
  );
  }
@@ -102,7 +103,7 @@ export default function PIFilter({ selectedPI, onPIChange, className = '' }: PIF
  if (error) {
  return (
  <select className={`w-full border border-outline-strong rounded-lg px-4 py-1 text-sm bg-surface-elevated text-content-primary ${className}`} disabled>
- <option>Error loading PIs</option>
+        <option>{`Error loading ${getPITerminologyPlural()}`}</option>
  </select>
  );
  }

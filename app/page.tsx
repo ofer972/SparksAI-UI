@@ -7,6 +7,7 @@ import SparksAILogo from '@/components/SparksAILogo';
 import SprintKPIs from '@/components/SprintKPIs';
 import PIMetrics from '@/components/PIMetrics';
 import PIDashboardView from '@/components/PIDashboardView';
+import { getPITerminology, piLabel } from '@/lib/piTerminology';
 import GeneralDataView from '@/components/GeneralDataView';
 import AIChatModal from '@/components/AIChatModal';
 import { ApiService, verifyAdmin } from '@/lib/api';
@@ -1313,7 +1314,7 @@ useEffect(() => {
 const navigationItems = [
   { id: 'team-ai-insights', label: 'AI Insights', icon: '💡' },
   { id: 'team-dashboard', label: 'Team Dashboard', icon: '📊' },
-  { id: 'pi-dashboard', label: 'PI Dashboard', icon: '📈' },
+  { id: 'pi-dashboard', label: piLabel('Dashboard'), icon: '📈' },
   ...(isDORAEnabled() ? [{ id: 'github-analysis', label: 'DORA Metrics', icon: '📊' }] : []),
   { id: 'user-settings', label: 'Settings', icon: '👤' },
  { id: 'settings', label: 'System Settings', icon: '⚙️' },
@@ -1321,7 +1322,7 @@ const navigationItems = [
  { id: 'create-agent-job', label: 'Create Agent Job', icon: '➕' },
  { id: 'upload-transcripts', label: 'Upload Transcripts', icon: '⬆️' },
  { id: 'goal-progress', label: 'Goal Progress', icon: '📊' },
- { id: 'pi-goals', label: 'Define PI Goals', icon: '🎯' },
+ { id: 'pi-goals', label: piLabel('Goals', 'Define'), icon: '🎯' },
  { id: 'sprint-goals', label: 'Define Sprint Goals', icon: '▶️' },
  ...(isAdmin ? [
  { id: 'users-admin', label: 'Users', icon: '👥' },
@@ -1524,7 +1525,7 @@ const navigationGroups: Array<{ title: string; items: Array<{ id: string; label:
     title: 'System Dashboards',
     items: [
       { id: 'team-dashboard', label: 'Team Dashboard', icon: <IconChartBar /> },
-      { id: 'pi-dashboard', label: 'PI Dashboard', icon: <IconTrendingUp /> },
+      { id: 'pi-dashboard', label: piLabel('Dashboard'), icon: <IconTrendingUp /> },
       ...(isDORAEnabled() ? [{ id: 'github-analysis', label: 'DORA Metrics', icon: <IconGitHub /> }] : []),
     ],
   },
@@ -1532,7 +1533,7 @@ const navigationGroups: Array<{ title: string; items: Array<{ id: string; label:
  title: 'Goals',
  items: [
  { id: 'goal-progress', label: 'Goal Progress', icon: <IconChartBar /> },
- { id: 'pi-goals', label: 'Define PI Goals', icon: <IconTarget /> },
+      { id: 'pi-goals', label: piLabel('Goals', 'Define'), icon: <IconTarget /> },
  { id: 'sprint-goals', label: 'Define Sprint Goals', icon: <IconFlag /> },
  ],
  },
@@ -1595,7 +1596,7 @@ const navigationGroups: Array<{ title: string; items: Array<{ id: string; label:
  const titles: Record<string, string> = {
   'team-ai-insights': 'SparksAI-AI Insights',
   'team-dashboard': 'SparksAI-Team Dashboard',
-  'pi-dashboard': 'SparksAI-PI Dashboard',
+  'pi-dashboard': `SparksAI-${piLabel('Dashboard')}`,
   'github-analysis': 'SparksAI-DORA Metrics',
   'custom-dashboards': 'SparksAI-My Dashboards',
  'custom-dashboard-editor': 'SparksAI-Dashboard Editor',
@@ -1622,7 +1623,7 @@ const navigationGroups: Array<{ title: string; items: Array<{ id: string; label:
  try {
  setLoadingPrompts(true);
  // Determine prompt type based on active dashboard
- const promptType = activeNavItem === 'team-dashboard' ? 'Team Dashboard' : 'PI Dashboard';
+    const promptType = activeNavItem === 'team-dashboard' ? 'Team Dashboard' : piLabel('Dashboard');
  const fetchedPrompts = await apiService.getPrompts({ 
  email_address: 'ofer972@gmail.com',
  prompt_type: promptType
@@ -2535,10 +2536,10 @@ sidebarCollapsed ? 'w-16' : 'w-56'
  ? 'bg-surface text-brand border-outline-strong -ml-px z-10'
  : 'bg-surface-elevated text-content-tertiary border-outline hover:bg-surface-secondary hover:bg-surface-secondary'
  }`}
- style={{ writingMode: 'vertical-rl' }}
- >
- PI
- </button>
+            style={{ writingMode: 'vertical-rl' }}
+            >
+            {getPITerminology()}
+            </button>
  )}
  </div>
  </div>

@@ -11,6 +11,7 @@ import ReportFilterField from '../reporting/ReportFilterField';
 import TeamGroupFilter from '../TeamGroupFilter';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 import IssueTypesHierarchyFilter from '../IssueTypesHierarchyFilter';
+import { getPITerminology, getPITerminologyPlural, piLabel } from '@/lib/piTerminology';
 
 interface EpicsHierarchyResult {
  issues?: HierarchyItem[];
@@ -161,13 +162,13 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
 
  const filterRow = (
  <ReportFiltersRow>
- <ReportFilterField label="PI">
+ <ReportFilterField label={getPITerminology()}>
  <select
    value={piName}
    onChange={(event) => handlePIsChange(event.target.value || null)}
    className="px-2 py-1 border border-outline-strong bg-surface-elevated text-content-primary rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand min-w-[140px]"
  >
-   <option value="">Select PI</option>
+   <option value="">{`Select ${getPITerminology()}`}</option>
    {availablePIs.map((pi) => (
      <option key={pi} value={pi}>
        {pi}
@@ -228,7 +229,7 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
  { key: 'Type', header: 'Type', renderer: 'badge', minWidth: 70, maxWidth: 80, size: 75 },
  { key: 'type', header: 'Type', renderer: 'badge', minWidth: 70, maxWidth: 80, size: 75 },
  // Quarter PI
- { key: 'quarter_pi', header: 'PI', minWidth: 48, maxWidth: 56, size: 52 },
+ { key: 'quarter_pi', header: getPITerminology(), minWidth: 48, maxWidth: 56, size: 52 },
  // Team Name - 5% smaller
  { key: 'Team Name', header: 'Team Name', minWidth: 57, maxWidth: 114, size: 76 },
  { key: 'team_name', header: 'Team Name', minWidth: 57, maxWidth: 114, size: 76 },
@@ -281,7 +282,7 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
  
  if (piName) {
    badges.push({
-     label: 'PI',
+     label: getPITerminology(),
      value: piName,
      filterKey: 'pi',
      isPinned: pinnedFilters.includes('pi'),
@@ -311,7 +312,7 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
 
  return (
  <ReportCard
- title="PI Epic Progress"
+ title={piLabel('Epic Progress')}
  reportId={componentProps?.reportId}
  filters={filterRow}
  filterBadges={filterBadges}

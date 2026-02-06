@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useETL } from '@/hooks/etl/useETL';
 import ETLDashboard from '@/components/etl/ETLDashboard';
 import ETLSettingsTabs from '@/components/etl/ETLSettingsTabs';
+import { piLabel } from '@/lib/piTerminology';
 
 export default function JiraSettingsView() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -72,7 +73,7 @@ export default function JiraSettingsView() {
     { id: 'fields', label: 'Fields' },
     { id: 'history', label: 'History' },
     { id: 'derived', label: 'Derived Fields' },
-    { id: 'pi', label: 'PI Dates' },
+    { id: 'pi', label: piLabel('Dates') },
   ];
 
   const renderContent = () => {

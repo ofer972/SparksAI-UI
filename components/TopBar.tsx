@@ -6,6 +6,7 @@ import InsightsTopBarContent from './topbar/InsightsTopBarContent';
 import TopBarFilterPanel from './topbar/TopBarFilterPanel';
 
 import type { BreadcrumbItem, NavItemId } from '@/lib/nav';
+import { getPITerminology } from '@/lib/piTerminology';
 
 interface FilterBadge {
   label: string;
@@ -146,14 +147,14 @@ export default function TopBar({
       if (activeNavItem === 'team-ai-insights') {
         if (filters.currentPIName) {
           badges.push({
-            label: 'Current PI',
+            label: `Current ${getPITerminology()}`,
             value: filters.currentPIName,
           });
         }
         // Don't show badge if currentPIName is not set yet (waiting for API response)
       } else {
         badges.push({
-          label: 'PI',
+          label: getPITerminology(),
           value: filters.selectedPI,
         });
       }

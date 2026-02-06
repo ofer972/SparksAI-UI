@@ -5,6 +5,7 @@ import { useAICards } from '@/hooks/useAICards';
 import ReactMarkdown from 'react-markdown';
 
 import type { AICard } from '@/lib/config';
+import { getPITerminology, piLabel } from '@/lib/piTerminology';
 
 type Props = {
   piName?: string;
@@ -43,7 +44,7 @@ export default function PIInsightsPreview({
     <div className="h-full">
       {!teamOrGroupName || !piName ? (
         <div className="text-xs text-content-tertiary">
-          {!teamOrGroupName ? 'Set a default team/group' : 'Loading PI'} to see PI insights.
+          {!teamOrGroupName ? 'Set a default team/group' : `Loading ${getPITerminology()}`} to see {piLabel('insights').toLowerCase()}.
         </div>
       ) : loading ? (
         <div className="flex items-center gap-2 text-xs text-content-tertiary">
@@ -53,7 +54,7 @@ export default function PIInsightsPreview({
       ) : error ? (
         <div className="text-xs text-danger-text">Failed to load: {error}</div>
       ) : topCards.length === 0 ? (
-        <div className="text-xs text-content-tertiary">No PI insights available yet.</div>
+        <div className="text-xs text-content-tertiary">{`No ${piLabel('insights').toLowerCase()} available yet.`}</div>
       ) : (
         <div className="space-y-2">
           {topCards.map((card) => {

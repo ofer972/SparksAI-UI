@@ -14,6 +14,7 @@ import { ApiService } from '@/lib/api';
 import { useUserGoals } from '@/hooks/useUserGoals';
 import { useUserSprintGoals } from '@/hooks/useUserSprintGoals';
 import type { HierarchyItem } from '@/lib/config';
+import { getPITerminology, piLabel } from '@/lib/piTerminology';
 
 export type HomeDetail = {
   id: string;
@@ -163,7 +164,7 @@ export default function HomeDashboard({
               )}
               {currentPIName && (
                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-purple-300 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/40 text-[10px] font-medium text-purple-700 dark:text-purple-300">
-                  PI: {currentPIName}
+                  {getPITerminology()}: {currentPIName}
                 </span>
               )}
             </div>
@@ -214,8 +215,8 @@ export default function HomeDashboard({
                 <svg className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
-                <span className="text-xs font-semibold text-violet-700 dark:text-violet-300">PI Insights</span>
-                <span className="text-[10px] text-violet-600/70 dark:text-violet-400/70 hidden sm:inline">· PI Events & Status {currentPIName ? `· ${currentPIName}` : ''}</span>
+                <span className="text-xs font-semibold text-violet-700 dark:text-violet-300">{piLabel('Insights')}</span>
+                <span className="text-[10px] text-violet-600/70 dark:text-violet-400/70 hidden sm:inline">· {getPITerminology()} Events & Status {currentPIName ? `· ${currentPIName}` : ''}</span>
               </div>
               <button type="button" onClick={() => onNavigate('team-ai-insights')} className="text-[10px] text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-200 font-medium">
                 View All →
@@ -275,8 +276,8 @@ export default function HomeDashboard({
                 <svg className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
-                <span className="text-xs font-semibold text-violet-700 dark:text-violet-300">PI Metrics</span>
-                <span className="text-[10px] text-violet-600/70 dark:text-violet-400/70 hidden sm:inline">· From PI Dashboard {currentPIName ? `· ${currentPIName}` : ''}</span>
+                <span className="text-xs font-semibold text-violet-700 dark:text-violet-300">{piLabel('Metrics')}</span>
+                <span className="text-[10px] text-violet-600/70 dark:text-violet-400/70 hidden sm:inline">· From {piLabel('Dashboard')} {currentPIName ? `· ${currentPIName}` : ''}</span>
               </div>
               <button type="button" onClick={() => onNavigate('pi-dashboard')} className="text-[10px] text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-200 font-medium">
                 Open →
@@ -298,7 +299,7 @@ export default function HomeDashboard({
               />
             ) : (
               <div className="text-xs text-content-tertiary">
-                {hasDefaultContext ? 'Loading PI…' : 'Set a default team/group to view metrics.'}
+                {hasDefaultContext ? `Loading ${getPITerminology()}…` : 'Set a default team/group to view metrics.'}
               </div>
             )}
           </div>
@@ -376,8 +377,8 @@ export default function HomeDashboard({
                 <svg className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
-                <span className="text-xs font-semibold text-violet-700 dark:text-violet-300">PI Goals</span>
-                <span className="text-[10px] text-violet-600/70 dark:text-violet-400/70 hidden sm:inline">· {currentPIName || 'Current PI'}</span>
+                <span className="text-xs font-semibold text-violet-700 dark:text-violet-300">{piLabel('Goals')}</span>
+                <span className="text-[10px] text-violet-600/70 dark:text-violet-400/70 hidden sm:inline">· {currentPIName || `Current ${getPITerminology()}`}</span>
               </div>
               <button type="button" onClick={() => onNavigate('pi-goals')} className="text-[10px] text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-200 font-medium">
                 {piGoalRows.length > 0 ? 'Manage →' : 'Define →'}
@@ -401,7 +402,7 @@ export default function HomeDashboard({
               </div>
             ) : piGoalRows.length === 0 ? (
               <div className="rounded-lg border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-2">
-                <div className="text-xs font-medium text-amber-900 dark:text-amber-300">No PI goals defined</div>
+                <div className="text-xs font-medium text-amber-900 dark:text-amber-300">{`No ${getPITerminology()} goals defined`}</div>
                 <button type="button" onClick={() => onNavigate('pi-goals')} className="mt-1.5 text-[10px] text-amber-700 dark:text-amber-400 font-medium hover:underline">
                   Define Goals →
                 </button>

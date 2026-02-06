@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { usePIMetrics } from '@/hooks';
 import KPICard from './KPICard';
+import { getPITerminology } from '@/lib/piTerminology';
 
 interface Trend {
   direction: 'up' | 'down' | 'flat';
@@ -75,7 +76,7 @@ export default function PIMetrics({
     }
   };
 
-  if (!piName || piName.trim() === '' || piName === 'Select PI' || piName.trim() === 'Select PI') {
+  if (!piName || piName.trim() === '' || piName === `Select ${getPITerminology()}` || piName.trim() === `Select ${getPITerminology()}`) {
     return null;
   }
 

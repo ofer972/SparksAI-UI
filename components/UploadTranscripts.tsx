@@ -4,6 +4,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { ApiService } from '@/lib/api';
 import TeamFilter from '@/components/TeamFilter';
 import PIFilter from '@/components/PIFilter';
+import { getPITerminology, piLabel } from '@/lib/piTerminology';
 
 interface UploadTranscriptsProps {
  selectedTeam: string;
@@ -82,7 +83,7 @@ const FileUploadArea = React.memo(({
  className="px-2 py-1 border border-outline-strong rounded-md bg-surface-elevated text-content-primary focus:outline-none focus:ring-2 focus:ring-brand text-sm"
  >
  <option value="Daily">Daily</option>
- <option value="PI Sync">PI Sync</option>
+                <option value="PI Sync">{`${getPITerminology()} Sync`}</option>
  </select>
  </div>
  </div>
@@ -362,7 +363,7 @@ export default function UploadTranscripts({ selectedTeam, selectedPI, onTeamChan
  />
  </div>
  <div>
- <label className="block text-sm font-medium text-content-secondary mb-2">Select PI</label>
+                <label className="block text-sm font-medium text-content-secondary mb-2">{`Select ${getPITerminology()}`}</label>
  <PIFilter
  selectedPI={selectedPI || ''}
  onPIChange={onPIChange || (() => {})}
@@ -400,7 +401,7 @@ export default function UploadTranscripts({ selectedTeam, selectedPI, onTeamChan
  onUpload={uploadPIFiles}
  fileInputRef={piFileInputRef}
  isTeam={false}
- title={`Upload PI Transcripts - ${selectedPI}`}
+            title={`Upload ${getPITerminology()} Transcripts - ${selectedPI}`}
  progress={piProgress}
  uploading={piUploading}
  error={piError}

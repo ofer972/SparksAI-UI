@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { buildBackendUrl, API_CONFIG } from '@/lib/config';
 import { authFetch } from '@/lib/api';
+import { replacePITerminology } from '@/lib/piTerminology';
 
 interface InsightCategory {
  name: string;
@@ -202,13 +203,13 @@ export default function InsightCategoryFilter({
  onClick={handleToggleDropdown}
  className="border border-outline-strong rounded-lg px-4 py-1 text-sm bg-surface-elevated text-content-primary hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600 hover:border-outline-strong hover:border-outline-strong transition-colors flex items-center space-x-1 w-full md:min-w-[200px] md:max-w-[300px] justify-between"
  >
- <span className="truncate">
- {selectedCategories.length === 0 
- ? 'None' 
- : selectedCategories.length === categories.length
- ? 'All' 
- : selectedCategories.join(', ')}
- </span>
+            <span className="truncate">
+            {selectedCategories.length === 0 
+            ? 'None' 
+            : selectedCategories.length === categories.length
+            ? 'All' 
+            : selectedCategories.map(c => replacePITerminology(c)).join(', ')}
+            </span>
  <svg 
  className={`w-4 h-4 transition-transform flex-shrink-0 ${isOpen ? 'transform rotate-180' : ''}`}
  fill="none" 
@@ -244,7 +245,7 @@ export default function InsightCategoryFilter({
  onChange={() => toggleCategory(category.name)}
  className="w-4 h-4 text-brand border-outline-strong rounded focus:ring-brand"
  />
- <span className="text-sm text-content-secondary">{category.name}</span>
+                <span className="text-sm text-content-secondary">{replacePITerminology(category.name)}</span>
  </label>
  ))
  )}

@@ -9,6 +9,7 @@ import DataTable, { Column } from '../DataTable';
 import MultiPIFilter from '../MultiPIFilter';
 import TeamGroupFilter from '../TeamGroupFilter';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
+import { getPITerminology, getPITerminologyPlural, piLabel } from '@/lib/piTerminology';
 
 interface EpicDependencyItem {
  [key: string]: any;
@@ -34,7 +35,7 @@ interface EpicDependenciesViewProps {
 
 // Column label mappings for outbound
 const outboundLabelMap: Record<string, string> = {
- 'quarter_pi_of_epic': 'PI',
+ 'quarter_pi_of_epic': getPITerminology(),
  'owned_team': 'Owning\nTeam',
  'number_of_epics_owned': '# Epics\nOwned',
  'number_of_dependent_teams': '# Dependent\nTeams',
@@ -45,7 +46,7 @@ const outboundLabelMap: Record<string, string> = {
 
 // Column label mappings for inbound
 const inboundLabelMap: Record<string, string> = {
- 'quarter_pi_of_epic': 'PI',
+ 'quarter_pi_of_epic': getPITerminology(),
  'assignee_team': 'Assignee\nTeam',
  'number_of_relying_teams': '# Relying\nTeams',
  'volume_of_work_relied_upon': '# Volume Of\nWork',
@@ -251,7 +252,7 @@ const EpicDependenciesView: React.FC<EpicDependenciesViewProps> = ({
 
  const filtersContent = (
  <ReportFiltersRow>
- <ReportFilterField label="PIs">
+ <ReportFilterField label={getPITerminologyPlural()}>
  <MultiPIFilter
  selectedPIs={piNames}
  onPIsChange={handlePIsChange}
@@ -278,7 +279,7 @@ const EpicDependenciesView: React.FC<EpicDependenciesViewProps> = ({
  
  if (piNames.length > 0) {
  badges.push({
- label: 'PIs',
+ label: getPITerminologyPlural(),
  value: `${piNames.length} selected`,
  filterKey: 'pi',
  isPinned: pinnedFilters.includes('pi'),

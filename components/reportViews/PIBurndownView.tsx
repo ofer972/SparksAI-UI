@@ -7,6 +7,7 @@ import { getIssueTypes } from '@/lib/issueTypes';
 import { ApiService } from '@/lib/api';
 import BurndownViewBase from './BurndownViewBase';
 import ReportFilterField from '../reporting/ReportFilterField';
+import { getPITerminology, getPITerminologyPlural, piLabel } from '@/lib/piTerminology';
 
 interface PIBurndownViewProps {
  data: BurndownDataPoint[];
@@ -76,13 +77,13 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
  {
  type: 'pi' as const,
  component: (
- <ReportFilterField label="PI">
+ <ReportFilterField label={getPITerminology()}>
  <select
  value={piName}
  onChange={(event) => handleFilterChange('pi', event.target.value || null)}
  className="px-2 py-1 border border-outline-strong bg-surface-elevated text-content-primary rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand min-w-[140px]"
  >
- <option value="">Select PI</option>
+ <option value="">{`Select ${getPITerminology()}`}</option>
  {availablePIs.map((pi) => (
  <option key={pi} value={pi}>
  {pi}
@@ -118,7 +119,7 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
  
  if (piName) {
  badges.push({
- label: 'PI',
+ label: getPITerminology(),
  value: piName,
  filterKey: 'pi',
  isPinned: pinnedFilters.includes('pi'),
@@ -194,10 +195,10 @@ const PIBurndownView: React.FC<PIBurndownViewProps> = ({
  componentProps={componentProps}
  togglePin={togglePin}
  pinnedFilters={pinnedFilters}
- title="PI Burndown"
+ title={piLabel('Burndown')}
  customFilters={customFilters}
  filterBadges={filterBadges}
- chartTitle={meta?.pi ? `PI Burndown: ${meta.pi}` : undefined}
+ chartTitle={meta?.pi ? `${piLabel('Burndown')}: ${meta.pi}` : undefined}
  dateDisplay={dateDisplay}
  onChartClick={handleChartClick}
  fetchIssuesFunctionFactory={fetchPIBurndownIssuesFactory}

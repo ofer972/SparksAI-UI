@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { DataTable, Column } from '@/components/DataTable';
 import { etlApiService } from '@/lib/etl';
 import { PIDefinition } from '@/lib/etl';
+import { getPITerminology, getPITerminologyPlural, piLabel } from '@/lib/piTerminology';
 
 interface PIManagementProps {
   onSaved: () => void;
@@ -129,7 +130,7 @@ export default function PIManagement({ onSaved }: PIManagementProps) {
   }));
 
   const columns: Column<PIRow>[] = [
-    { key: 'pi_name', label: 'PI Name', sortable: true },
+    { key: 'pi_name', label: piLabel('Name'), sortable: true },
     { 
       key: 'start_date', 
       label: 'Start Date', 
@@ -168,7 +169,7 @@ export default function PIManagement({ onSaved }: PIManagementProps) {
           onClick={handleAdd}
           className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium shadow-sm"
         >
-          + Add PI
+          + {`Add ${getPITerminology()}`}
         </button>
       </div>
 
@@ -184,7 +185,7 @@ export default function PIManagement({ onSaved }: PIManagementProps) {
         columns={columns}
         loading={loading}
         error={error}
-        emptyMessage="No PIs configured. Click 'Add PI' to create one."
+        emptyMessage={`No ${getPITerminologyPlural()} configured. Click 'Add ${getPITerminology()}' to create one.`}
         onEditItem={handleEdit}
         onDeleteItem={(row) => setDeleteConfirm(row.pi_name)}
         allowEdit={true}
@@ -198,7 +199,7 @@ export default function PIManagement({ onSaved }: PIManagementProps) {
           <div className="bg-surface rounded-lg shadow-xl max-w-lg w-full border border-outline">
             <div className="px-6 py-4 border-b border-outline">
               <h3 className="text-lg font-semibold text-content-primary">
-                {editingPI ? 'Edit PI' : 'Add New PI'}
+                {editingPI ? `Edit ${getPITerminology()}` : `Add New ${getPITerminology()}`}
               </h3>
             </div>
             
@@ -210,7 +211,7 @@ export default function PIManagement({ onSaved }: PIManagementProps) {
 
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-content-secondary mb-1">PI Name</label>
+                <label className="block text-sm font-medium text-content-secondary mb-1">{piLabel('Name')}</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -286,7 +287,7 @@ export default function PIManagement({ onSaved }: PIManagementProps) {
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
           <div className="bg-surface rounded-lg shadow-xl p-6 max-w-md w-full border border-outline">
-            <h3 className="font-semibold text-lg mb-3 text-content-primary">Delete PI</h3>
+            <h3 className="font-semibold text-lg mb-3 text-content-primary">{`Delete ${getPITerminology()}`}</h3>
             <p className="text-sm text-content-secondary mb-6">
               Are you sure you want to delete <strong>{deleteConfirm}</strong>?
             </p>

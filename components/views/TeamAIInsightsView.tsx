@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import AICards from '@/components/AICards';
 import SprintKPIs, { type KPIDashboardData } from '@/components/SprintKPIs';
 import PIMetrics from '@/components/PIMetrics';
+import { getPITerminology, piLabel } from '@/lib/piTerminology';
 
 interface TeamAIInsightsViewProps {
  selectedPI?: string;
@@ -65,9 +66,9 @@ export default function TeamAIInsightsView({
       <div className="flex items-center justify-center h-full min-h-[400px]">
         <div className="text-center px-4">
           <div className="text-6xl mb-4">👥</div>
-          <h2 className="text-2xl font-semibold text-content-primary mb-2">Select a Team or a Group or PI</h2>
+          <h2 className="text-2xl font-semibold text-content-primary mb-2">{`Select a Team or a Group or ${getPITerminology()}`}</h2>
           <p className="text-content-tertiary max-w-md mx-auto">
-            Click the filter button at the top right, then select a team, group, or PI to view AI insights and metrics.
+            {`Click the filter button at the top right, then select a team, group, or ${getPITerminology()} to view AI insights and metrics.`}
           </p>
         </div>
       </div>
@@ -110,8 +111,8 @@ export default function TeamAIInsightsView({
  : 'bg-surface-elevated text-content-tertiary border border-outline hover:bg-surface-secondary hover:bg-surface-secondary'
  }`}
  >
- PI Metrics
- </button>
+            {piLabel('Metrics')}
+            </button>
  )}
  </div>
  

@@ -14,6 +14,7 @@ import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 import MultiPIFilter from '../MultiPIFilter';
 import IssueTypesHierarchyFilter from '../IssueTypesHierarchyFilter';
 import { getCleanJiraUrl } from '@/lib/config';
+import { getPITerminology, getPITerminologyPlural, piLabel } from '@/lib/piTerminology';
 
 interface EpicsHierarchyResult {
   issues?: HierarchyItem[];
@@ -441,7 +442,7 @@ const PIRoadmapView: React.FC<PIRoadmapViewProps> = ({
 
     if (piNames.length > 0) {
       badges.push({
-        label: 'PI',
+        label: getPITerminology(),
         value: piNames.join(', '),
         filterKey: 'pi',
         isPinned: pinnedFilters.includes('pi'),
@@ -495,7 +496,7 @@ const PIRoadmapView: React.FC<PIRoadmapViewProps> = ({
   const filterRow = (
     <div className="flex flex-wrap items-center gap-9">
       <div className="flex items-center gap-2 text-xs">
-        <span className="text-content-secondary font-medium whitespace-nowrap">PIs</span>
+        <span className="text-content-secondary font-medium whitespace-nowrap">{getPITerminologyPlural()}</span>
         <div>
           <MultiPIFilter
             selectedPIs={piNames}
@@ -625,7 +626,7 @@ const PIRoadmapView: React.FC<PIRoadmapViewProps> = ({
 
   return (
     <ReportCard
-      title="PI Roadmap"
+      title={piLabel('Roadmap')}
       reportId={componentProps?.reportId}
       filters={filterRow}
       filterBadges={filterBadges}
@@ -736,7 +737,7 @@ const PIRoadmapView: React.FC<PIRoadmapViewProps> = ({
                       }}
                     />
                   </div>
-                  <span className="text-content-primary">PI</span>
+                  <span className="text-content-primary">{getPITerminology()}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div 

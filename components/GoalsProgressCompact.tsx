@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ApiService } from '@/lib/api';
+import { piLabel } from '@/lib/piTerminology';
 
 interface Goal {
   id: number;
@@ -138,7 +139,7 @@ export default function GoalsProgressCompact({
     );
   };
 
-  const title = type === 'pi' ? 'PI Goals' : 'Sprint Goals';
+  const title = type === 'pi' ? piLabel('Goals') : 'Sprint Goals';
 
   const handleClick = () => {
     if (onSetGoalProgressScope && onNavigate) {

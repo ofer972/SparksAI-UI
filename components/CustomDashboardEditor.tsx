@@ -29,6 +29,7 @@ import TeamGroupFilter from './TeamGroupFilter';
 import PIFilter from './PIFilter';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 import { ApiService } from '@/lib/api';
+import { getPITerminology } from '@/lib/piTerminology';
 
 interface CustomDashboardEditorProps {
   dashboardId: string;
@@ -1299,7 +1300,7 @@ export default function CustomDashboardEditor({
               />
             </ReportFilterField>
             {metricsConfig.metricsType === 'pi' && (
-              <ReportFilterField label="PI">
+              <ReportFilterField label={getPITerminology()}>
                 <PIFilter
                   selectedPI={displayPIName || ''}
                   onPIChange={handlePIChange}
@@ -1367,7 +1368,7 @@ export default function CustomDashboardEditor({
       }
       if (displayPIName) {
         filterBadges.push({
-          label: 'PI',
+          label: getPITerminology(),
           value: displayPIName,
           filterKey: 'pi',
           isPinned: isPIPinned,

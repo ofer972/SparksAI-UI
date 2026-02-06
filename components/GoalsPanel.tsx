@@ -10,6 +10,7 @@ import { EditRecordModal } from './EditRecordModal';
 import type { EditableEntityConfig, FormFieldConfig } from '@/lib/entityConfig';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 import GoalsConfirmationModal from './pigoals/GoalsConfirmationModal';
+import { getPITerminology } from '@/lib/piTerminology';
 import ConnectIssuesDialog from './pigoals/ConnectIssuesDialog';
 import { createGoalsPanelColumns, type GoalForEdit, type GoalsPanelActionOptions } from './GoalsPanelColumns';
 
@@ -103,16 +104,16 @@ export default function GoalsPanel({
  
  // Get label prefix based on scope type
  const getTeamLabel = () => {
- if (scopeType === 'pi') return 'PI Team Goal';
- if (scopeType === 'sprint') return 'Sprint Team Goal';
- return 'Team Goal';
- };
+    if (scopeType === 'pi') return `${getPITerminology()} Team Goal`;
+    if (scopeType === 'sprint') return 'Sprint Team Goal';
+    return 'Team Goal';
+  };
  
- const getGroupLabel = () => {
- if (scopeType === 'pi') return 'PI Group Goal';
- if (scopeType === 'sprint') return 'Sprint Group Goal';
- return 'Group Goal';
- };
+  const getGroupLabel = () => {
+    if (scopeType === 'pi') return `${getPITerminology()} Group Goal`;
+    if (scopeType === 'sprint') return 'Sprint Group Goal';
+    return 'Group Goal';
+  };
  
  // Base fields that are always shown
  const baseFields: FormFieldConfig<GoalForEdit>[] = [
@@ -251,7 +252,7 @@ export default function GoalsPanel({
  return [];
  },
  primaryKey: 'id',
- title: scopeType === 'pi' ? 'PI Goal' : scopeType === 'sprint' ? 'Sprint Goal' : 'Goal',
+      title: scopeType === 'pi' ? `${getPITerminology()} Goal` : scopeType === 'sprint' ? 'Sprint Goal' : 'Goal',
  editableFields,
  };
  }, [isGroup, availableTeams, availableGroups, editGoal, scopeType]);
@@ -889,7 +890,7 @@ export default function GoalsPanel({
  <div className="bg-surface-elevated border border-outline rounded-lg p-3 space-y-2 mb-3">
  {scopeType === 'pi' && piName && (
  <div className="flex items-start gap-2">
- <span className="text-xs font-semibold text-content-tertiary min-w-[80px]">PI:</span>
+                <span className="text-xs font-semibold text-content-tertiary min-w-[80px]">{getPITerminology()}:</span>
  <span className="text-xs text-content-primary text-content-secondary">{piName}</span>
  </div>
  )}
@@ -982,7 +983,7 @@ export default function GoalsPanel({
  <div className="bg-surface-elevated border border-outline rounded-lg p-3 mb-3 space-y-2">
  {scopeType === 'pi' && piName && (
  <div className="flex items-start gap-2">
- <span className="text-xs font-semibold text-content-tertiary min-w-[50px]">PI:</span>
+                <span className="text-xs font-semibold text-content-tertiary min-w-[50px]">{getPITerminology()}:</span>
  <span className="text-xs text-content-primary text-content-secondary">{piName}</span>
  </div>
  )}

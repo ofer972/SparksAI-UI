@@ -12,6 +12,7 @@ import IssuesDialog from './IssuesDialog';
 import { getEpicsByPiSummary, getDependencyHeatmapStories } from '@/lib/api';
 import { API_CONFIG } from '@/lib/config';
 import type { Column } from '../DataTable';
+import { getPITerminology, getPITerminologyPlural, piLabel } from '@/lib/piTerminology';
 
 interface HeatmapCell {
   owning_team: string;
@@ -197,7 +198,7 @@ const DependencyHeatmapView: React.FC<DependencyHeatmapViewProps> = ({
   // Filters UI
   const filtersContent = (
     <ReportFiltersRow>
-      <ReportFilterField label="PI">
+      <ReportFilterField label={getPITerminology()}>
         <PIFilter
           selectedPI={pi || ''}
           onPIChange={handlePIChange}
@@ -364,7 +365,7 @@ const DependencyHeatmapView: React.FC<DependencyHeatmapViewProps> = ({
     
     if (pi) {
       badges.push({
-        label: 'PI',
+        label: getPITerminology(),
         value: pi,
         filterKey: 'pi',
         isPinned: pinnedFilters.includes('pi'),

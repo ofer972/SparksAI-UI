@@ -5,6 +5,7 @@ import { ApiService } from '@/lib/api';
 import { InsightType } from '@/lib/config';
 import Toast from '@/components/Toast';
 import ErrorModal from '@/components/ErrorModal';
+import { getPITerminology, getPITerminologyPlural, piLabel } from '@/lib/piTerminology';
 
 export default function CreateAgentJobView() {
  const apiService = new ApiService();
@@ -127,7 +128,7 @@ export default function CreateAgentJobView() {
  const handleCreateJob = async (insightType: InsightType) => {
  // Validation
  if (insightType.requirePI && !selectedPI[insightType.id]) {
- setErrorModal('PI is required for this insight type');
+      setErrorModal(`${getPITerminology()} is required for this insight type`);
  return;
  }
  if (insightType.requireTeam && !selectedTeam[insightType.id]) {
@@ -209,9 +210,9 @@ export default function CreateAgentJobView() {
  <div className="space-y-2 flex-1">
  {insightType.requirePI && (
  <div className="flex items-center gap-2">
- <label className="text-xs font-semibold text-content-secondary whitespace-nowrap min-w-[50px]">
- PI:
- </label>
+              <label className="text-xs font-semibold text-content-secondary whitespace-nowrap min-w-[50px]">
+   {getPITerminology()}:
+  </label>
  <select
  value={selectedPI[insightType.id] || ''}
  onChange={(e) => setSelectedPI(prev => ({
@@ -221,19 +222,19 @@ export default function CreateAgentJobView() {
  className="flex-1 px-2 py-1.5 text-xs border border-outline-strong rounded-md focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-surface-elevated text-content-primary"
  disabled={isLoading}
  >
- <option value="">Select PI</option>
- {availablePIs.length > 0 ? (
- availablePIs.map(pi => (
- <option key={pi} value={pi}>{pi}</option>
- ))
- ) : (
- <option value="" disabled>Loading PIs...</option>
- )}
- </select>
- </div>
- )}
- 
- {insightType.requireTeam && (
+  <option value="">{`Select ${getPITerminology()}`}</option>
+  {availablePIs.length > 0 ? (
+  availablePIs.map(pi => (
+  <option key={pi} value={pi}>{pi}</option>
+  ))
+  ) : (
+  <option value="" disabled>{`Loading ${getPITerminologyPlural()}...`}</option>
+  )}
+  </select>
+  </div>
+  )}
+  
+  {insightType.requireTeam && (
  <div className="flex items-center gap-2">
  <label className="text-xs font-semibold text-content-secondary whitespace-nowrap min-w-[50px]">
  Team:
@@ -366,38 +367,38 @@ export default function CreateAgentJobView() {
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
  </svg>
  </div>
- <h2 className="text-xl font-bold text-content-primary">PI Insights</h2>
+ <h2 className="text-xl font-bold text-content-primary">{piLabel('Insights')}</h2>
  </div>
  
  {/* Global PI Filter */}
  <div className="mb-3 bg-surface rounded-lg p-3 shadow-sm border border-green-100 dark:border-green-900 flex-shrink-0">
  <label className="block text-xs font-semibold text-content-secondary mb-1.5">
- Apply to All PIs:
- </label>
+  {`Apply to All ${getPITerminologyPlural()}:`}
+  </label>
  <select
  value={globalPIFilter}
  onChange={(e) => handleGlobalPIFilter(e.target.value)}
  className="w-full px-2 py-1.5 text-xs border border-outline-strong rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-600 focus:border-transparent bg-surface-elevated text-content-primary"
  disabled={piInsights.length === 0}
  >
- <option value="">Select PI</option>
- {availablePIs.length > 0 ? (
- availablePIs.map(pi => (
- <option key={pi} value={pi}>{pi}</option>
- ))
- ) : (
- <option value="" disabled>Loading PIs...</option>
- )}
- </select>
- </div>
+ <option value="">{`Select ${getPITerminology()}`}</option>
+  {availablePIs.length > 0 ? (
+  availablePIs.map(pi => (
+  <option key={pi} value={pi}>{pi}</option>
+  ))
+  ) : (
+  <option value="" disabled>{`Loading ${getPITerminologyPlural()}...`}</option>
+  )}
+  </select>
+  </div>
 
- {piInsights.length > 0 ? (
+  {piInsights.length > 0 ? (
  <div className="space-y-3 overflow-y-auto flex-1">
  {piInsights.map(renderInsightTypeCard)}
  </div>
  ) : (
  <div className="bg-surface rounded-lg border border-outline p-6 text-center">
- <p className="text-content-muted font-medium">No PI Insights available</p>
+ <p className="text-content-muted font-medium">{`No ${piLabel('Insights')} available`}</p>
  </div>
  )}
  </div>

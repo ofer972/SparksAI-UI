@@ -3,19 +3,46 @@
  * 
  * Provides functions to get and replace PI terminology based on environment variable.
  * This allows the UI to display "PI" or alternative terms (e.g., "Quarter") based on configuration.
+ * 
+ * IMPORTANT: This only affects user-facing display text. API parameters, variable names,
+ * and internal identifiers should always remain "PI" to avoid breaking backend calls.
  */
 
 /**
- * Get PI terminology from environment variable
- * Defaults to "Quarter" if not set
+ * Get PI terminology from environment variable.
+ * Defaults to "PI" if not set. Set NEXT_PUBLIC_PI_TERMINOLOGY="Quarter" to switch.
  */
 export function getPITerminology(): string {
-  return process.env.NEXT_PUBLIC_PI_TERMINOLOGY || 'Quarter';
+  return process.env.NEXT_PUBLIC_PI_TERMINOLOGY || 'PI';
 }
 
 /**
- * Replace "PI" in a string with the configured terminology
- * Useful for backend data that contains "PI" in titles/headers/tooltips
+ * Convenience: get the plural form (e.g., "PIs" or "Quarters")
+ */
+export function getPITerminologyPlural(): string {
+  const term = getPITerminology();
+  if (term === 'PI') return 'PIs';
+  // Simple English pluralization
+  if (term.endsWith('s') || term.endsWith('x') || term.endsWith('z') || term.endsWith('ch') || term.endsWith('sh')) {
+    return `${term}es`;
+  }
+  return `${term}s`;
+}
+
+/**
+ * Build a display label using the configured PI terminology.
+ * Example: piLabel('Dashboard') => "PI Dashboard" or "Quarter Dashboard"
+ *          piLabel('Goals', 'Define') => "Define PI Goals" or "Define Quarter Goals"
+ */
+export function piLabel(suffix: string, prefix?: string): string {
+  const term = getPITerminology();
+  const base = suffix ? `${term} ${suffix}` : term;
+  return prefix ? `${prefix} ${base}` : base;
+}
+
+/**
+ * Replace "PI" in a string with the configured terminology.
+ * Useful for backend data that contains "PI" in titles/headers/tooltips.
  * 
  * Uses word boundaries to avoid replacing "PI" inside other words (e.g., "API", "Epic")
  * 
@@ -38,8 +65,8 @@ export function replacePITerminology(text: string): string {
 }
 
 /**
- * Check if a category name is PI-related
- * Handles both "PI Events"/"PI Status" and configured terminology versions
+ * Check if a category name is PI-related.
+ * Handles both "PI Events"/"PI Status" and configured terminology versions.
  * 
  * @param category - Category name to check
  * @returns True if category is PI-related
@@ -48,12 +75,12 @@ export function isPICategory(category: string): boolean {
   const piTerm = getPITerminology();
   const normalizedCategory = category.trim();
   
-  // Check for original PI categories
+  // Check for original PI categories (always, since backend sends these)
   if (normalizedCategory === 'PI Events' || normalizedCategory === 'PI Status') {
     return true;
   }
   
-  // Check for configured terminology categories (e.g., "quarter Events", "quarter Status")
+  // Check for configured terminology categories (e.g., "Quarter Events", "Quarter Status")
   if (normalizedCategory === `${piTerm} Events` || normalizedCategory === `${piTerm} Status`) {
     return true;
   }

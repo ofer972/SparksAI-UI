@@ -22,6 +22,7 @@ import {
   getBarColor,
 } from './utils';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, differenceInDays } from 'date-fns';
+import { getPITerminology, getPITerminologyPlural, piLabel } from '@/lib/piTerminology';
 
 const DEFAULT_ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 40;
@@ -107,8 +108,8 @@ export default function HierarchyGanttTable({
       key: 'PIs',
       parent: 'Milestone',
       Key: 'PIs',
-      'Issue Summary': 'PIs',
-      Summary: 'PIs',
+      'Issue Summary': getPITerminologyPlural(),
+      Summary: getPITerminologyPlural(),
       Type: 'PIs',
       Status: '', // Empty status for PIs
       'Hierarchy Level': 1,
@@ -839,7 +840,7 @@ export default function HierarchyGanttTable({
     
     // Check if this is an "added" epic - add message at the beginning
     if ((item as any).Type === 'Epic' && (item as any)['Planned or Added'] === 'added') {
-      parts.push('Epic was added after PI planning');
+      parts.push(`Epic was added after ${getPITerminology()} planning`);
     }
     
     // Summary
@@ -941,7 +942,7 @@ export default function HierarchyGanttTable({
                       } as HierarchyItem;
                       const piBarPosition = calculateBarPosition(piItem, ganttConfig, timelineStart, columnWidth, timelineDates, currentGanttViewMode);
                       const piColor = '#c084fc'; // light purple
-                      const piTooltip = `PI: ${pi['PI name']}\nStart: ${pi['start date']}\nEnd: ${pi['end date']}`;
+                      const piTooltip = `${getPITerminology()}: ${pi['PI name']}\nStart: ${pi['start date']}\nEnd: ${pi['end date']}`;
                       
                       // If bar position can't be calculated, skip this PI
                       if (!piBarPosition) return null;
