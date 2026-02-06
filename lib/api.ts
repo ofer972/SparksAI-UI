@@ -1993,6 +1993,32 @@ export class ApiService {
     return result;
   }
 
+  async getSystemSettings(): Promise<{
+    success: boolean;
+    data: {
+      settings_by_category: {
+        [category: string]: Array<{
+          setting_key: string;
+          setting_value: string;
+          setting_type: string;
+          description: string;
+          is_encrypted: boolean;
+        }>;
+      };
+      categories: string[];
+      count: number;
+    };
+  }> {
+    const url = buildBackendUrl('/settings/getAll');
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch system settings: ${response.statusText}`);
+    }
+    const result = await response.json();
+    if (result?.success && result?.data) return result;
+    throw new Error('Invalid response format from system settings API');
+  }
+
   async updateSettings(settings: Record<string, any>, updatedBy?: string): Promise<any> {
     // Ensure all values are strings as backend expects Dict[str, str]
     const stringSettings: Record<string, string> = {};
