@@ -2192,7 +2192,7 @@ export class ApiService {
     return result as unknown as InsightType;
   }
 
-  async updateInsightType(id: number, data: {
+  async updateInsightType(id: string, data: {
     insight_type?: string;
     insight_description?: string;
     insight_categories?: string[];

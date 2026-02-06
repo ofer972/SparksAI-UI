@@ -417,10 +417,10 @@ export default function InsightTypeWidget({
  if (!matches && allCards.length <= 5) {
  console.log('[InsightTypeWidget] Card does not match:', {
  cardId: card.id,
- cardType,
- normalizedCardType: cardType.toLowerCase(),
- insightType: normalizedInsightType,
- normalizedInsightType: normalizedInsightType.toLowerCase(),
+ cardInsightId: cardId,
+ normalizedCardInsightId: cardId.toLowerCase(),
+ insightType: normalizedInsightId,
+ normalizedInsightType: normalizedInsightId.toLowerCase(),
  matches,
  });
  }
@@ -429,7 +429,7 @@ export default function InsightTypeWidget({
  });
  }
  
- console.log('[InsightTypeWidget] Filtered cards count:', filteredCards.length, 'out of', allCards.length, 'insightType:', normalizedInsightType);
+ console.log('[InsightTypeWidget] Filtered cards count:', filteredCards.length, 'out of', allCards.length, 'insightType:', normalizedInsightId);
  
  setCards(filteredCards);
  } catch (err: any) {

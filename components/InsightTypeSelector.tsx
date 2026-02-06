@@ -5,7 +5,7 @@ import { ApiService } from '@/lib/api';
 import { InsightType } from '@/lib/config';
 
 interface InsightTypeSelection {
- insightTypeId: number;
+ insightTypeId: string;
  filters: {
  pi?: string;
  team_name?: string;
@@ -14,8 +14,8 @@ interface InsightTypeSelection {
 }
 
 interface InsightTypeSelectorProps {
- onUpdateSelections?: (selections: Map<number, InsightTypeSelection>) => void;
- currentSelections?: Map<number, InsightTypeSelection>; // Current selections on dashboard
+ onUpdateSelections?: (selections: Map<string, InsightTypeSelection>) => void;
+ currentSelections?: Map<string, InsightTypeSelection>; // Current selections on dashboard
 }
 
 export default function InsightTypeSelector({
@@ -29,10 +29,10 @@ export default function InsightTypeSelector({
  const [availablePIs, setAvailablePIs] = useState<string[]>([]);
  const [availableTeams, setAvailableTeams] = useState<string[]>([]);
  const [availableGroups, setAvailableGroups] = useState<string[]>([]);
- const [selectedPI, setSelectedPI] = useState<Record<number, string>>({});
- const [selectedTeam, setSelectedTeam] = useState<Record<number, string>>({});
- const [selectedGroup, setSelectedGroup] = useState<Record<number, string>>({});
- const [selectedTypes, setSelectedTypes] = useState<Set<number>>(new Set());
+ const [selectedPI, setSelectedPI] = useState<Record<string, string>>({});
+ const [selectedTeam, setSelectedTeam] = useState<Record<string, string>>({});
+ const [selectedGroup, setSelectedGroup] = useState<Record<string, string>>({});
+ const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set());
  const [fetching, setFetching] = useState(true);
  const [fetchError, setFetchError] = useState<string | null>(null);
  
@@ -53,19 +53,19 @@ export default function InsightTypeSelector({
  // Serialize currentSelections to detect actual changes
  const currentSelectionsKey = JSON.stringify(
  Array.from(currentSelections.entries())
- .sort(([a], [b]) => a - b)
+ .sort(([a], [b]) => a.localeCompare(b))
  .map(([id, sel]) => [id, JSON.stringify(sel)])
  );
- 
+
  // Only initialize if:
  // 1. We haven't initialized yet, OR
  // 2. The currentSelections actually changed (not just a new object reference)
  if (currentSelections.size > 0 && 
  (!initializedFromPropsRef.current || lastCurrentSelectionsRef.current !== currentSelectionsKey)) {
- const newSelectedTypes = new Set<number>();
- const newSelectedPI: Record<number, string> = {};
- const newSelectedTeam: Record<number, string> = {};
- const newSelectedGroup: Record<number, string> = {};
+ const newSelectedTypes = new Set<string>();
+ const newSelectedPI: Record<string, string> = {};
+ const newSelectedTeam: Record<string, string> = {};
+ const newSelectedGroup: Record<string, string> = {};
 
  currentSelections.forEach((selection, typeId) => {
  newSelectedTypes.add(typeId);
@@ -181,7 +181,7 @@ export default function InsightTypeSelector({
  isUpdatingFromUserRef.current = true;
  skipNextUpdateRef.current = true; // Skip the next prop update to break the loop
  
- const selections = new Map<number, InsightTypeSelection>();
+ const selections = new Map<string, InsightTypeSelection>();
  selectedTypes.forEach(typeId => {
  const filters: InsightTypeSelection['filters'] = {};
  if (selectedPI[typeId]) {
@@ -209,7 +209,7 @@ export default function InsightTypeSelector({
  // Update the last known selections to prevent re-initialization
  const selectionsKey = JSON.stringify(
  Array.from(selections.entries())
- .sort(([a], [b]) => a - b)
+ .sort(([a], [b]) => a.localeCompare(b))
  .map(([id, sel]) => [id, JSON.stringify(sel)])
  );
  lastCurrentSelectionsRef.current = selectionsKey;
@@ -229,7 +229,7 @@ export default function InsightTypeSelector({
  }, [selectedTypes, selectedPI, selectedTeam, selectedGroup, onUpdateSelections]);
 
  // Toggle selection of an insight type
- const toggleTypeSelection = (typeId: number) => {
+ const toggleTypeSelection = (typeId: string) => {
  setSelectedTypes(prev => {
  const next = new Set(prev);
  if (next.has(typeId)) {

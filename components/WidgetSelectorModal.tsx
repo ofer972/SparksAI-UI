@@ -7,7 +7,7 @@ import InsightTypeSelector from './InsightTypeSelector';
 import MetricsSelector, { type MetricsSelection } from './MetricsSelector';
 
 interface InsightTypeSelection {
- insightTypeId: number;
+ insightTypeId: string;
  filters: {
  pi?: string;
  team_name?: string;
@@ -73,15 +73,15 @@ export default function WidgetSelectorModal({
  return counts;
  });
  // Track selected insight types (one per type with filters)
- const [insightTypeSelections, setInsightTypeSelections] = useState<Map<number, InsightTypeSelection>>(() => {
- const selections = new Map<number, InsightTypeSelection>();
+ const [insightTypeSelections, setInsightTypeSelections] = useState<Map<string, InsightTypeSelection>>(() => {
+ const selections = new Map<string, InsightTypeSelection>();
  if (currentWidgets.length > 0) {
  // Extract insight type selections from current widgets
  currentWidgets
  .filter(w => w.widget_type === 'insight_type')
  .forEach(w => {
- const typeId = parseInt(w.widget_id, 10);
- if (!isNaN(typeId)) {
+ const typeId = w.widget_id;
+ if (typeId) {
  selections.set(typeId, {
  insightTypeId: typeId,
  filters: w.filters || {},
@@ -118,22 +118,22 @@ export default function WidgetSelectorModal({
  if (wasJustOpened && onUpdateWidgets) {
  // Initialize counts based on current widgets on dashboard
  const reportCountsMap = new Map<string, number>();
- const insightTypeSelectionsMap = new Map<number, InsightTypeSelection>();
+ const insightTypeSelectionsMap = new Map<string, InsightTypeSelection>();
  const metricsSelectionsMap = new Map<string, MetricsSelection>();
- 
+
  console.log('[WidgetSelectorModal] Initializing from currentWidgets:', {
  currentWidgetsLength: currentWidgets.length,
  currentWidgets: currentWidgets,
  });
- 
+
  if (currentWidgets.length > 0) {
  // Use widget type info to separate reports from insight types and metrics
  currentWidgets.forEach(w => {
  if (w.widget_type === 'report') {
  reportCountsMap.set(w.widget_id, (reportCountsMap.get(w.widget_id) || 0) + 1);
  } else if (w.widget_type === 'insight_type') {
- const typeId = parseInt(w.widget_id, 10);
- if (!isNaN(typeId)) {
+ const typeId = w.widget_id;
+ if (typeId) {
  insightTypeSelectionsMap.set(typeId, {
  insightTypeId: typeId,
  filters: w.filters || {},

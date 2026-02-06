@@ -107,6 +107,7 @@ export interface AgentJob {
   job_type: string;  // insight_id (e.g., "pi-sync") - kept for backward compatibility
   insight_type?: string;  // Display name (e.g., "PI Sync", "Daily Progress")
   team_name: string;
+  group_name?: string;
   pi?: string;
   claimed_by: string;
   created_at: string;
