@@ -2111,8 +2111,8 @@ export class ApiService {
     if (result.success && result.data) {
       if (result.data.categories && Array.isArray(result.data.categories)) {
         // Extract name from each category object (ignore class for now)
-        const categoryNames = result.data.categories.map((cat: { name: string; class?: string }) => 
-          typeof cat === 'string' ? cat : cat.name
+        const categoryNames = result.data.categories.map((cat: { insight_category_name: string; class?: string }) => 
+          typeof cat === 'string' ? cat : cat.insight_category_name
         );
         return {
           categories: categoryNames,
@@ -2124,8 +2124,8 @@ export class ApiService {
     // Handle direct array response (legacy format - array of strings)
     if (Array.isArray(result)) {
       // Check if it's an array of objects or strings
-      const categoryNames = result.map((cat: string | { name: string; class?: string }) => 
-        typeof cat === 'string' ? cat : cat.name
+      const categoryNames = result.map((cat: string | { insight_category_name: string; class?: string }) => 
+        typeof cat === 'string' ? cat : cat.insight_category_name
       );
       return {
         categories: categoryNames,

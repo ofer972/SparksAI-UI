@@ -6,7 +6,7 @@ import { authFetch } from '@/lib/api';
 import { replacePITerminology } from '@/lib/piTerminology';
 
 interface InsightCategory {
- name: string;
+ insight_category_name: string;
  class: string;
 }
 
@@ -73,9 +73,9 @@ export default function InsightCategoryFilter({
  // Extract categories from response
  let categoryObjects: InsightCategory[] = [];
  if (result.success && result.data && result.data.categories) {
- categoryObjects = result.data.categories.map((cat: string | { name: string; class: string }) => {
+ categoryObjects = result.data.categories.map((cat: string | { insight_category_name: string; class: string }) => {
  if (typeof cat === 'string') {
- return { name: cat, class: 'Team' }; // Default to Team if string
+ return { insight_category_name: cat, class: 'Team' }; // Default to Team if string
  }
  return cat;
  });
@@ -126,8 +126,8 @@ export default function InsightCategoryFilter({
  
  // Auto-select the first available category
  if (categories.length > 0) {
- console.log('[InsightCategoryFilter] Auto-selecting first category:', categories[0].name);
- onCategoriesChange([categories[0].name]);
+ console.log('[InsightCategoryFilter] Auto-selecting first category:', categories[0].insight_category_name);
+ onCategoriesChange([categories[0].insight_category_name]);
  autoSelectDone.current = true;
  }
  }, [settingsLoading, hasSavedSettings, categories, selectedCategories, onCategoriesChange, loading]);
@@ -236,16 +236,16 @@ export default function InsightCategoryFilter({
  ) : (
  categories.map((category) => (
  <label
- key={category.name}
+ key={category.insight_category_name}
  className="flex items-center space-x-2 py-2 px-2 hover:bg-surface-elevated cursor-pointer rounded"
  >
  <input
  type="checkbox"
- checked={selectedCategories.includes(category.name)}
- onChange={() => toggleCategory(category.name)}
+ checked={selectedCategories.includes(category.insight_category_name)}
+ onChange={() => toggleCategory(category.insight_category_name)}
  className="w-4 h-4 text-brand border-outline-strong rounded focus:ring-brand"
  />
-                <span className="text-sm text-content-secondary">{replacePITerminology(category.name)}</span>
+                <span className="text-sm text-content-secondary">{replacePITerminology(category.insight_category_name)}</span>
  </label>
  ))
  )}
