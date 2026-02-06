@@ -220,7 +220,8 @@ export interface AICard {
   group_name?: string | null;
   card_name: string;
   card_type?: string;
-  insight_type?: string;
+  insight_id: string; // insight_id (e.g., "pi-sync", "daily-progress")
+  insight_type?: string; // Display name (e.g., "PI Sync", "Daily Progress") - from API
   priority: string;
   priority_color?: string;
   source: string;
@@ -589,9 +590,9 @@ export interface UpdateDashboardRequest {
 // Removed - widgets are now managed through dashboard updates
 
 export interface InsightType {
-  id: number;
+  id: string; // insight_id (e.g., "pi-sync", "daily-progress")
   name?: string; // Display name for the insight type
-  insight_type: string;
+  insight_type: string; // Display name (e.g., "PI Sync", "Daily Progress")
   insight_description: string;
   description?: string; // Alias for insight_description
   insight_category?: string; // Legacy field, may not be present

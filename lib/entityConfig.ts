@@ -104,7 +104,8 @@ export interface EditableEntityConfig<T> extends EntityConfig<T> {
 export interface AgentJob {
   job_id: string;
   status: string;
-  job_type: string;
+  job_type: string;  // insight_id (e.g., "pi-sync") - kept for backward compatibility
+  insight_type?: string;  // Display name (e.g., "PI Sync", "Daily Progress")
   team_name: string;
   pi?: string;
   claimed_by: string;
@@ -137,6 +138,20 @@ export const agentJobsConfig: EntityConfig<AgentJob> = {
   
   primaryKey: 'job_id',
   title: 'Agent Jobs',
+  
+  // Explicit columns to control display (excludes job_type)
+  columns: [
+    { key: 'job_id', label: 'JOB ID', width: '80px', align: 'center' },
+    { key: 'insight_type', label: 'INSIGHT TYPE', width: '150px', align: 'left' },
+    { key: 'team_name', label: 'TEAM NAME', width: '150px', align: 'left' },
+    { key: 'group_name', label: 'GROUP NAME', width: '150px', align: 'left' },
+    { key: 'pi', label: 'PI', width: '120px', align: 'left' },
+    { key: 'status', label: 'STATUS', width: '100px', align: 'center' },
+    { key: 'claimed_by', label: 'CLAIMED BY', width: '120px', align: 'left' },
+    { key: 'claimed_at', label: 'CLAIMED AT', width: '140px', align: 'center' },
+    { key: 'result', label: 'RESULT', width: '200px', align: 'left' },
+    { key: 'error', label: 'ERROR', width: '200px', align: 'left' },
+  ],
   
   // Only specify what's special (overrides)
   columnOverrides: {
@@ -195,7 +210,7 @@ export const agentJobsConfig: EntityConfig<AgentJob> = {
   },
   
   // Field categorization for detail view
-  normalFields: ['job_id', 'status', 'job_type', 'team_name', 'pi', 'claimed_by', 'created_at', 'claimed_at', 'completed_at'],
+  normalFields: ['job_id', 'status', 'insight_type', 'team_name', 'pi', 'claimed_by', 'created_at', 'claimed_at', 'completed_at'],
   longTextFields: ['input_sent', 'result', 'error', 'data'],
   markdownFields: ['input_sent', 'result'],
 };

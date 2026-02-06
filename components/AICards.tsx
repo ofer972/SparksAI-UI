@@ -22,10 +22,11 @@ export default function AICards({ piName, teamName, categories, isGroup }: AICar
     return null;
   }
 
-  // Map cards to ensure they have insight_type (required by AICardsInsight)
+  // Map cards to ensure they have insight_id (required by AICardsInsight)
   const mappedCards = cards.map(card => ({
     ...card,
-    insight_type: (card as any).insight_type || card.card_type || '',
+    insight_id: (card as any).insight_id || (card as any).insight_type || '',
+    insight_type: (card as any).insight_type, // Display name (optional)
     card_type: card.card_type, // Keep for backward compatibility
   }));
 

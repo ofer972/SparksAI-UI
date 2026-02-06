@@ -18,7 +18,8 @@ interface AICard {
  updated_at: string;
  team_name: string;
  card_name: string;
- insight_type: string; // Changed from card_type to insight_type
+ insight_id: string; // insight_id (e.g., "pi-sync", "daily-progress")
+ insight_type?: string; // Display name (e.g., "PI Sync", "Daily Progress") - optional
  card_type?: string; // Keep for backward compatibility
  priority: string;
  priority_color?: string; // Color from backend:"Red","Yellow","Green","Gray"

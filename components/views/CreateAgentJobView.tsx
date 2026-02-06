@@ -142,8 +142,8 @@ export default function CreateAgentJobView() {
 
  setLoading(prev => ({ ...prev, [insightType.id]: true }));
  try {
- // Use insight type name (job_type) instead of ID
- const jobType = insightType.name || insightType.insight_type || 'Unknown';
+ // Use insight_id (id field) for job creation
+ const jobType = insightType.id || 'Unknown';
  
  const response = await apiService.createAgentJob(
  jobType,

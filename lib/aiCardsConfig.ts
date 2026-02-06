@@ -9,7 +9,8 @@ export interface AICard {
   group_name?: string;
   pi?: string;
   card_name: string;
-  insight_type: string;
+  insight_id: string; // insight_id (e.g., "pi-sync", "daily-progress")
+  insight_type?: string; // Display name (e.g., "PI Sync", "Daily Progress") - optional
   priority: string;
   priority_color?: string; // Color from backend: "Red", "Yellow", "Green", "Gray"
   source: string;
@@ -46,6 +47,7 @@ export const aiCardsConfig: EntityConfig<AICard> = {
     { key: 'updated_at', label: 'Date', width: '120px', align: 'center' },
     { key: 'pi', label: 'PI', width: '120px', align: 'left' },
     { key: 'card_name', label: 'Card Name', width: '200px', align: 'left' },
+    { key: 'insight_id', label: 'Insight ID', width: '150px', align: 'left' },
     { key: 'insight_type', label: 'Insight Type', width: '150px', align: 'left' },
     { key: 'priority', label: 'Priority', width: '100px', align: 'center' },
     { key: 'team_name', label: 'Team Name', width: '150px', align: 'left' },
@@ -120,7 +122,7 @@ export const aiCardsConfig: EntityConfig<AICard> = {
   },
   
   // Field categorization for detail view
-  normalFields: ['id', 'updated_at', 'pi', 'card_name', 'insight_type', 'priority', 'team_name', 'group_name', 'source_job_id', 'source'],
+  normalFields: ['id', 'updated_at', 'pi', 'card_name', 'insight_id', 'insight_type', 'priority', 'team_name', 'group_name', 'source_job_id', 'source'],
   longTextFields: ['description', 'full_information', 'information_json'],
   markdownFields: ['description', 'full_information'], // Render these fields as markdown
 };

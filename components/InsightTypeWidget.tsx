@@ -132,10 +132,10 @@ export default function InsightTypeWidget({
  (type: any) => type.id.toString() === insightTypeId
  );
  if (foundType) {
- // Use the same logic as InsightTypeSelector: name || insight_type || 'Unknown'
- const displayName = foundType.name || foundType.insight_type || 'Unknown';
- // For filtering, use insight_type field (the actual type identifier)
- const typeName = foundType.insight_type || foundType.name || '';
+        // Use the same logic as InsightTypeSelector: name || insight_type || 'Unknown'
+        const displayName = foundType.name || foundType.insight_type || 'Unknown';
+        // For filtering, use insight_id (the actual identifier)
+        const typeName = foundType.id || '';
  const metadata = {
  requirePI: Boolean(foundType.pi_insight ?? foundType.requirePI ?? foundType.requires_pi ?? foundType.require_pi ?? false),
  requireTeam: Boolean(foundType.team_insight ?? foundType.requireTeam ?? foundType.requires_team ?? foundType.require_team ?? false),
@@ -395,24 +395,24 @@ export default function InsightTypeWidget({
  }
  
  // Filter cards to match the specific insight type
- // Match by insight_type field or name (case-insensitive, trimmed)
- const normalizedInsightType = (insightType || insightTypeName || '').trim();
+ // Match by insight_id (case-insensitive, trimmed)
+ const normalizedInsightId = (insightType || insightTypeName || '').trim();
  
  console.log('[InsightTypeWidget] Filtering cards:', {
  allCardsCount: allCards.length,
- insightType: normalizedInsightType,
+ insightId: normalizedInsightId,
  insightTypeId,
- cardTypes: allCards.map(c => ({ id: c.id, type: c.insight_type })),
+ cardTypes: allCards.map(c => ({ id: c.id, insight_id: c.insight_id })),
  });
  
- // If we have an insight type to filter by, filter the cards
+ // If we have an insight ID to filter by, filter the cards
  // Otherwise, show all cards (shouldn't happen, but handle gracefully)
  let filteredCards = allCards;
- if (normalizedInsightType) {
+ if (normalizedInsightId) {
  filteredCards = allCards.filter((card: AICard) => {
- const cardType = (card.insight_type || '').trim();
+ const cardId = (card.insight_id || '').trim();
  // Case-insensitive comparison
- const matches = cardType.toLowerCase() === normalizedInsightType.toLowerCase();
+ const matches = cardId.toLowerCase() === normalizedInsightId.toLowerCase();
  
  if (!matches && allCards.length <= 5) {
  console.log('[InsightTypeWidget] Card does not match:', {
