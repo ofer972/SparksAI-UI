@@ -1347,29 +1347,37 @@ export default function GoalsPanel({
               // Close modal
               setIsCreateModalOpen(false);
             } else if (editGoal && editGoal.id) {
-              // Update existing goal
+              // Update existing goal - only send fields that have changed
+              const updateData: any = {};
+              
+              // Check if goal_text changed
+              if (data.goal_text !== editGoal.goal_text) {
+                updateData.goal_text = data.goal_text as string;
+              }
+              
+              // Check if status changed
+              if (data.status !== editGoal.status) {
+                updateData.status = data.status as string;
+              }
+              
+              // Check if priority_bv changed
               // Convert priority_bv to number if it's a string (from select dropdown)
               const priorityBv = data.priority_bv !== undefined && data.priority_bv !== null
                 ? (typeof data.priority_bv === 'string' ? parseInt(data.priority_bv, 10) : (data.priority_bv as number))
                 : null;
-
-              const updateData: any = {
-                goal_text: data.goal_text as string,
-                status: data.status as string,
-                priority_bv: priorityBv,
-              };
               
-              // Update team_name or group_name based on goal_type
-              const goalType = (data.goal_type as string) || 'overall';
-              if (goalType === 'team' && data.team_name !== undefined) {
-                updateData.team_name = data.team_name as string | null;
-                updateData.group_name = null; // Clear group_name if switching to team
-              } else if (goalType === 'group' && data.group_name !== undefined) {
-                updateData.group_name = data.group_name as string | null;
-                updateData.team_name = null; // Clear team_name if switching to group
-              } else if (goalType === 'overall') {
-                updateData.team_name = null;
-                updateData.group_name = null;
+              // Compare with original priority_bv (handle null/undefined cases)
+              const originalPriorityBv = editGoal.priority_bv ?? null;
+              if (priorityBv !== originalPriorityBv) {
+                updateData.priority_bv = priorityBv;
+              }
+              
+              // Only send update if at least one field changed
+              if (Object.keys(updateData).length === 0) {
+                // No changes detected, just close the modal
+                setIsEditModalOpen(false);
+                setEditGoal(null);
+                return;
               }
               
               await apiService.updatePIGoal(editGoal.id, updateData);

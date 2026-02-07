@@ -1701,6 +1701,13 @@ export class ApiService {
       backendUpdates.issue_keys = backendUpdates.epic_keys;
       delete backendUpdates.epic_keys;
     }
+    
+    // Add user email for audit log
+    const user = getCurrentUser();
+    if (user?.email) {
+      backendUpdates.updated_by = user.email;
+    }
+    
     const response = await authFetch(url, {
       method: 'PATCH',
       headers: {
@@ -2066,12 +2073,20 @@ export class ApiService {
     priority_bv?: number | null;
   }): Promise<any> {
     const url = `${buildBackendUrl('/goals')}/${goalId}`;
+    
+    // Add user email for audit log
+    const backendUpdates: any = { ...updates };
+    const user = getCurrentUser();
+    if (user?.email) {
+      backendUpdates.updated_by = user.email;
+    }
+    
     const response = await authFetch(url, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(updates),
+      body: JSON.stringify(backendUpdates),
     });
 
     if (!response.ok) {
@@ -2736,6 +2751,29 @@ export class ApiService {
     }
 
     return await response.json();
+  }
+
+  async getAuditLogsFilterValues(): Promise<{
+    http_methods: string[];
+    status_codes: number[];
+    severities: string[];
+    user_ids: string[];
+    actions: string[];
+  }> {
+    const url = buildBackendUrl('/audit-logs/filter-values');
+    const response = await authFetch(url);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to fetch audit log filter values: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`);
+    }
+    
+    const result = await response.json();
+    // Handle both {success: true, data: {...}} and direct {...} formats
+    if (result.success && result.data) {
+      return result.data;
+    }
+    return result;
   }
 }
 

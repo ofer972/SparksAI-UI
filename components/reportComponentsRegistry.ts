@@ -36,6 +36,7 @@ import AuditFailedEndpointsView from './reportViews/AuditFailedEndpointsView';
 import AuditUserQuestionsView from './reportViews/AuditUserQuestionsView';
 import AuditMostActiveUsersView from './reportViews/AuditMostActiveUsersView';
 import AuditDailyActiveUsersView from './reportViews/AuditDailyActiveUsersView';
+import AuditLogsTableView from './reportViews/AuditLogsTableView';
 import type { ReportDefinition } from '@/lib/config';
 
 export interface ReportRenderContext {
@@ -644,6 +645,18 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
   },
   'audit-daily-active-users': {
     component: AuditDailyActiveUsersView,
+    requiredFilters: [],
+    mapProps: ({ result, loading, error, filters, refresh, meta }) => ({
+      data: Array.isArray(result) ? result : [],
+      loading,
+      error,
+      filters,
+      refresh,
+      meta,
+    }),
+  },
+  'audit-logs': {
+    component: AuditLogsTableView,
     requiredFilters: [],
     mapProps: ({ result, loading, error, filters, refresh, meta }) => ({
       data: Array.isArray(result) ? result : [],

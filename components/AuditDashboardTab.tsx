@@ -18,7 +18,13 @@ export default function AuditDashboardTab() {
         const apiService = new ApiService();
         const auditReports = await apiService.getReportDefinitions({ auditOnly: true });
         console.log('[AuditDashboardTab] Fetched reports:', auditReports.length, auditReports.map(r => r.report_id));
-        setReports(auditReports);
+        // Sort: audit-logs first, then others
+        const sortedReports = [...auditReports].sort((a, b) => {
+          if (a.report_id === 'audit-logs') return -1;
+          if (b.report_id === 'audit-logs') return 1;
+          return 0;
+        });
+        setReports(sortedReports);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load audit reports');
       } finally {
@@ -53,12 +59,15 @@ export default function AuditDashboardTab() {
     );
   }
 
+  // Find audit-logs report (should be first)
+  const auditLogsReport = reports.find(r => r.report_id === 'audit-logs');
   // Find reports to display side-by-side
   const failedEndpointsReport = reports.find(r => r.report_id === 'audit-failed-endpoints');
   const frequentlyUsedReport = reports.find(r => r.report_id === 'audit-frequently-used-actions');
   const slowActionsReport = reports.find(r => r.report_id === 'audit-slow-actions');
   const tokenUsageReport = reports.find(r => r.report_id === 'audit-token-usage');
   const otherReports = reports.filter(r => 
+    r.report_id !== 'audit-logs' &&
     r.report_id !== 'audit-failed-endpoints' && 
     r.report_id !== 'audit-frequently-used-actions' &&
     r.report_id !== 'audit-slow-actions' &&
@@ -66,7 +75,7 @@ export default function AuditDashboardTab() {
   );
 
   const renderReport = (report: ReportDefinition) => (
-    <div key={report.report_id} style={{ height: '600px' }}>
+    <div key={report.report_id} style={{ height: report.report_id === 'audit-logs' ? '900px' : '600px' }}>
       <ReportPanel
         reportId={report.report_id}
         initialFilters={report.default_filters || {}}
@@ -84,6 +93,21 @@ export default function AuditDashboardTab() {
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-auto p-4">
         <div className="space-y-4">
+          {/* Audit Logs report first - 50% bigger (900px) */}
+          {auditLogsReport && (
+            <div key={auditLogsReport.report_id} style={{ height: '900px' }}>
+              <ReportPanel
+                reportId={auditLogsReport.report_id}
+                initialFilters={auditLogsReport.default_filters || {}}
+                fallback={<div className="text-red-500 p-4">Report '{auditLogsReport.report_id}' not found in registry</div>}
+                errorFallback={(error) => (
+                  <div className="text-red-500 p-4">
+                    Error loading '{auditLogsReport.report_id}': {error}
+                  </div>
+                )}
+              />
+            </div>
+          )}
           {/* Side-by-side layout for Failed Endpoints and Frequently Used Actions */}
           {(failedEndpointsReport || frequentlyUsedReport) && (
             <div className="flex flex-row gap-4">

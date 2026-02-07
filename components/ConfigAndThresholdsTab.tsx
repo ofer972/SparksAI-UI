@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { ApiService } from '../lib/api';
 import { buildBackendUrl } from '../lib/config';
 import { authFetch } from '../lib/api';
+import { getCurrentUser } from '../lib/auth';
 import { replacePITerminology } from '../lib/piTerminology';
 import Toast from './Toast';
 
@@ -104,6 +105,10 @@ export default function ConfigAndThresholdsTab() {
         settingsToUpdate[key] = { value };
       });
 
+      // Get current user email for audit log
+      const user = getCurrentUser();
+      const userEmail = user?.email || 'ui';
+      
       // Use authFetch to match backend format
       const url = buildBackendUrl('/settings/batch');
       const response = await authFetch(url, {
@@ -111,7 +116,7 @@ export default function ConfigAndThresholdsTab() {
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
           settings: settingsToUpdate,
-          updated_by: 'ui'
+          updated_by: userEmail
         }),
       });
 
