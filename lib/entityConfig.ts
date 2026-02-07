@@ -218,6 +218,7 @@ export const agentJobsConfig: EntityConfig<AgentJob> = {
 
 // Prompt Entity Configuration
 export interface Prompt {
+  prompt_id?: number;
   email_address: string;
   prompt_name: string;
   prompt_description: string;

@@ -13,18 +13,25 @@ export const promptsConfig: EditableEntityConfig<Prompt> = {
   },
   
   fetchDetail: async (id: string) => {
-    // ID format: email/promptName
-    const [email, promptName] = id.split('/');
+    // ID format: prompt_id (number as string)
+    const promptId = parseInt(id, 10);
+    if (isNaN(promptId)) {
+      throw new Error(`Invalid prompt ID: ${id}`);
+    }
     const { ApiService } = await import('./api');
     const apiService = new ApiService();
-    return apiService.getPromptDetail(email, promptName);
+    return apiService.getPromptDetailById(promptId);
   },
   
   deleteItem: async (id: string) => {
-    const [email, promptName] = id.split('/');
+    // ID format: prompt_id (number as string)
+    const promptId = parseInt(id, 10);
+    if (isNaN(promptId)) {
+      throw new Error(`Invalid prompt ID: ${id}`);
+    }
     const { ApiService } = await import('./api');
     const apiService = new ApiService();
-    return apiService.deletePrompt(email, promptName);
+    return apiService.deletePromptById(promptId);
   },
   
   createItem: async (data: Partial<Prompt>) => {
@@ -40,11 +47,15 @@ export const promptsConfig: EditableEntityConfig<Prompt> = {
   },
   
   updateItem: async (id: string, data: Partial<Prompt>) => {
-    const [email, promptName] = id.split('/');
+    // ID format: prompt_id (number as string)
+    const promptId = parseInt(id, 10);
+    if (isNaN(promptId)) {
+      throw new Error(`Invalid prompt ID: ${id}`);
+    }
     const { ApiService } = await import('./api');
     const apiService = new ApiService();
     // API requires all fields, ensure we have them all
-    return apiService.updatePrompt(email, promptName, data as {
+    return apiService.updatePromptById(promptId, data as {
       email_address: string;
       prompt_name: string;
       prompt_description: string;
@@ -53,7 +64,7 @@ export const promptsConfig: EditableEntityConfig<Prompt> = {
     });
   },
   
-  primaryKey: 'email_address',
+  primaryKey: 'prompt_id',
   title: 'Prompts',
   
   // Form configuration for edit/create

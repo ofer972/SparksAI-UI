@@ -78,8 +78,11 @@ export default function PromptsTab() {
     if (!selectedItem) return;
     
     try {
-      const compositeId = `${selectedItem.email_address}/${selectedItem.prompt_name}`;
-      await promptsConfig.deleteItem!(compositeId);
+      if (!selectedItem.prompt_id) {
+        throw new Error('Prompt ID is missing');
+      }
+      const promptId = String(selectedItem.prompt_id);
+      await promptsConfig.deleteItem!(promptId);
       
       // Show success toast
       setToastType('success');
@@ -110,8 +113,11 @@ export default function PromptsTab() {
       setEditMode('edit');
       
       // Fetch full data from API before showing edit modal
-      const compositeId = `${item.email_address}/${item.prompt_name}`;
-      const fullItem = await promptsConfig.fetchDetail!(compositeId);
+      if (!item.prompt_id) {
+        throw new Error('Prompt ID is missing');
+      }
+      const promptId = String(item.prompt_id);
+      const fullItem = await promptsConfig.fetchDetail!(promptId);
       
       // Ensure we have the data before opening modal
       if (fullItem) {
@@ -141,10 +147,13 @@ export default function PromptsTab() {
   const handleSaveItem = async (itemData: Partial<Prompt>) => {
     try {
       if (editMode === 'edit' && selectedItem) {
-        // Construct composite ID: email_address/prompt_name
-        const id = `${selectedItem.email_address}/${selectedItem.prompt_name}`;
+        // Use prompt_id for updates
+        if (!selectedItem.prompt_id) {
+          throw new Error('Prompt ID is missing');
+        }
+        const id = String(selectedItem.prompt_id);
         
-        // API requires ALL fields (including email_address and prompt_name) even though they're in URL
+        // API requires ALL fields (including email_address and prompt_name)
         // Ensure we have all required fields with proper values
         const updateData = {
           email_address: itemData.email_address || selectedItem.email_address,
@@ -277,6 +286,7 @@ export default function PromptsTab() {
         config={{
           ...promptsConfig,
           columns: [
+            { key: 'prompt_id', label: 'ID', sortable: true, width: '80px', align: 'center' },
             { key: 'email_address', label: 'Email', sortable: true, width: '150px' },
             { key: 'prompt_name', label: 'Prompt Name', sortable: true, width: '150px' },
             { key: 'prompt_type', label: 'Type', sortable: true, width: '120px' },
@@ -285,7 +295,7 @@ export default function PromptsTab() {
             { key: 'updated_at', label: 'Updated', sortable: true, width: '120px' },
             { key: 'created_at', label: 'Created', sortable: true, width: '120px' },
           ],
-          primaryKey: 'prompt_name',
+          primaryKey: 'prompt_id',
           hiddenFields: [],
           formatCellValue: (value, key) => {
             if (key === 'prompt_active') {
@@ -337,7 +347,7 @@ export default function PromptsTab() {
         isOpen={isDeleteModalOpen}
         onClose={closeDeleteModal}
         itemName={selectedItem ? `prompt "${selectedItem.prompt_name}"` : 'prompt'}
-        itemId={selectedItem ? `${selectedItem.email_address}/${selectedItem.prompt_name}` : undefined}
+        itemId={selectedItem?.prompt_id ? String(selectedItem.prompt_id) : undefined}
         onConfirm={handleConfirmDelete}
       />
     </>

@@ -1225,6 +1225,51 @@ export class ApiService {
     return result.data;
   }
 
+  async getPromptDetailById(promptId: number): Promise<any> {
+    const url = `${buildBackendUrl('/prompts')}/${promptId}`;
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorText = await response.text();
+        if (errorText) {
+          console.error('Prompt detail API error:', response.status, errorText);
+          // Try to parse as JSON for structured error messages
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.message || errorJson.error || errorMessage;
+          } catch {
+            // If not JSON, use the text as is
+            if (errorText.length < 200) {
+              errorMessage = errorText;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error reading error response:', e);
+      }
+      throw new Error(`Failed to fetch prompt detail: ${errorMessage}`);
+    }
+
+    const result: ApiResponse<any> = await response.json();
+    
+    // Handle different response structures
+    if (result.data) {
+      // If data has a nested prompt structure
+      if (result.data.prompt) {
+        return result.data.prompt;
+      }
+      // If data is an object with prompt fields directly
+      if (typeof result.data === 'object' && !Array.isArray(result.data)) {
+        return result.data;
+      }
+    }
+    
+    return result.data;
+  }
+
   async createPrompt(data: {
     email_address: string;
     prompt_name: string;
@@ -1317,11 +1362,87 @@ export class ApiService {
     return result;
   }
 
+  async updatePromptById(promptId: number, data: {
+    email_address: string;
+    prompt_name: string;
+    prompt_description: string;
+    prompt_type: string;
+    prompt_active: boolean;
+  }): Promise<any> {
+    const url = `${buildBackendUrl('/prompts')}/${promptId}`;
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorText = await response.text();
+        if (errorText) {
+          console.error('Update prompt API error:', response.status, errorText);
+          // Try to parse as JSON for structured error messages
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.message || errorJson.error || errorMessage;
+          } catch {
+            // If not JSON, use the text as is
+            if (errorText.length < 200) {
+              errorMessage = errorText;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error reading error response:', e);
+      }
+      throw new Error(`Failed to update prompt: ${errorMessage}`);
+    }
+
+    const result = await response.json();
+    return result;
+  }
+
   async deletePrompt(email: string, promptName: string): Promise<void> {
     // URL encode email and promptName to handle special characters
     const encodedEmail = encodeURIComponent(email);
     const encodedPromptName = encodeURIComponent(promptName);
     const url = `${buildBackendUrl('/prompts')}/${encodedEmail}/${encodedPromptName}`;
+    
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorText = await response.text();
+        if (errorText) {
+          console.error('Delete prompt API error:', response.status, errorText);
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.message || errorJson.error || errorMessage;
+          } catch {
+            if (errorText.length < 200) {
+              errorMessage = errorText;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error reading error response:', e);
+      }
+      throw new Error(`Failed to delete prompt: ${errorMessage}`);
+    }
+  }
+
+  async deletePromptById(promptId: number): Promise<void> {
+    const url = `${buildBackendUrl('/prompts')}/${promptId}`;
     
     const response = await fetch(url, {
       method: 'DELETE',

@@ -164,7 +164,6 @@ export default function InsightTypesTab() {
   });
 
   const columns = useMemo(() => [
-    { key: 'id', label: 'ID', sortable: true, width: '50px', align: 'center' as const },
     { key: 'insight_type', label: 'Insight Type', sortable: true, width: '150px', align: 'left' as const },
     { key: 'insight_description', label: 'Description', sortable: true, width: '220px', align: 'left' as const },
     { key: 'categories', label: 'Categories', sortable: true, width: '260px' },
