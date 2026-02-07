@@ -240,7 +240,8 @@ export default function PRSizeCard(props?: PRSizeCardProps) {
   };
 
   const chartOptions = useMemo(() => {
-    if (!data) return {};
+    if (!data || !data.time_series || !Array.isArray(data.time_series) || data.time_series.length === 0) return {};
+    if (!data.summary) return {};
     
     // Calculate max value and add padding for top labels
     const maxValue = Math.max(...data.time_series.map(d => d.median_lines), data.summary.median_lines);
@@ -265,7 +266,7 @@ export default function PRSizeCard(props?: PRSizeCardProps) {
           enabled: true,
           callbacks: {
             label: (context: any) => {
-              if (context.datasetIndex === 1) {
+              if (context.datasetIndex === 1 && data?.summary) {
                 return `Overall Median: ${data.summary.median_lines.toFixed(0)} lines`;
               }
               return `Median: ${context.parsed.y.toFixed(0)} lines`;
@@ -287,6 +288,8 @@ export default function PRSizeCard(props?: PRSizeCardProps) {
       events: ['click'],
       onClick: (event: any, elements: any[]) => {
         if (elements.length === 0) return;
+        if (!data || !data.time_series || !Array.isArray(data.time_series)) return;
+        
         const element = elements[0];
         // Only handle clicks on bar dataset (index 0), ignore line dataset (index 1)
         if (element.datasetIndex !== 0) return;

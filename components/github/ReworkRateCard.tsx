@@ -226,7 +226,8 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
   };
 
   const chartOptions = useMemo(() => {
-    if (!data) return {};
+    if (!data || !data.time_series || !Array.isArray(data.time_series) || data.time_series.length === 0) return {};
+    if (!data.summary) return {};
     
     // Calculate max value and add padding for top labels
     const maxValue = Math.max(...data.time_series.map(d => d.rework_rate), data.summary.rework_rate);
@@ -251,7 +252,7 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
           enabled: true,
           callbacks: {
             label: (context: any) => {
-              if (context.datasetIndex === 1) {
+              if (context.datasetIndex === 1 && data?.summary) {
                 return `Overall Average: ${data.summary.rework_rate.toFixed(1)}%`;
               }
               return `Code Churn Rate: ${context.parsed.y.toFixed(1)}%`;
@@ -277,6 +278,8 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
       events: ['click'],
       onClick: (event: any, elements: any[]) => {
         if (elements.length === 0) return;
+        if (!data || !data.time_series || !Array.isArray(data.time_series)) return;
+        
         const element = elements[0];
         // Only handle clicks on bar dataset (index 0), ignore line dataset (index 1)
         if (element.datasetIndex !== 0) return;
