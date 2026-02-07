@@ -44,7 +44,7 @@ export function ViewRecordModal<T extends Record<string, any>>({
       let detailId: string;
       const primaryKeyValue = item[config.primaryKey];
       if (primaryKeyValue === undefined || primaryKeyValue === null) {
-        throw new Error(`Primary key '${config.primaryKey}' is missing from item`);
+        throw new Error(`Primary key '${String(config.primaryKey)}' is missing from item`);
       }
       detailId = String(primaryKeyValue);
       
