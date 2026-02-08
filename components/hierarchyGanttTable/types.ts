@@ -69,6 +69,8 @@ export interface HierarchyGanttTableProps {
   minLeftPanelWidth?: number;
   /** Maximum width of left panel */
   maxLeftPanelWidth?: number;
+  /** Enable horizontal scrollbar for right panel (timeline) */
+  enableHorizontalScroll?: boolean;
 }
 
 export interface TimelineDate {

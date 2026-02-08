@@ -663,7 +663,7 @@ export default function TeamDashboard({ selectedTeam, selectedTreeType, selected
             onLayoutChange={handleLayoutChange}
             renderReport={renderReportSection}
             onRemoveReport={handleRemoveReport}
-            defaultRowHeight={500}
+            defaultRowHeight={550}
             minRowHeight={500}
           />
         </div>

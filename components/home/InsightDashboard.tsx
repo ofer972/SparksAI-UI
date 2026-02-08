@@ -383,7 +383,7 @@ export default function InsightDashboard({ card, onBack }: InsightDashboardProps
                 key={rowIdx}
                 ref={(el) => { containerRefs.current[rowIdx] = el; }}
                 className="bg-surface rounded-2xl border border-outline shadow-sm overflow-hidden" 
-                style={{ height: '450px' }}
+                style={{ height: '550px' }}
               >
                 {row.map((reportId) => (
                   <div 

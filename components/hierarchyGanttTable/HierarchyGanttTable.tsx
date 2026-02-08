@@ -53,6 +53,7 @@ export default function HierarchyGanttTable({
   leftPanelWidth: initialLeftPanelWidth = 550,
   minLeftPanelWidth = 200,
   maxLeftPanelWidth = 800,
+  enableHorizontalScroll = false,
 }: HierarchyGanttTableProps) {
   const [internalExpanded, setInternalExpanded] = useState<ExpandedState>({});
   const [globalFilter, setGlobalFilter] = useState('');
@@ -74,6 +75,7 @@ export default function HierarchyGanttTable({
   const containerRef = useRef<HTMLDivElement>(null);
   const leftPanelRef = useRef<HTMLDivElement>(null);
   const rightPanelRef = useRef<HTMLDivElement>(null);
+  const rightContentRef = useRef<HTMLDivElement>(null);
   const leftTableBodyRef = useRef<HTMLTableSectionElement>(null);
   const isScrollingRef = useRef(false);
   const expandedRef = useRef<ExpandedState>({});
@@ -332,7 +334,7 @@ export default function HierarchyGanttTable({
   // Sync vertical scrolling between left and right panels
   useEffect(() => {
     const leftPanel = leftPanelRef.current;
-    const rightPanel = rightPanelRef.current;
+    const rightPanel = enableHorizontalScroll ? rightContentRef.current : rightPanelRef.current;
     
     if (!leftPanel || !rightPanel || mode !== 'hierarchy-gantt') {
       return;
@@ -367,7 +369,7 @@ export default function HierarchyGanttTable({
       leftPanel.removeEventListener('scroll', handleLeftScroll);
       rightPanel.removeEventListener('scroll', handleRightScroll);
     };
-  }, [mode, flatData]);
+  }, [mode, flatData, enableHorizontalScroll]);
 
   // Resize handler for left panel
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -893,7 +895,7 @@ export default function HierarchyGanttTable({
     const totalTimelineWidth = timelineDates.length * columnWidth;
 
     return (
-      <div style={{ width: `${totalTimelineWidth}px`, minWidth: '100%' }}>
+      <div style={{ width: `${totalTimelineWidth}px`, minWidth: enableHorizontalScroll ? undefined : '100%' }}>
           {flatData.map((item, index) => {
             const barPosition = calculateBarPosition(item, ganttConfig, timelineStart, columnWidth, timelineDates, currentGanttViewMode);
             const hierarchyLevel = (item as any)['Hierarchy Level'];
@@ -1286,16 +1288,58 @@ export default function HierarchyGanttTable({
         />
 
         {/* Right Panel - Gantt */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-surface">
-          <div ref={rightPanelRef} className="flex-1 overflow-x-auto overflow-y-auto relative">
-            {mode === 'hierarchy-gantt' && ganttConfig && timelineDates.length > 0 && (
-              <div style={{ width: `${timelineDates.length * columnWidth}px`, minWidth: '100%' }}>
-                {renderGanttHeader()}
-                {renderGanttBody()}
+        {enableHorizontalScroll ? (
+          <div className="flex-1 flex flex-col overflow-hidden bg-surface">
+            {/* Vertical scroll container - horizontal scrollbar hidden */}
+            <div 
+              ref={rightContentRef}
+              className="flex-1 overflow-y-auto relative"
+              style={{
+                overflowX: 'scroll',
+                marginBottom: '-17px',
+                paddingBottom: '17px',
+              }}
+              onScroll={(e) => {
+                if (rightPanelRef.current) {
+                  rightPanelRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                }
+              }}
+            >
+              <div style={{ width: `${timelineDates.length * columnWidth}px` }}>
+                {mode === 'hierarchy-gantt' && ganttConfig && timelineDates.length > 0 && (
+                  <>
+                    {renderGanttHeader()}
+                    {renderGanttBody()}
+                  </>
+                )}
               </div>
-            )}
+            </div>
+            {/* Horizontal scrollbar - always visible at bottom */}
+            <div 
+              ref={rightPanelRef}
+              className="overflow-x-auto overflow-y-hidden border-t border-outline"
+              style={{ height: '17px' }}
+              onScroll={(e) => {
+                if (rightContentRef.current) {
+                  rightContentRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                }
+              }}
+            >
+              <div style={{ width: `${timelineDates.length * columnWidth}px`, height: '1px' }}></div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex-1 flex flex-col overflow-hidden bg-surface">
+            <div ref={rightPanelRef} className="flex-1 overflow-x-auto overflow-y-auto relative">
+              {mode === 'hierarchy-gantt' && ganttConfig && timelineDates.length > 0 && (
+                <div style={{ width: `${timelineDates.length * columnWidth}px`, minWidth: '100%' }}>
+                  {renderGanttHeader()}
+                  {renderGanttBody()}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

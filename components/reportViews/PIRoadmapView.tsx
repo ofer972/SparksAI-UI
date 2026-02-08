@@ -757,7 +757,7 @@ const PIRoadmapView: React.FC<PIRoadmapViewProps> = ({
 
       {/* Gantt Chart */}
       {!loading && !error && (
-        <div className="h-full flex flex-col max-h-[600px]">
+        <div style={{ flex: 1, minHeight: 0 }}>
           <HierarchyGanttTable
             data={filteredIssues}
             columns={columns}
@@ -775,6 +775,7 @@ const PIRoadmapView: React.FC<PIRoadmapViewProps> = ({
             onGanttViewModeChange={handleGanttViewModeChange}
             showMilestones={showMilestones}
             onShowMilestonesChange={handleShowMilestonesChange}
+            enableHorizontalScroll={true}
           />
         </div>
       )}

@@ -727,7 +727,7 @@ const PIDashboardView: React.FC<PIDashboardViewProps> = ({
             onLayoutChange={handleLayoutChange}
             renderReport={(reportId) => renderReportSection(reportId, buildPanelKey(reportId))}
             onRemoveReport={handleRemoveReport}
-            defaultRowHeight={500}
+            defaultRowHeight={550}
             minRowHeight={500}
           />
         </div>
