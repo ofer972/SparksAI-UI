@@ -95,6 +95,17 @@ export default function CustomDashboardEditor({
     selectedTreeType: 'team',
   });
   
+  // Cleanup: clear all pending timers on unmount
+  useEffect(() => {
+    return () => {
+      // Clear all pending timers to prevent memory leaks and unnecessary API calls
+      Object.values(filterSaveTimersRef.current).forEach(timer => {
+        clearTimeout(timer);
+      });
+      filterSaveTimersRef.current = {};
+    };
+  }, []);
+  
   // Detect mobile screen size
   useEffect(() => {
     const checkMobile = () => {
@@ -213,7 +224,6 @@ export default function CustomDashboardEditor({
       const derivedType = result.selectedTreeValue.startsWith('group:') ? 'group' : 'team';
       // Only override if current selectedTreeType doesn't match the derived type
       if (result.selectedTreeType !== derivedType) {
-        console.log(`[CustomDashboardEditor] Fixing selectedTreeType: was "${result.selectedTreeType}", should be "${derivedType}" based on selectedTreeValue "${result.selectedTreeValue}"`);
         result.selectedTreeType = derivedType;
       }
     }
@@ -266,9 +276,6 @@ export default function CustomDashboardEditor({
   // Listen for dashboard data collection request (for AI chat button)
   useEffect(() => {
     const handleCollectDashboardData = () => {
-      console.log('[CustomDashboardEditor] Dashboard data collection requested');
-      console.log('[CustomDashboardEditor] dashboardLayoutConfig:', dashboardLayoutConfig);
-      console.log('[CustomDashboardEditor] reportPanelFilters:', reportPanelFilters);
       
       // Get all report widgets with their row indices - handle both widgets array and reportIds array formats
       // Use the format ${reportId}-${rowIndex}-${widgetIndex} for unique keys (matches DashboardAIMenu.tsx)
@@ -313,7 +320,6 @@ export default function CustomDashboardEditor({
       });
       
       const reportWidgets = allWidgetsWithIndices.filter(widget => widget.type === 'report');
-      console.log('[CustomDashboardEditor] reportWidgets with indices:', reportWidgets);
       
       // Convert widgets to reportIds format for layoutConfig
       // Keep all report IDs including duplicates
@@ -335,11 +341,6 @@ export default function CustomDashboardEditor({
         // Use widget.id to get saved filters (widget instance ID)
         const savedWidgetFilters = dashboardLayoutConfig.reportFilters?.[widget.id] || widget.filters || {};
         const savedPinnedFilters = dashboardLayoutConfig.pinnedFilters?.[widget.id] || [];
-        
-        console.log(`[CustomDashboardEditor] Widget ${widget.id} (${widget.widget_id}) uniqueKey=${widget.uniqueKey}:`, {
-          savedWidgetFilters,
-          savedPinnedFilters,
-        });
         
         // Merge: unpinned filters use reportPanelFilters (topbar) values, pinned filters use saved widget values
         // Exclude selectedTreeLabel and selectedTreeValue as they're not needed for AI chat
@@ -386,10 +387,6 @@ export default function CustomDashboardEditor({
         reportFilters: mergedReportFilters,
         pinnedFilters: transformedPinnedFilters,
       };
-      
-      console.log('[CustomDashboardEditor] Collected dashboard data:', data);
-      console.log('[CustomDashboardEditor] Merged report filters (with unique keys):', mergedReportFilters);
-      console.log('[CustomDashboardEditor] Transformed pinned filters (with unique keys):', transformedPinnedFilters);
       window.dispatchEvent(new CustomEvent('dashboard-data-collected', { detail: data }));
     };
     
@@ -488,7 +485,6 @@ export default function CustomDashboardEditor({
         currentFilters.selectedTreeType !== filtersToApply.selectedTreeType;
       
       if (isDifferent) {
-        console.log('[CustomDashboard] Applying saved topBarFilters (fallback):', filtersToApply);
         onFiltersChange(filtersToApply);
         settingsAppliedRef.current = true;
         prevFiltersRef.current = filtersToApply;
@@ -525,8 +521,6 @@ export default function CustomDashboardEditor({
       prev.selectedTreeType !== newFilters.selectedTreeType;
     
     if (isDifferent) {
-      console.log('[CustomDashboard] Top bar filters changed, updating state');
-      
       // Update local state and save in one go
       setDashboardLayoutConfig(prevConfig => {
         const updatedConfig = {
@@ -651,12 +645,6 @@ export default function CustomDashboardEditor({
   // Handle adding multiple widgets (like team/PI dashboards - 2 per row)
   // Now supports adding the same item multiple times
   const handleUpdateWidgets = async (widgetIds: Array<{ type: 'report' | 'insight_card' | 'insight_type' | 'metrics'; id: string; filters?: Record<string, any>; metricsConfig?: any }>) => {
-    console.log('[CustomDashboardEditor] handleUpdateWidgets called with:', {
-      widgetCount: widgetIds.length,
-      widgets: widgetIds,
-      insightTypeWidgets: widgetIds.filter(w => w.type === 'insight_type'),
-    });
-    
     if (!dashboard) {
       setError('Dashboard not loaded');
       return;
@@ -799,13 +787,6 @@ export default function CustomDashboardEditor({
             filters: widget.filters || {}, // Include filters for insight_type widgets
             ...(widget.type === 'metrics' && widget.metricsConfig ? { metricsConfig: widget.metricsConfig } : {}),
           };
-          
-          console.log('[CustomDashboardEditor] Adding widget:', {
-            widgetType: widget.type,
-            widgetId: widget.id,
-            newWidgetId: newWidget.id,
-            filters: widget.filters,
-          });
           
           // Add widget to the target row
           if (columnIndex < targetRow.widgets.length) {
@@ -1000,11 +981,14 @@ export default function CustomDashboardEditor({
     }
     
     // Debounced auto-save (same pattern as top bar filters)
+    // Use current state when saving to ensure filters and pinnedFilters are saved atomically
     if (user) {
       const userId = (user?.id || user?.user_id) as string;
       filterSaveTimersRef.current[widgetId] = setTimeout(() => {
+        // Read current state to ensure both filters and pinnedFilters are saved together
+        const currentConfig = dashboardLayoutConfig;
         updateDashboard(userId, dashboardId, {
-          layout_config: updatedLayoutConfig,
+          layout_config: currentConfig,
         }).catch(err => {
           console.error(`[CustomDashboard] Failed to save widget ${widgetId} filter changes:`, err);
         });
@@ -1018,6 +1002,9 @@ export default function CustomDashboardEditor({
     return getLayoutConfigForGrid();
   }, [getLayoutConfigForGrid]);
 
+
+  // Get teams and groups at component level for use in renderWidget
+  const { groups, teams } = useTeamsGroups();
 
   const renderWidget = (widgetId: string) => {
     // widgetId is the widget's unique ID in the layout
@@ -1040,24 +1027,85 @@ export default function CustomDashboardEditor({
       // MATCH TeamDashboard pattern: include team_name and isGroup in initialFilters
       // to prevent duplicate fetches (see TeamDashboard lines 627-628, 672-673, etc.)
       const hasValidTeam = reportPanelFilters.team_name && reportPanelFilters.team_name.trim().length > 0;
-      const initialFiltersWithDefaults = {
-        ...(hasValidTeam ? { team_name: reportPanelFilters.team_name } : {}),
-        ...(reportPanelFilters.isGroup !== undefined ? { isGroup: reportPanelFilters.isGroup } : {}),
-        ...widgetFilters,
-      };
+      
+      // Detect if widgetFilters.team_name is actually a group when isGroup is missing
+      // This fixes cases where saved widget filters have team_name but no isGroup
+      const widgetTeamName = widgetFilters.team_name;
+      let detectedIsGroup = widgetFilters.isGroup;
+      let didDetectIsGroup = false; // Track if we detected it (vs it was already in widgetFilters)
+      
+      // If widgetFilters has team_name but no isGroup, detect if it's a group or team
+      if (widgetTeamName && detectedIsGroup === undefined) {
+        const isGroupName = groups.some(g => g.group_name === widgetTeamName);
+        const isTeamName = teams.some(t => t.team_name === widgetTeamName);
+        
+        if (isGroupName) {
+          detectedIsGroup = true;
+          didDetectIsGroup = true;
+        } else if (isTeamName) {
+          detectedIsGroup = false;
+          didDetectIsGroup = true;
+        }
+        // If neither found, leave undefined (will use reportPanelFilters.isGroup)
+      }
+      
+      // Build initialFilters: Start with widgetFilters (widget's saved filters take precedence)
+      // Then handle team_name/isGroup specially, then fill in missing values from topbar
+      const initialFiltersWithDefaults: Record<string, any> = { ...widgetFilters };
+      
+      // Handle team_name and isGroup with special logic:
+      // - If widget has its own team_name: use it and set isGroup (detected > widgetFilters > topbar)
+      // - If widget doesn't have team_name: use topbar values
+      if (widgetTeamName) {
+        // Widget has its own team_name - use it and ensure isGroup is correct
+        initialFiltersWithDefaults.team_name = widgetTeamName;
+        // Priority: detected value > widgetFilters value > topbar value
+        initialFiltersWithDefaults.isGroup = detectedIsGroup ?? widgetFilters.isGroup ?? reportPanelFilters.isGroup;
+      } else if (hasValidTeam) {
+        // Widget doesn't have team_name - use topbar values
+        initialFiltersWithDefaults.team_name = reportPanelFilters.team_name;
+        if (reportPanelFilters.isGroup !== undefined) {
+          initialFiltersWithDefaults.isGroup = reportPanelFilters.isGroup;
+        }
+      }
+      
+      // Fill in any missing values from topbar (excluding team_name/isGroup if widget has team_name)
+      Object.entries(reportPanelFilters).forEach(([key, value]) => {
+        // Skip team_name/isGroup if widget has its own team_name (already handled above)
+        if ((key === 'team_name' || key === 'isGroup') && widgetTeamName) {
+          return;
+        }
+        // Add topbar value if not already set
+        if (!(key in initialFiltersWithDefaults)) {
+          initialFiltersWithDefaults[key] = value;
+        }
+      });
+      
+      // Pin team_name and isGroup if widget has its own team_name
+      // This prevents controlledFilters (from topbar) from overriding the widget's own filter values
+      // This is the intended use of the pinning system (see ReportPanel.tsx lines 125-149)
+      const finalPinnedFilters = [...widgetPinnedFilters];
+      if (widgetTeamName) {
+        // Widget has its own team_name, so pin both team_name and isGroup to keep them in sync
+        // This ensures the widget's team_name and isGroup stay together and aren't overridden by topbar
+        if (!finalPinnedFilters.includes('team_name')) {
+          finalPinnedFilters.push('team_name');
+        }
+        if (!finalPinnedFilters.includes('isGroup')) {
+          finalPinnedFilters.push('isGroup');
+        }
+      }
       
       return (
         <div key={widget.id} className="h-full">
           <ReportPanel
             reportId={widget.widget_id}
             initialFilters={initialFiltersWithDefaults}
-            initialPinnedFilters={widgetPinnedFilters}
+            initialPinnedFilters={finalPinnedFilters}
             controlledFilters={reportPanelFilters} // Pass global filters as controlled filters
             enabled={true}
             componentProps={{
               onAIChat: () => {
-                console.log('[CustomDashboardEditor] Opening AI chat for report:', widget.widget_id);
-                
                 // Get current dashboard data - match TeamDashboard format exactly
                 // Use saved topBarFilters from dashboardLayoutConfig (like TeamDashboard uses dashboardSettings.currentState.topBarFilters)
                 const topBarFilters = dashboardLayoutConfig.topBarFilters || {};
@@ -1094,9 +1142,6 @@ export default function CustomDashboardEditor({
                   },
                 };
                 
-                console.log('[CustomDashboardEditor] Dispatching report AI chat data:', data);
-                console.log('[CustomDashboardEditor] Merged report filters (unpinned use topbar):', mergedReportFilters);
-                
                 // Dispatch event to open AI chat with this specific report's data
                 window.dispatchEvent(new CustomEvent('open-report-ai-chat', { detail: data }));
               },
@@ -1113,18 +1158,21 @@ export default function CustomDashboardEditor({
               };
               setDashboardLayoutConfig(updatedLayoutConfig);
               
-              // Debounced auto-save for pinned filters
+              // Use same timer key as handleUpdateWidgetFilters to ensure atomic save
+              // Cancel existing timer (if filters are also being saved) and reuse it
               if (user) {
                 const userId = (user?.id || user?.user_id) as string;
-                const timerKey = `pinned-${widget.id}`;
+                const timerKey = widget.id; // Use same key as handleUpdateWidgetFilters
                 if (filterSaveTimersRef.current[timerKey]) {
                   clearTimeout(filterSaveTimersRef.current[timerKey]);
                 }
                 filterSaveTimersRef.current[timerKey] = setTimeout(() => {
+                  // Read current state to ensure both filters and pinnedFilters are saved together
+                  const currentConfig = dashboardLayoutConfig;
                   updateDashboard(userId, dashboardId, {
-                    layout_config: updatedLayoutConfig,
+                    layout_config: currentConfig,
                   }).catch(err => {
-                    console.error(`[CustomDashboard] Failed to save pinned filters for widget ${widget.id}:`, err);
+                    console.error(`[CustomDashboard] Failed to save widget ${widget.id} changes:`, err);
                   });
                   delete filterSaveTimersRef.current[timerKey];
                 }, 1000);
@@ -1319,17 +1367,6 @@ export default function CustomDashboardEditor({
       const isTeamPinned = widgetPinnedFilters.includes('team_name');
       const isPIPinned = widgetPinnedFilters.includes('pi');
 
-      console.log(`[CustomDashboard] Metrics widget ${widget.id} filter check:`, {
-        'reportPanelFilters.team_name': reportPanelFilters.team_name,
-        'reportPanelFilters.pi': reportPanelFilters.pi,
-        'reportPanelFilters.isGroup': reportPanelFilters.isGroup,
-        'metricsConfig.teamName': metricsConfig.teamName,
-        'metricsConfig.piName': metricsConfig.piName,
-        'metricsConfig.isGroup': metricsConfig.isGroup,
-        'isTeamPinned': isTeamPinned,
-        'isPIPinned': isPIPinned,
-      });
-
       // Use global filters if not pinned, otherwise use saved config
       const displayTeamName = !isTeamPinned && reportPanelFilters.team_name 
         ? reportPanelFilters.team_name 
@@ -1344,12 +1381,6 @@ export default function CustomDashboardEditor({
       const displayPIName = !isPIPinned && reportPanelFilters.pi 
         ? reportPanelFilters.pi 
         : metricsConfig.piName;
-
-      console.log(`[CustomDashboard] Final effective values for metrics widget ${widget.id}:`, {
-        displayTeamName,
-        displayIsGroup,
-        displayPIName,
-      });
       
       // Build title for the metrics widget
       const metricsTitle = metricsConfig.metricsType === 'team' 
@@ -1387,7 +1418,6 @@ export default function CustomDashboardEditor({
             onRefresh={() => {
               // Trigger refresh by updating the refresh key
               // MetricsWidget will detect this and refetch with bypass_cache=true
-              console.log('[CustomDashboardEditor] Refreshing metrics widget:', widget.id);
               setDashboardLayoutConfig((prev) => ({
                 ...prev,
                 layoutConfig: {
@@ -1422,25 +1452,27 @@ export default function CustomDashboardEditor({
               };
               setDashboardLayoutConfig(updatedLayoutConfig);
               
-              // Auto-save logic
+              // Use same timer key as handleUpdateWidgetFilters to ensure atomic save
+              // Cancel existing timer (if filters are also being saved) and reuse it
               if (user) {
                 const userId = (user?.id || user?.user_id) as string;
-                const timerKey = `pinned-${widget.id}`;
+                const timerKey = widget.id; // Use same key as handleUpdateWidgetFilters
                 if (filterSaveTimersRef.current[timerKey]) {
                   clearTimeout(filterSaveTimersRef.current[timerKey]);
                 }
                 filterSaveTimersRef.current[timerKey] = setTimeout(() => {
+                  // Read current state to ensure both filters and pinnedFilters are saved together
+                  const currentConfig = dashboardLayoutConfig;
                   updateDashboard(userId, dashboardId, {
-                    layout_config: updatedLayoutConfig,
+                    layout_config: currentConfig,
                   }).catch(err => {
-                    console.error(`[CustomDashboard] Failed to save pinned filters for widget ${widget.id}:`, err);
+                    console.error(`[CustomDashboard] Failed to save widget ${widget.id} changes:`, err);
                   });
                   delete filterSaveTimersRef.current[timerKey];
                 }, 1000);
               }
             }}
             onAIChat={() => {
-              console.log('[CustomDashboardEditor] Opening AI chat for metrics widget:', widget.id);
               // Metrics widgets don't support AI chat yet
             }}
           >
@@ -1458,12 +1490,6 @@ export default function CustomDashboardEditor({
     } else if (widget.type === 'insight_type') {
       // Get insight type name from widget filters or fetch it
       // For now, we'll pass the widget_id as insightTypeId and let InsightTypeWidget fetch the name
-      console.log('[CustomDashboardEditor] Rendering InsightTypeWidget:', {
-        widgetId: widget.id,
-        insightTypeId: widget.widget_id,
-        widgetFilters,
-        reportPanelFilters,
-      });
       
       // Get pinned filters for this widget
       const widgetPinnedFilters = dashboardLayoutConfig.pinnedFilters?.[widget.id] || [];
@@ -1487,18 +1513,21 @@ export default function CustomDashboardEditor({
               };
               setDashboardLayoutConfig(updatedLayoutConfig);
               
-              // Debounced auto-save for pinned filters
+              // Use same timer key as handleUpdateWidgetFilters to ensure atomic save
+              // Cancel existing timer (if filters are also being saved) and reuse it
               if (user) {
                 const userId = (user?.id || user?.user_id) as string;
-                const timerKey = `pinned-${widget.id}`;
+                const timerKey = widget.id; // Use same key as handleUpdateWidgetFilters
                 if (filterSaveTimersRef.current[timerKey]) {
                   clearTimeout(filterSaveTimersRef.current[timerKey]);
                 }
                 filterSaveTimersRef.current[timerKey] = setTimeout(() => {
+                  // Read current state to ensure both filters and pinnedFilters are saved together
+                  const currentConfig = dashboardLayoutConfig;
                   updateDashboard(userId, dashboardId, {
-                    layout_config: updatedLayoutConfig,
+                    layout_config: currentConfig,
                   }).catch(err => {
-                    console.error(`[CustomDashboard] Failed to save pinned filters for widget ${widget.id}:`, err);
+                    console.error(`[CustomDashboard] Failed to save widget ${widget.id} changes:`, err);
                   });
                   delete filterSaveTimersRef.current[timerKey];
                 }, 1000);
@@ -1594,6 +1623,11 @@ export default function CustomDashboardEditor({
           filters: w.filters, // Include filters for insight_type widgets
           ...(w.type === 'metrics' && w.metricsConfig ? { metricsConfig: w.metricsConfig } : {}), // Include metricsConfig for metrics widgets
         }))} // Pass widget type info
+        defaultFilters={{
+          pi: reportPanelFilters.pi,
+          team_name: reportPanelFilters.team_name,
+          isGroup: reportPanelFilters.isGroup,
+        }}
       />
 
       {/* Widget Filters Panel */}

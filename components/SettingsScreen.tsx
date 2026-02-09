@@ -9,6 +9,7 @@ import DashboardLayoutArranger, { DashboardLayout } from './DashboardLayoutArran
 import PromptsTab from './PromptsTab';
 import InsightTypesTab from './InsightTypesTab';
 import ConfigAndThresholdsTab from './ConfigAndThresholdsTab';
+import BuildReportTab from './BuildReportTab';
 import { configCache } from '../lib/configCache';
 import { piLabel } from '@/lib/piTerminology';
 
@@ -618,18 +619,28 @@ export default function SettingsScreen() {
       )
     },
   ];
- if (isSystemUser) {
- tabs.push({ 
- id: 'dashboard-layout', 
- label: 'Dashboard Layout', 
- icon: (
- <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 12a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z" />
- </svg>
- )
- });
- }
- return tabs;
+  if (isSystemUser) {
+    tabs.push({ 
+      id: 'dashboard-layout', 
+      label: 'Dashboard Layout', 
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 12a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z" />
+        </svg>
+      )
+    });
+  }
+  // Add Build Report as the last tab
+  tabs.push({
+    id: 'build-report',
+    label: 'Build Report',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    )
+  });
+  return tabs;
  }, [isSystemUser]);
 
  const geminiModels = [
@@ -1098,6 +1109,8 @@ export default function SettingsScreen() {
  return <InsightTypesTab />;
  case 'config-thresholds':
  return <ConfigAndThresholdsTab />;
+ case 'build-report':
+ return <BuildReportTab />;
  
  default:
  return (

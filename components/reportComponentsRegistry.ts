@@ -37,6 +37,7 @@ import AuditUserQuestionsView from './reportViews/AuditUserQuestionsView';
 import AuditMostActiveUsersView from './reportViews/AuditMostActiveUsersView';
 import AuditDailyActiveUsersView from './reportViews/AuditDailyActiveUsersView';
 import AuditLogsTableView from './reportViews/AuditLogsTableView';
+import GenericReportView from './reportViews/GenericReportView';
 import type { ReportDefinition } from '@/lib/config';
 
 export interface ReportRenderContext {
@@ -49,6 +50,14 @@ export interface ReportRenderContext {
   missingFilters: string[];
   requiredFilters: string[];
   refresh: () => void;
+  setFilters?: (updater: any) => void;
+  togglePin?: (filterKey: string) => void;
+  pinnedFilters?: string[];
+  onClose?: () => void;
+  onAIChat?: () => void;
+  readOnly?: boolean;
+  hideHeader?: boolean;
+  hideCollapse?: boolean;
 }
 
 export type ReportFilters = Record<string, any>;
@@ -665,6 +674,21 @@ export const DEFAULT_REPORT_COMPONENT_REGISTRY: ReportComponentRegistry = {
       filters,
       refresh,
       meta,
+    }),
+  },
+  'custom-report': {
+    component: GenericReportView,
+    requiredFilters: [],
+    mapProps: (context: ReportRenderContext) => ({
+      data: context.result,
+      loading: context.loading,
+      error: context.error,
+      definition: context.definition,
+      meta: context.meta,
+      filters: context.filters,
+      refresh: context.refresh,
+      reportId: context.definition?.report_id, // Pass actual custom report ID
+      // Note: setFilters, togglePin, pinnedFilters, and componentProps are added by ReportPanel's overrides
     }),
   },
 };

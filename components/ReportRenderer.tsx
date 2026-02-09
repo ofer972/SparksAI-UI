@@ -202,7 +202,11 @@ const ReportRenderer: React.FC<ReportRendererProps> = ({
           onBypassCacheUsed();
         }
         
-        const payload = await apiService.getReport(reportId, filtersWithBypass);
+        // Detect if this is a custom report and pass report_type parameter
+        const isCustomReport = reportId.startsWith('custom-');
+        const reportType = isCustomReport ? 'custom' : 'system';
+        
+        const payload = await apiService.getReport(reportId, filtersWithBypass, reportType);
 
         if (!isMounted) {
           return;

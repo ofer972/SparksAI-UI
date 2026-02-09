@@ -80,8 +80,10 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
   enabled = true,
   ...rendererProps
 }) => {
-  const entry = registry[reportId];
-  console.log('[ReportPanel] reportId:', reportId, 'entry found:', !!entry, 'registry keys:', Object.keys(registry).slice(0, 10));
+  // Detect custom reports and route to 'custom-report' entry
+  const isCustomReport = reportId.startsWith('custom-');
+  const lookupReportId = isCustomReport ? 'custom-report' : reportId;
+  const entry = registry[lookupReportId];
 
   const [localFilters, setLocalFilters] = React.useState<FiltersState>(() =>
     initialFilters ? { ...initialFilters } : {}
@@ -182,27 +184,20 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
   );
 
   const togglePin = React.useCallback((filterKey: string) => {
-    console.log(`[ReportPanel ${reportId}] Toggle pin for filter: ${filterKey}`);
-    
     setPinnedFilters((prev) => {
       const newPinned = new Set(prev);
       const wasPinned = newPinned.has(filterKey);
       
       if (wasPinned) {
-        console.log(`[ReportPanel ${reportId}] Unpinning filter: ${filterKey}`);
-        console.log(`[ReportPanel ${reportId}] Current controlledFilters:`, controlledFilters);
-        console.log(`[ReportPanel ${reportId}] New pinned set (after delete):`, Array.from(newPinned));
         newPinned.delete(filterKey);
         
         // When unpinning team_name, also unpin isGroup and team since they're related
         // This ensures the filter type (Team vs Group) updates correctly
         if (filterKey === 'team_name') {
           if (newPinned.has('isGroup')) {
-            console.log(`[ReportPanel ${reportId}] Also unpinning isGroup (related to team_name)`);
             newPinned.delete('isGroup');
           }
           if (newPinned.has('team')) {
-            console.log(`[ReportPanel ${reportId}] Also unpinning team (related to team_name)`);
             newPinned.delete('team');
           }
         }
@@ -211,20 +206,14 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
         // This ensures related filters like team_name and isGroup stay in sync
         if (controlledFilters) {
           setLocalFilters((prevFilters) => {
-            console.log(`[ReportPanel ${reportId}] Previous filters:`, prevFilters);
             const updated = { ...prevFilters };
             
             // Apply all controlled values for unpinned filters
             Object.entries(controlledFilters).forEach(([key, value]) => {
               if (!newPinned.has(key)) {
-                console.log(`[ReportPanel ${reportId}] Applying controlled ${key}:`, value);
                 updated[key] = value;
-              } else {
-                console.log(`[ReportPanel ${reportId}] Skipping ${key} (still pinned)`);
               }
             });
-            
-            console.log(`[ReportPanel ${reportId}] Updated local filters after unpinning:`, updated);
             
             // Notify parent immediately
             onFiltersChange?.(updated);
@@ -233,13 +222,11 @@ const ReportPanel: React.FC<ReportPanelProps> = ({
           });
         }
       } else {
-        console.log(`[ReportPanel ${reportId}] Pinning filter: ${filterKey}`);
         newPinned.add(filterKey);
       }
       
       // Notify parent of pinned filters change
       const pinnedArray = Array.from(newPinned);
-      console.log(`[ReportPanel ${reportId}] New pinned filters:`, pinnedArray);
       onPinnedFiltersChange?.(pinnedArray);
       
       return newPinned;
