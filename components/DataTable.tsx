@@ -134,18 +134,20 @@ function DataTable<T extends Record<string, any>>({
  return undefined;
  }, [providedSortConfig]);
  const sortedData = useMemo(() => {
+ // Ensure data is an array
+ if (!Array.isArray(data)) return [];
  if (!sortConfig?.key || !onSort) return data;
  
  return [...data].sort((a, b) => {
- const aValue = a[sortConfig.key!];
- const bValue = b[sortConfig.key!];
- 
- if (aValue === null || aValue === undefined) return 1;
- if (bValue === null || bValue === undefined) return -1;
- 
- if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
- if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
- return 0;
+   const aValue = a[sortConfig.key!];
+   const bValue = b[sortConfig.key!];
+   
+   if (aValue === null || aValue === undefined) return 1;
+   if (bValue === null || bValue === undefined) return -1;
+   
+   if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+   if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+   return 0;
  });
  }, [data, sortConfig, onSort]);
 

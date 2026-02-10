@@ -487,12 +487,26 @@ export interface ReportDefinition {
   chart_type: string;
   data_source: string;
   description: string;
+  report_type?: string;
   default_filters: Record<string, any>;
   meta_schema: {
-    required_filters: string[];
-    optional_filters: string[];
-    parameters: Record<string, { type: string; description: string; items?: { type: string } }>;
+    required_filters?: string[];
+    optional_filters?: string[];
+    parameters?: Record<string, { type: string; description: string; items?: { type: string } }>;
     allowed_views?: string[];
+    build_report_config?: {
+      report_type: string;
+      selected_fields?: string[];
+      x_axis?: string | string[];
+      y_axis?: string;
+      filters: Array<{
+        field: string;
+        operator: string;
+        values: string[] | string;
+      }>;
+      team_name?: string;
+      isGroup?: boolean;
+    };
   };
 }
 

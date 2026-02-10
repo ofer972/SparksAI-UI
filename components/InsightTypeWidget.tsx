@@ -44,13 +44,6 @@ export default function InsightTypeWidget({
  onPinnedFiltersChange,
  widgetId,
 }: InsightTypeWidgetProps) {
- console.log('[InsightTypeWidget] Component mounted/rendered:', {
- insightTypeId,
- insightTypeName,
- filters,
- globalFilters,
- });
- 
  const [cards, setCards] = useState<AICard[]>([]);
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
@@ -141,13 +134,6 @@ export default function InsightTypeWidget({
  requireTeam: Boolean(foundType.team_insight ?? foundType.requireTeam ?? foundType.requires_team ?? foundType.require_team ?? false),
  requireGroup: Boolean(foundType.group_insight ?? foundType.requireGroup ?? foundType.requires_group ?? foundType.require_group ?? false),
  };
- console.log('[InsightTypeWidget] Fetched insight type:', {
- insightTypeId,
- foundType,
- displayName,
- typeName,
- metadata,
- });
  setInsightType(typeName); // Use for filtering
  setInsightTypeDisplayName(displayName); // Use for display (matches modal)
  setInsightTypeMetadata(metadata);
@@ -237,10 +223,26 @@ export default function InsightTypeWidget({
  
  const next = mergeFilters(prev, filteredControlled);
  
- // Clear unpinned filters if controlled filters are empty
+ // Preserve widget-specific filters from props (filters prop) even if not pinned
+ // This ensures that when a user selects a different team/group in the widget selector,
+ // it's respected even if it differs from globalFilters
+ if (filters) {
+ // Merge widget-specific filters, giving them priority over controlled filters
+ Object.entries(filters).forEach(([key, value]) => {
+ if (value !== undefined && value !== null && value !== '') {
+ // Only override if the filter is not pinned (pinned filters should keep their value)
+ if (!pinnedFilters.has(key)) {
+ next[key as keyof FiltersState] = value;
+ }
+ }
+ });
+ }
+ 
+ // Clear unpinned filters if controlled filters are empty AND no widget-specific filters
  if (Object.keys(filteredControlled).length === 0) {
  const cleared: FiltersState = { ...next };
  for (const key of Object.keys(prev)) {
+ // Preserve widget-specific filters and pinned filters
  if (!(key in (filters ?? {})) && !pinnedFilters.has(key)) {
  delete cleared[key as keyof FiltersState];
  }
@@ -251,13 +253,25 @@ export default function InsightTypeWidget({
  return next;
  });
  }
- }, [controlledKey, globalFilters, pinnedFilters, teams, groups, insightTypeMetadata, filters]);
+}, [controlledKey, globalFilters, pinnedFilters, teams, groups, insightTypeMetadata, filters]);
 
- // insightFilters is just localFilters (same pattern as ReportPanel)
- // The merging with global filters is already handled in the useEffect above
- const insightFilters = React.useMemo(() => {
- return { ...localFilters };
- }, [localFilters]);
+// Watch localFilters and notify parent of changes (same pattern as ReportPanel)
+// This ensures filter changes trigger onFiltersChange and save to dashboard
+const prevFiltersForSaveRef = React.useRef<string>('');
+React.useEffect(() => {
+const filtersJson = JSON.stringify(localFilters);
+// Only emit if filters have actually changed to avoid infinite loops
+if (filtersJson !== prevFiltersForSaveRef.current) {
+prevFiltersForSaveRef.current = filtersJson;
+onFiltersChange?.(localFilters);
+}
+}, [localFilters, onFiltersChange]);
+
+// insightFilters is just localFilters (same pattern as ReportPanel)
+// The merging with global filters is already handled in the useEffect above
+const insightFilters = React.useMemo(() => {
+return { ...localFilters };
+}, [localFilters]);
 
  // Ref to track previous filter values to prevent unnecessary API calls
  const prevFiltersRef = React.useRef<string>('');
@@ -269,16 +283,27 @@ export default function InsightTypeWidget({
  // Don't load if we don't have an insight type yet (unless we have insightTypeName as fallback)
  const effectiveType = insightType || insightTypeName;
  if (!effectiveType) {
- console.log('[InsightTypeWidget] loadCards: No insight type, skipping');
  setLoading(false);
  return;
  }
 
- console.log('[InsightTypeWidget] loadCards: Starting API call to getTopCardsWithRecommendations', {
- effectiveType,
- insightFilters,
- });
-
+ // Validate required filters before making API call
+ if (insightTypeMetadata.requirePI && !insightFilters.pi) {
+ setLoading(false);
+ setError('Please select a PI');
+ return;
+ }
+ if (insightTypeMetadata.requireTeam && !insightTypeMetadata.requireGroup && !insightFilters.team_name) {
+ setLoading(false);
+ setError('Please select a Team');
+ return;
+ }
+ if (insightTypeMetadata.requireGroup && !insightTypeMetadata.requireTeam && !insightFilters.group_name) {
+ setLoading(false);
+ setError('Please select a Group');
+ return;
+ }
+ 
  setLoading(true);
  setError(null);
  try {
@@ -291,13 +316,7 @@ export default function InsightTypeWidget({
  if (effectiveType) {
  params.append('insight_type', effectiveType);
  }
-
- console.log('[InsightTypeWidget] Building API params with filters:', {
- effectiveType,
- insightFilters,
- insightTypeMetadata,
- });
-
+ 
  // Add filters based on insight type requirements
  // Only send filters that are required by the insight type to avoid API errors
  // For group-based insights: send group_name and isGroup=true
@@ -347,20 +366,10 @@ export default function InsightTypeWidget({
  params.append('bypass_cache', 'true');
  }
  
- console.log('[InsightTypeWidget] Built API params:', {
- params: params.toString(),
- insightTypeMetadata,
- insightFilters,
- bypassCache,
- });
-
  // Fetch insight cards using getTopCardsWithRecommendations endpoint
  const url = `${buildBackendUrl('/ai-insights/getTopCardsWithRecommendations')}?${params.toString()}`;
- console.log('[InsightTypeWidget] loadCards: Calling API:', url);
  
  const response = await authFetch(url);
- 
- console.log('[InsightTypeWidget] loadCards: API response status:', response.status);
  
  if (!response.ok) {
  throw new Error(`Failed to fetch insight cards: ${response.status} ${response.statusText}`);
@@ -398,13 +407,6 @@ export default function InsightTypeWidget({
  // Match by insight_id (case-insensitive, trimmed)
  const normalizedInsightId = (insightType || insightTypeName || '').trim();
  
- console.log('[InsightTypeWidget] Filtering cards:', {
- allCardsCount: allCards.length,
- insightId: normalizedInsightId,
- insightTypeId,
- cardTypes: allCards.map(c => ({ id: c.id, insight_id: c.insight_id })),
- });
- 
  // If we have an insight ID to filter by, filter the cards
  // Otherwise, show all cards (shouldn't happen, but handle gracefully)
  let filteredCards = allCards;
@@ -414,22 +416,9 @@ export default function InsightTypeWidget({
  // Case-insensitive comparison
  const matches = cardId.toLowerCase() === normalizedInsightId.toLowerCase();
  
- if (!matches && allCards.length <= 5) {
- console.log('[InsightTypeWidget] Card does not match:', {
- cardId: card.id,
- cardInsightId: cardId,
- normalizedCardInsightId: cardId.toLowerCase(),
- insightType: normalizedInsightId,
- normalizedInsightType: normalizedInsightId.toLowerCase(),
- matches,
- });
- }
- 
  return matches;
  });
  }
- 
- console.log('[InsightTypeWidget] Filtered cards count:', filteredCards.length, 'out of', allCards.length, 'insightType:', normalizedInsightId);
  
  setCards(filteredCards);
  } catch (err: any) {
@@ -454,26 +443,11 @@ export default function InsightTypeWidget({
  // Only call loadCards if:
  // 1. We have an insight type AND (filters changed OR type changed OR this is the first load)
  if (effectiveType && (filtersChanged || typeChanged || !hasLoadedRef.current)) {
- console.log('[InsightTypeWidget] Calling loadCards - filters or type changed:', {
- insightType: effectiveType,
- filtersChanged,
- typeChanged,
- isFirstLoad: !hasLoadedRef.current,
- filtersKey,
- });
- 
  prevFiltersRef.current = filtersKey;
  prevInsightTypeRef.current = insightTypeKey;
  hasLoadedRef.current = true;
  
  loadCards();
- } else if (!effectiveType) {
- console.log('[InsightTypeWidget] Not calling loadCards - no insight type:', {
- insightType,
- insightTypeName,
- });
- } else {
- console.log('[InsightTypeWidget] Skipping loadCards - no changes detected');
  }
  }, [insightType, insightTypeName, insightFilters, loadCards]);
 

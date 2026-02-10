@@ -16,11 +16,13 @@ interface InsightTypeSelection {
 interface InsightTypeSelectorProps {
  onUpdateSelections?: (selections: Map<string, InsightTypeSelection>) => void;
  currentSelections?: Map<string, InsightTypeSelection>; // Current selections on dashboard
+ defaultFilters?: { pi?: string; team_name?: string; isGroup?: boolean }; // Default filters from topbar for pre-populating
 }
 
 export default function InsightTypeSelector({
  onUpdateSelections,
  currentSelections = new Map(),
+ defaultFilters,
 }: InsightTypeSelectorProps) {
  const apiService = new ApiService();
 
@@ -199,13 +201,6 @@ export default function InsightTypeSelector({
  });
  });
  
- console.log('[InsightTypeSelector] Notifying parent of selection changes:', {
- selectionsSize: selections.size,
- selectedTypesSize: selectedTypes.size,
- selections: Array.from(selections.entries()),
- initializedFromProps: initializedFromPropsRef.current,
- });
- 
  // Update the last known selections to prevent re-initialization
  const selectionsKey = JSON.stringify(
  Array.from(selections.entries())
@@ -252,6 +247,32 @@ export default function InsightTypeSelector({
  });
  } else {
  next.add(typeId);
+ 
+ // Pre-populate filters from defaultFilters if available
+ const insightType = insightTypes.find(t => t.id === typeId);
+if (insightType && defaultFilters) {
+// Pre-populate PI if required and available
+if (insightType.requirePI && defaultFilters.pi && !selectedPI[typeId]) {
+const piValue = defaultFilters.pi;
+setSelectedPI(prev => ({ ...prev, [typeId]: piValue }));
+}
+
+// Pre-populate team if required and topbar has team (not group)
+if (insightType.requireTeam && !insightType.requireGroup && 
+    defaultFilters.team_name && defaultFilters.isGroup === false &&
+    availableTeams.includes(defaultFilters.team_name) && !selectedTeam[typeId]) {
+const teamValue = defaultFilters.team_name;
+setSelectedTeam(prev => ({ ...prev, [typeId]: teamValue }));
+}
+
+// Pre-populate group if required and topbar has group (not team)
+if (insightType.requireGroup && !insightType.requireTeam &&
+    defaultFilters.team_name && defaultFilters.isGroup === true &&
+    availableGroups.includes(defaultFilters.team_name) && !selectedGroup[typeId]) {
+const groupValue = defaultFilters.team_name;
+setSelectedGroup(prev => ({ ...prev, [typeId]: groupValue }));
+}
+}
  }
  return next;
  });

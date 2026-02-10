@@ -180,7 +180,7 @@ export class ApiService {
     this.baseUrl = API_CONFIG.baseUrl;
   }
 
-  private buildReportQuery(filters?: Record<string, string | number | boolean | (string | number | boolean)[] | null | undefined>): string {
+  private buildReportQuery(filters?: Record<string, string | number | boolean | (string | number | boolean)[] | null | undefined | any>): string {
     if (!filters) {
       return '';
     }
@@ -195,14 +195,29 @@ export class ApiService {
       const encodedKey = encodeURIComponent(key);
       
       if (Array.isArray(value)) {
-        value.forEach(item => {
-          if (item !== null && item !== undefined && String(item).trim() !== '') {
-            // Explicitly encode each value to ensure special characters like +, &, =, etc. are properly encoded
-            const encodedValue = encodeURIComponent(String(item));
-            queryParts.push(`${encodedKey}=${encodedValue}`);
-          }
-        });
+        // Check if array contains objects (like filter_overrides)
+        if (value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
+          // Array of objects - JSON stringify the entire array
+          const jsonValue = JSON.stringify(value);
+          const encodedValue = encodeURIComponent(jsonValue);
+          queryParts.push(`${encodedKey}=${encodedValue}`);
+        } else {
+          // Array of primitives - handle each item separately
+          value.forEach(item => {
+            if (item !== null && item !== undefined && String(item).trim() !== '') {
+              // Explicitly encode each value to ensure special characters like +, &, =, etc. are properly encoded
+              const encodedValue = encodeURIComponent(String(item));
+              queryParts.push(`${encodedKey}=${encodedValue}`);
+            }
+          });
+        }
+      } else if (typeof value === 'object') {
+        // Single object - JSON stringify it
+        const jsonValue = JSON.stringify(value);
+        const encodedValue = encodeURIComponent(jsonValue);
+        queryParts.push(`${encodedKey}=${encodedValue}`);
       } else {
+        // Primitive value (string, number, boolean)
         const stringValue = String(value);
         if (stringValue.trim() === '') {
           continue;
@@ -281,10 +296,12 @@ export class ApiService {
   async getReportDefinitions(options?: {
     includeAudit?: boolean;
     auditOnly?: boolean;
+    reportType?: 'system' | 'custom';
   }): Promise<ReportDefinition[]> {
     const params = new URLSearchParams();
     if (options?.includeAudit) params.append('include_audit', 'true');
     if (options?.auditOnly) params.append('audit_only', 'true');
+    if (options?.reportType) params.append('report_type', options.reportType);
     
     const url = `${buildBackendUrl(API_CONFIG.endpoints.reports.list)}?${params}`;
     const response = await fetch(url);
@@ -312,12 +329,24 @@ export class ApiService {
 
   async getReport<T = any>(
     reportId: string,
-    filters?: Record<string, ReportFilterValue>
+    filters?: Record<string, ReportFilterValue>,
+    reportType?: 'system' | 'custom'
   ): Promise<ReportInstancePayload<T>> {
     const encodedId = encodeURIComponent(reportId);
     const baseUrl = buildBackendUrl(API_CONFIG.endpoints.reports.detail);
     const query = this.buildReportQuery(filters);
-    const url = query ? `${baseUrl}/${encodedId}?${query}` : `${baseUrl}/${encodedId}`;
+    
+    // Build query string with report_type parameter if provided
+    const queryParts: string[] = [];
+    if (reportType) {
+      queryParts.push(`report_type=${encodeURIComponent(reportType)}`);
+    }
+    if (query) {
+      queryParts.push(query);
+    }
+    
+    const queryString = queryParts.join('&');
+    const url = queryString ? `${baseUrl}/${encodedId}?${queryString}` : `${baseUrl}/${encodedId}`;
 
     const response = await fetch(url);
 
@@ -335,6 +364,266 @@ export class ApiService {
     }
 
     return result.data;
+  }
+
+  // Build Report API
+  async getReportFields(): Promise<{
+    displayable_fields: Array<{
+      column_name: string;
+      display_name: string;
+      type: string;
+    }>;
+    filterable_fields: Array<{
+      column_name: string;
+      display_name: string;
+      type: string;
+      filter_type: 'dropdown' | 'text';
+      values?: string[];
+      operator?: string[];
+    }>;
+  }> {
+    const url = buildBackendUrl('/reports/fields');
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch report fields: ${response.statusText}`);
+    }
+
+    const result: ApiResponse<{
+      displayable_fields: Array<{
+        column_name: string;
+        display_name: string;
+        type: string;
+      }>;
+      filterable_fields: Array<{
+        column_name: string;
+        display_name: string;
+        type: string;
+        filter_type: 'dropdown' | 'text';
+        values?: string[];
+        operator?: string[];
+      }>;
+    }> = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.message || 'Failed to fetch report fields');
+    }
+
+    return result.data;
+  }
+
+  async getFilterDropdownValues(fieldNames: string[]): Promise<Record<string, string[]>> {
+    if (!fieldNames || fieldNames.length === 0) {
+      return {};
+    }
+    
+    const params = new URLSearchParams();
+    fieldNames.forEach(field => params.append('field', field));
+    
+    const url = buildBackendUrl(`/reports/filters/dropdown-values?${params.toString()}`);
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch filter dropdown values: ${response.statusText}`);
+    }
+
+    const result: ApiResponse<Record<string, string[]>> = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.message || 'Failed to fetch filter dropdown values');
+    }
+
+    return result.data;
+  }
+
+  async buildReport(request: {
+    report_type: string;
+    selected_fields?: string[];
+    x_axis?: string | string[];
+    y_axis?: string;
+    filters: Array<{
+      field: string;
+      operator: string;
+      values: string[] | string;
+    }>;
+    team_name?: string;
+    isGroup?: boolean;
+  }): Promise<{
+    data: any[] | Record<string, any[]>;
+    count: number;
+    columns: string[];
+    meta?: {
+      jira_url?: string;
+    };
+  }> {
+    const url = buildBackendUrl('/reports/build');
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      throw new Error(
+        `Failed to build report: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`
+      );
+    }
+
+    const result: ApiResponse<{
+      data: any[] | Record<string, any[]>;
+      count: number;
+      columns: string[];
+    }> & { meta?: { jira_url?: string } } = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.message || 'Failed to build report');
+    }
+
+    // Return data with meta included
+    // result.data is { data: actual_data, count: ..., columns: ... }
+    // We need to extract the nested data field
+    return {
+      data: result.data.data,  // Extract the nested data field
+      count: result.data.count,
+      columns: result.data.columns,
+      meta: result.meta
+    };
+  }
+
+  // Custom Reports API
+  async saveCustomReport(config: {
+    report_name: string;
+    description?: string;
+    report_type: string;
+    selected_fields?: string[];
+    x_axis?: string | string[];
+    y_axis?: string;
+    filters: Array<{
+      field: string;
+      operator: string;
+      values: string[] | string;
+    }>;
+    team_name?: string;
+    isGroup?: boolean;
+  }): Promise<ReportDefinition> {
+    const url = buildBackendUrl('/reports/build/save');
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(config),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      throw new Error(
+        `Failed to save report: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`
+      );
+    }
+
+    const result: ApiResponse<ReportDefinition> = await response.json();
+    if (!result.success) {
+      throw new Error(result.message || 'Failed to save report');
+    }
+
+    return result.data;
+  }
+
+  async getCustomReports(): Promise<ReportDefinition[]> {
+    const url = buildBackendUrl('/reports/custom');
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch custom reports: ${response.statusText}`);
+    }
+
+    const result: ApiResponse<ReportDefinition[]> = await response.json();
+    if (!result.success) {
+      throw new Error(result.message || 'Failed to fetch custom reports');
+    }
+
+    return result.data || [];
+  }
+
+  async getCustomReport(reportId: string): Promise<ReportDefinition> {
+    const url = buildBackendUrl(`/reports/custom/${reportId}`);
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch custom report: ${response.statusText}`);
+    }
+
+    const result: ApiResponse<ReportDefinition> = await response.json();
+    if (!result.success) {
+      throw new Error(result.message || 'Failed to fetch custom report');
+    }
+
+    return result.data;
+  }
+
+  async updateCustomReport(
+    reportId: string,
+    config: {
+      report_name: string;
+      description?: string;
+      report_type: string;
+      selected_fields?: string[];
+      x_axis?: string | string[];
+      y_axis?: string;
+      filters: Array<{
+        field: string;
+        operator: string;
+        values: string[] | string;
+      }>;
+      team_name?: string;
+      isGroup?: boolean;
+    }
+  ): Promise<ReportDefinition> {
+    const url = buildBackendUrl(`/reports/custom/${reportId}`);
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(config),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      throw new Error(
+        `Failed to update report: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`
+      );
+    }
+
+    const result: ApiResponse<ReportDefinition> = await response.json();
+    if (!result.success) {
+      throw new Error(result.message || 'Failed to update report');
+    }
+
+    return result.data;
+  }
+
+  async deleteCustomReport(reportId: string): Promise<void> {
+    const url = buildBackendUrl(`/reports/custom/${reportId}`);
+    const response = await fetch(url, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      throw new Error(
+        `Failed to delete report: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`
+      );
+    }
+
+    const result: ApiResponse<any> = await response.json();
+    if (!result.success) {
+      throw new Error(result.message || 'Failed to delete report');
+    }
   }
 
   // PIs API

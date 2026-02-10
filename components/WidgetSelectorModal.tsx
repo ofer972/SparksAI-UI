@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ApiService } from '@/lib/api';
 import type { ReportDefinition } from '@/lib/config';
 import InsightTypeSelector from './InsightTypeSelector';
@@ -22,6 +22,7 @@ interface WidgetSelectorModalProps {
  onUpdateWidgets?: (widgets: Array<{ type: 'report' | 'insight_card' | 'insight_type' | 'metrics'; id: string; filters?: Record<string, any>; metricsConfig?: MetricsSelection }>) => void; // Multiple widget selection (new)
  currentWidgetIds?: string[]; // Current widget IDs (can have duplicates) for counting instances
  currentWidgets?: Array<{ widget_id: string; widget_type: 'report' | 'insight_card' | 'insight_type' | 'metrics'; filters?: Record<string, any>; metricsConfig?: MetricsSelection }>; // Optional: widget type info to separate reports from insight cards
+ defaultFilters?: { pi?: string; team_name?: string; isGroup?: boolean }; // Default filters from topbar for pre-populating insight filters
 }
 
 export default function WidgetSelectorModal({
@@ -31,11 +32,12 @@ export default function WidgetSelectorModal({
  onUpdateWidgets,
  currentWidgetIds = [],
  currentWidgets = [],
+ defaultFilters,
 }: WidgetSelectorModalProps) {
- const [activeTab, setActiveTab] = useState<'reports' | 'insight_cards' | 'metrics'>('reports');
- const [availableReports, setAvailableReports] = useState<ReportDefinition[]>([]);
- const [loading, setLoading] = useState(false);
- const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'system_reports' | 'custom_reports' | 'insight_cards' | 'metrics'>('system_reports');
+  const [reports, setReports] = useState<ReportDefinition[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
  
  // Count how many instances of each widget_id currently exist on the dashboard
  const getCurrentCounts = () => {
@@ -166,30 +168,35 @@ export default function WidgetSelectorModal({
  }
  }, [isOpen, onUpdateWidgets, currentWidgets, currentWidgetIds]); // Added currentWidgets and currentWidgetIds back to ensure proper initialization
 
- useEffect(() => {
- if (isOpen && activeTab === 'reports') {
- loadReports();
- }
- }, [isOpen, activeTab]);
+  const loadReports = useCallback(async (reportType: 'system' | 'custom') => {
+    setLoading(true);
+    try {
+      const api = new ApiService();
+      const reportDefinitions = await api.getReportDefinitions(
+        reportType === 'system' 
+          ? { includeAudit: false, reportType: 'system' }
+          : { reportType: 'custom' }
+      );
+      setReports(reportDefinitions);
+    } catch (err) {
+      console.error(`Failed to load ${reportType} reports:`, err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
- const loadReports = async () => {
- setLoading(true);
- try {
- const api = new ApiService();
-      const reports = await api.getReportDefinitions({ includeAudit: false });
- setAvailableReports(reports);
- } catch (err) {
- console.error('Failed to load reports:', err);
- } finally {
- setLoading(false);
- }
- };
+  useEffect(() => {
+    if (isOpen && (activeTab === 'system_reports' || activeTab === 'custom_reports')) {
+      const reportType = activeTab === 'system_reports' ? 'system' : 'custom';
+      loadReports(reportType);
+    }
+  }, [isOpen, activeTab, loadReports]);
 
- const filteredReports = availableReports.filter(report =>
- report.report_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
- report.report_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
- (report.description && report.description.toLowerCase().includes(searchQuery.toLowerCase()))
- );
+  const filteredReports = reports.filter(report =>
+    report.report_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    report.report_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (report.description && report.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
  if (!isOpen) return null;
 
@@ -214,20 +221,34 @@ export default function WidgetSelectorModal({
  {/* Tabs - System Settings Style */}
  <div className="flex-shrink-0 px-6">
  <nav className="flex space-x-1 bg-surface px-0 pt-0">
- <button
- onClick={() => setActiveTab('reports')}
- className={`
- flex items-center px-4 py-2.5 text-sm font-medium rounded-t-lg border transition-colors whitespace-nowrap
- ${activeTab === 'reports' 
- ? 'bg-surface text-brand border-x border-t border-outline-strong border-b-white border-b-surface -mb-px relative z-10' 
- : 'bg-surface-elevated text-content-tertiary border border-outline hover:bg-surface-secondary hover:bg-surface-secondary'}
- `}
- >
- <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
- </svg>
- <span>Reports</span>
- </button>
+          <button
+            onClick={() => setActiveTab('system_reports')}
+            className={`
+            flex items-center px-4 py-2.5 text-sm font-medium rounded-t-lg border transition-colors whitespace-nowrap
+            ${activeTab === 'system_reports' 
+              ? 'bg-surface text-brand border-x border-t border-outline-strong border-b-white border-b-surface -mb-px relative z-10' 
+              : 'bg-surface-elevated text-content-tertiary border border-outline hover:bg-surface-secondary hover:bg-surface-secondary'}
+            `}
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>System Reports</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('custom_reports')}
+            className={`
+            flex items-center px-4 py-2.5 text-sm font-medium rounded-t-lg border transition-colors whitespace-nowrap
+            ${activeTab === 'custom_reports' 
+              ? 'bg-surface text-brand border-x border-t border-outline-strong border-b-white border-b-surface -mb-px relative z-10' 
+              : 'bg-surface-elevated text-content-tertiary border border-outline hover:bg-surface-secondary hover:bg-surface-secondary'}
+            `}
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Custom Reports</span>
+          </button>
  <button
  onClick={() => setActiveTab('insight_cards')}
  className={`
@@ -261,32 +282,32 @@ export default function WidgetSelectorModal({
 
  {/* Tab Content - System Settings Style */}
  <div className="flex-1 overflow-hidden flex flex-col min-h-0 bg-surface border border-outline-strong rounded-tr-lg rounded-b-lg shadow-sm mx-6 mb-6">
- <div className="flex-1 overflow-y-auto flex flex-col min-h-0 p-6">
- {activeTab === 'reports' ? (
- <div>
- {/* Search */}
- <div className="mb-4">
- <input
- type="text"
- value={searchQuery}
- onChange={(e) => setSearchQuery(e.target.value)}
- placeholder="Search reports..."
- className="w-full px-4 py-2 border border-outline-strong bg-surface-elevated text-content-primary dark:placeholder-slate-400 rounded-md focus:outline-none focus:ring-2 focus:ring-brand"
- />
- </div>
+        <div className="flex-1 overflow-y-auto flex flex-col min-h-0 p-6">
+          {(activeTab === 'system_reports' || activeTab === 'custom_reports') ? (
+            <div>
+              {/* Search */}
+              <div className="mb-4">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={activeTab === 'system_reports' ? "Search system reports..." : "Search custom reports..."}
+                  className="w-full px-4 py-2 border border-outline-strong bg-surface-elevated text-content-primary dark:placeholder-slate-400 rounded-md focus:outline-none focus:ring-2 focus:ring-brand"
+                />
+              </div>
 
- {loading ? (
- <div className="text-center py-8">
- <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 border-blue-400 mx-auto mb-2"></div>
- <p className="text-sm text-content-tertiary">Loading reports...</p>
- </div>
- ) : filteredReports.length === 0 ? (
- <div className="text-center py-8 text-content-muted">
- No reports found
- </div>
- ) : (
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
- {filteredReports.map((report) => {
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 border-blue-400 mx-auto mb-2"></div>
+                  <p className="text-sm text-content-tertiary">Loading {activeTab === 'system_reports' ? 'system' : 'custom'} reports...</p>
+                </div>
+              ) : filteredReports.length === 0 ? (
+                <div className="text-center py-8 text-content-muted">
+                  No {activeTab === 'system_reports' ? 'system' : 'custom'} reports found
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredReports.map((report) => {
  const currentCount = reportCounts.get(report.report_id) || 0;
  const hasInstances = currentCount > 0;
  
@@ -375,6 +396,7 @@ export default function WidgetSelectorModal({
  setInsightTypeSelections(selections);
  }}
  currentSelections={insightTypeSelections}
+ defaultFilters={defaultFilters}
  />
  ) : (
  <MetricsSelector
