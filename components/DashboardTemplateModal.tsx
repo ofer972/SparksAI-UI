@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { getPITerminology, piLabel } from '@/lib/piTerminology';
+import React, { useState, useEffect } from 'react';
+import { getPITerminology } from '@/lib/piTerminology';
+import { ApiService } from '@/lib/api';
+import { configCache } from '@/lib/configCache';
 
 export interface DashboardTemplate {
   id: 'team' | 'pi' | 'blank';
@@ -21,6 +23,23 @@ interface DashboardTemplateModalProps {
   onSelectTemplate: (templateId: 'team' | 'pi' | 'blank', name: string, description: string) => void;
 }
 
+// Fallback names when API data is not available
+const TEAM_TEMPLATE_FALLBACK_ITEMS = [
+  'Current Sprint Progress',
+  'Team Sprint Burndown',
+  'Closed Sprints History',
+  'Sprint Predictability',
+  'Issues Trend Analysis',
+];
+
+const getPITemplateFallbackItems = () => [
+  `${getPITerminology()} Objectives & Progress`,
+  'Feature Completion Status',
+  `Team Velocity by ${getPITerminology()}`,
+  'Dependencies Tracking',
+  `${getPITerminology()} Risks & Issues`,
+];
+
 export default function DashboardTemplateModal({ 
   isOpen, 
   onClose, 
@@ -30,6 +49,68 @@ export default function DashboardTemplateModal({
   const [dashboardName, setDashboardName] = useState('');
   const [dashboardDescription, setDashboardDescription] = useState('');
   const [step, setStep] = useState<'template' | 'details'>('template');
+  const [teamReportNames, setTeamReportNames] = useState<string[]>([]);
+  const [piReportNames, setPiReportNames] = useState<string[]>([]);
+
+  // Fetch actual report names from dashboard config when modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let cancelled = false;
+    const loadReportNames = async () => {
+      try {
+        const apiService = new ApiService();
+        const [reports, configs] = await Promise.all([
+          configCache.getReportDefinitions(() => apiService.getReportDefinitions()),
+          configCache.getDashboardConfigs(() => apiService.getDashboardViewConfigs()),
+        ]);
+
+        if (cancelled) return;
+
+        const reportNameMap = new Map(reports.map((r) => [r.report_id, r.report_name]));
+
+        const getReportIdsFromConfig = (viewName: string): string[] => {
+          const config = configs.find((c) => c.view === viewName);
+          if (!config?.reportIds?.length) return [];
+
+          const ids: string[] = [];
+          if (config.layout_config?.rows) {
+            config.layout_config.rows.forEach((row: { reportIds?: string[] }) => {
+              row.reportIds?.forEach((id) => ids.push(id));
+            });
+          }
+          if (ids.length === 0) {
+            return config.reportIds || [];
+          }
+          return ids;
+        };
+
+        const teamIds = getReportIdsFromConfig('team-dashboard');
+        const piIds = getReportIdsFromConfig('pi-dashboard');
+
+        const teamNames = teamIds
+          .map((id) => reportNameMap.get(id))
+          .filter((name): name is string => !!name);
+        const piNames = piIds
+          .map((id) => reportNameMap.get(id))
+          .filter((name): name is string => !!name);
+
+        setTeamReportNames(teamNames.length > 0 ? teamNames : TEAM_TEMPLATE_FALLBACK_ITEMS);
+        setPiReportNames(piNames.length > 0 ? piNames : getPITemplateFallbackItems());
+      } catch (err) {
+        if (!cancelled) {
+          console.warn('[DashboardTemplateModal] Failed to load report names, using fallbacks:', err);
+          setTeamReportNames(TEAM_TEMPLATE_FALLBACK_ITEMS);
+          setPiReportNames(getPITemplateFallbackItems());
+        }
+      }
+    };
+
+    loadReportNames();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
 
   const templates: DashboardTemplate[] = [
     {
@@ -62,13 +143,7 @@ export default function DashboardTemplateModal({
       ),
       preview: {
         title: 'Includes',
-        items: [
-          'Current Sprint Progress',
-          'Team Sprint Burndown',
-          'Closed Sprints History',
-          'Sprint Predictability',
-          'Issues Trend Analysis',
-        ],
+        items: teamReportNames.length > 0 ? teamReportNames : TEAM_TEMPLATE_FALLBACK_ITEMS,
       },
       color: 'from-blue-500 to-indigo-600',
     },
@@ -83,13 +158,7 @@ export default function DashboardTemplateModal({
       ),
       preview: {
         title: 'Includes',
-        items: [
-          `${getPITerminology()} Objectives & Progress`,
-          'Feature Completion Status',
-          `Team Velocity by ${getPITerminology()}`,
-          'Dependencies Tracking',
-          `${getPITerminology()} Risks & Issues`,
-        ],
+        items: piReportNames.length > 0 ? piReportNames : getPITemplateFallbackItems(),
       },
       color: 'from-purple-500 to-pink-600',
     },
@@ -178,14 +247,14 @@ export default function DashboardTemplateModal({
                   <button
                     key={template.id}
                     onClick={() => setSelectedTemplate(template.id)}
-                    className={`group relative bg-surface-elevated rounded-xl border-2 transition-all duration-200 overflow-hidden text-left ${
+                    className={`group relative flex flex-col bg-surface-elevated rounded-xl border-2 transition-all duration-200 overflow-hidden text-left p-0 ${
                       selectedTemplate === template.id
                         ? 'border-brand shadow-lg shadow-brand/20 scale-[1.02]'
                         : 'border-outline hover:border-brand/50 hover:shadow-md'
                     }`}
                   >
-                    {/* Gradient header */}
-                    <div className={`h-24 bg-gradient-to-br ${template.color} flex items-center justify-center relative`}>
+                    {/* Gradient header - flush with top of card */}
+                    <div className={`h-24 flex-shrink-0 bg-gradient-to-br ${template.color} flex items-center justify-center relative`}>
                       <div className="absolute inset-0 bg-black/20" />
                       <div className="relative text-white">
                         {template.icon}

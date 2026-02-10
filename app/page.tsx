@@ -1073,25 +1073,21 @@ useEffect(() => {
  // Don't block on empty arrays - only the settings loading state matters
  console.log('[App] Team insights settings loaded, groups:', groups.length, 'teams:', teams.length);
  
- if (teamInsightSettings.savedState) {
- console.log('[App] Loading saved team insight settings:', teamInsightSettings.savedState);
  const saved = teamInsightSettings.savedState;
+ const teamNameFromSaved = saved?.topBarFilters?.selectedTeam;
+ const hasSavedTeamSelection = teamNameFromSaved && teamNameFromSaved.trim() !== '';
  
- if (saved.topBarFilters) {
+ if (hasSavedTeamSelection && saved?.topBarFilters) {
+ // Use saved team/group selection
+ console.log('[App] Loading saved team insight settings:', saved);
  const topBarFilters = saved.topBarFilters;
- // Don't restore saved PI for AI Insights - always use current PI from backend
- // The current PI will be fetched and set in a separate useEffect
- 
  const teamName = topBarFilters.selectedTeam;
  const treeType = topBarFilters.selectedTreeType;
  
- if (teamName) {
- console.log('[App] Team Insight: Setting selectedTeam to:', teamName);
  setSelectedTeam(teamName);
  setSelectedTreeLabel(teamName);
  
- // Find and set the tree value from the team/group name
- let treeValue = null;
+ let treeValue: string | null = null;
  if (treeType === 'group') {
  const group = groups.find(g => g.group_name === teamName);
  if (group) {
@@ -1112,38 +1108,21 @@ useEffect(() => {
  }
  }
  
- // Update teamInsightsFilters state
  setTeamInsightsFilters(prev => ({
  ...prev,
  selectedTeam: teamName,
  selectedTreeValue: treeValue,
  selectedTreeLabel: teamName,
  selectedTreeType: treeType || 'team',
- selectedCategories: saved.selectedCategories || [],
+ selectedCategories: saved?.selectedCategories || [],
  }));
  console.log('[App] Updated teamInsightsFilters:', { teamName, treeValue, treeType });
- }
- 
  if (treeType) setSelectedTreeType(treeType);
- }
- 
- // Restore saved categories if they exist
- if (saved.selectedCategories !== undefined && !saved.topBarFilters?.selectedTeam) {
- // Only update categories if we didn't already do it above
- console.log('[App] Restoring saved categories:', saved.selectedCategories);
- setSelectedCategories(saved.selectedCategories);
- setTeamInsightsFilters(prev => ({
- ...prev,
- selectedCategories: saved.selectedCategories || [],
- }));
- }
- 
- // If saved state exists but has no team, respect that choice (user intentionally saved without a team)
- console.log('[App] Saved team insight settings loaded. Team selection:', saved.topBarFilters?.selectedTeam || 'none (intentional)');
  } else {
- console.log('[App] No saved team insight settings found at all, loading user default team...');
- // No saved settings at all - load user's default team from preferences
- if (!teamsLoading && teams.length > 0) {
+ // No saved team selection - use user's default from onboarding preferences
+ // This handles: new user who just completed onboarding, or user who never selected a team
+ console.log('[App] No team in saved state, loading user default from preferences...');
+ if (!teamsLoading && (groups.length > 0 || teams.length > 0)) {
  const currentUser = getCurrentUser();
  if (currentUser?.id) {
  getUserPreferences(currentUser.id).then(preferences => {
@@ -1165,6 +1144,7 @@ useEffect(() => {
  selectedTreeValue: treeValue,
  selectedTreeLabel: teamGroupName,
  selectedTreeType: 'group',
+ selectedCategories: saved?.selectedCategories || [],
  }));
  setSelectedTeam(teamGroupName);
  setSelectedTreeValue(treeValue);
@@ -1182,6 +1162,7 @@ useEffect(() => {
  selectedTreeValue: treeValue,
  selectedTreeLabel: teamGroupName,
  selectedTreeType: 'team',
+ selectedCategories: saved?.selectedCategories || [],
  }));
  setSelectedTeam(teamGroupName);
  setSelectedTreeValue(treeValue);
