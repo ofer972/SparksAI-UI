@@ -236,14 +236,15 @@ const EpicsHierarchyView: React.FC<EpicsHierarchyViewProps> = ({
  // Summary
  { key: 'Issue Summary', header: 'Summary', renderer: 'text', minWidth: 200, size: 270 },
  { key: 'summary', header: 'Summary', renderer: 'text', minWidth: 200, size: 270 },
- // Status (badge)
- { key: 'Status', header: 'Status', renderer: 'badge', minWidth: 83, maxWidth: 93, size: 88 },
- { key: 'status', header: 'Status', renderer: 'badge', minWidth: 83, maxWidth: 93, size: 88 },
- // Progress% field
- { key: 'Progress%', header: 'Progress %', renderer: 'text', minWidth: 61, maxWidth: 71, size: 66 },
- { key: 'Progress (%)', header: 'Progress %', renderer: 'text', minWidth: 61, maxWidth: 71, size: 66 },
- { key: 'Epic Progress %', header: 'Progress %', renderer: 'text', minWidth: 61, maxWidth: 71, size: 66 },
- // Dependency
+      // Status (badge)
+      { key: 'Status', header: 'Status', renderer: 'badge', minWidth: 83, maxWidth: 93, size: 88 },
+      { key: 'status', header: 'Status', renderer: 'badge', minWidth: 83, maxWidth: 93, size: 88 },
+      // Progress% field (check multiple possible field names)
+      { key: 'Progress %', header: 'Progress %', renderer: 'text', minWidth: 61, maxWidth: 71, size: 66 },
+      { key: 'Progress%', header: 'Progress %', renderer: 'text', minWidth: 61, maxWidth: 71, size: 66 },
+      { key: 'Progress (%)', header: 'Progress %', renderer: 'text', minWidth: 61, maxWidth: 71, size: 66 },
+      { key: 'Epic Progress %', header: 'Progress %', renderer: 'text', minWidth: 61, maxWidth: 71, size: 66 },
+      // Dependency
  { key: 'Dependency', header: 'Dependency', renderer: 'badge', minWidth: 58, maxWidth: 68, size: 63 },
  // Flagged Issues
  { key: '# Flagged Issues', header: 'Flagged Issues', renderer: 'text', minWidth: 58, maxWidth: 68, size: 63 },

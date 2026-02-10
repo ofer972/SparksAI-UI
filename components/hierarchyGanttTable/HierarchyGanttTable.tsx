@@ -52,7 +52,7 @@ export default function HierarchyGanttTable({
   releases = [],
   leftPanelWidth: initialLeftPanelWidth = 550,
   minLeftPanelWidth = 200,
-  maxLeftPanelWidth = 800,
+  maxLeftPanelWidth = 850,
   enableHorizontalScroll = false,
 }: HierarchyGanttTableProps) {
   const [internalExpanded, setInternalExpanded] = useState<ExpandedState>({});

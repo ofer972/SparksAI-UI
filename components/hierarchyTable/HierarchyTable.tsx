@@ -231,15 +231,17 @@ const HierarchyTable: React.FC<HierarchyTableProps> = ({
  );
  }
 
- // Parent Progress (Progress%) - special handling with color and center alignment
- if (
- col.id === 'Progress%' ||
- col.accessorKey === 'Progress%' ||
- col.id === 'Progress (%)' ||
- col.accessorKey === 'Progress (%)' ||
- col.id === 'Epic Progress %' ||
- col.accessorKey === 'Epic Progress %'
- ) {
+          // Parent Progress (Progress%) - special handling with color and center alignment
+          if (
+            col.id === 'Progress %' ||
+            col.accessorKey === 'Progress %' ||
+            col.id === 'Progress%' ||
+            col.accessorKey === 'Progress%' ||
+            col.id === 'Progress (%)' ||
+            col.accessorKey === 'Progress (%)' ||
+            col.id === 'Epic Progress %' ||
+            col.accessorKey === 'Epic Progress %'
+          ) {
  const progressNum =
  typeof value === 'number' ? value : typeof value === 'string' ? parseFloat(value) : 0;
  const progressInt = Math.floor(progressNum); // Truncate to integer
