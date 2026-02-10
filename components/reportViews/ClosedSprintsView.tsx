@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useCallback, useState, useRef } from 'react';
 import { ClosedSprint } from '@/lib/config';
 import DataTable, { Column, SortConfig } from '../DataTable';
 import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
@@ -69,7 +69,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
 
   const hasAutoSelectedRef = useRef(false);
 
-  const handleSort = useCallback((key: string) => {
+  const handleSort = (key: string) => {
     setSortConfig((prev) => {
       if (prev.key === key) {
         return {
@@ -79,7 +79,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
       }
       return { key, direction: 'asc' };
     });
-  }, []);
+  };
 
   const handleTimePeriodChange = useCallback(
     (value: number) => {
@@ -458,6 +458,27 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
     });
   }, [data, formatDate, getJiraSearchLink, meta]);
 
+  // Sort data locally so DataTable always receives a fresh sorted array
+  const sortedData = useMemo(() => {
+    if (!Array.isArray(data) || data.length === 0) return data;
+    if (!sortConfig.key) return data;
+
+    return [...data].sort((a, b) => {
+      const aValue = (a as any)[sortConfig.key!];
+      const bValue = (b as any)[sortConfig.key!];
+
+      if (aValue === null || aValue === undefined) {
+        if (bValue === null || bValue === undefined) return 0;
+        return 1;
+      }
+      if (bValue === null || bValue === undefined) return -1;
+
+      if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [data, sortConfig]);
+
   const timePeriodOptions = [
     { value: 1, label: 'Last 1 month' },
     { value: 2, label: 'Last 2 months' },
@@ -574,14 +595,14 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
 
       {!loading && !error && (
       <DataTable<ClosedSprint>
-        data={data}
+        data={sortedData}
         columns={columns}
         sortConfig={sortConfig}
         onSort={handleSort}
           loading={false}
           error={undefined}
         emptyMessage="No sprints found matching the filter criteria."
-        rowKey={(row) => row.sprint_id}
+        rowKey={(row, index) => `${row.sprint_id}-${row.team_name}-${index}`}
         striped
         hoverable
       />
