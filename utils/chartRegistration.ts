@@ -2,7 +2,6 @@
  * Shared Chart.js registration utility
  * Used by all DORA and PR Workflow metric cards
  */
-
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -39,6 +38,7 @@ export function registerChartComponents(includeDataLabels = false) {
     ...(includeDataLabels ? [ChartDataLabels] : [])
   );
 }
+
 
 
 
