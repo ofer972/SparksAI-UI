@@ -27,7 +27,7 @@ import GitHubSettingsView from '@/components/views/GitHubSettingsView';
 import UserSettingsView from '@/components/views/UserSettingsView';
 import UnsavedChangesModal from '@/components/UnsavedChangesModal';
 import JiraSetupModal from '@/components/JiraSetupModal';
-import WelcomeModal from '@/components/WelcomeModal';
+import WelcomeModal, { OnboardingTeamSelection } from '@/components/WelcomeModal';
 import { useJiraConfigurationCheck } from '@/hooks/etl/useJiraConfigurationCheck';
 import { useUserPreferences, useUser } from '@/contexts/UserContext';
 import CustomDashboardsView from '@/components/CustomDashboardsView';
@@ -792,6 +792,84 @@ useEffect(() => {
   }
 }, [teamsLoading, teams, groups, piDashboardFilters.selectedTeam, piDashboardFilters.selectedTreeValue]);
 
+// Sync dashboard filters when user changes default team/group in User Settings
+const prevDefaultTeamRef = useRef<string | null | undefined>(undefined);
+const prevDefaultTypeRef = useRef<string | null | undefined>(undefined);
+
+useEffect(() => {
+  // Skip while teams are still loading or preferences haven't loaded yet
+  if (teamsLoading || !preferences) return;
+
+  const currentDefault = preferences.default_team_or_group ?? null;
+  const currentType = preferences.default_type ?? null;
+
+  // On first run, just record the initial values without applying
+  if (prevDefaultTeamRef.current === undefined) {
+    prevDefaultTeamRef.current = currentDefault;
+    prevDefaultTypeRef.current = currentType;
+    return;
+  }
+
+  // Only react when the preference actually changed (user saved new default in settings)
+  if (currentDefault === prevDefaultTeamRef.current && currentType === prevDefaultTypeRef.current) {
+    return;
+  }
+
+  // Record the new values
+  prevDefaultTeamRef.current = currentDefault;
+  prevDefaultTypeRef.current = currentType;
+
+  console.log('[App] Default team/group preference changed:', currentDefault, 'type:', currentType);
+
+  // If cleared to none/null, don't force-clear the dashboards (user may have a manual selection)
+  if (!currentDefault || currentType === 'none') return;
+
+  let teamGroupName = currentDefault;
+  if (teamGroupName.includes(':')) {
+    teamGroupName = teamGroupName.split(':')[1] || teamGroupName;
+  }
+
+  if (currentType === 'group') {
+    const group = groups.find(g => g.group_name === teamGroupName);
+    if (group) {
+      const treeValue = `group:${group.group_key}`;
+      console.log('[App] Applying new default group to dashboards:', teamGroupName);
+      setTeamDashboardFilters({
+        selectedTeam: teamGroupName,
+        selectedTreeValue: treeValue,
+        selectedTreeLabel: teamGroupName,
+        selectedTreeType: 'group',
+      });
+      setPiDashboardFilters(prev => ({
+        ...prev,
+        selectedTeam: teamGroupName,
+        selectedTreeValue: treeValue,
+        selectedTreeLabel: teamGroupName,
+        selectedTreeType: 'group',
+      }));
+    }
+  } else if (currentType === 'team') {
+    const team = teams.find(t => t.team_name === teamGroupName);
+    if (team) {
+      const treeValue = `team:${team.team_key}`;
+      console.log('[App] Applying new default team to dashboards:', teamGroupName);
+      setTeamDashboardFilters({
+        selectedTeam: teamGroupName,
+        selectedTreeValue: treeValue,
+        selectedTreeLabel: teamGroupName,
+        selectedTreeType: 'team',
+      });
+      setPiDashboardFilters(prev => ({
+        ...prev,
+        selectedTeam: teamGroupName,
+        selectedTreeValue: treeValue,
+        selectedTreeLabel: teamGroupName,
+        selectedTreeType: 'team',
+      }));
+    }
+  }
+}, [preferences?.default_team_or_group, preferences?.default_type, teamsLoading, teams, groups]);
+
 // Auto-select current PI for PI Dashboard when navigating to it
 const piDashboardPIInitializedRef = useRef(false);
 useEffect(() => {
@@ -908,6 +986,58 @@ useEffect(() => {
  }
  }
  }, [authChecked, welcomeModalChecked, preferencesLoading, preferences]);
+
+ // Handle welcome modal close after onboarding - apply selected team to dashboard filters
+ const handleWelcomeModalClose = (selection?: OnboardingTeamSelection) => {
+  setShowWelcomeModal(false);
+  
+  if (selection?.teamOrGroupName && selection.type !== 'none') {
+    const teamGroupName = selection.teamOrGroupName;
+    console.log('[App] Onboarding complete: applying selected team/group to dashboard filters:', teamGroupName, 'type:', selection.type);
+    
+    if (selection.type === 'group') {
+      const group = groups.find(g => g.group_name === teamGroupName);
+      if (group) {
+        const treeValue = `group:${group.group_key}`;
+        setTeamDashboardFilters({
+          selectedTeam: teamGroupName,
+          selectedTreeValue: treeValue,
+          selectedTreeLabel: teamGroupName,
+          selectedTreeType: 'group',
+        });
+        setPiDashboardFilters(prev => ({
+          ...prev,
+          selectedTeam: teamGroupName,
+          selectedTreeValue: treeValue,
+          selectedTreeLabel: teamGroupName,
+          selectedTreeType: 'group',
+        }));
+      }
+    } else if (selection.type === 'team') {
+      const team = teams.find(t => t.team_name === teamGroupName);
+      if (team) {
+        const treeValue = `team:${team.team_key}`;
+        setTeamDashboardFilters({
+          selectedTeam: teamGroupName,
+          selectedTreeValue: treeValue,
+          selectedTreeLabel: teamGroupName,
+          selectedTreeType: 'team',
+        });
+        setPiDashboardFilters(prev => ({
+          ...prev,
+          selectedTeam: teamGroupName,
+          selectedTreeValue: treeValue,
+          selectedTreeLabel: teamGroupName,
+          selectedTreeType: 'team',
+        }));
+      }
+    }
+    
+    // Mark as initialized so the useEffect doesn't try to re-initialize
+    teamDashboardInitializedRef.current = true;
+    piDashboardInitializedRef.current = true;
+  }
+ };
 
  const handleJiraSetupConfirm = () => {
   setShowJiraSetupModal(false);
@@ -1849,7 +1979,7 @@ const navigationGroups: Array<{ title: string; items: Array<{ id: string; label:
  {/* Welcome Modal (first-time login) */}
  <WelcomeModal
  isOpen={showWelcomeModal}
- onClose={() => setShowWelcomeModal(false)}
+ onClose={handleWelcomeModalClose}
  />
  
  {/* JIRA Setup Modal */}

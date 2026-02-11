@@ -4,9 +4,14 @@ import { useState } from 'react';
 import { useUser } from '@/contexts/UserContext';
 import TreeSelect from './TreeSelect';
 
+export interface OnboardingTeamSelection {
+  teamOrGroupName: string | null;
+  type: 'group' | 'team' | 'none';
+}
+
 interface WelcomeModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (selection?: OnboardingTeamSelection) => void;
 }
 
 export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
@@ -35,7 +40,10 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
         default_type: selectedType,
         has_completed_onboarding: true,
       });
-      onClose();
+      onClose({
+        teamOrGroupName: selectedLabel || null,
+        type: selectedType,
+      });
     } catch (err: any) {
       console.error('Failed to save preferences:', err);
       setError(err.message || 'Failed to save preferences');
@@ -54,7 +62,7 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
         default_type: 'none',
         has_completed_onboarding: true,
       });
-      onClose();
+      onClose({ teamOrGroupName: null, type: 'none' });
     } catch (err: any) {
       console.error('Failed to save preferences:', err);
       setError(err.message || 'Failed to save preferences');
