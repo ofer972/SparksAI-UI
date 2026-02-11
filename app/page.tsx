@@ -792,6 +792,84 @@ useEffect(() => {
   }
 }, [teamsLoading, teams, groups, piDashboardFilters.selectedTeam, piDashboardFilters.selectedTreeValue]);
 
+// Sync dashboard filters when user changes default team/group in User Settings
+const prevDefaultTeamRef = useRef<string | null | undefined>(undefined);
+const prevDefaultTypeRef = useRef<string | null | undefined>(undefined);
+
+useEffect(() => {
+  // Skip while teams are still loading or preferences haven't loaded yet
+  if (teamsLoading || !preferences) return;
+
+  const currentDefault = preferences.default_team_or_group ?? null;
+  const currentType = preferences.default_type ?? null;
+
+  // On first run, just record the initial values without applying
+  if (prevDefaultTeamRef.current === undefined) {
+    prevDefaultTeamRef.current = currentDefault;
+    prevDefaultTypeRef.current = currentType;
+    return;
+  }
+
+  // Only react when the preference actually changed (user saved new default in settings)
+  if (currentDefault === prevDefaultTeamRef.current && currentType === prevDefaultTypeRef.current) {
+    return;
+  }
+
+  // Record the new values
+  prevDefaultTeamRef.current = currentDefault;
+  prevDefaultTypeRef.current = currentType;
+
+  console.log('[App] Default team/group preference changed:', currentDefault, 'type:', currentType);
+
+  // If cleared to none/null, don't force-clear the dashboards (user may have a manual selection)
+  if (!currentDefault || currentType === 'none') return;
+
+  let teamGroupName = currentDefault;
+  if (teamGroupName.includes(':')) {
+    teamGroupName = teamGroupName.split(':')[1] || teamGroupName;
+  }
+
+  if (currentType === 'group') {
+    const group = groups.find(g => g.group_name === teamGroupName);
+    if (group) {
+      const treeValue = `group:${group.group_key}`;
+      console.log('[App] Applying new default group to dashboards:', teamGroupName);
+      setTeamDashboardFilters({
+        selectedTeam: teamGroupName,
+        selectedTreeValue: treeValue,
+        selectedTreeLabel: teamGroupName,
+        selectedTreeType: 'group',
+      });
+      setPiDashboardFilters(prev => ({
+        ...prev,
+        selectedTeam: teamGroupName,
+        selectedTreeValue: treeValue,
+        selectedTreeLabel: teamGroupName,
+        selectedTreeType: 'group',
+      }));
+    }
+  } else if (currentType === 'team') {
+    const team = teams.find(t => t.team_name === teamGroupName);
+    if (team) {
+      const treeValue = `team:${team.team_key}`;
+      console.log('[App] Applying new default team to dashboards:', teamGroupName);
+      setTeamDashboardFilters({
+        selectedTeam: teamGroupName,
+        selectedTreeValue: treeValue,
+        selectedTreeLabel: teamGroupName,
+        selectedTreeType: 'team',
+      });
+      setPiDashboardFilters(prev => ({
+        ...prev,
+        selectedTeam: teamGroupName,
+        selectedTreeValue: treeValue,
+        selectedTreeLabel: teamGroupName,
+        selectedTreeType: 'team',
+      }));
+    }
+  }
+}, [preferences?.default_team_or_group, preferences?.default_type, teamsLoading, teams, groups]);
+
 // Auto-select current PI for PI Dashboard when navigating to it
 const piDashboardPIInitializedRef = useRef(false);
 useEffect(() => {
