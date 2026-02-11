@@ -1794,6 +1794,7 @@ const navigationGroups: Array<{ title: string; items: Array<{ id: string; label:
             <InsightDashboard
               card={selectedInsightCard}
               onBack={goHome}
+              currentPIName={selectedPI || homeCurrentPIName || undefined}
             />
           );
         }

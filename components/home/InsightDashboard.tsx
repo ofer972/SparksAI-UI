@@ -11,6 +11,8 @@ import { useUser } from '@/contexts/UserContext';
 export type InsightDashboardProps = {
   card: AICard;
   onBack: () => void;
+  /** Current PI from top bar (used for related reports when card has no PI) */
+  currentPIName?: string | null;
 };
 
 function priorityBadgeClass(priority: string, priorityColor?: string) {
@@ -64,7 +66,7 @@ function parseInformationJson(jsonString: string | undefined): InformationItem[]
   }
 }
 
-export default function InsightDashboard({ card, onBack }: InsightDashboardProps) {
+export default function InsightDashboard({ card, onBack, currentPIName }: InsightDashboardProps) {
   const { preferences } = useUser();
   const reportIds = card.report_ids || [];
   const anyCard = card as any;
@@ -97,14 +99,15 @@ export default function InsightDashboard({ card, onBack }: InsightDashboardProps
       filters.isGroup = true;
     }
     
-    // Only set PI filter if pi_insight is true
-    if (card.pi_insight && card.pi) {
-      filters.pi = card.pi;
-      filters.pi_name = card.pi;
+    // Pass PI to related reports: use card's PI if present, otherwise current PI from top bar
+    const piValue = card.pi || currentPIName;
+    if (piValue) {
+      filters.pi = piValue;
+      filters.pi_name = piValue;
     }
     
     return filters;
-  }, [defaultTeamName, defaultIsGroup, card.team_name, card.group_name, card.pi, card.pi_insight]);
+  }, [defaultTeamName, defaultIsGroup, card.team_name, card.group_name, card.pi, currentPIName]);
 
   // Build initial filters for a specific report (includes report-specific filters like scope_type)
   const getInitialFiltersForReport = useMemo(() => {
