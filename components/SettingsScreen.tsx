@@ -580,7 +580,8 @@ export default function SettingsScreen() {
  };
 
  const settingsTabs = useMemo(() => {
- const tabs = [
+ type TabItem = { id: string; label: string; icon: React.ReactElement; disabled?: boolean };
+ const tabs: TabItem[] = [
  { 
  id: 'ai-config', 
  label: 'AI Configuration', 
@@ -1135,7 +1136,7 @@ export default function SettingsScreen() {
  <nav className="grid grid-cols-3 gap-1 md:hidden">
  {settingsTabs.map((tab) => {
  const isActive = activeTab === tab.id;
- const isDisabled = (tab as { disabled?: boolean }).disabled;
+ const isDisabled = tab.disabled;
  return (
  <button
  key={tab.id}
@@ -1159,7 +1160,7 @@ export default function SettingsScreen() {
  <nav className="hidden md:flex md:flex-nowrap gap-1 md:justify-start">
  {settingsTabs.map((tab) => {
  const isActive = activeTab === tab.id;
- const isDisabled = (tab as { disabled?: boolean }).disabled;
+ const isDisabled = tab.disabled;
  return (
  <button
  key={tab.id}
