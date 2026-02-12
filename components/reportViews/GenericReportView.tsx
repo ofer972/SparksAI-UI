@@ -267,10 +267,10 @@ export default function GenericReportView({
     });
   }, [chartType, selectedFields, displayableFields, jiraUrl, handleIssueKeyClick]);
 
-  // Generate filter badges
+  // Generate filter badges (Team/Group, PI/Quarter, and build-report filters e.g. Issue Type, Bug Category)
   const filterBadges = useMemo(() => {
     const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
-    
+
     if (teamName) {
       badges.push({
         label: isGroup ? 'Group' : 'Team',
@@ -279,18 +279,41 @@ export default function GenericReportView({
         isPinned: pinnedFilters?.includes('team_name') || false,
       });
     }
-    
-    if (filters?.pi) {
+
+    const quarterFromFilters = (buildReportFilters || []).find((x) => x.field === 'quarter_pi');
+    const quarterValue = quarterFromFilters
+      ? (Array.isArray(quarterFromFilters.values) ? quarterFromFilters.values[0] : quarterFromFilters.values)
+      : null;
+    const displayPI = piValue || (quarterValue != null && quarterValue !== '' ? String(quarterValue) : null);
+    if (displayPI) {
       badges.push({
-        label: 'PI',
-        value: String(filters.pi),
+        label: getPITerminology(),
+        value: String(displayPI),
         filterKey: 'pi',
         isPinned: pinnedFilters?.includes('pi') || false,
       });
     }
-    
+
+    // Badges for build-report filters (Issue Type, Assignee, Bug Category, Bug source, etc.)
+    const defaultFilterFields = new Set(['quarter_pi', 'team_name']);
+    (buildReportFilters || []).forEach((f) => {
+      if (defaultFilterFields.has(f.field)) return;
+      const raw = Array.isArray(f.values) ? f.values : f.values != null && f.values !== '' ? [String(f.values)] : [];
+      const values = raw.map((v) => String(v).trim()).filter((v) => v !== '');
+      if (values.length === 0) return;
+      const fieldInfo = filterableFields.find((ff) => ff.column_name === f.field);
+      const label = fieldInfo?.display_name || f.field.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+      const value = values.length === 1 ? values[0] : values.join(', ');
+      badges.push({
+        label,
+        value,
+        filterKey: f.field,
+        isPinned: pinnedFilters?.includes(f.field) || false,
+      });
+    });
+
     return badges;
-  }, [teamName, isGroup, filters?.pi, pinnedFilters]);
+  }, [teamName, isGroup, piValue, pinnedFilters, buildReportFilters, filterableFields]);
 
   // Get filter field info helper
   const getFilterFieldInfo = React.useCallback((fieldName: string): FilterableField | undefined => {

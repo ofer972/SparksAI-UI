@@ -18,6 +18,24 @@ const COLOR_PALETTE = [
   '#0ea5e9',
 ];
 
+/** Pluralize a field display name for counts (e.g. "Priority" → "priorities", "Bug source" → "bug sources"). */
+function pluralizeFieldName(displayName: string): string {
+  if (!displayName) return 'categories';
+  const parts = displayName.trim().split(/\s+/);
+  const last = parts[parts.length - 1].toLowerCase();
+  const rest = parts.slice(0, -1).join(' ');
+  let plural: string;
+  if (last.endsWith('y') && last.length > 1 && !/[aeiou]y$/.test(last)) {
+    plural = last.slice(0, -1) + 'ies';
+  } else if (last.endsWith('s') || last.endsWith('ch') || last.endsWith('sh')) {
+    plural = last + 'es';
+  } else {
+    plural = last + 's';
+  }
+  const result = rest ? `${rest} ${plural}` : plural;
+  return result.charAt(0).toUpperCase() + result.slice(1);
+}
+
 interface ReportField {
   column_name: string;
   display_name: string;
@@ -264,6 +282,7 @@ export default function GenericReportVisualization({
             }));
 
             const displayName = (() => {
+              // Single pie chart from API uses key 'default' (no group-by field); use generic title
               if (fieldName === 'default') return 'Distribution';
               const fieldInfo = filterableFields.find(f => f.column_name === fieldName);
               return fieldInfo?.display_name || fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -276,7 +295,7 @@ export default function GenericReportVisualization({
                     {displayName}
                   </h3>
                   <p className="text-xs text-content-tertiary mt-1">
-                    Total: {totalCount} {fieldData.length === 1 ? 'category' : 'categories'}
+                    Total: {totalCount} {totalCount === 1 ? 'item' : 'items'} ({fieldData.length} {pluralizeFieldName(displayName)})
                   </p>
                 </div>
                 <div className="relative w-full h-[280px] overflow-visible flex-shrink-0">

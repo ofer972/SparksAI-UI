@@ -630,10 +630,11 @@ export default function SettingsScreen() {
       )
     });
   }
-  // Add Build Report as the last tab
+  // Add Build Report as the last tab (disabled)
   tabs.push({
     id: 'build-report',
     label: 'Build Report',
+    disabled: true,
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -1134,13 +1135,17 @@ export default function SettingsScreen() {
  <nav className="grid grid-cols-3 gap-1 md:hidden">
  {settingsTabs.map((tab) => {
  const isActive = activeTab === tab.id;
+ const isDisabled = (tab as { disabled?: boolean }).disabled;
  return (
  <button
  key={tab.id}
- onClick={() => handleTabChange(tab.id)}
+ type="button"
+ disabled={isDisabled}
+ onClick={() => !isDisabled && handleTabChange(tab.id)}
  className={`
  flex flex-col items-center justify-center px-2 py-2 text-xs font-medium rounded-t-lg border transition-colors
- ${isActive ? 'bg-surface text-brand border-x border-t border-outline-strong border-b-white border-b-surface -mb-px relative z-10' : 'bg-surface-elevated/50 text-content-tertiary border border-outline hover:bg-surface-secondary'}
+ ${isDisabled ? 'opacity-50 cursor-not-allowed border border-outline' : ''}
+ ${isActive ? 'bg-surface text-brand border-x border-t border-outline-strong border-b-white border-b-surface -mb-px relative z-10' : isDisabled ? 'bg-surface-elevated/50 text-content-tertiary' : 'bg-surface-elevated/50 text-content-tertiary border border-outline hover:bg-surface-secondary'}
  `}
  >
  <span className="mb-1">{tab.icon}</span>
@@ -1154,13 +1159,17 @@ export default function SettingsScreen() {
  <nav className="hidden md:flex md:flex-nowrap gap-1 md:justify-start">
  {settingsTabs.map((tab) => {
  const isActive = activeTab === tab.id;
+ const isDisabled = (tab as { disabled?: boolean }).disabled;
  return (
  <button
  key={tab.id}
- onClick={() => handleTabChange(tab.id)}
+ type="button"
+ disabled={isDisabled}
+ onClick={() => !isDisabled && handleTabChange(tab.id)}
  className={`
  flex items-center px-4 py-2.5 text-sm font-medium rounded-t-lg border transition-colors whitespace-nowrap
- ${isActive ? 'bg-surface text-brand border-x border-t border-outline-strong border-b-white border-b-surface -mb-px relative z-10' : 'bg-surface-elevated/50 text-content-tertiary border border-outline hover:bg-surface-secondary'}
+ ${isDisabled ? 'opacity-50 cursor-not-allowed border border-outline' : ''}
+ ${isActive ? 'bg-surface text-brand border-x border-t border-outline-strong border-b-white border-b-surface -mb-px relative z-10' : isDisabled ? 'bg-surface-elevated/50 text-content-tertiary' : 'bg-surface-elevated/50 text-content-tertiary border border-outline hover:bg-surface-secondary'}
  `}
  >
  <span className="mr-2">{tab.icon}</span>

@@ -551,7 +551,38 @@ export default function BuildReportTab() {
       );
       setFilters(regularFilters);
       setSelectedFilterFields(regularFilters.map((f: Filter) => f.field));
-      
+
+      // Fetch dropdown values for any dropdown-type filters so the filter dropdowns show options in preview.
+      // We only populate dropdownValues when adding a filter via handleFilterFieldToggle; when loading a report
+      // we set filters/selectedFilterFields directly, so options were never fetched. Custom dashboard works
+      // because GenericReportView has a useEffect that fetches dropdown values when buildReportFilters change.
+      // After the save fix that persists all filter fields, more dropdown filters are restored on load, which
+      // made the missing options visible here.
+      const dropdownFieldNames = regularFilters
+        .map((f: Filter) => f.field)
+        .filter((fieldName: string) => getFilterFieldInfo(fieldName)?.filter_type === 'dropdown');
+      if (dropdownFieldNames.length > 0) {
+        setLoadingDropdownValues((prev) => {
+          const next = { ...prev };
+          dropdownFieldNames.forEach((fieldName: string) => { next[fieldName] = true; });
+          return next;
+        });
+        apiService.getFilterDropdownValues(dropdownFieldNames)
+          .then((values) => {
+            setDropdownValues((prev) => ({ ...prev, ...values }));
+          })
+          .catch((err) => {
+            console.error('Failed to load dropdown values for loaded report:', err);
+          })
+          .finally(() => {
+            setLoadingDropdownValues((prev) => {
+              const next = { ...prev };
+              dropdownFieldNames.forEach((fieldName: string) => delete next[fieldName]);
+              return next;
+            });
+          });
+      }
+
       // The useEffect will handle auto-building when state is ready
       
     } catch (err) {
@@ -588,12 +619,21 @@ export default function BuildReportTab() {
       .filter(f => selectedFields.includes(f.column_name))
       .map(f => f.column_name);
     
-    const validFilters = filters.filter(f => f.field && f.values && 
-      (Array.isArray(f.values) ? f.values.length > 0 : f.values.toString().trim() !== ''));
-    
-    const allFilters = [...validFilters];
+    // Include ALL selected filter fields in the save payload (including empty values)
+    // so they are persisted and restored when the report is loaded.
+    const filtersToSave: Array<{ field: string; operator: string; values: string[] }> = selectedFilterFields.map(
+      (fieldName) => {
+        const existing = filters.find((f) => f.field === fieldName);
+        const operator = existing?.operator || 'equals';
+        let values: string[] = [];
+        if (existing?.values != null) {
+          values = Array.isArray(existing.values) ? existing.values : [String(existing.values)];
+        }
+        return { field: fieldName, operator, values };
+      }
+    );
     if (selectedPI) {
-      allFilters.push({
+      filtersToSave.push({
         field: 'quarter_pi',
         operator: 'equals',
         values: [selectedPI]
@@ -609,11 +649,7 @@ export default function BuildReportTab() {
         ? (reportType === 'pie_chart' ? xAxisPie : xAxisBar)
         : undefined,
       y_axis: reportType === 'bar_chart' ? yAxis : undefined,
-      filters: allFilters.map(f => ({
-        field: f.field,
-        operator: f.operator || 'equals',
-        values: Array.isArray(f.values) ? f.values : [f.values]
-      })),
+      filters: filtersToSave,
       team_name: selectedTeamGroupName || undefined,
       isGroup: isGroup
     };
