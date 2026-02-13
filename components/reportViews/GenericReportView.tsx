@@ -104,11 +104,11 @@ export default function GenericReportView({
     // Fallback: if filter_overrides was not persisted (e.g. backend drops it), rebuild from flat keys on filters (issue_type, updated_at, etc.)
     if (parentOverridesList.length === 0 && configFilters.length > 0 && filters && typeof filters === 'object') {
       const fromFlat: BuildReportFilter[] = configFilters
-        .map((f: any) => {
+        .map((f: any): BuildReportFilter | null => {
           const key = f.field || '';
           const raw = filters[key];
           if (raw === undefined || raw === null) return null;
-          const values = Array.isArray(raw) ? raw : [String(raw)];
+          const values: string[] = Array.isArray(raw) ? raw.map(String) : [String(raw)];
           if (values.length === 0 || (values.length === 1 && !values[0])) return null;
           return {
             field: key,
