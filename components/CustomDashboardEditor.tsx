@@ -79,6 +79,12 @@ export default function CustomDashboardEditor({
   // Track if settings have been applied (like team/PI dashboards)
   const settingsAppliedRef = useRef(false);
   
+  // Ref holding latest layout config so debounced save uses current state (fixes stale closure in timeout)
+  const latestLayoutConfigRef = useRef<DashboardLayoutConfig>(dashboardLayoutConfig);
+  useEffect(() => {
+    latestLayoutConfigRef.current = dashboardLayoutConfig;
+  }, [dashboardLayoutConfig]);
+
   // Debounce timers for auto-saving filter changes
   const filterSaveTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
   const prevFiltersRef = useRef<{
@@ -985,8 +991,7 @@ export default function CustomDashboardEditor({
     if (user) {
       const userId = (user?.id || user?.user_id) as string;
       filterSaveTimersRef.current[widgetId] = setTimeout(() => {
-        // Read current state to ensure both filters and pinnedFilters are saved together
-        const currentConfig = dashboardLayoutConfig;
+        const currentConfig = latestLayoutConfigRef.current;
         updateDashboard(userId, dashboardId, {
           layout_config: currentConfig,
         }).catch(err => {
@@ -1168,7 +1173,7 @@ export default function CustomDashboardEditor({
                 }
                 filterSaveTimersRef.current[timerKey] = setTimeout(() => {
                   // Read current state to ensure both filters and pinnedFilters are saved together
-                  const currentConfig = dashboardLayoutConfig;
+                  const currentConfig = latestLayoutConfigRef.current;
                   updateDashboard(userId, dashboardId, {
                     layout_config: currentConfig,
                   }).catch(err => {
@@ -1462,7 +1467,7 @@ export default function CustomDashboardEditor({
                 }
                 filterSaveTimersRef.current[timerKey] = setTimeout(() => {
                   // Read current state to ensure both filters and pinnedFilters are saved together
-                  const currentConfig = dashboardLayoutConfig;
+                  const currentConfig = latestLayoutConfigRef.current;
                   updateDashboard(userId, dashboardId, {
                     layout_config: currentConfig,
                   }).catch(err => {
@@ -1523,7 +1528,7 @@ export default function CustomDashboardEditor({
                 }
                 filterSaveTimersRef.current[timerKey] = setTimeout(() => {
                   // Read current state to ensure both filters and pinnedFilters are saved together
-                  const currentConfig = dashboardLayoutConfig;
+                  const currentConfig = latestLayoutConfigRef.current;
                   updateDashboard(userId, dashboardId, {
                     layout_config: currentConfig,
                   }).catch(err => {

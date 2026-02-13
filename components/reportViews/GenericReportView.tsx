@@ -83,57 +83,104 @@ export default function GenericReportView({
   // Track if filters have been initialized to prevent infinite loops and preserve user changes
   const filtersInitializedRef = React.useRef(false);
   const reportIdRef = React.useRef<string | undefined>(reportId);
+  const lastConfigFiltersRef = React.useRef<string>('');
   
-  // Sync buildReportFilters when buildConfig changes OR when reportId changes (new report)
-  // Following system report pattern: filters come from props (initialFilters), not initialized here
+  // Sync buildReportFilters when buildConfig or reportId changes.
+  // Report definition = default. Dashboard (parent) overrides always win so user changes on the dashboard are saved and persist.
   useEffect(() => {
-    // If reportId changed, reset initialization state
     if (reportIdRef.current !== reportId) {
       filtersInitializedRef.current = false;
       reportIdRef.current = reportId;
+      lastConfigFiltersRef.current = '';
     }
-    
-    if (!buildConfig?.filters) {
-      // Only clear if we haven't initialized yet or report changed
-      if (!filtersInitializedRef.current) {
-        setBuildReportFilters([]);
-        filtersInitializedRef.current = true;
+    const configFilters = buildConfig?.filters || [];
+    const configFiltersKey = JSON.stringify(configFilters);
+    if (configFiltersKey !== lastConfigFiltersRef.current) {
+      lastConfigFiltersRef.current = configFiltersKey;
+      filtersInitializedRef.current = false;
+    }
+    const parentOverrides = filters?.filter_overrides;
+    let parentOverridesList = Array.isArray(parentOverrides) ? parentOverrides : [];
+    // Fallback: if filter_overrides was not persisted (e.g. backend drops it), rebuild from flat keys on filters (issue_type, updated_at, etc.)
+    if (parentOverridesList.length === 0 && configFilters.length > 0 && filters && typeof filters === 'object') {
+      const fromFlat: BuildReportFilter[] = configFilters
+        .map((f: any) => {
+          const key = f.field || '';
+          const raw = filters[key];
+          if (raw === undefined || raw === null) return null;
+          const values = Array.isArray(raw) ? raw : [String(raw)];
+          if (values.length === 0 || (values.length === 1 && !values[0])) return null;
+          return {
+            field: key,
+            operator: f.operator || 'equals',
+            values,
+          };
+        })
+        .filter((x): x is BuildReportFilter => x !== null);
+      if (fromFlat.length > 0) {
+        parentOverridesList = fromFlat;
+        // Re-run init when we later receive saved flat keys (e.g. after dashboard load)
+        if (filtersInitializedRef.current) filtersInitializedRef.current = false;
       }
-      return;
     }
-    
-    // Only initialize buildReportFilters state for UI rendering (not for setFilters)
-    // Following system report pattern: filters come from props via ReportPanel
+
     if (!filtersInitializedRef.current) {
-      const configFilters = buildConfig.filters || [];
-      const initialFilters = configFilters.map((f: any) => ({
-        field: f.field || '',
-        operator: f.operator || 'equals',
-        values: Array.isArray(f.values) ? f.values : (f.values ? [f.values] : []),
-      }));
-      
-      setBuildReportFilters(initialFilters);
-      
-      // Initialize filter_overrides in filters to match stored filters
-      // This ensures the backend uses the stored filters initially
-      // Note: team_name, isGroup, and pi are handled by initialFilters from CustomDashboardEditor
-      if (setFilters && initialFilters.length > 0) {
-        const filterOverrides = initialFilters.map(f => ({
-          field: f.field,
-          operator: f.operator,
+      let mergedFilters: BuildReportFilter[];
+      if (configFilters.length > 0) {
+        // Report definition as base; dashboard overrides per field when present (user's choice persists)
+        const parentByField = new Map<string, { operator: string; values: string[] | string }>();
+        parentOverridesList.forEach((f: any) => {
+          const values = Array.isArray(f.values) ? f.values : (f.values != null && f.values !== '' ? [String(f.values)] : []);
+          parentByField.set(f.field || '', { operator: f.operator || 'equals', values });
+        });
+        mergedFilters = configFilters.map((f: any) => {
+          const fromParent = parentByField.get(f.field || '');
+          if (fromParent) {
+            return {
+              field: f.field || '',
+              operator: fromParent.operator,
+              values: fromParent.values,
+            };
+          }
+          return {
+            field: f.field || '',
+            operator: f.operator || 'equals',
+            values: Array.isArray(f.values) ? f.values : (f.values ? [f.values] : []),
+          };
+        });
+        setBuildReportFilters(mergedFilters);
+        if (setFilters && mergedFilters.length > 0) {
+          const filterOverrides = mergedFilters.map(f => ({
+            field: f.field,
+            operator: f.operator,
+            values: Array.isArray(f.values) ? f.values : (f.values ? [f.values] : []),
+          }));
+          const defaultFilterFields = new Set(['quarter_pi', 'team_name']);
+          setFilters((prevFilters: any) => {
+            const next: Record<string, any> = { ...prevFilters, filter_overrides: filterOverrides };
+            mergedFilters.forEach((f) => {
+              if (defaultFilterFields.has(f.field)) return;
+              const vals = Array.isArray(f.values) ? f.values : (f.values != null && f.values !== '' ? [f.values] : []);
+              if (vals.length === 1) next[f.field] = vals[0];
+              else if (vals.length > 1) next[f.field] = vals;
+            });
+            return next;
+          });
+        }
+      } else if (parentOverridesList.length > 0) {
+        mergedFilters = parentOverridesList.map((f: any) => ({
+          field: f.field || '',
+          operator: f.operator || 'equals',
           values: Array.isArray(f.values) ? f.values : (f.values ? [f.values] : []),
         }));
-        
-        setFilters((prevFilters: any) => ({
-          ...prevFilters,
-          filter_overrides: filterOverrides,
-        }));
+        setBuildReportFilters(mergedFilters);
+      } else {
+        setBuildReportFilters([]);
       }
-      
       filtersInitializedRef.current = true;
     }
-    // If already initialized, don't reset buildReportFilters - preserve user changes
-  }, [buildConfig, reportId, setFilters]); // Removed definition, refresh from deps - following system pattern
+    // Re-run when parent passes filters with flat keys (e.g. saved issue_type) so we can restore from them
+  }, [buildConfig, reportId, setFilters, filters?.filter_overrides, (buildConfig?.filters || []).length ? (buildConfig?.filters || []).map((f: any) => filters?.[f.field]).join(',') : '']);
   
   const { teams, groups } = useTeamsGroups();
   const apiService = React.useMemo(() => new ApiService(), []);
@@ -267,7 +314,8 @@ export default function GenericReportView({
     });
   }, [chartType, selectedFields, displayableFields, jiraUrl, handleIssueKeyClick]);
 
-  // Generate filter badges (Team/Group, PI/Quarter, and build-report filters e.g. Issue Type, Bug Category)
+  // Generate filter badges (Team/Group, PI/Quarter, and build-report filters e.g. Issue Type, Bug Category).
+  // Use filters.filter_overrides when present (e.g. from dashboard) so badges show for applied filters.
   const filterBadges = useMemo(() => {
     const badges: { label: string; value: string; filterKey: string; isPinned: boolean }[] = [];
 
@@ -280,7 +328,11 @@ export default function GenericReportView({
       });
     }
 
-    const quarterFromFilters = (buildReportFilters || []).find((x) => x.field === 'quarter_pi');
+    // Prefer filter_overrides from parent when present (dashboard or report definition)
+    const overridesForBadges = Array.isArray(filters?.filter_overrides) && filters.filter_overrides.length > 0
+      ? filters.filter_overrides
+      : buildReportFilters || [];
+    const quarterFromFilters = overridesForBadges.find((x: BuildReportFilter) => x.field === 'quarter_pi');
     const quarterValue = quarterFromFilters
       ? (Array.isArray(quarterFromFilters.values) ? quarterFromFilters.values[0] : quarterFromFilters.values)
       : null;
@@ -296,7 +348,7 @@ export default function GenericReportView({
 
     // Badges for build-report filters (Issue Type, Assignee, Bug Category, Bug source, etc.)
     const defaultFilterFields = new Set(['quarter_pi', 'team_name']);
-    (buildReportFilters || []).forEach((f) => {
+    overridesForBadges.forEach((f: BuildReportFilter) => {
       if (defaultFilterFields.has(f.field)) return;
       const raw = Array.isArray(f.values) ? f.values : f.values != null && f.values !== '' ? [String(f.values)] : [];
       const values = raw.map((v) => String(v).trim()).filter((v) => v !== '');
@@ -313,7 +365,7 @@ export default function GenericReportView({
     });
 
     return badges;
-  }, [teamName, isGroup, piValue, pinnedFilters, buildReportFilters, filterableFields]);
+  }, [teamName, isGroup, piValue, pinnedFilters, buildReportFilters, filters?.filter_overrides, filterableFields]);
 
   // Get filter field info helper
   const getFilterFieldInfo = React.useCallback((fieldName: string): FilterableField | undefined => {
@@ -344,20 +396,18 @@ export default function GenericReportView({
           operator: f.operator,
           values: Array.isArray(f.values) ? f.values : (f.values ? [f.values] : []),
         }));
-        
+        // Send filter_overrides and duplicate as flat keys so persistence works even if backend drops filter_overrides
         setFilters((prevFilters: any) => {
-          // Check if filter_overrides actually changed
-          const prevOverrides = prevFilters.filter_overrides || [];
-          if (JSON.stringify(prevOverrides) === JSON.stringify(filterOverrides)) {
-            return prevFilters;
-          }
-          return {
-            ...prevFilters,
-            filter_overrides: filterOverrides,
-          };
+          const next: Record<string, any> = { ...prevFilters, filter_overrides: filterOverrides };
+          const defaultFilterFields = new Set(['quarter_pi', 'team_name']);
+          newFilters.forEach((f) => {
+            if (defaultFilterFields.has(f.field)) return;
+            const vals = Array.isArray(f.values) ? f.values : (f.values != null && f.values !== '' ? [f.values] : []);
+            if (vals.length === 1) next[f.field] = vals[0];
+            else if (vals.length > 1) next[f.field] = vals;
+          });
+          return next;
         });
-        
-        // Trigger refresh only if filter actually changed
         if (refresh && hasChanged) {
           setTimeout(() => refresh(), 0);
         }
