@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import DataTable, { Column } from '@/components/DataTable';
+import React, { useMemo, useState, useCallback } from 'react';
+import DataTable, { Column, SortConfig } from '@/components/DataTable';
 import { Chart } from 'react-chartjs-2';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { ResponsivePie } from '@nivo/pie';
@@ -74,9 +74,45 @@ export default function GenericReportVisualization({
   jiraUrl,
   onOpenAllInJira,
 }: GenericReportVisualizationProps) {
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
+  const [searchFilter, setSearchFilter] = useState('');
+
+  const tableData = useMemo(
+    () => (chartType === 'table' && Array.isArray(data) ? data : []),
+    [chartType, data]
+  );
+
+  const filteredData = useMemo(() => {
+    if (!searchFilter.trim()) return tableData;
+    const q = searchFilter.trim().toLowerCase();
+    return tableData.filter((row: Record<string, unknown>) =>
+      Object.values(row).some((v) => String(v ?? '').toLowerCase().includes(q))
+    );
+  }, [tableData, searchFilter]);
+
+  const sortedData = useMemo(() => {
+    if (!sortConfig.key) return filteredData;
+    return [...filteredData].sort((a, b) => {
+      const aVal = (a as Record<string, unknown>)[sortConfig.key!];
+      const bVal = (b as Record<string, unknown>)[sortConfig.key!];
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [filteredData, sortConfig]);
+
+  const handleSort = useCallback((key: string) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      return { key, direction: 'asc' };
+    });
+  }, []);
+
   // Table rendering
   if (chartType === 'table') {
-    const tableData = Array.isArray(data) ? data : [];
     const hasData = !loading && !error && tableData.length > 0;
 
     if (error) {
@@ -107,26 +143,38 @@ export default function GenericReportVisualization({
     }
 
     return (
-      <div className="h-full overflow-auto">
-        {/* Header with Open all in Jira button (if applicable) */}
-        {jiraUrl && onOpenAllInJira && tableData.some((row: any) => row.issue_key) && (
-          <div className="flex items-center justify-between mb-4 pb-2 border-b border-outline">
-            <div className="flex items-center gap-3">
-              <p className="text-sm text-content-secondary">
-                {tableData.length} {tableData.length === 1 ? 'row' : 'rows'} found
-              </p>
-            </div>
+      <div className="h-full overflow-auto flex flex-col">
+        {/* Header: filter input, row count, Open all in Jira */}
+        <div className="flex items-center justify-between gap-3 mb-3 pb-2 border-b border-outline flex-shrink-0 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap min-w-0">
+            <input
+              type="text"
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              placeholder="Search rows."
+              className="px-2 py-1 border border-outline rounded-md text-sm bg-surface text-content-primary focus:outline-none focus:ring-2 focus:ring-brand min-w-[210px] max-w-[330px]"
+              aria-label="Search table rows"
+            />
+            <p className="text-sm text-content-secondary whitespace-nowrap">
+              {searchFilter.trim()
+                ? `Showing ${sortedData.length} of ${tableData.length} ${tableData.length === 1 ? 'row' : 'rows'}`
+                : `${sortedData.length} ${sortedData.length === 1 ? 'row' : 'rows'} found`}
+            </p>
+          </div>
+          {jiraUrl && onOpenAllInJira && tableData.some((row: any) => row.issue_key) && (
             <button
               onClick={onOpenAllInJira}
-              className="px-3 py-1.5 text-sm bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded transition-colors"
+              className="px-3 py-1.5 text-sm bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded transition-colors flex-shrink-0"
             >
               Open all in Jira
             </button>
-          </div>
-        )}
+          )}
+        </div>
         <DataTable
-          data={tableData}
+          data={sortedData}
           columns={tableColumns}
+          sortConfig={sortConfig}
+          onSort={handleSort}
         />
       </div>
     );
