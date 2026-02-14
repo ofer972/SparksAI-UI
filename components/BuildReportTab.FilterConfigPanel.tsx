@@ -2,6 +2,7 @@
 
 import React from 'react';
 import TeamGroupSelect from '@/components/filters/TeamGroupSelect';
+import GenericReportFilterMultiSelect from '@/components/GenericReportFilterMultiSelect';
 
 export interface FilterableField {
   column_name: string;
@@ -66,7 +67,7 @@ export default function FilterConfigPanel({
 }: FilterConfigPanelProps) {
   const hasDefaultFilters = defaultFilters && (defaultFilters.pi || defaultFilters.teamGroup);
   const hasRegularFilters = selectedFilterFields.length > 0;
-  
+
   return (
     <div className="flex-1">
       <label className="block text-sm font-medium text-content-primary mb-2">
@@ -194,21 +195,16 @@ export default function FilterConfigPanel({
                       className="flex-1 px-2 py-1.5 border border-outline rounded-md text-sm bg-surface text-content-primary focus:outline-none focus:ring-2 focus:ring-brand"
                     />
                   ) : isDropdown ? (
-                    /* Standard Dropdown (not multi-select) */
-                    <select
-                      value={Array.isArray(filter.values) && filter.values.length > 0 ? filter.values[0] : ''}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        onFilterChange(fieldName, { values: value ? [value] : [] });
-                      }}
-                      disabled={loadingDropdownValues[fieldName]}
-                      className="flex-1 px-2 py-1.5 border border-outline rounded-md text-sm bg-surface text-content-primary focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <option value="">{loadingDropdownValues[fieldName] ? 'Loading...' : 'All'}</option>
-                      {dropdownValues[fieldName]?.map(val => (
-                        <option key={val} value={val}>{val}</option>
-                      ))}
-                    </select>
+                    <div className={`flex-1 min-w-0 ${loadingDropdownValues[fieldName] ? 'opacity-60 pointer-events-none' : ''}`}>
+                      <GenericReportFilterMultiSelect
+                        options={loadingDropdownValues[fieldName] ? [] : (dropdownValues[fieldName] || [])}
+                        selectedValues={Array.isArray(filter.values) ? filter.values : (filter.values ? [String(filter.values)] : [])}
+                        onChange={(values) => onFilterChange(fieldName, { values })}
+                        placeholder={loadingDropdownValues[fieldName] ? 'Loading...' : 'All'}
+                        disabled={loadingDropdownValues[fieldName]}
+                        maxHeight={280}
+                      />
+                    </div>
                   ) : (
                     /* Text Input */
                     <input

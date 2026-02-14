@@ -12,6 +12,7 @@ import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
 import TeamGroupFilter from '../TeamGroupFilter';
 import PIFilter from '../PIFilter';
+import GenericReportFilterMultiSelect from '../GenericReportFilterMultiSelect';
 import { ApiService } from '@/lib/api';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 import { getPITerminology } from '@/lib/piTerminology';
@@ -534,20 +535,16 @@ export default function GenericReportView({
                     className="flex-1 px-2 py-1.5 border border-outline rounded-md text-sm bg-surface text-content-primary focus:outline-none focus:ring-2 focus:ring-brand"
                   />
                 ) : isDropdown ? (
-                  <select
-                    value={Array.isArray(filter.values) && filter.values.length > 0 ? filter.values[0] : ''}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      handleFilterChange(filter.field, { values: value ? [value] : [] });
-                    }}
-                    disabled={loadingDropdownValues[filter.field]}
-                    className="flex-1 px-2 py-1.5 border border-outline rounded-md text-sm bg-surface text-content-primary focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <option value="">{loadingDropdownValues[filter.field] ? 'Loading...' : 'All'}</option>
-                    {dropdownValues[filter.field]?.map(val => (
-                      <option key={val} value={val}>{val}</option>
-                    ))}
-                  </select>
+                  <div className="flex-1 min-w-0">
+                    <GenericReportFilterMultiSelect
+                      options={loadingDropdownValues[filter.field] ? [] : (dropdownValues[filter.field] || [])}
+                      selectedValues={Array.isArray(filter.values) ? filter.values : (filter.values ? [String(filter.values)] : [])}
+                      onChange={(values) => handleFilterChange(filter.field, { values })}
+                      placeholder={loadingDropdownValues[filter.field] ? 'Loading...' : 'All'}
+                      disabled={loadingDropdownValues[filter.field]}
+                      maxHeight={280}
+                    />
+                  </div>
                 ) : (
                   <input
                     type="text"
