@@ -9,6 +9,7 @@ import GitHubMetricsTab from './GitHubMetricsTab';
 export default function PRQualityMetricsTab() {
   return (
     <GitHubMetricsTab
+      preserveRowMinHeights
       cards={[
         <PRSizeCard key="pr-size" />,
         <PickupTimeCard key="pickup-time" />,

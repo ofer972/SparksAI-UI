@@ -2,12 +2,17 @@
 
 import React, { ReactNode, useState, useRef, useCallback, useEffect } from 'react';
 
+const MIN_ROW_HEIGHT_PX = 400;
+
 interface GitHubMetricsTabProps {
   cards: ReactNode[];
+  /** When true, each row has a minimum height so enlarging one row grows the grid and shows a scrollbar instead of shrinking other rows. */
+  preserveRowMinHeights?: boolean;
 }
 
 export default function GitHubMetricsTab({ 
-  cards
+  cards,
+  preserveRowMinHeights = false,
 }: GitHubMetricsTabProps) {
   // Detect mobile view
   const [isMobile, setIsMobile] = useState(false);
@@ -36,8 +41,10 @@ export default function GitHubMetricsTab({
   const [activeHorizontalResizer, setActiveHorizontalResizer] = useState<{ rowIdx: number; colIdx: number } | null>(null);
   const containerRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
-  // State for row heights (vertical resizing)
+  // State for row heights (vertical resizing): percentages when !preserveRowMinHeights, unused when preserveRowMinHeights
   const [rowHeights, setRowHeights] = useState<number[]>([]);
+  // Row heights in pixels when preserveRowMinHeights (each row has min MIN_ROW_HEIGHT_PX)
+  const [rowHeightsPx, setRowHeightsPx] = useState<number[]>([]);
   const [isDraggingVertical, setIsDraggingVertical] = useState(false);
   const [activeVerticalResizer, setActiveVerticalResizer] = useState<number | null>(null);
   const mainContainerRef = useRef<HTMLDivElement | null>(null);
@@ -53,13 +60,17 @@ export default function GitHubMetricsTab({
     setColumnWidths(initialWidths);
   }, [cards.length]);
 
-  // Initialize row heights (equal distribution)
+  // Initialize row heights (equal distribution): percentages or pixels depending on mode
   useEffect(() => {
     if (rows.length > 0) {
-      const equalHeight = 100 / rows.length;
-      setRowHeights(rows.map(() => equalHeight));
+      if (preserveRowMinHeights) {
+        setRowHeightsPx(rows.map(() => MIN_ROW_HEIGHT_PX));
+      } else {
+        const equalHeight = 100 / rows.length;
+        setRowHeights(rows.map(() => equalHeight));
+      }
     }
-  }, [rows.length]);
+  }, [rows.length, preserveRowMinHeights]);
 
   // Column (horizontal) resizing handlers
   const handleHorizontalMouseDown = useCallback((rowIdx: number, colIdx: number) => {
@@ -123,8 +134,31 @@ export default function GitHubMetricsTab({
 
     const rect = container.getBoundingClientRect();
     const mouseY = e.clientY - rect.top;
-    const mousePercent = (mouseY / rect.height) * 100;
 
+    if (preserveRowMinHeights) {
+      setRowHeightsPx((prev) => {
+        if (prev.length === 0) return prev;
+        const topIndex = activeVerticalResizer;
+        const bottomIndex = activeVerticalResizer + 1;
+        if (bottomIndex >= prev.length) return prev;
+
+        const totalForTwo = prev[topIndex] + prev[bottomIndex];
+        let newTopPx = Math.max(MIN_ROW_HEIGHT_PX, mouseY);
+        let newBottomPx = totalForTwo - newTopPx;
+        if (newBottomPx < MIN_ROW_HEIGHT_PX) {
+          newBottomPx = MIN_ROW_HEIGHT_PX;
+          newTopPx = mouseY;
+        }
+
+        const heights = [...prev];
+        heights[topIndex] = newTopPx;
+        heights[bottomIndex] = newBottomPx;
+        return heights;
+      });
+      return;
+    }
+
+    const mousePercent = (mouseY / rect.height) * 100;
     setRowHeights((prev) => {
       const heights = [...prev];
       const topIndex = activeVerticalResizer;
@@ -134,7 +168,6 @@ export default function GitHubMetricsTab({
 
       const totalHeight = heights[topIndex] + heights[bottomIndex];
       
-      // Calculate the cumulative height of rows above
       let cumulativeHeight = 0;
       for (let i = 0; i < topIndex; i++) {
         cumulativeHeight += heights[i];
@@ -151,7 +184,7 @@ export default function GitHubMetricsTab({
 
       return heights;
     });
-  }, [isDraggingVertical, activeVerticalResizer]);
+  }, [isDraggingVertical, activeVerticalResizer, preserveRowMinHeights]);
 
   const handleVerticalMouseUp = useCallback(() => {
     setIsDraggingVertical(false);
@@ -187,21 +220,29 @@ export default function GitHubMetricsTab({
   const splitterCount = rows.length - 1;
   const splitterHeightPx = splitterCount * 8; // 8px per splitter
 
+  const usePixelHeights = preserveRowMinHeights && !isMobile && rowHeightsPx.length === rows.length;
+  const totalContentHeightPx = usePixelHeights
+    ? rowHeightsPx.reduce((a, b) => a + b, 0) + splitterHeightPx
+    : undefined;
+
   return (
-    <div className="flex-1 h-full flex flex-col overflow-hidden md:p-1 min-h-0">
+    <div className={`flex-1 h-full flex flex-col md:p-1 min-h-0 ${usePixelHeights ? 'overflow-y-auto' : 'overflow-hidden'}`}>
       <div 
         ref={mainContainerRef}
-        className={`flex-1 flex flex-col ${isMobile ? 'overflow-y-auto space-y-4 p-4' : 'overflow-hidden'} min-h-0`}
+        className={`flex flex-col ${isMobile ? 'overflow-y-auto space-y-4 p-4' : 'overflow-hidden'} ${usePixelHeights ? 'flex-shrink-0' : 'flex-1 min-h-0'}`}
+        style={totalContentHeightPx != null ? { height: totalContentHeightPx } : undefined}
       >
         {rows.map((row, rowIdx) => (
           <React.Fragment key={rowIdx}>
-            {/* Row of cards - height controlled by rowHeights state on desktop, auto on mobile */}
+            {/* Row of cards - height controlled by rowHeights/rowHeightsPx on desktop, auto on mobile */}
             <div 
               ref={(el) => { containerRefs.current[rowIdx] = el; }}
               className={`flex relative overflow-hidden ${
                 isMobile ? 'flex-shrink-0 min-h-[400px]' : 'min-h-0 flex-shrink-0'
               }`}
-              style={isMobile ? {} : {
+              style={isMobile ? {} : usePixelHeights ? {
+                height: rowHeightsPx[rowIdx],
+              } : {
                 height: rowHeights.length > 0 
                   ? `calc(${rowHeights[rowIdx] || (100 / rows.length)}% - ${splitterHeightPx / rows.length}px)` 
                   : `calc(${100 / rows.length}% - ${splitterHeightPx / rows.length}px)`

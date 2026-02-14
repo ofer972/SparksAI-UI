@@ -9,6 +9,7 @@ import GitHubMetricsTab from './GitHubMetricsTab';
 export default function DORAAnalysisTab() {
   return (
     <GitHubMetricsTab
+      preserveRowMinHeights
       cards={[
         <DeploymentFrequencyCard key="deployment-frequency" />,
         <RecoveryTimeCard key="recovery-time" />,
