@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { Chart } from 'react-chartjs-2';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { useDualModeMetricData } from '@/hooks/useDualModeMetricData';
@@ -9,9 +9,10 @@ import { registerChartComponents } from '@/utils/chartRegistration';
 import { formatChartDateLabel } from '@/utils/dateFormatting';
 import ChartContainer from './metrics/shared/ChartContainer';
 import { createTimeSeriesChartOptions } from './utils/chartOptions';
-import CommitListReportDialog from './CommitListReportDialog';
+import CommitListReportDialog, { type CommitListData } from './CommitListReportDialog';
 import { useUser } from '@/contexts/UserContext';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
+import { authFetch } from '@/lib/api';
 
 registerChartComponents(true);
 
@@ -29,6 +30,7 @@ interface ReworkRateData {
     period: string;
     rework_rate: number;
     commit_count: number;
+    rework_count?: number;
   }>;
 }
 
@@ -167,6 +169,50 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
 
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [commitListData, setCommitListData] = useState<CommitListData | null>(null);
+  const [commitListLoading, setCommitListLoading] = useState(false);
+  const [commitListError, setCommitListError] = useState<string | null>(null);
+
+  const fetchCommitList = useCallback(
+    async (period: string) => {
+      setCommitListLoading(true);
+      setCommitListError(null);
+      try {
+        const params = new URLSearchParams({ period });
+        if (githubRepoIds.length > 0) {
+          params.append('github_repo_ids', githubRepoIds.join(','));
+        }
+        if (teamName) {
+          params.append('team_name', teamName);
+          params.append('isGroup', String(isGroup));
+        }
+        const response = await authFetch(
+          `/api/v1/github-service/reports/commit-list?${params.toString()}`
+        );
+        if (!response.ok) throw new Error(response.statusText);
+        const data = await response.json();
+        setCommitListData({
+          issues: (data.data || []) as CommitListData['issues'],
+          total: typeof data.total === 'number' ? data.total : 0,
+          total_commits_on_period:
+            typeof data.total_commits_on_period === 'number' ? data.total_commits_on_period : 0,
+        });
+      } catch (err) {
+        setCommitListError(err instanceof Error ? err.message : 'Failed to fetch commits');
+        setCommitListData(null);
+      } finally {
+        setCommitListLoading(false);
+      }
+    },
+    [githubRepoIds, teamName, isGroup]
+  );
+
+  const handleCloseCommitListDialog = useCallback(() => {
+    setDialogOpen(false);
+    setSelectedPeriod(null);
+    setCommitListData(null);
+    setCommitListError(null);
+  }, []);
 
   // Dark mode detection
   const [isDark, setIsDark] = useState(false);
@@ -178,13 +224,30 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
     return () => observer.disconnect();
   }, []);
 
+  // Only show days that have commits, so the "3 commits" are visible (e.g. Jan 16 + Jan 17) instead of 31 empty bars
+  const activeSeries = useMemo(() => {
+    if (!data?.time_series) return [];
+    const filtered = data.time_series.filter(d => (d.commit_count ?? 0) > 0);
+    return filtered.length > 0 ? filtered : data.time_series;
+  }, [data]);
+
+  // Use rework_count/commit_count when both present so bar height matches tooltip; else fall back to rework_rate
+  const barValues = useMemo(() => {
+    return activeSeries.map(d => {
+      const r = d.rework_count;
+      const t = d.commit_count;
+      if (typeof r === 'number' && typeof t === 'number' && t > 0) return (r / t) * 100;
+      return d.rework_rate ?? 0;
+    });
+  }, [activeSeries]);
+
   const chartData = useMemo(() => {
-    if (!data || !data.time_series || data.time_series.length === 0) {
+    if (!data || activeSeries.length === 0) {
       return null;
     }
 
     const overallRate = data.summary.rework_rate;
-    const labels = data.time_series.map(d => formatChartDateLabel(d.period));
+    const labels = activeSeries.map(d => formatChartDateLabel(d.period));
 
     return {
       labels,
@@ -192,7 +255,7 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
         {
           type: 'bar' as const,
           label: 'Code Churn Rate',
-          data: data.time_series.map(d => d.rework_rate),
+          data: barValues,
           backgroundColor: '#ef4444',
           borderColor: '#dc2626',
           borderWidth: 1,
@@ -210,7 +273,7 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
         },
       ],
     };
-  }, [data]);
+  }, [data, activeSeries, barValues]);
 
   const formatDate = (period: string): string => {
     try {
@@ -226,11 +289,11 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
   };
 
   const chartOptions = useMemo(() => {
-    if (!data || !data.time_series || !Array.isArray(data.time_series) || data.time_series.length === 0) return {};
+    if (!data || activeSeries.length === 0) return {};
     if (!data.summary) return {};
     
-    // Calculate max value and add padding for top labels
-    const maxValue = Math.max(...data.time_series.map(d => d.rework_rate), data.summary.rework_rate);
+    // Use same bar values for scale so axis matches bar height
+    const maxValue = Math.max(...barValues, data.summary.rework_rate);
     const suggestedMax = Math.max(maxValue * 1.15, 10); // Add 15% padding at top for labels, minimum 10%
     
     return createTimeSeriesChartOptions({
@@ -242,8 +305,11 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
       plugins: {
         datalabels: {
           formatter: (value: number, context: any) => {
-            if (context.datasetIndex === 0 && value > 0) {
-              return `${value.toFixed(1)}%`;
+            if (context.datasetIndex !== 0) return '';
+            const point = activeSeries[context.dataIndex];
+            const total = point?.commit_count;
+            if (typeof total === 'number' && total > 0) {
+              return `${total} · ${value.toFixed(0)}%`;
             }
             return '';
           },
@@ -254,6 +320,14 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
             label: (context: any) => {
               if (context.datasetIndex === 1 && data?.summary) {
                 return `Overall Average: ${data.summary.rework_rate.toFixed(1)}%`;
+              }
+              const point = activeSeries[context.dataIndex];
+              const rework = point?.rework_count;
+              const total = point?.commit_count;
+              if (typeof rework === 'number' && typeof total === 'number') {
+                const pct = total ? (rework / total) * 100 : 0;
+                const c = total !== 1 ? 'commits' : 'commit';
+                return `${total} ${c}, ${rework} rework (${pct.toFixed(1)}%)`;
               }
               return `Code Churn Rate: ${context.parsed.y.toFixed(1)}%`;
             },
@@ -278,18 +352,19 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
       events: ['click'],
       onClick: (event: any, elements: any[]) => {
         if (elements.length === 0) return;
-        if (!data || !data.time_series || !Array.isArray(data.time_series)) return;
+        if (!data || activeSeries.length === 0) return;
         
         const element = elements[0];
         // Only handle clicks on bar dataset (index 0), ignore line dataset (index 1)
         if (element.datasetIndex !== 0) return;
         
         const dataIndex = element.index;
-        const clickedPeriod = data.time_series[dataIndex]?.period;
+        const clickedPeriod = activeSeries[dataIndex]?.period;
         
         if (clickedPeriod) {
           setSelectedPeriod(clickedPeriod);
           setDialogOpen(true);
+          fetchCommitList(clickedPeriod);
         }
       },
       interaction: {
@@ -309,7 +384,7 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
         }
       },
     }, isDark);
-  }, [data, isDark]);
+  }, [data, activeSeries, barValues, isDark, fetchCommitList]);
 
   return (
     <MetricCardWrapper
@@ -365,12 +440,11 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
       {dialogOpen && selectedPeriod && (
         <CommitListReportDialog
           isOpen={dialogOpen}
-          onClose={() => {
-            setDialogOpen(false);
-            setSelectedPeriod(null);
-          }}
+          onClose={handleCloseCommitListDialog}
           period={selectedPeriod}
-          githubRepoIds={githubRepoIds.length > 0 ? githubRepoIds.join(',') : undefined}
+          data={commitListData}
+          loading={commitListLoading}
+          error={commitListError}
         />
       )}
     </MetricCardWrapper>
