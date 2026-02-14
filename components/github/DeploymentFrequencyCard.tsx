@@ -192,6 +192,7 @@ export default function DeploymentFrequencyCard(props?: DeploymentFrequencyCardP
           backgroundColor: '#3b82f6',
           borderColor: '#2563eb',
           borderWidth: 1,
+          order: 1,
         },
         {
           type: 'line' as const,
@@ -203,6 +204,7 @@ export default function DeploymentFrequencyCard(props?: DeploymentFrequencyCardP
           pointRadius: 0,
           pointHoverRadius: 0,
           fill: false,
+          order: 2,
         },
       ],
     };

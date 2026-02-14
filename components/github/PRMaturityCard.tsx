@@ -210,6 +210,7 @@ export default function PRMaturityCard(props?: PRMaturityCardProps) {
           backgroundColor: '#3b82f6',
           borderColor: '#2563eb',
           borderWidth: 1,
+          order: 1,
         },
         {
           type: 'line' as const,
@@ -221,6 +222,7 @@ export default function PRMaturityCard(props?: PRMaturityCardProps) {
           pointRadius: 0,
           pointHoverRadius: 0,
           fill: false,
+          order: 2,
         },
       ],
     };
@@ -288,7 +290,7 @@ export default function PRMaturityCard(props?: PRMaturityCardProps) {
           },
         },
       },
-      events: ['click'],
+      events: ['click', 'mousemove', 'mouseout'],
       onClick: (event: any, elements: any[]) => {
         if (elements.length === 0) return;
         const element = elements[0];

@@ -210,6 +210,7 @@ export default function PRSizeCard(props?: PRSizeCardProps) {
           backgroundColor: '#3b82f6',
           borderColor: '#2563eb',
           borderWidth: 1,
+          order: 1,
         },
         {
           type: 'line' as const,
@@ -221,6 +222,7 @@ export default function PRSizeCard(props?: PRSizeCardProps) {
           pointRadius: 0,
           pointHoverRadius: 0,
           fill: false,
+          order: 2,
         },
       ],
     };
@@ -285,7 +287,7 @@ export default function PRSizeCard(props?: PRSizeCardProps) {
           ticks: {},
         },
       },
-      events: ['click'],
+      events: ['click', 'mousemove', 'mouseout'],
       onClick: (event: any, elements: any[]) => {
         if (elements.length === 0) return;
         if (!data || !data.time_series || !Array.isArray(data.time_series)) return;
