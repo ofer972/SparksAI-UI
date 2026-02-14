@@ -273,6 +273,8 @@ export default function CoreKPIsTab() {
           onClose={handleCloseDialog}
           metric={selectedMetric.metric}
           title={selectedMetric.title}
+          team_name={teamName ?? undefined}
+          isGroup={isGroup}
         />
       )}
     </>

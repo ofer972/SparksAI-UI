@@ -392,6 +392,8 @@ export default function PRMaturityCard(props?: PRMaturityCardProps) {
           metricType="pr-maturity"
           title={`PRs Created on ${formatDate(selectedPeriod)}`}
           githubRepoIds={githubRepoIds.length > 0 ? githubRepoIds.join(',') : undefined}
+          team_name={teamName ?? undefined}
+          isGroup={isGroup}
         />
       )}
     </MetricCardWrapper>

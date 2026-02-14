@@ -31,6 +31,8 @@ interface PRListReportDialogProps {
   githubRepoIds?: string; // Optional filter
   period?: string; // YYYY-MM-DD format (optional)
   metricType?: 'core-kpi' | 'pr-size' | 'pr-maturity'; // Optional, for column customization
+  team_name?: string | null; // Optional filter: team or group name
+  isGroup?: boolean; // Optional: true = group, false = team
 }
 
 export default function PRListReportDialog({
@@ -41,6 +43,8 @@ export default function PRListReportDialog({
   githubRepoIds,
   period,
   metricType,
+  team_name,
+  isGroup,
 }: PRListReportDialogProps) {
   const fetchFunction = useCallback(async () => {
     try {
@@ -50,6 +54,10 @@ export default function PRListReportDialog({
       }
       if (period) {
         params.append('period', period);
+      }
+      if (team_name != null && team_name.trim() !== '') {
+        params.append('team_name', team_name.trim());
+        params.append('isGroup', String(Boolean(isGroup)));
       }
 
       const response = await authFetch(
@@ -75,7 +83,7 @@ export default function PRListReportDialog({
         message: errorMessage,
       };
     }
-  }, [metric, githubRepoIds, period]);
+  }, [metric, githubRepoIds, period, team_name, isGroup]);
 
   const columns: Column<PRListItem>[] = useMemo(
     () => {

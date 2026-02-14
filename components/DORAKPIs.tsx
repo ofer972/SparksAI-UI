@@ -228,6 +228,8 @@ export default function DORAKPIs({
           onClose={handleCloseDialog}
           metric={selectedMetric.metric}
           title={selectedMetric.title}
+          team_name={defaultTeamOrGroupName ?? undefined}
+          isGroup={defaultTreeType === 'group'}
         />
       )}
     </>
