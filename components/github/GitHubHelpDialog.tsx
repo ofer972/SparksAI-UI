@@ -1,24 +1,26 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import { authFetch } from '@/lib/api';
 
+type MdProps = { children?: React.ReactNode };
+
 const markdownComponents = {
-  p: ({ children }) => <p className="text-sm text-content-secondary mb-3">{children}</p>,
-  strong: ({ children }) => <strong className="font-semibold text-content-primary">{children}</strong>,
-  em: ({ children }) => <em className="italic">{children}</em>,
-  ul: ({ children }) => <ul className="list-disc list-inside text-sm text-content-secondary mb-3">{children}</ul>,
-  ol: ({ children }) => <ol className="list-decimal list-inside text-sm text-content-secondary mb-3">{children}</ol>,
-  li: ({ children }) => <li className="text-content-secondary">{children}</li>,
-  code: ({ children }) => <code className="bg-surface-secondary px-1 rounded text-xs">{children}</code>,
-  pre: ({ children }) => <pre className="bg-surface-secondary p-2 rounded text-xs overflow-x-auto whitespace-pre-wrap mb-3">{children}</pre>,
-  h1: ({ children }) => <h1 className="text-xl font-bold text-content-primary mt-4 mb-2 first:mt-0">{children}</h1>,
-  h2: ({ children }) => <h2 className="text-lg font-bold text-content-primary mt-4 mb-2">{children}</h2>,
-  h3: ({ children }) => <h3 className="text-base font-semibold text-content-primary mt-3 mb-2">{children}</h3>,
-  blockquote: ({ children }) => <blockquote className="border-l-2 border-outline pl-3 italic text-content-secondary mb-3">{children}</blockquote>,
+  p: ({ children }: MdProps) => <p className="text-sm text-content-secondary mb-3">{children}</p>,
+  strong: ({ children }: MdProps) => <strong className="font-semibold text-content-primary">{children}</strong>,
+  em: ({ children }: MdProps) => <em className="italic">{children}</em>,
+  ul: ({ children }: MdProps) => <ul className="list-disc list-inside text-sm text-content-secondary mb-3">{children}</ul>,
+  ol: ({ children }: MdProps) => <ol className="list-decimal list-inside text-sm text-content-secondary mb-3">{children}</ol>,
+  li: ({ children }: MdProps) => <li className="text-content-secondary">{children}</li>,
+  code: ({ children }: MdProps) => <code className="bg-surface-secondary px-1 rounded text-xs">{children}</code>,
+  pre: ({ children }: MdProps) => <pre className="bg-surface-secondary p-2 rounded text-xs overflow-x-auto whitespace-pre-wrap mb-3">{children}</pre>,
+  h1: ({ children }: MdProps) => <h1 className="text-xl font-bold text-content-primary mt-4 mb-2 first:mt-0">{children}</h1>,
+  h2: ({ children }: MdProps) => <h2 className="text-lg font-bold text-content-primary mt-4 mb-2">{children}</h2>,
+  h3: ({ children }: MdProps) => <h3 className="text-base font-semibold text-content-primary mt-3 mb-2">{children}</h3>,
+  blockquote: ({ children }: MdProps) => <blockquote className="border-l-2 border-outline pl-3 italic text-content-secondary mb-3">{children}</blockquote>,
   hr: () => <hr className="border-outline my-4" />,
 };
 
