@@ -290,7 +290,6 @@ export default function PRMaturityCard(props?: PRMaturityCardProps) {
           },
         },
       },
-      events: ['click', 'mousemove', 'mouseout'],
       onClick: (event: any, elements: any[]) => {
         if (elements.length === 0) return;
         const element = elements[0];

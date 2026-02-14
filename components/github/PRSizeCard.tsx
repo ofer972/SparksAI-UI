@@ -287,7 +287,6 @@ export default function PRSizeCard(props?: PRSizeCardProps) {
           ticks: {},
         },
       },
-      events: ['click', 'mousemove', 'mouseout'],
       onClick: (event: any, elements: any[]) => {
         if (elements.length === 0) return;
         if (!data || !data.time_series || !Array.isArray(data.time_series)) return;

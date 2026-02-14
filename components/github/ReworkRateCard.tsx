@@ -2,7 +2,6 @@
 
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { Chart } from 'react-chartjs-2';
-import { Tooltip } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { useDualModeMetricData } from '@/hooks/useDualModeMetricData';
 import MetricCardWrapper from './MetricCardWrapper';
@@ -16,28 +15,6 @@ import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 import { authFetch } from '@/lib/api';
 
 registerChartComponents(true);
-
-/** Draws the average line on top of the bar chart so it is not hidden. Used only by this card. */
-const reworkRateAverageLinePlugin = {
-  id: 'reworkRateAverageLine' as const,
-  afterDraw(chart: any) {
-    const opts = chart.options?.plugins?.reworkRateAverageLine;
-    if (opts?.value == null || !chart.scales?.y || !chart.chartArea) return;
-    const yScale = chart.scales.y;
-    const y = yScale.getPixelForValue(opts.value);
-    if (y < chart.chartArea.top || y > chart.chartArea.bottom) return;
-    const ctx = chart.ctx;
-    ctx.save();
-    ctx.strokeStyle = '#9333ea';
-    ctx.lineWidth = 3;
-    ctx.setLineDash([6, 4]);
-    ctx.beginPath();
-    ctx.moveTo(chart.chartArea.left, y);
-    ctx.lineTo(chart.chartArea.right, y);
-    ctx.stroke();
-    ctx.restore();
-  },
-};
 
 interface ReworkRateData {
   summary: {
@@ -282,6 +259,19 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
           backgroundColor: '#ef4444',
           borderColor: '#dc2626',
           borderWidth: 1,
+          order: 1,
+        },
+        {
+          type: 'line' as const,
+          label: 'Overall Average',
+          data: labels.map(() => overallRate),
+          borderColor: '#9333ea',
+          borderWidth: 2,
+          borderDash: [5, 5],
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          fill: false,
+          order: 2,
         },
       ],
     };
@@ -315,7 +305,6 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
         },
       },
       plugins: {
-        reworkRateAverageLine: { value: data.summary.rework_rate },
         datalabels: {
           formatter: (value: number, context: any) => {
             if (context.datasetIndex !== 0) return '';
@@ -331,6 +320,9 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
           enabled: true,
           callbacks: {
             label: (context: any) => {
+              if (context.datasetIndex === 1 && data?.summary) {
+                return `Overall Average: ${data.summary.rework_rate.toFixed(1)}%`;
+              }
               const point = activeSeries[context.dataIndex];
               const rework = point?.rework_count;
               const total = point?.commit_count;
@@ -343,7 +335,7 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
             },
           },
         },
-      } as Record<string, unknown>,
+      },
       scales: {
         y: {
           beginAtZero: true,
@@ -359,7 +351,6 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
           },
         },
       },
-      events: ['click', 'mousemove', 'mouseout'],
       onClick: (event: any, elements: any[]) => {
         if (elements.length === 0) return;
         if (!data || activeSeries.length === 0) return;
@@ -441,7 +432,7 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
             type="bar"
             data={chartData}
             options={chartOptions}
-            plugins={[ChartDataLabels, reworkRateAverageLinePlugin, Tooltip]}
+            plugins={[ChartDataLabels]}
           />
         )}
       </ChartContainer>
