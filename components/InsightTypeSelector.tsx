@@ -13,9 +13,24 @@ interface InsightTypeSelection {
  };
 }
 
+// Each instance has a unique key like "typeId::0", "typeId::1", etc.
+type InstanceKey = string;
+
+function makeInstanceKey(typeId: string, index: number): InstanceKey {
+  return `${typeId}::${index}`;
+}
+
+function parseInstanceKey(key: InstanceKey): { typeId: string; index: number } {
+  const sepIdx = key.lastIndexOf('::');
+  return {
+    typeId: key.substring(0, sepIdx),
+    index: parseInt(key.substring(sepIdx + 2), 10),
+  };
+}
+
 interface InsightTypeSelectorProps {
  onUpdateSelections?: (selections: Map<string, InsightTypeSelection>) => void;
- currentSelections?: Map<string, InsightTypeSelection>; // Current selections on dashboard
+ currentSelections?: Map<string, InsightTypeSelection>; // Current selections on dashboard (instance-keyed)
  defaultFilters?: { pi?: string; team_name?: string; isGroup?: boolean }; // Default filters from topbar for pre-populating
 }
 
@@ -31,10 +46,12 @@ export default function InsightTypeSelector({
  const [availablePIs, setAvailablePIs] = useState<string[]>([]);
  const [availableTeams, setAvailableTeams] = useState<string[]>([]);
  const [availableGroups, setAvailableGroups] = useState<string[]>([]);
- const [selectedPI, setSelectedPI] = useState<Record<string, string>>({});
- const [selectedTeam, setSelectedTeam] = useState<Record<string, string>>({});
- const [selectedGroup, setSelectedGroup] = useState<Record<string, string>>({});
- const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set());
+ // Instance-keyed filters: key is "typeId::index"
+ const [selectedPI, setSelectedPI] = useState<Record<InstanceKey, string>>({});
+ const [selectedTeam, setSelectedTeam] = useState<Record<InstanceKey, string>>({});
+ const [selectedGroup, setSelectedGroup] = useState<Record<InstanceKey, string>>({});
+ // Track instance count per type
+ const [instanceCounts, setInstanceCounts] = useState<Map<string, number>>(new Map());
  const [fetching, setFetching] = useState(true);
  const [fetchError, setFetchError] = useState<string | null>(null);
  
@@ -64,25 +81,26 @@ export default function InsightTypeSelector({
  // 2. The currentSelections actually changed (not just a new object reference)
  if (currentSelections.size > 0 && 
  (!initializedFromPropsRef.current || lastCurrentSelectionsRef.current !== currentSelectionsKey)) {
- const newSelectedTypes = new Set<string>();
- const newSelectedPI: Record<string, string> = {};
- const newSelectedTeam: Record<string, string> = {};
- const newSelectedGroup: Record<string, string> = {};
+ const newInstanceCounts = new Map<string, number>();
+ const newSelectedPI: Record<InstanceKey, string> = {};
+ const newSelectedTeam: Record<InstanceKey, string> = {};
+ const newSelectedGroup: Record<InstanceKey, string> = {};
 
- currentSelections.forEach((selection, typeId) => {
- newSelectedTypes.add(typeId);
- if (selection.filters.pi) {
- newSelectedPI[typeId] = selection.filters.pi;
- }
- if (selection.filters.team_name) {
- newSelectedTeam[typeId] = selection.filters.team_name;
- }
- if (selection.filters.group_name) {
- newSelectedGroup[typeId] = selection.filters.group_name;
- }
+ currentSelections.forEach((selection, instanceKey) => {
+   const { typeId } = parseInstanceKey(instanceKey);
+   newInstanceCounts.set(typeId, (newInstanceCounts.get(typeId) || 0) + 1);
+   if (selection.filters.pi) {
+     newSelectedPI[instanceKey] = selection.filters.pi;
+   }
+   if (selection.filters.team_name) {
+     newSelectedTeam[instanceKey] = selection.filters.team_name;
+   }
+   if (selection.filters.group_name) {
+     newSelectedGroup[instanceKey] = selection.filters.group_name;
+   }
  });
 
- setSelectedTypes(newSelectedTypes);
+ setInstanceCounts(newInstanceCounts);
  setSelectedPI(newSelectedPI);
  setSelectedTeam(newSelectedTeam);
  setSelectedGroup(newSelectedGroup);
@@ -175,30 +193,30 @@ export default function InsightTypeSelector({
 
  // Notify parent of selection changes
  useEffect(() => {
- // Always notify parent of changes, but skip if we're currently initializing from props
- // to prevent circular updates. However, if currentSelections is empty (new dashboard),
- // we should still notify when user makes selections.
  if (onUpdateSelections) {
  // Mark that we're updating from user interaction to prevent re-initialization
  isUpdatingFromUserRef.current = true;
- skipNextUpdateRef.current = true; // Skip the next prop update to break the loop
+ skipNextUpdateRef.current = true;
  
  const selections = new Map<string, InsightTypeSelection>();
- selectedTypes.forEach(typeId => {
- const filters: InsightTypeSelection['filters'] = {};
- if (selectedPI[typeId]) {
- filters.pi = selectedPI[typeId];
- }
- if (selectedTeam[typeId]) {
- filters.team_name = selectedTeam[typeId];
- }
- if (selectedGroup[typeId]) {
- filters.group_name = selectedGroup[typeId];
- }
- selections.set(typeId, {
- insightTypeId: typeId,
- filters,
- });
+ instanceCounts.forEach((count, typeId) => {
+   for (let i = 0; i < count; i++) {
+     const instKey = makeInstanceKey(typeId, i);
+     const filters: InsightTypeSelection['filters'] = {};
+     if (selectedPI[instKey]) {
+       filters.pi = selectedPI[instKey];
+     }
+     if (selectedTeam[instKey]) {
+       filters.team_name = selectedTeam[instKey];
+     }
+     if (selectedGroup[instKey]) {
+       filters.group_name = selectedGroup[instKey];
+     }
+     selections.set(instKey, {
+       insightTypeId: typeId,
+       filters,
+     });
+   }
  });
  
  // Update the last known selections to prevent re-initialization
@@ -221,198 +239,231 @@ export default function InsightTypeSelector({
  isUpdatingFromUserRef.current = false;
  }, 50);
  }
- }, [selectedTypes, selectedPI, selectedTeam, selectedGroup, onUpdateSelections]);
+ }, [instanceCounts, selectedPI, selectedTeam, selectedGroup, onUpdateSelections]);
 
- // Toggle selection of an insight type
- const toggleTypeSelection = (typeId: string) => {
- setSelectedTypes(prev => {
- const next = new Set(prev);
- if (next.has(typeId)) {
- next.delete(typeId);
- // Clear filters when deselected
- setSelectedPI(prevPI => {
- const nextPI = { ...prevPI };
- delete nextPI[typeId];
- return nextPI;
- });
- setSelectedTeam(prevTeam => {
- const nextTeam = { ...prevTeam };
- delete nextTeam[typeId];
- return nextTeam;
- });
- setSelectedGroup(prevGroup => {
- const nextGroup = { ...prevGroup };
- delete nextGroup[typeId];
- return nextGroup;
- });
- } else {
- next.add(typeId);
- 
- // Pre-populate filters from defaultFilters if available
- const insightType = insightTypes.find(t => t.id === typeId);
-if (insightType && defaultFilters) {
-// Pre-populate PI if required and available
-if (insightType.requirePI && defaultFilters.pi && !selectedPI[typeId]) {
-const piValue = defaultFilters.pi;
-setSelectedPI(prev => ({ ...prev, [typeId]: piValue }));
-}
+ // Add an instance of an insight type
+ const addInstance = (typeId: string) => {
+   setInstanceCounts(prev => {
+     const next = new Map(prev);
+     const currentCount = next.get(typeId) || 0;
+     const newIndex = currentCount;
+     next.set(typeId, currentCount + 1);
 
-// Pre-populate team if required and topbar has team (not group)
-if (insightType.requireTeam && !insightType.requireGroup && 
-    defaultFilters.team_name && defaultFilters.isGroup === false &&
-    availableTeams.includes(defaultFilters.team_name) && !selectedTeam[typeId]) {
-const teamValue = defaultFilters.team_name;
-setSelectedTeam(prev => ({ ...prev, [typeId]: teamValue }));
-}
+     // Pre-populate filters from defaultFilters if available
+     const insightType = insightTypes.find(t => t.id === typeId);
+     if (insightType && defaultFilters) {
+       const instKey = makeInstanceKey(typeId, newIndex);
+       if (insightType.requirePI && defaultFilters.pi) {
+         setSelectedPI(p => ({ ...p, [instKey]: defaultFilters.pi! }));
+       }
+       if (insightType.requireTeam && !insightType.requireGroup &&
+           defaultFilters.team_name && defaultFilters.isGroup === false &&
+           availableTeams.includes(defaultFilters.team_name)) {
+         setSelectedTeam(p => ({ ...p, [instKey]: defaultFilters.team_name! }));
+       }
+       if (insightType.requireGroup && !insightType.requireTeam &&
+           defaultFilters.team_name && defaultFilters.isGroup === true &&
+           availableGroups.includes(defaultFilters.team_name)) {
+         setSelectedGroup(p => ({ ...p, [instKey]: defaultFilters.team_name! }));
+       }
+     }
 
-// Pre-populate group if required and topbar has group (not team)
-if (insightType.requireGroup && !insightType.requireTeam &&
-    defaultFilters.team_name && defaultFilters.isGroup === true &&
-    availableGroups.includes(defaultFilters.team_name) && !selectedGroup[typeId]) {
-const groupValue = defaultFilters.team_name;
-setSelectedGroup(prev => ({ ...prev, [typeId]: groupValue }));
-}
-}
- }
- return next;
- });
+     return next;
+   });
  };
 
- // Check if a type can be selected (all required filters are filled)
- const canSelectType = (insightType: InsightType) => {
- if (!selectedTypes.has(insightType.id)) {
- return true; // Can always select
- }
- // If already selected, check if required filters are filled
- return (
- (!insightType.requirePI || selectedPI[insightType.id]) &&
- (!insightType.requireTeam || selectedTeam[insightType.id]) &&
- (!insightType.requireGroup || selectedGroup[insightType.id])
- );
+ // Remove the last instance of an insight type
+ const removeInstance = (typeId: string) => {
+   setInstanceCounts(prev => {
+     const next = new Map(prev);
+     const currentCount = next.get(typeId) || 0;
+     if (currentCount <= 0) return prev;
+
+     const removedIndex = currentCount - 1;
+     const instKey = makeInstanceKey(typeId, removedIndex);
+
+     // Clean up filters for removed instance
+     setSelectedPI(p => {
+       const n = { ...p };
+       delete n[instKey];
+       return n;
+     });
+     setSelectedTeam(p => {
+       const n = { ...p };
+       delete n[instKey];
+       return n;
+     });
+     setSelectedGroup(p => {
+       const n = { ...p };
+       delete n[instKey];
+       return n;
+     });
+
+     if (currentCount === 1) {
+       next.delete(typeId);
+     } else {
+       next.set(typeId, currentCount - 1);
+     }
+     return next;
+   });
+ };
+
+ // Render filter controls for a single instance, wrapped in a sub-panel
+ const renderInstanceFilters = (insightType: InsightType, instanceIndex: number) => {
+   const instKey = makeInstanceKey(insightType.id, instanceIndex);
+   const count = instanceCounts.get(insightType.id) || 0;
+   const hasFilters = insightType.requirePI || insightType.requireTeam || insightType.requireGroup;
+
+   return (
+     <div
+       key={instKey}
+       className="group/instance rounded-lg border border-outline-strong/60 bg-surface-elevated/50 dark:bg-surface-elevated/30 px-5 py-2.5 transition-all hover:border-blue-400/50 dark:hover:border-blue-500/40 hover:shadow-sm"
+     >
+       {hasFilters ? (
+         <div className="flex items-center gap-4">
+           {count > 1 && (
+             <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300">
+               {instanceIndex + 1}
+             </span>
+           )}
+           {insightType.requirePI && (
+             <div className="flex items-center gap-2 flex-1 min-w-0">
+               <label className="text-xs font-medium text-content-secondary whitespace-nowrap">PI</label>
+               <select
+                 value={selectedPI[instKey] || ''}
+                 onChange={(e) => setSelectedPI(prev => ({ ...prev, [instKey]: e.target.value }))}
+                 className="w-full px-2.5 py-1.5 text-xs border border-outline rounded-md focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand bg-surface text-content-primary transition-colors"
+               >
+                 <option value="">Select PI...</option>
+                 {availablePIs.length > 0 ? (
+                   availablePIs.map(pi => <option key={pi} value={pi}>{pi}</option>)
+                 ) : (
+                   <option value="" disabled>Loading...</option>
+                 )}
+               </select>
+             </div>
+           )}
+           {insightType.requireTeam && (
+             <div className="flex items-center gap-2 flex-1 min-w-0">
+               <label className="text-xs font-medium text-content-secondary whitespace-nowrap">Team</label>
+               <select
+                 value={selectedTeam[instKey] || ''}
+                 onChange={(e) => setSelectedTeam(prev => ({ ...prev, [instKey]: e.target.value }))}
+                 className="w-full px-2.5 py-1.5 text-xs border border-outline rounded-md focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand bg-surface text-content-primary transition-colors"
+               >
+                 <option value="">Select Team...</option>
+                 {availableTeams.length > 0 ? (
+                   availableTeams.map(team => <option key={team} value={team}>{team}</option>)
+                 ) : (
+                   <option value="" disabled>Loading...</option>
+                 )}
+               </select>
+             </div>
+           )}
+           {insightType.requireGroup && (
+             <div className="flex items-center gap-2 flex-1 min-w-0">
+               <label className="text-xs font-medium text-content-secondary whitespace-nowrap">Group</label>
+               <select
+                 value={selectedGroup[instKey] || ''}
+                 onChange={(e) => setSelectedGroup(prev => ({ ...prev, [instKey]: e.target.value }))}
+                 className="w-full px-2.5 py-1.5 text-xs border border-outline rounded-md focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand bg-surface text-content-primary transition-colors"
+               >
+                 <option value="">Select Group...</option>
+                 {availableGroups.length > 0 ? (
+                   availableGroups.map(group => <option key={group} value={group}>{group}</option>)
+                 ) : (
+                   <option value="" disabled>Loading...</option>
+                 )}
+               </select>
+             </div>
+           )}
+         </div>
+       ) : (
+         <div className="flex items-center gap-3">
+           {count > 1 && (
+             <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300">
+               {instanceIndex + 1}
+             </span>
+           )}
+           <p className="text-xs text-content-muted italic">No filters required</p>
+         </div>
+       )}
+     </div>
+   );
  };
 
  // Render card for each insight type
  const renderInsightTypeCard = (insightType: InsightType) => {
- const isSelected = selectedTypes.has(insightType.id);
- const canSelect = canSelectType(insightType);
+   const count = instanceCounts.get(insightType.id) || 0;
+   const hasInstances = count > 0;
 
- return (
- <div
- key={insightType.id}
- className={`bg-surface rounded-lg shadow-md hover:shadow-lg transition-shadow border-2 p-3 flex flex-col w-full ${
- isSelected ? 'border-blue-500 dark:border-blue-600 bg-blue-50 dark:bg-blue-950/30' : 'border-outline'
- }`}
- >
- <div className="flex items-start justify-between mb-2">
- <div className="flex items-center gap-2 flex-1">
- <input
- type="checkbox"
- checked={isSelected}
- onChange={() => toggleTypeSelection(insightType.id)}
- disabled={!canSelect}
- className="w-4 h-4 text-brand border-outline-strong rounded focus:ring-brand"
- />
- <h3 className="text-base font-bold text-content-primary flex-1">
- {insightType.name || `Insight Type ${insightType.id}`}
- </h3>
- </div>
- <div className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
- insightType.active ? 'bg-green-100 dark:bg-green-950/40 text-green-700 text-green-400' : 'bg-surface-secondary text-content-tertiary'
- }`}>
- {insightType.active ? 'Active' : 'Inactive'}
- </div>
- </div>
- 
- {insightType.description && (
- <p className="text-xs text-content-tertiary mb-3 leading-relaxed ml-6">
- {insightType.description}
- </p>
- )}
- 
- {isSelected && (
- <div className="space-y-2 flex-1 ml-6">
- {insightType.requirePI && (
- <div className="flex items-center gap-2">
- <label className="text-xs font-semibold text-content-secondary whitespace-nowrap min-w-[50px]">
- PI:
- </label>
- <select
- value={selectedPI[insightType.id] || ''}
- onChange={(e) => setSelectedPI(prev => ({
- ...prev,
- [insightType.id]: e.target.value
- }))}
- className="flex-1 px-2 py-1.5 text-xs border border-outline-strong rounded-md focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-surface-elevated text-content-primary"
- >
- <option value="">Select PI</option>
- {availablePIs.length > 0 ? (
- availablePIs.map(pi => (
- <option key={pi} value={pi}>{pi}</option>
- ))
- ) : (
- <option value="" disabled>Loading PIs...</option>
- )}
- </select>
- </div>
- )}
- 
- {insightType.requireTeam && (
- <div className="flex items-center gap-2">
- <label className="text-xs font-semibold text-content-secondary whitespace-nowrap min-w-[50px]">
- Team:
- </label>
- <select
- value={selectedTeam[insightType.id] || ''}
- onChange={(e) => setSelectedTeam(prev => ({
- ...prev,
- [insightType.id]: e.target.value
- }))}
- className="flex-1 px-2 py-1.5 text-xs border border-outline-strong rounded-md focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-surface-elevated text-content-primary"
- >
- <option value="">Select Team</option>
- {availableTeams.length > 0 ? (
- availableTeams.map(team => (
- <option key={team} value={team}>{team}</option>
- ))
- ) : (
- <option value="" disabled>Loading Teams...</option>
- )}
- </select>
- </div>
- )}
- 
- {insightType.requireGroup && (
- <div className="flex items-center gap-2">
- <label className="text-xs font-semibold text-content-secondary whitespace-nowrap min-w-[50px]">
- Group:
- </label>
- <select
- value={selectedGroup[insightType.id] || ''}
- onChange={(e) => setSelectedGroup(prev => ({
- ...prev,
- [insightType.id]: e.target.value
- }))}
- className="flex-1 px-2 py-1.5 text-xs border border-outline-strong rounded-md focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-surface-elevated text-content-primary"
- >
- <option value="">Select Group</option>
- {availableGroups.length > 0 ? (
- availableGroups.map(group => (
- <option key={group} value={group}>{group}</option>
- ))
- ) : (
- <option value="" disabled>Loading Groups...</option>
- )}
- </select>
- </div>
- )}
- </div>
- )}
+   return (
+     <div
+       key={insightType.id}
+       className={`rounded-xl border transition-all duration-200 ${
+         hasInstances
+           ? 'border-blue-400/70 dark:border-blue-500/50 bg-gradient-to-b from-blue-50/80 to-white dark:from-blue-950/20 dark:to-surface shadow-md shadow-blue-100/50 dark:shadow-blue-950/30'
+           : 'border-outline bg-surface shadow-sm hover:shadow-md hover:border-blue-300/50 dark:hover:border-blue-600/40'
+       }`}
+     >
+       {/* Header */}
+       <div className="flex items-center justify-between px-4 py-3">
+         <div className="flex items-center gap-3 flex-1 min-w-0">
+           <h3 className="text-sm font-semibold text-content-primary truncate">
+             {insightType.name || `Insight Type ${insightType.id}`}
+           </h3>
+           <span className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${
+             insightType.active
+               ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'
+               : 'bg-surface-secondary text-content-tertiary'
+           }`}>
+             {insightType.active ? 'Active' : 'Inactive'}
+           </span>
+           {hasInstances && (
+             <span className="flex-shrink-0 text-[10px] font-medium text-blue-500 dark:text-blue-400">
+               {count} {count === 1 ? 'card' : 'cards'}
+             </span>
+           )}
+         </div>
 
- {(!insightType.requirePI && !insightType.requireTeam && !insightType.requireGroup) && isSelected && (
- <p className="text-xs text-content-muted italic mb-2 ml-6">No filters required for this insight type.</p>
- )}
- </div>
- );
+         {/* +/- counter */}
+         <div className="flex-shrink-0 flex items-center rounded-lg border border-outline-strong/80 bg-surface-elevated overflow-hidden">
+           <button
+             onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeInstance(insightType.id); }}
+             disabled={count === 0}
+             className="px-2.5 py-1.5 text-sm text-content-tertiary hover:text-content-primary hover:bg-surface-secondary active:bg-surface-secondary/80 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+           >
+             −
+           </button>
+           <span className="px-2 py-1.5 text-xs font-semibold min-w-[1.75rem] text-center text-content-secondary border-x border-outline-strong/60 bg-surface tabular-nums">
+             {count}
+           </span>
+           <button
+             onClick={(e) => { e.preventDefault(); e.stopPropagation(); addInstance(insightType.id); }}
+             className="px-2.5 py-1.5 text-sm text-content-tertiary hover:text-content-primary hover:bg-surface-secondary active:bg-surface-secondary/80 transition-colors"
+           >
+             +
+           </button>
+         </div>
+       </div>
+
+       {/* Description */}
+       {insightType.description && (
+         <p className="px-4 pb-2 text-xs text-content-tertiary leading-relaxed">
+           {insightType.description}
+         </p>
+       )}
+
+       {/* Instance panels */}
+       {hasInstances && (
+         <div className="px-5 pb-3">
+           <div className="grid grid-cols-2 gap-2">
+             {Array.from({ length: count }, (_, i) => renderInstanceFilters(insightType, i))}
+           </div>
+         </div>
+       )}
+     </div>
+   );
  };
 
  if (fetching) {
@@ -455,14 +506,13 @@ setSelectedGroup(prev => ({ ...prev, [typeId]: groupValue }));
  }
 
  return (
- <div className="space-y-4">
- <div className="text-sm text-content-tertiary mb-4">
- Select insight types to add to your dashboard. Each type can be added once with its required filters.
- </div>
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <div className="space-y-3">
+ <p className="text-xs text-content-tertiary">
+ Use the +/− buttons to add insight cards to your dashboard. Each card can have its own filters.
+ </p>
+ <div className="grid grid-cols-1 gap-3">
  {insightTypes.map(renderInsightTypeCard)}
  </div>
  </div>
  );
 }
-

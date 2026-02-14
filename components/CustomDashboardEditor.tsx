@@ -673,30 +673,53 @@ export default function CustomDashboardEditor({
       });
       
       // Calculate widgets to add (all requested widgets, allowing duplicates)
-      // For insight_type, only allow one per type
+      // For insight_type, allow multiple instances per type (each can have different filters)
       // For metrics, allow multiple (each can have different config)
       const widgetsToAdd: Array<{ type: 'report' | 'insight_card' | 'insight_type' | 'metrics'; id: string; filters?: Record<string, any>; metricsConfig?: any }> = [];
-      const insightTypeIds = new Set<string>(); // Track which insight types are already on dashboard
       
+      // For insight_type widgets, we need to compare by type+filters since the same type
+      // can appear multiple times with different filters. Count existing per widget_id.
+      const existingInsightTypeCounts = new Map<string, number>();
       currentWidgets.forEach(w => {
         if (w.type === 'insight_type') {
-          insightTypeIds.add(w.widget_id);
+          existingInsightTypeCounts.set(w.widget_id, (existingInsightTypeCounts.get(w.widget_id) || 0) + 1);
         }
       });
-      
+
+      // Count requested insight_type instances per widget_id
+      const requestedInsightTypeCounts = new Map<string, { count: number; instances: Array<{ filters?: Record<string, any> }> }>();
+      widgetIds.forEach(w => {
+        if (w.type === 'insight_type') {
+          const existing = requestedInsightTypeCounts.get(w.id);
+          if (existing) {
+            existing.count++;
+            existing.instances.push({ filters: w.filters });
+          } else {
+            requestedInsightTypeCounts.set(w.id, { count: 1, instances: [{ filters: w.filters }] });
+          }
+        }
+      });
+
       requestedWidgetCounts.forEach((count, widgetId) => {
         const widgetInfo = widgetIds.find(w => w.id === widgetId);
         const widgetType = widgetInfo?.type || 'report';
         
-        // For insight_type, only add if not already present (one per type)
         if (widgetType === 'insight_type') {
-          if (!insightTypeIds.has(widgetId)) {
-            widgetsToAdd.push({
-              type: widgetType,
-              id: widgetId,
-              filters: widgetInfo?.filters || {},
-            });
-            insightTypeIds.add(widgetId);
+          // For insight_type, allow multiple instances (each can have different filters)
+          const currentCount = existingInsightTypeCounts.get(widgetId) || 0;
+          const requested = requestedInsightTypeCounts.get(widgetId);
+          const requestedCount = requested?.count || 0;
+          const toAdd = requestedCount - currentCount;
+          if (toAdd > 0) {
+            // Add the new instances (the ones beyond what already exists)
+            const instances = requested?.instances || [];
+            for (let i = currentCount; i < requestedCount; i++) {
+              widgetsToAdd.push({
+                type: widgetType,
+                id: widgetId,
+                filters: instances[i]?.filters || {},
+              });
+            }
           }
         } else if (widgetType === 'metrics') {
           // For metrics, allow multiple (each can have different config)

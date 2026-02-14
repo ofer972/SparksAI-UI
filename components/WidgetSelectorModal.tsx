@@ -74,17 +74,20 @@ export default function WidgetSelectorModal({
  }
  return counts;
  });
- // Track selected insight types (one per type with filters)
+ // Track selected insight types (multiple instances per type, keyed by "typeId::index")
  const [insightTypeSelections, setInsightTypeSelections] = useState<Map<string, InsightTypeSelection>>(() => {
  const selections = new Map<string, InsightTypeSelection>();
  if (currentWidgets.length > 0) {
- // Extract insight type selections from current widgets
+ // Extract insight type selections from current widgets, using instance keys
+ const typeCounts = new Map<string, number>();
  currentWidgets
  .filter(w => w.widget_type === 'insight_type')
  .forEach(w => {
  const typeId = w.widget_id;
  if (typeId) {
- selections.set(typeId, {
+ const idx = typeCounts.get(typeId) || 0;
+ typeCounts.set(typeId, idx + 1);
+ selections.set(`${typeId}::${idx}`, {
  insightTypeId: typeId,
  filters: w.filters || {},
  });
@@ -120,7 +123,8 @@ export default function WidgetSelectorModal({
  if (wasJustOpened && onUpdateWidgets) {
  // Initialize counts based on current widgets on dashboard
  const reportCountsMap = new Map<string, number>();
- const insightTypeSelectionsMap = new Map<string, InsightTypeSelection>();
+    const insightTypeSelectionsMap = new Map<string, InsightTypeSelection>();
+    const insightTypeCounts = new Map<string, number>();
  const metricsSelectionsMap = new Map<string, MetricsSelection>();
 
  console.log('[WidgetSelectorModal] Initializing from currentWidgets:', {
@@ -133,14 +137,16 @@ export default function WidgetSelectorModal({
  currentWidgets.forEach(w => {
  if (w.widget_type === 'report') {
  reportCountsMap.set(w.widget_id, (reportCountsMap.get(w.widget_id) || 0) + 1);
- } else if (w.widget_type === 'insight_type') {
- const typeId = w.widget_id;
- if (typeId) {
- insightTypeSelectionsMap.set(typeId, {
- insightTypeId: typeId,
- filters: w.filters || {},
- });
- }
+          } else if (w.widget_type === 'insight_type') {
+            const typeId = w.widget_id;
+            if (typeId) {
+              const idx = insightTypeCounts.get(typeId) || 0;
+              insightTypeCounts.set(typeId, idx + 1);
+              insightTypeSelectionsMap.set(`${typeId}::${idx}`, {
+                insightTypeId: typeId,
+                filters: w.filters || {},
+              });
+            }
  } else if (w.widget_type === 'metrics' && w.metricsConfig) {
  console.log('[WidgetSelectorModal] Adding metrics widget to selections:', {
  widget_id: w.widget_id,
@@ -441,7 +447,7 @@ export default function WidgetSelectorModal({
  }
  });
  
- // Add insight types (one per type with filters)
+ // Add insight types (one per instance, multiple instances per type allowed)
  console.log('[WidgetSelectorModal] Current insightTypeSelections before adding:', {
  size: insightTypeSelections.size,
  entries: Array.from(insightTypeSelections.entries()),
