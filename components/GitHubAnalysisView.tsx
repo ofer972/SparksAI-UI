@@ -3,7 +3,25 @@
 import { useState, useMemo, useEffect } from 'react';
 import DORAAnalysisTab from './github/DORAAnalysisTab';
 import PRQualityMetricsTab from './github/PRQualityMetricsTab';
+import GitHubHelpDialog from './github/GitHubHelpDialog';
 import { useGitHubSettings } from '@/contexts/GitHubSettingsContext';
+
+const tabIdToHelpTopic = { 'pr-quality-metrics': 'pr-metrics' as const, 'dora-insights': 'dora-metrics' as const };
+
+function HelpIconButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      className="ml-1 p-0.5 rounded hover:bg-black/10 dark:hover:bg-white/10 text-content-tertiary hover:text-content-primary"
+      aria-label="Help"
+    >
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </button>
+  );
+}
 
 interface TabItem {
   id: string;
@@ -35,6 +53,7 @@ const allTabs: TabItem[] = [
 export default function GitHubAnalysisView() {
   const { settings } = useGitHubSettings();
   const [activeTab, setActiveTab] = useState('pr-quality-metrics');
+  const [helpTopic, setHelpTopic] = useState<'pr-metrics' | 'dora-metrics' | null>(null);
 
   // Filter tabs: always show PR Quality Metrics, only show DORA Metrics if deployments are enabled
   const tabs = useMemo(() => {
@@ -79,18 +98,25 @@ export default function GitHubAnalysisView() {
           <nav className={`grid ${tabs.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-1 md:hidden`}>
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id;
+              const topic = tabIdToHelpTopic[tab.id as keyof typeof tabIdToHelpTopic];
               return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`
-                    flex flex-col items-center justify-center px-2 py-2 text-xs font-medium rounded-t-lg border transition-colors
-                    ${isActive ? 'bg-surface text-brand border-x border-t border-outline-strong border-b-white border-b-surface -mb-px relative z-10' : 'bg-surface-elevated/50 text-content-tertiary border border-outline hover:bg-surface-secondary'}
-                  `}
-                >
-                  <span className="mb-1">{tab.icon}</span>
-                  <span className="text-center leading-tight">{tab.label}</span>
-                </button>
+                <div key={tab.id} className="relative flex">
+                  <button
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`
+                      flex flex-col items-center justify-center flex-1 px-2 py-2 text-xs font-medium rounded-t-lg border transition-colors
+                      ${isActive ? 'bg-surface text-brand border-x border-t border-outline-strong border-b-white border-b-surface -mb-px relative z-10' : 'bg-surface-elevated/50 text-content-tertiary border border-outline hover:bg-surface-secondary'}
+                    `}
+                  >
+                    <span className="mb-1">{tab.icon}</span>
+                    <span className="text-center leading-tight">{tab.label}</span>
+                  </button>
+                  {topic && (
+                    <span className="absolute top-1 right-1 z-20">
+                      <HelpIconButton onClick={() => setHelpTopic(topic)} />
+                    </span>
+                  )}
+                </div>
               );
             })}
           </nav>
@@ -99,6 +125,7 @@ export default function GitHubAnalysisView() {
           <nav className="hidden md:flex md:flex-nowrap gap-1 md:justify-start">
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id;
+              const topic = tabIdToHelpTopic[tab.id as keyof typeof tabIdToHelpTopic];
               return (
                 <button
                   key={tab.id}
@@ -110,6 +137,7 @@ export default function GitHubAnalysisView() {
                 >
                   <span className="mr-2">{tab.icon}</span>
                   {tab.label}
+                  {topic && <HelpIconButton onClick={() => setHelpTopic(topic)} />}
                 </button>
               );
             })}
@@ -123,6 +151,8 @@ export default function GitHubAnalysisView() {
           {renderTabContent()}
         </div>
       </div>
+
+      <GitHubHelpDialog isOpen={helpTopic !== null} onClose={() => setHelpTopic(null)} topic={helpTopic} />
     </div>
   );
 }
