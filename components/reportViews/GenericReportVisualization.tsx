@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import DataTable, { Column, SortConfig } from '@/components/DataTable';
 import { Chart } from 'react-chartjs-2';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
@@ -61,6 +61,10 @@ interface GenericReportVisualizationProps {
   onOpenAllInJira?: () => void;
   /** Initial sort when viewing report (e.g. saved default sort) */
   initialSortConfig?: SortConfig | null;
+  /** Called when a bar is clicked (report view drill-down). */
+  onBarClick?: (payload: { x_value: string | number }) => void;
+  /** Called when a pie slice is clicked (report view drill-down). */
+  onPieSliceClick?: (payload: { x_value: string | number; fieldName?: string }) => void;
 }
 
 export default function GenericReportVisualization({
@@ -76,11 +80,25 @@ export default function GenericReportVisualization({
   jiraUrl,
   onOpenAllInJira,
   initialSortConfig,
+  onBarClick,
+  onPieSliceClick,
 }: GenericReportVisualizationProps) {
   const [sortConfig, setSortConfig] = useState<SortConfig>(() =>
     initialSortConfig?.key ? { key: initialSortConfig.key, direction: initialSortConfig.direction } : { key: null, direction: 'asc' }
   );
   const [searchFilter, setSearchFilter] = useState('');
+  const barChartRef = useRef<any>(null);
+  const barContainerRef = useRef<HTMLDivElement>(null);
+  const [barChartSize, setBarChartSize] = useState({ width: 600, height: 400 });
+  useEffect(() => {
+    if (chartType !== 'bar_chart' || !barContainerRef.current) return;
+    const el = barContainerRef.current;
+    const setSize = () => setBarChartSize({ width: el.clientWidth || 600, height: el.clientHeight || 400 });
+    setSize();
+    const ro = new ResizeObserver(setSize);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [chartType]);
 
   useEffect(() => {
     if (initialSortConfig?.key) {
@@ -122,6 +140,22 @@ export default function GenericReportVisualization({
       return { key, direction: 'asc' };
     });
   }, []);
+
+  // Bar chart data and click handler - defined unconditionally so hook order is stable
+  const chartDataBar = chartType === 'bar_chart' && Array.isArray(data) ? data : [];
+  const labelsBar = useMemo(
+    () => chartDataBar.map((item: any) => item.x_value ?? item[xAxisField] ?? ''),
+    [chartDataBar, xAxisField]
+  );
+  const handleBarClick = useCallback(
+    (_event: unknown, elements: { index?: number }[]) => {
+      if (!onBarClick || !elements?.length || elements[0].index == null) return;
+      const index = elements[0].index;
+      const xVal = chartDataBar[index]?.x_value ?? chartDataBar[index]?.[xAxisField] ?? labelsBar[index];
+      if (xVal !== undefined && xVal !== null) onBarClick({ x_value: xVal });
+    },
+    [onBarClick, chartDataBar, xAxisField, labelsBar]
+  );
 
   // Table rendering
   if (chartType === 'table') {
@@ -194,8 +228,7 @@ export default function GenericReportVisualization({
 
   // Bar chart rendering
   if (chartType === 'bar_chart') {
-    const chartData = Array.isArray(data) ? data : [];
-    const hasData = !loading && !error && chartData.length > 0;
+    const hasData = !loading && !error && chartDataBar.length > 0;
 
     if (error) {
       return (
@@ -228,17 +261,24 @@ export default function GenericReportVisualization({
       <div className="flex flex-col h-full">
         <div className="flex items-center justify-between mb-4 pb-2 border-b border-outline">
           <p className="text-sm text-content-secondary">
-            {chartData.length} {chartData.length === 1 ? 'data point' : 'data points'}
+            {chartDataBar.length} {chartDataBar.length === 1 ? 'data point' : 'data points'}
           </p>
         </div>
-        <div className="flex-1 min-h-0" style={{ height: '400px' }}>
+        <div
+          ref={barContainerRef}
+          className="flex-1 min-h-0"
+          style={{ height: '400px', cursor: onBarClick ? 'pointer' : 'default', minHeight: 0 }}
+        >
           <Chart
+            ref={barChartRef}
             type="bar"
+            width={barChartSize.width}
+            height={barChartSize.height}
             data={{
-              labels: chartData.map(item => item.x_value || item[xAxisField] || ''),
+              labels: labelsBar,
               datasets: [{
                 label: yAxisField === 'count' ? 'Count' : 'Value',
-                data: chartData.map(item => item.y_value || item[yAxisField] || 0),
+                data: chartDataBar.map((item: any) => item.y_value || item[yAxisField] || 0),
                 backgroundColor: '#3b82f6',
                 borderColor: '#2563eb',
                 borderWidth: 1,
@@ -247,6 +287,7 @@ export default function GenericReportVisualization({
             options={{
               responsive: true,
               maintainAspectRatio: false,
+              onClick: onBarClick ? handleBarClick : undefined,
               plugins: {
                 legend: {
                   display: false
@@ -382,6 +423,20 @@ export default function GenericReportVisualization({
                       text: { fill: isDark ? '#cbd5e1' : '#374151' }
                     }}
                     enableArcLabels={false}
+                    isInteractive={Boolean(onPieSliceClick)}
+                    onClick={
+                      onPieSliceClick
+                        ? (datum: { id?: string | number; label?: string | number }) => {
+                            const xVal = datum?.id ?? datum?.label;
+                            if (xVal != null) {
+                              onPieSliceClick({
+                                x_value: typeof xVal === 'string' ? xVal : String(xVal),
+                                fieldName: fieldName === 'default' ? undefined : fieldName,
+                              });
+                            }
+                          }
+                        : undefined
+                    }
                     tooltip={({ datum }) => {
                       const percentage = totalCount > 0 ? ((datum.value / totalCount) * 100).toFixed(1) : '0.0';
                       return (

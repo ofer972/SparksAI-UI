@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { Column } from '@/components/DataTable';
 import { Chart as ChartJS } from 'chart.js';
 import { registerChartComponents } from '@/utils/chartRegistration';
@@ -17,6 +17,7 @@ import { ApiService } from '@/lib/api';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 import { getPITerminology } from '@/lib/piTerminology';
 import GenericReportVisualization from './GenericReportVisualization';
+import IssuesDialog from './IssuesDialog';
 
 registerChartComponents(false);
 ChartJS.register(ChartDataLabels);
@@ -80,7 +81,9 @@ export default function GenericReportView({
     values: string[] | string;
   }
   const [buildReportFilters, setBuildReportFilters] = useState<BuildReportFilter[]>([]);
-  
+  const [isSegmentDialogOpen, setIsSegmentDialogOpen] = useState(false);
+  const [selectedSegment, setSelectedSegment] = useState<{ x_value: string | number; fieldName?: string } | null>(null);
+
   // Track if filters have been initialized to prevent infinite loops and preserve user changes
   const filtersInitializedRef = React.useRef(false);
   const reportIdRef = React.useRef<string | undefined>(reportId);
@@ -367,6 +370,46 @@ export default function GenericReportView({
 
     return badges;
   }, [teamName, isGroup, piValue, pinnedFilters, buildReportFilters, filters?.filter_overrides, filterableFields]);
+
+  // Columns for segment issues dialog (order: issue_key, issue_type, status, summary, created_at, updated_at, assignee_name)
+  const segmentIssueColumns: Column<Record<string, unknown>>[] = useMemo(() => [
+    { key: 'issue_key', label: 'Issue key', width: '12%' },
+    { key: 'issue_type', label: 'Issue type', width: '12%' },
+    { key: 'status', label: 'Status', width: '12%' },
+    { key: 'summary', label: 'Summary', align: 'left', maxLength: 80 },
+    { key: 'created_at', label: 'Created at', width: '12%' },
+    { key: 'updated_at', label: 'Updated at', width: '12%' },
+    { key: 'assignee_name', label: 'Assignee', width: '12%' },
+  ], []);
+
+  const fetchSegmentIssuesFunction = useCallback(() => {
+    if (!reportId || !selectedSegment) {
+      return Promise.resolve({ success: false, message: 'Missing report or segment' });
+    }
+    const segment = {
+      x_value: selectedSegment.x_value,
+      ...(selectedSegment.fieldName != null && { group_by_field: selectedSegment.fieldName }),
+    };
+    return apiService.getBuildReportIssues(reportId, filters || {}, segment);
+  }, [reportId, selectedSegment, filters, apiService]);
+
+  const handleBarClick = useCallback((payload: { x_value: string | number }) => {
+    setSelectedSegment({ x_value: payload.x_value });
+    setIsSegmentDialogOpen(true);
+  }, []);
+
+  const handlePieSliceClick = useCallback((payload: { x_value: string | number; fieldName?: string }) => {
+    setSelectedSegment({ x_value: payload.x_value, fieldName: payload.fieldName });
+    setIsSegmentDialogOpen(true);
+  }, []);
+
+  const segmentDialogTitle = useMemo(() => {
+    if (!selectedSegment) return 'Issues';
+    const label = String(selectedSegment.x_value);
+    return selectedSegment.fieldName
+      ? `Issues: ${label} (${selectedSegment.fieldName.replace(/_/g, ' ')})`
+      : `Issues: ${label}`;
+  }, [selectedSegment]);
 
   // Get filter field info helper
   const getFilterFieldInfo = React.useCallback((fieldName: string): FilterableField | undefined => {
@@ -656,7 +699,24 @@ export default function GenericReportView({
         jiraUrl={chartType === 'table' ? jiraUrl : undefined}
         onOpenAllInJira={chartType === 'table' ? handleOpenAllInJira : undefined}
         initialSortConfig={chartType === 'table' && buildConfig?.default_sort?.key ? { key: buildConfig.default_sort.key, direction: (buildConfig.default_sort.direction === 'desc' ? 'desc' : 'asc') } : undefined}
+        onBarClick={chartType === 'bar_chart' ? handleBarClick : undefined}
+        onPieSliceClick={chartType === 'pie_chart' ? handlePieSliceClick : undefined}
       />
+      {chartType === 'bar_chart' || chartType === 'pie_chart' ? (
+        <IssuesDialog<Record<string, unknown>>
+          isOpen={isSegmentDialogOpen}
+          onClose={() => {
+            setIsSegmentDialogOpen(false);
+            setSelectedSegment(null);
+          }}
+          title={segmentDialogTitle}
+          columns={segmentIssueColumns}
+          fetchFunction={fetchSegmentIssuesFunction}
+          jiraUrl={jiraUrl}
+          emptyMessage="No issues found for the selected segment."
+          rowKey={(row, index) => `${String((row as any).issue_key ?? '')}-${index}`}
+        />
+      ) : null}
     </ReportCard>
   );
 }

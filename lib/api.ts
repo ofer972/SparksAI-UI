@@ -493,6 +493,35 @@ export class ApiService {
     };
   }
 
+  /**
+   * Fetch issues for a chart segment (bar or pie slice) of a custom build report.
+   * Used by GenericReportView when user clicks a bar or pie slice.
+   */
+  async getBuildReportIssues(
+    reportId: string,
+    filters: Record<string, unknown>,
+    segment: { x_value: string | number; group_by_field?: string }
+  ): Promise<{ success: boolean; data?: { issues: Record<string, unknown>[] }; message?: string }> {
+    const url = buildBackendUrl('/reports/build/issues');
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ report_id: reportId, filters, segment }),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result?.detail || result?.message || `Failed to fetch issues: ${response.statusText}`,
+      };
+    }
+    return {
+      success: Boolean(result.success),
+      data: result.data,
+      message: result.message,
+    };
+  }
+
   // Custom Reports API
   async saveCustomReport(config: {
     report_name: string;
