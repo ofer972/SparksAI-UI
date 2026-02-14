@@ -84,6 +84,10 @@ export default function BuildReportTab() {
   const [selectedTeamGroup, setSelectedTeamGroup] = useState<string | null>(null);
   const [selectedTeamGroupName, setSelectedTeamGroupName] = useState<string>('');
   const [isGroup, setIsGroup] = useState<boolean>(false);
+
+  // Default sort (table reports only, saved with report)
+  const [defaultSortColumn, setDefaultSortColumn] = useState<string | null>(null);
+  const [defaultSortDirection, setDefaultSortDirection] = useState<'asc' | 'desc'>('asc');
   const [availablePIs, setAvailablePIs] = useState<Array<{ pi_name: string }>>([]);
   const [loadingPIs, setLoadingPIs] = useState(true);
 
@@ -552,6 +556,16 @@ export default function BuildReportTab() {
       setFilters(regularFilters);
       setSelectedFilterFields(regularFilters.map((f: Filter) => f.field));
 
+      // Load default sort (table reports)
+      const ds = buildConfig.default_sort;
+      if (ds && typeof ds === 'object' && ds.key) {
+        setDefaultSortColumn(ds.key);
+        setDefaultSortDirection((ds.direction === 'desc' ? 'desc' : 'asc'));
+      } else {
+        setDefaultSortColumn(null);
+        setDefaultSortDirection('asc');
+      }
+
       // Fetch dropdown values for any dropdown-type filters so the filter dropdowns show options in preview.
       // We only populate dropdownValues when adding a filter via handleFilterFieldToggle; when loading a report
       // we set filters/selectedFilterFields directly, so options were never fetched. Custom dashboard works
@@ -608,6 +622,8 @@ export default function BuildReportTab() {
     setSelectedTeamGroup(null);
     setSelectedTeamGroupName('');
     setIsGroup(false);
+    setDefaultSortColumn(null);
+    setDefaultSortDirection('asc');
     setReportData([]);
     setError(null);
   };
@@ -640,7 +656,7 @@ export default function BuildReportTab() {
       });
     }
     
-    const config = {
+    const config: Record<string, unknown> = {
       report_name: name,
       description: description || undefined,
       report_type: reportType,
@@ -651,8 +667,14 @@ export default function BuildReportTab() {
       y_axis: reportType === 'bar_chart' ? yAxis : undefined,
       filters: filtersToSave,
       team_name: selectedTeamGroupName || undefined,
-      isGroup: isGroup
+      isGroup: isGroup,
     };
+    // Always send default_sort for table reports so it is persisted (omit for non-table)
+    if (reportType === 'table') {
+      config.default_sort = defaultSortColumn
+        ? { key: defaultSortColumn, direction: defaultSortDirection }
+        : null;
+    }
     
     if (selectedReportId && currentReportDefinition) {
       // Update existing report
@@ -861,6 +883,37 @@ export default function BuildReportTab() {
           </button>
         </div>
 
+        {/* Default sort (table only) */}
+        {reportType === 'table' && (
+          <div className="flex-shrink-0 flex items-center gap-3">
+            <label className="text-sm font-medium text-content-primary whitespace-nowrap">
+              Default sort:
+            </label>
+            <select
+              value={defaultSortColumn ?? ''}
+              onChange={(e) => setDefaultSortColumn(e.target.value || null)}
+              className="w-40 px-2 py-1.5 border border-outline rounded-md text-sm bg-surface text-content-primary focus:outline-none focus:ring-2 focus:ring-brand"
+            >
+              <option value="">None</option>
+              {displayableFields
+                .filter((f) => selectedFields.includes(f.column_name))
+                .map((f) => (
+                  <option key={f.column_name} value={f.column_name}>
+                    {f.display_name}
+                  </option>
+                ))}
+            </select>
+            <select
+              value={defaultSortDirection}
+              onChange={(e) => setDefaultSortDirection(e.target.value as 'asc' | 'desc')}
+              disabled={!defaultSortColumn}
+              className="w-24 px-2 py-1.5 border border-outline rounded-md text-sm bg-surface text-content-primary focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-50"
+            >
+              <option value="asc">Asc</option>
+              <option value="desc">Desc</option>
+            </select>
+          </div>
+        )}
 
         {/* Bar Chart Axis Selectors */}
         {reportType === 'bar_chart' && (
@@ -1090,6 +1143,7 @@ export default function BuildReportTab() {
               isDark={isDark}
               jiraUrl={reportType === 'table' ? effectiveJiraUrl : undefined}
               onOpenAllInJira={reportType === 'table' ? handleOpenAllInJira : undefined}
+              initialSortConfig={reportType === 'table' && defaultSortColumn ? { key: defaultSortColumn, direction: defaultSortDirection } : undefined}
             />
           ) : (
             <div className="flex items-center justify-center h-64">

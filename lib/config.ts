@@ -506,6 +506,7 @@ export interface ReportDefinition {
       }>;
       team_name?: string;
       isGroup?: boolean;
+      default_sort?: { key: string; direction?: 'asc' | 'desc' };
     };
   };
 }

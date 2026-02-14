@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import DataTable, { Column, SortConfig } from '@/components/DataTable';
 import { Chart } from 'react-chartjs-2';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
@@ -59,6 +59,8 @@ interface GenericReportVisualizationProps {
   // Optional: Jira URL for table "Open all in Jira" button
   jiraUrl?: string;
   onOpenAllInJira?: () => void;
+  /** Initial sort when viewing report (e.g. saved default sort) */
+  initialSortConfig?: SortConfig | null;
 }
 
 export default function GenericReportVisualization({
@@ -73,9 +75,19 @@ export default function GenericReportVisualization({
   isDark = false,
   jiraUrl,
   onOpenAllInJira,
+  initialSortConfig,
 }: GenericReportVisualizationProps) {
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState<SortConfig>(() =>
+    initialSortConfig?.key ? { key: initialSortConfig.key, direction: initialSortConfig.direction } : { key: null, direction: 'asc' }
+  );
   const [searchFilter, setSearchFilter] = useState('');
+
+  useEffect(() => {
+    if (initialSortConfig?.key) {
+      setSortConfig({ key: initialSortConfig.key, direction: initialSortConfig.direction });
+    }
+    // Do not reset to null when initialSortConfig is undefined - preserves saved default sort and avoids clearing when prop is temporarily missing (e.g. dashboard load).
+  }, [initialSortConfig?.key, initialSortConfig?.direction]);
 
   const tableData = useMemo(
     () => (chartType === 'table' && Array.isArray(data) ? data : []),

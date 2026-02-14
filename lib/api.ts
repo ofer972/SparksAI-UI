@@ -508,6 +508,7 @@ export class ApiService {
     }>;
     team_name?: string;
     isGroup?: boolean;
+    default_sort?: { key: string; direction: 'asc' | 'desc' } | null;
   }): Promise<ReportDefinition> {
     const url = buildBackendUrl('/reports/build/save');
     const response = await fetch(url, {
@@ -581,6 +582,7 @@ export class ApiService {
       }>;
       team_name?: string;
       isGroup?: boolean;
+      default_sort?: { key: string; direction: 'asc' | 'desc' } | null;
     }
   ): Promise<ReportDefinition> {
     const url = buildBackendUrl(`/reports/custom/${reportId}`);

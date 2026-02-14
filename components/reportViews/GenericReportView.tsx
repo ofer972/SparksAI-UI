@@ -655,6 +655,7 @@ export default function GenericReportView({
         isDark={isDark}
         jiraUrl={chartType === 'table' ? jiraUrl : undefined}
         onOpenAllInJira={chartType === 'table' ? handleOpenAllInJira : undefined}
+        initialSortConfig={chartType === 'table' && buildConfig?.default_sort?.key ? { key: buildConfig.default_sort.key, direction: (buildConfig.default_sort.direction === 'desc' ? 'desc' : 'asc') } : undefined}
       />
     </ReportCard>
   );
