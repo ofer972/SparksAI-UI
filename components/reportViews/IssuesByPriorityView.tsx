@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { ResponsivePie } from '@nivo/pie';
 import { ResponsiveBar } from '@nivo/bar';
 import type { IssueByPriority } from '@/lib/config';
@@ -141,6 +141,15 @@ const teamName = (filters?.team_name as string) ?? '';
   const isGroup = (filters?.isGroup as boolean) ?? false;
   const months = (filters?.months as number) ?? 3;
  const [viewType, setViewType] = useState<'pie' | 'bar'>('pie');
+ const [priorityDropdownOpen, setPriorityDropdownOpen] = useState(false);
+ const priorityDropdownRef = useRef<HTMLDivElement>(null);
+
+ // Selected priorities (empty/undefined = show all)
+ const selectedPriorities = useMemo(() => {
+ const p = filters?.priorities;
+ if (!Array.isArray(p) || p.length === 0) return [];
+ return p;
+ }, [filters?.priorities]);
 
  // Dark mode detection
  const [isDark, setIsDark] = useState(false);
@@ -151,7 +160,17 @@ const teamName = (filters?.team_name as string) ?? '';
  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
  return () => observer.disconnect();
  }, []);
- 
+
+ useEffect(() => {
+ const handleClickOutside = (e: MouseEvent) => {
+ if (priorityDropdownRef.current && !priorityDropdownRef.current.contains(e.target as Node)) {
+ setPriorityDropdownOpen(false);
+ }
+ };
+ if (priorityDropdownOpen) document.addEventListener('mousedown', handleClickOutside);
+ return () => document.removeEventListener('mousedown', handleClickOutside);
+ }, [priorityDropdownOpen]);
+
  const statusCategories = useMemo(() => {
  if (filters.status_category === undefined || filters.status_category === null) {
  return ['To Do', 'In Progress']; // Default: exclude Done
@@ -198,10 +217,28 @@ const teamName = (filters?.team_name as string) ?? '';
  return [];
  }, [meta]);
 
+ // Unique priorities from current data (for filter options)
+ const availablePriorities = useMemo(() => {
+ const summary = data?.priority_summary;
+ if (!Array.isArray(summary)) return [];
+ const set = new Set<string>();
+ summary.forEach((item) => {
+ if (item.priority) set.add(item.priority);
+ });
+ return Array.from(set).sort();
+ }, [data?.priority_summary]);
+
+ // Filter raw summary by selected priorities (empty selection = all)
+ const filteredPrioritySummaryRaw = useMemo(() => {
+ const summary = data?.priority_summary;
+ if (!Array.isArray(summary)) return [];
+ if (selectedPriorities.length === 0) return summary;
+ return summary.filter((item) => item.priority && selectedPriorities.includes(item.priority));
+ }, [data?.priority_summary, selectedPriorities]);
 
  const prioritySummary = useMemo(
- () => normalizePrioritySummary(data?.priority_summary),
- [data?.priority_summary]
+ () => normalizePrioritySummary(filteredPrioritySummaryRaw),
+ [filteredPrioritySummaryRaw]
  );
  const totalCount = useMemo(
  () => prioritySummary.reduce((sum, item) => sum + (item.issue_count ?? 0), 0),
@@ -219,8 +256,8 @@ const teamName = (filters?.team_name as string) ?? '';
 
  const barChartData = useMemo(() => {
  if (viewType !== 'bar') return null;
- return buildBarChartData(data?.priority_summary);
- }, [viewType, data?.priority_summary]);
+ return buildBarChartData(filteredPrioritySummaryRaw);
+ }, [viewType, filteredPrioritySummaryRaw]);
 
  const filtersContent = (
  <ReportFiltersRow>
@@ -310,6 +347,74 @@ const teamName = (filters?.team_name as string) ?? '';
  />
  </ReportFilterField>
 
+ <ReportFilterField label="Priority">
+ <div className="relative" ref={priorityDropdownRef}>
+ <button
+ type="button"
+ onClick={() => setPriorityDropdownOpen((open) => !open)}
+ className="w-full px-2 py-1 text-left border border-outline-strong rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand bg-surface hover:bg-surface-elevated transition-colors flex items-center justify-between min-w-[140px]"
+ >
+ <span className={`truncate ${selectedPriorities.length === 0 ? 'text-content-tertiary' : 'text-content-primary'}`}>
+ {selectedPriorities.length === 0
+ ? 'All priorities'
+ : selectedPriorities.length === availablePriorities.length
+ ? 'All priorities'
+ : selectedPriorities.length <= 2
+ ? selectedPriorities.join(', ')
+ : `${selectedPriorities.length} selected`}
+ </span>
+ <svg
+ className={`w-4 h-4 text-content-muted flex-shrink-0 ml-2 ${priorityDropdownOpen ? 'rotate-180' : ''}`}
+ fill="none"
+ stroke="currentColor"
+ viewBox="0 0 24 24"
+ >
+ <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+ </svg>
+ </button>
+ {priorityDropdownOpen && (
+ <>
+ <div className="fixed inset-0 z-40" onClick={() => setPriorityDropdownOpen(false)} aria-hidden="true" />
+ <div className="absolute z-50 w-full mt-1 bg-surface border border-outline rounded-lg shadow-lg max-h-48 overflow-auto">
+ {availablePriorities.length === 0 ? (
+ <div className="px-3 py-2 text-sm text-content-tertiary">No priorities in data</div>
+ ) : (
+ availablePriorities.map((priority) => {
+ const isChecked =
+ selectedPriorities.length === 0 || selectedPriorities.includes(priority);
+ return (
+ <label
+ key={priority}
+ className="flex items-center px-3 py-2 hover:bg-surface-elevated cursor-pointer transition-colors"
+ >
+ <input
+ type="checkbox"
+ checked={isChecked}
+ onChange={() => {
+ const next =
+ isChecked
+ ? (selectedPriorities.length === 0 ? availablePriorities : selectedPriorities).filter((p) => p !== priority)
+ : [...(selectedPriorities.length === 0 ? availablePriorities : selectedPriorities), priority];
+ const allSelected = next.length === availablePriorities.length;
+ if (next.length === 0 || allSelected) {
+ setFilters?.((prev) => ({ ...prev, priorities: [] }));
+ } else {
+ setFilters?.((prev) => ({ ...prev, priorities: next }));
+ }
+ }}
+ className="h-4 w-4 text-brand focus:ring-brand border-outline rounded"
+ />
+ <span className="ml-3 text-sm text-content-primary">{priority}</span>
+ </label>
+ );
+ })
+ )}
+ </div>
+ </>
+ )}
+ </div>
+ </ReportFilterField>
+
  <ReportFilterField label="Chart Type">
  <select
  value={viewType}
@@ -362,9 +467,18 @@ const teamName = (filters?.team_name as string) ?? '';
  isPinned: pinnedFilters.includes('status_category'),
  });
  }
+
+ if (selectedPriorities.length > 0 && availablePriorities.length > 0 && selectedPriorities.length < availablePriorities.length) {
+ badges.push({
+ label: 'Priority',
+ value: selectedPriorities.length <= 2 ? selectedPriorities.join(', ') : `${selectedPriorities.length} selected`,
+ filterKey: 'priorities',
+ isPinned: pinnedFilters.includes('priorities'),
+ });
+ }
  
  return badges;
- }, [teamName, isGroup, issueType, months, filters.status_category, statusCategoryOptions.length, pinnedFilters]);
+ }, [teamName, isGroup, issueType, months, filters.status_category, statusCategoryOptions.length, pinnedFilters, selectedPriorities, availablePriorities.length]);
 
  return (
  <ReportCard
