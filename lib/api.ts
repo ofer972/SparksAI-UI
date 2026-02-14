@@ -3477,7 +3477,8 @@ export async function updateUserPreferences(userId: string, preferences: UpdateP
 
 // Custom Dashboards API
 import type { 
-  CustomDashboard, 
+  CustomDashboard,
+  PublicDashboard,
   DashboardWidget, 
   CreateDashboardRequest, 
   UpdateDashboardRequest,
@@ -3525,6 +3526,22 @@ export async function deleteDashboard(userId: string, dashboardId: string): Prom
     method: 'DELETE',
   });
   if (!res.ok) throw new Error(await res.text() || 'Failed to delete dashboard');
+}
+
+// Public Dashboards API
+
+export async function getPublicDashboards(): Promise<PublicDashboard[]> {
+  const res = await authFetch(buildUserServiceUrl('/dashboards/public'));
+  if (!res.ok) throw new Error('Failed to fetch public dashboards');
+  const data = await res.json();
+  return data.data || [];
+}
+
+export async function getPublicDashboard(dashboardId: string): Promise<CustomDashboard> {
+  const res = await authFetch(buildUserServiceUrl(`/dashboards/public/${dashboardId}`));
+  if (!res.ok) throw new Error('Failed to fetch public dashboard');
+  const data = await res.json();
+  return data.data || data;
 }
 
 // Widget operations are now handled through dashboard updates

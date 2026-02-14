@@ -73,6 +73,10 @@ interface TopBarProps {
   currentUser: any;
   onLogout: () => void;
   onNavigateToSettings?: () => void;
+  
+  // Public dashboard toggle (custom-dashboard-editor only)
+  isPublic?: boolean;
+  onTogglePublic?: () => void;
 }
 
 export default function TopBar({
@@ -90,6 +94,8 @@ export default function TopBar({
   currentUser,
   onLogout,
   onNavigateToSettings,
+  isPublic,
+  onTogglePublic,
 }: TopBarProps) {
   const [filtersCollapsed, setFiltersCollapsed] = useState(true);
   
@@ -202,6 +208,8 @@ export default function TopBar({
                 filterBadges={filterBadges}
                 hasFilters={hasFilters}
                 onNavigateToSettings={onNavigateToSettings}
+                isPublic={isPublic}
+                onTogglePublic={onTogglePublic}
               />
             ) : (
               <InsightsTopBarContent

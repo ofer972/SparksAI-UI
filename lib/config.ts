@@ -586,6 +586,17 @@ export interface CustomDashboard {
   name: string;
   description?: string;
   layout_config?: DashboardLayoutConfig; // Now contains everything
+  is_public?: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PublicDashboard {
+  id: string;
+  user_id: string;
+  name: string;
+  description?: string;
+  owner_email: string;
   created_at: string;
   updated_at: string;
 }
@@ -600,6 +611,7 @@ export interface UpdateDashboardRequest {
   name?: string;
   description?: string;
   layout_config?: DashboardLayoutConfig;
+  is_public?: boolean;
 }
 
 // Removed - widgets are now managed through dashboard updates

@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { getPITerminology } from '@/lib/piTerminology';
-import { ApiService } from '@/lib/api';
+import { ApiService, getPublicDashboards } from '@/lib/api';
 import { configCache } from '@/lib/configCache';
+import type { PublicDashboard } from '@/lib/config';
 
 export interface DashboardTemplate {
-  id: 'team' | 'pi' | 'blank';
+  id: 'team' | 'pi' | 'blank' | 'public';
   name: string;
   description: string;
   icon: React.ReactNode;
@@ -20,7 +21,7 @@ export interface DashboardTemplate {
 interface DashboardTemplateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectTemplate: (templateId: 'team' | 'pi' | 'blank', name: string, description: string) => void;
+  onSelectTemplate: (templateId: 'team' | 'pi' | 'blank' | 'public', name: string, description: string, sourceDashboardId?: string) => void;
 }
 
 // Fallback names when API data is not available
@@ -45,12 +46,22 @@ export default function DashboardTemplateModal({
   onClose, 
   onSelectTemplate 
 }: DashboardTemplateModalProps) {
-  const [selectedTemplate, setSelectedTemplate] = useState<'team' | 'pi' | 'blank'>('blank');
+  const [selectedTemplate, setSelectedTemplate] = useState<'team' | 'pi' | 'blank' | 'public'>('blank');
   const [dashboardName, setDashboardName] = useState('');
   const [dashboardDescription, setDashboardDescription] = useState('');
-  const [step, setStep] = useState<'template' | 'details'>('template');
+  const [step, setStep] = useState<'template' | 'browse' | 'details'>('template');
   const [teamReportNames, setTeamReportNames] = useState<string[]>([]);
   const [piReportNames, setPiReportNames] = useState<string[]>([]);
+
+  // Public dashboard browser state
+  const [publicDashboards, setPublicDashboards] = useState<PublicDashboard[]>([]);
+  const [loadingPublic, setLoadingPublic] = useState(false);
+  const [selectedEmail, setSelectedEmail] = useState('');
+  const [selectedPublicDashboardId, setSelectedPublicDashboardId] = useState('');
+  const [publicSearchQuery, setPublicSearchQuery] = useState('');
+  const [emailInputValue, setEmailInputValue] = useState('');
+  const [emailDropdownOpen, setEmailDropdownOpen] = useState(false);
+  const emailComboRef = React.useRef<HTMLDivElement>(null);
 
   // Fetch actual report names from dashboard config when modal opens
   useEffect(() => {
@@ -112,6 +123,42 @@ export default function DashboardTemplateModal({
     };
   }, [isOpen]);
 
+  // Fetch public dashboards when entering browse step
+  useEffect(() => {
+    if (step !== 'browse') return;
+    let cancelled = false;
+    const loadPublic = async () => {
+      setLoadingPublic(true);
+      try {
+        const data = await getPublicDashboards();
+        if (!cancelled) {
+          setPublicDashboards(data);
+        }
+      } catch (err) {
+        console.error('[DashboardTemplateModal] Failed to load public dashboards:', err);
+        if (!cancelled) {
+          setPublicDashboards([]);
+        }
+      } finally {
+        if (!cancelled) setLoadingPublic(false);
+      }
+    };
+    loadPublic();
+    return () => { cancelled = true; };
+  }, [step]);
+
+  // Close email dropdown on click outside
+  React.useEffect(() => {
+    if (!emailDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (emailComboRef.current && !emailComboRef.current.contains(e.target as Node)) {
+        setEmailDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [emailDropdownOpen]);
+
   const templates: DashboardTemplate[] = [
     {
       id: 'blank',
@@ -162,14 +209,60 @@ export default function DashboardTemplateModal({
       },
       color: 'from-purple-500 to-pink-600',
     },
+    {
+      id: 'public',
+      name: 'From Public Dashboard',
+      description: 'Clone a dashboard shared by another user as your starting point',
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
+        </svg>
+      ),
+      preview: {
+        title: 'How it works',
+        items: [
+          'Browse dashboards shared by others',
+          'Filter by user email',
+          'Clone layout and widgets',
+        ],
+      },
+      color: 'from-emerald-500 to-teal-600',
+    },
   ];
+
+  // Derived data for public dashboard browser
+  const uniqueEmails = Array.from(new Set(publicDashboards.map(d => d.owner_email))).sort();
+  const filteredEmails = emailInputValue
+    ? uniqueEmails.filter(e => e.toLowerCase().includes(emailInputValue.toLowerCase()))
+    : uniqueEmails;
+  const filteredPublicDashboards = publicDashboards.filter(d => {
+    const matchesEmail = !selectedEmail || d.owner_email === selectedEmail;
+    const matchesSearch = !publicSearchQuery || 
+      d.name.toLowerCase().includes(publicSearchQuery.toLowerCase()) ||
+      (d.description && d.description.toLowerCase().includes(publicSearchQuery.toLowerCase())) ||
+      d.owner_email.toLowerCase().includes(publicSearchQuery.toLowerCase());
+    return matchesEmail && matchesSearch;
+  });
 
   const handleContinue = () => {
     if (step === 'template') {
-      setStep('details');
+      if (selectedTemplate === 'public') {
+        setStep('browse');
+      } else {
+        setStep('details');
+      }
+    } else if (step === 'browse') {
+      if (selectedPublicDashboardId) {
+        // Pre-fill the name from the selected dashboard
+        const selected = publicDashboards.find(d => d.id === selectedPublicDashboardId);
+        if (selected && !dashboardName) {
+          setDashboardName(`${selected.name} (copy)`);
+        }
+        setStep('details');
+      }
     } else {
       if (dashboardName.trim()) {
-        onSelectTemplate(selectedTemplate, dashboardName, dashboardDescription);
+        onSelectTemplate(selectedTemplate, dashboardName, dashboardDescription, selectedPublicDashboardId || undefined);
         handleClose();
       }
     }
@@ -177,6 +270,12 @@ export default function DashboardTemplateModal({
 
   const handleBack = () => {
     if (step === 'details') {
+      if (selectedTemplate === 'public') {
+        setStep('browse');
+      } else {
+        setStep('template');
+      }
+    } else if (step === 'browse') {
       setStep('template');
     }
   };
@@ -186,8 +285,23 @@ export default function DashboardTemplateModal({
     setSelectedTemplate('blank');
     setDashboardName('');
     setDashboardDescription('');
+    setSelectedEmail('');
+    setSelectedPublicDashboardId('');
+    setPublicSearchQuery('');
+    setPublicDashboards([]);
+    setEmailInputValue('');
+    setEmailDropdownOpen(false);
     onClose();
   };
+
+  const getStepIndex = () => {
+    if (step === 'template') return 0;
+    if (step === 'browse') return 1;
+    if (step === 'details') return selectedTemplate === 'public' ? 2 : 1;
+    return 0;
+  };
+
+  const totalSteps = selectedTemplate === 'public' ? 3 : 2;
 
   if (!isOpen) return null;
 
@@ -209,6 +323,8 @@ export default function DashboardTemplateModal({
               <p className="text-sm text-content-secondary mt-1">
                 {step === 'template' 
                   ? 'Choose a template or start from scratch' 
+                  : step === 'browse'
+                  ? 'Select a public dashboard to use as a template'
                   : 'Enter dashboard details'}
               </p>
             </div>
@@ -224,8 +340,9 @@ export default function DashboardTemplateModal({
 
           {/* Progress indicator */}
           <div className="flex items-center gap-2 mt-4">
-            <div className={`flex-1 h-1 rounded-full ${step === 'template' ? 'bg-brand' : 'bg-brand'}`} />
-            <div className={`flex-1 h-1 rounded-full ${step === 'details' ? 'bg-brand' : 'bg-outline'}`} />
+            {Array.from({ length: totalSteps }, (_, i) => (
+              <div key={i} className={`flex-1 h-1 rounded-full ${i <= getStepIndex() ? 'bg-brand' : 'bg-outline'}`} />
+            ))}
           </div>
         </div>
 
@@ -242,7 +359,7 @@ export default function DashboardTemplateModal({
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-6">
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {templates.map((template) => (
                   <button
                     key={template.id}
@@ -300,6 +417,153 @@ export default function DashboardTemplateModal({
                 ))}
               </div>
             </div>
+          ) : step === 'browse' ? (
+            /* Public dashboard browser */
+            <div>
+              <div className="text-center mb-6">
+                <h3 className="text-lg font-semibold text-content-primary mb-2">
+                  Browse Public Dashboards
+                </h3>
+                <p className="text-sm text-content-secondary">
+                  Select a dashboard to clone as your starting point
+                </p>
+              </div>
+
+              {/* Filters row */}
+              <div className="flex items-center gap-4 mb-6">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={publicSearchQuery}
+                    onChange={(e) => setPublicSearchQuery(e.target.value)}
+                    placeholder="Search dashboards..."
+                    className="w-full px-4 py-2.5 bg-surface-elevated border-2 border-outline rounded-xl focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand text-sm text-content-primary placeholder-content-muted transition-all"
+                  />
+                </div>
+                <div className="min-w-[260px] relative" ref={emailComboRef}>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={selectedEmail ? selectedEmail : emailInputValue}
+                      onChange={(e) => {
+                        setEmailInputValue(e.target.value);
+                        if (selectedEmail) {
+                          setSelectedEmail('');
+                          setSelectedPublicDashboardId('');
+                        }
+                        setEmailDropdownOpen(true);
+                      }}
+                      onFocus={() => setEmailDropdownOpen(true)}
+                      placeholder="Filter by user email..."
+                      className={`w-full pl-4 pr-9 py-2.5 bg-surface-elevated border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand text-sm transition-all ${
+                        selectedEmail ? 'border-brand text-content-primary' : 'border-outline text-content-primary placeholder-content-muted'
+                      }`}
+                    />
+                    {/* Clear / chevron button */}
+                    {selectedEmail ? (
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedEmail(''); setEmailInputValue(''); setSelectedPublicDashboardId(''); }}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-surface text-content-muted hover:text-content-primary transition-colors"
+                        aria-label="Clear email filter"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    ) : (
+                      <div className="absolute right-2.5 top-1/2 -translate-y-1/2 text-content-muted pointer-events-none">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  {/* Dropdown list */}
+                  {emailDropdownOpen && (
+                    <div className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto bg-surface-elevated border-2 border-outline rounded-xl shadow-lg">
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedEmail(''); setEmailInputValue(''); setSelectedPublicDashboardId(''); setEmailDropdownOpen(false); }}
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                          !selectedEmail ? 'text-brand font-medium bg-brand/5' : 'text-content-secondary hover:bg-surface-elevated hover:text-content-primary'
+                        }`}
+                      >
+                        All users
+                      </button>
+                      {filteredEmails.length === 0 ? (
+                        <div className="px-4 py-2 text-xs text-content-muted italic">No matching users</div>
+                      ) : (
+                        filteredEmails.map(email => (
+                          <button
+                            key={email}
+                            type="button"
+                            onClick={() => { setSelectedEmail(email); setEmailInputValue(''); setSelectedPublicDashboardId(''); setEmailDropdownOpen(false); }}
+                            className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                              selectedEmail === email
+                                ? 'text-brand font-medium bg-brand/5'
+                                : 'text-content-primary hover:bg-surface hover:text-content-primary'
+                            }`}
+                          >
+                            {email}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Dashboard list */}
+              {loadingPublic ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand mx-auto mb-3"></div>
+                  <p className="text-sm text-content-tertiary">Loading public dashboards...</p>
+                </div>
+              ) : filteredPublicDashboards.length === 0 ? (
+                <div className="text-center py-12">
+                  <svg className="w-12 h-12 mx-auto text-content-muted mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                  </svg>
+                  <p className="text-sm text-content-muted font-medium">No public dashboards found</p>
+                  <p className="text-xs text-content-tertiary mt-1">No users have shared their dashboards yet</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto">
+                  {filteredPublicDashboards.map((d) => (
+                    <button
+                      key={d.id}
+                      onClick={() => setSelectedPublicDashboardId(d.id)}
+                      className={`text-left p-4 rounded-xl border-2 transition-all ${
+                        selectedPublicDashboardId === d.id
+                          ? 'border-brand bg-blue-50 dark:bg-blue-950/20 shadow-md'
+                          : 'border-outline hover:border-brand/50 hover:shadow-sm bg-surface-elevated'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-semibold text-content-primary text-sm leading-tight pr-2">{d.name}</h4>
+                        {selectedPublicDashboardId === d.id && (
+                          <div className="flex-shrink-0 w-5 h-5 bg-brand rounded-full flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      {d.description && (
+                        <p className="text-xs text-content-secondary mb-2 line-clamp-2">{d.description}</p>
+                      )}
+                      <div className="flex items-center gap-2 text-xs text-content-tertiary">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        <span>{d.owner_email}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           ) : (
             <div className="max-w-2xl mx-auto">
               <div className="text-center mb-8">
@@ -319,7 +583,16 @@ export default function DashboardTemplateModal({
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-content-secondary uppercase tracking-wide">Using Template</p>
-                    <p className="font-bold text-content-primary">{templates.find(t => t.id === selectedTemplate)?.name}</p>
+                    <p className="font-bold text-content-primary">
+                      {selectedTemplate === 'public'
+                        ? publicDashboards.find(d => d.id === selectedPublicDashboardId)?.name || 'Public Dashboard'
+                        : templates.find(t => t.id === selectedTemplate)?.name}
+                    </p>
+                    {selectedTemplate === 'public' && (
+                      <p className="text-xs text-content-tertiary mt-0.5">
+                        by {publicDashboards.find(d => d.id === selectedPublicDashboardId)?.owner_email}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -366,10 +639,20 @@ export default function DashboardTemplateModal({
           </button>
           <button
             onClick={handleContinue}
-            disabled={step === 'details' && !dashboardName.trim()}
+            disabled={
+              (step === 'details' && !dashboardName.trim()) ||
+              (step === 'browse' && !selectedPublicDashboardId)
+            }
             className="px-8 py-2.5 bg-gradient-to-r from-brand to-brand hover:from-brand-hover hover:to-brand-hover disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-bold text-sm transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
           >
             {step === 'template' ? (
+              <>
+                Continue
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </>
+            ) : step === 'browse' ? (
               <>
                 Continue
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

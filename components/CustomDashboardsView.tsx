@@ -8,6 +8,7 @@ import {
  createDashboard, 
  deleteDashboard,
  getUserPreferences,
+ getPublicDashboard,
 } from '@/lib/api';
 import { ApiService } from '@/lib/api';
 import type { CustomDashboard, CreateDashboardRequest, DashboardLayoutConfig, DashboardWidget } from '@/lib/config';
@@ -164,9 +165,10 @@ export default function CustomDashboardsView({ onSelectDashboard, onDashboardCre
  };
 
  const handleTemplateSelect = async (
-   templateId: 'team' | 'pi' | 'blank',
+   templateId: 'team' | 'pi' | 'blank' | 'public',
    dashboardName: string,
-   dashboardDescription: string
+   dashboardDescription: string,
+   sourceDashboardId?: string
  ) => {
    if (!dashboardName.trim()) {
      setError('Dashboard name is required');
@@ -275,7 +277,40 @@ export default function CustomDashboardsView({ onSelectDashboard, onDashboardCre
 
      // Load template layout if not blank
      let templateLayout: { rows: any[] } = { rows: [] };
-     if (templateId !== 'blank') {
+     let clonedPinnedFilters: Record<string, string[]> = {};
+     let clonedReportFilters: Record<string, Record<string, any>> = {};
+
+     if (templateId === 'public' && sourceDashboardId) {
+       // Clone from a public dashboard
+       try {
+         console.log('[CustomDashboardsView] Loading public dashboard for cloning:', sourceDashboardId);
+         const publicDash = await getPublicDashboard(sourceDashboardId);
+         if (publicDash.layout_config) {
+           const lc = publicDash.layout_config as DashboardLayoutConfig;
+           // Clone the layout rows with new IDs
+           if (lc.layoutConfig?.rows) {
+             templateLayout = {
+               rows: lc.layoutConfig.rows.map((row: any, rowIdx: number) => ({
+                 id: `row-${rowIdx}-${Date.now()}`,
+                 widgets: (row.widgets || []).map((w: any, wIdx: number) => ({
+                   ...w,
+                   id: `widget-${rowIdx}-${wIdx}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                 })),
+                 columnWidths: row.columnWidths,
+                 height: row.height,
+               })),
+             };
+           }
+           // Clone pinned and report filters
+           if (lc.pinnedFilters) clonedPinnedFilters = { ...lc.pinnedFilters };
+           if (lc.reportFilters) clonedReportFilters = { ...lc.reportFilters };
+         }
+         console.log('[CustomDashboardsView] Cloned public dashboard layout:', templateLayout);
+       } catch (cloneErr) {
+         console.error('[CustomDashboardsView] Failed to clone public dashboard:', cloneErr);
+         // Continue with blank template
+       }
+     } else if (templateId !== 'blank') {
        try {
          console.log(`[CustomDashboardsView] Loading ${templateId} dashboard template...`);
          const apiService = new ApiService();
@@ -332,8 +367,8 @@ export default function CustomDashboardsView({ onSelectDashboard, onDashboardCre
        description: dashboardDescription.trim() || undefined,
        layout_config: {
          layoutConfig: templateLayout,
-         pinnedFilters: {},
-         reportFilters: {},
+         pinnedFilters: clonedPinnedFilters,
+         reportFilters: clonedReportFilters,
          topBarFilters: defaultFilters,
        },
      };

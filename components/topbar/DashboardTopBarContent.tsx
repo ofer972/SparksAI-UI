@@ -41,6 +41,9 @@ interface DashboardTopBarContentProps {
  filterBadges: FilterBadge[];
  hasFilters: boolean;
  onNavigateToSettings?: () => void;
+ // Public dashboard toggle (custom-dashboard-editor only)
+ isPublic?: boolean;
+ onTogglePublic?: () => void;
 }
 
 export default function DashboardTopBarContent({
@@ -57,6 +60,8 @@ export default function DashboardTopBarContent({
  filterBadges,
  hasFilters,
  onNavigateToSettings,
+ isPublic,
+ onTogglePublic,
 }: DashboardTopBarContentProps) {
  return (
  <div className="flex flex-col md:flex-row md:items-center gap-0 md:gap-4 flex-1 min-w-0 pr-3 md:px-0 md:py-2 w-full">
@@ -123,6 +128,25 @@ export default function DashboardTopBarContent({
  >
  <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+ </svg>
+ </button>
+ )}
+
+ {/* Public Toggle (Mobile) - custom-dashboard-editor only */}
+ {activeNavItem === 'custom-dashboard-editor' && onTogglePublic && (
+ <button
+ onClick={onTogglePublic}
+ className={`inline-flex items-center justify-center h-7 w-7 rounded-lg border transition-all ${
+   isPublic
+     ? 'border-emerald-400 dark:border-emerald-600 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30'
+     : 'border-outline-strong text-content-muted hover:text-content-secondary hover:border-outline-strong'
+ }`}
+ title={isPublic ? 'Dashboard is public — click to make private' : 'Dashboard is private — click to make public'}
+ aria-label="Toggle public visibility"
+ type="button"
+ >
+ <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+   <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
  </svg>
  </button>
  )}
@@ -266,6 +290,26 @@ export default function DashboardTopBarContent({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
         </button>
+        )}
+
+        {/* Public Toggle (Desktop) - custom-dashboard-editor only */}
+        {activeNavItem === 'custom-dashboard-editor' && onTogglePublic && (
+          <button
+            onClick={onTogglePublic}
+            className={`inline-flex items-center justify-center h-7 rounded-lg border transition-all gap-1.5 px-2 ${
+              isPublic
+                ? 'border-emerald-400 dark:border-emerald-600 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30'
+                : 'border-outline-strong text-content-muted hover:text-content-secondary hover:border-outline-strong hover:bg-surface-elevated'
+            } focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+            title={isPublic ? 'Dashboard is public — click to make private' : 'Dashboard is private — click to make public'}
+            aria-label="Toggle public visibility"
+            type="button"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
+            </svg>
+            <span className="hidden md:inline text-xs font-medium">{isPublic ? 'Public' : 'Private'}</span>
+          </button>
         )}
         
         {/* Save Settings Button - Hidden for team-dashboard and pi-dashboard */}

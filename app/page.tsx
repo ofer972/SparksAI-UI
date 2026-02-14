@@ -32,7 +32,7 @@ import { useJiraConfigurationCheck } from '@/hooks/etl/useJiraConfigurationCheck
 import { useUserPreferences, useUser } from '@/contexts/UserContext';
 import CustomDashboardsView from '@/components/CustomDashboardsView';
 import CustomDashboardEditor from '@/components/CustomDashboardEditor';
-import { getUserDashboards, getUserPreferences } from '@/lib/api';
+import { getUserDashboards, getUserPreferences, updateDashboard } from '@/lib/api';
 import type { CustomDashboard } from '@/lib/config';
 import GoalProgressTab from '@/components/GoalProgressTab';
 import PIGoalsTab from '@/components/PIGoalsTab';
@@ -329,6 +329,7 @@ setPendingNavItem(null);
  const [customDashboards, setCustomDashboards] = useState<CustomDashboard[]>([]);
  const [loadingDashboards, setLoadingDashboards] = useState(false);
  const [customDashboardData, setCustomDashboardData] = useState<CustomDashboard | null>(null);
+ const [isPublicDashboard, setIsPublicDashboard] = useState(false);
  const customDashboardFiltersInitializedRef = useRef(false);
  const { user } = useUser();
  
@@ -339,6 +340,22 @@ setPendingNavItem(null);
  selectedTreeLabel: '',
  selectedTreeType: 'team' as 'group' | 'team',
  });
+
+ const handleTogglePublicDashboard = async () => {
+   if (!customDashboardData || !selectedCustomDashboardId || (!user?.id && !(user as any)?.user_id)) return;
+   const newValue = !isPublicDashboard;
+   setIsPublicDashboard(newValue);
+   try {
+     const userId = ((user as any)?.id || (user as any)?.user_id) as string;
+     await updateDashboard(userId, selectedCustomDashboardId, { is_public: newValue });
+     // Also update the local customDashboardData so it stays in sync
+     setCustomDashboardData(prev => prev ? { ...prev, is_public: newValue } : prev);
+   } catch (err: any) {
+     // Revert on error
+     setIsPublicDashboard(!newValue);
+     console.error('Failed to toggle public dashboard:', err);
+   }
+ };
  
  // Initialize custom dashboard filters from loaded dashboard or user's default team/group
  // Note: CustomDashboardEditor will apply saved filters via onFiltersChange, so we only set defaults here
@@ -347,6 +364,7 @@ setPendingNavItem(null);
  if (!customDashboardData) {
  // No dashboard loaded, reset filters and ref
  customDashboardFiltersInitializedRef.current = false;
+ setIsPublicDashboard(false);
  setCustomDashboardFilters({
  selectedPI: '',
  selectedTeam: '',
@@ -356,6 +374,9 @@ setPendingNavItem(null);
  });
  return;
  }
+ 
+ // Sync public state from loaded dashboard
+ setIsPublicDashboard(customDashboardData.is_public || false);
  
  // If dashboard has saved filters, look up the team/group and set filters correctly
  // This ensures the correct team_key is used for the dropdown
@@ -2542,6 +2563,8 @@ sidebarCollapsed ? 'w-16' : 'w-56'
  currentUser={getCurrentUser()}
  onLogout={() => { logout(); try { location.assign('/login'); } catch {} }}
  onNavigateToSettings={() => setActiveNavItem('user-settings')}
+ isPublic={activeNavItem === 'custom-dashboard-editor' ? isPublicDashboard : undefined}
+ onTogglePublic={activeNavItem === 'custom-dashboard-editor' ? handleTogglePublicDashboard : undefined}
  />
  </div>
 

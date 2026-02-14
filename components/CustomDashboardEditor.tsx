@@ -1598,7 +1598,6 @@ export default function CustomDashboardEditor({
         </div>
       )}
 
-
       {/* Content Area */}
       <div className={`flex-1 overflow-auto ${isMobile ? 'p-2' : 'p-4'}`}>
         {mergedLayoutConfig.rows.length === 0 ? (
