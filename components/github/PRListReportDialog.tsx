@@ -19,6 +19,8 @@ interface PRListItem {
   additions?: number;
   deletions?: number;
   maturity?: number;
+  linked_jira_issues?: string[];
+  team_names?: string[];
 }
 
 interface PRListReportDialogProps {
@@ -134,6 +136,26 @@ export default function PRListReportDialog({
               {value}
             </span>
           ),
+        },
+        {
+          key: 'linked_jira_issues',
+          label: 'JIRA Issues',
+          sortable: false,
+          width: '12%',
+          render: (value) => {
+            const list = value ?? [];
+            return list.length > 0 ? list.join(', ') : '-';
+          },
+        },
+        {
+          key: 'team_names',
+          label: 'Teams',
+          sortable: false,
+          width: '12%',
+          render: (value) => {
+            const list = value ?? [];
+            return list.length > 0 ? list.join(', ') : '-';
+          },
         },
       ];
 
