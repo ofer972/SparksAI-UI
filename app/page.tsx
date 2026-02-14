@@ -176,10 +176,7 @@ function HomeContent() {
  
 // Function to check if current view has unsaved changes
 const hasUnsavedChanges = () => {
-// team-dashboard and pi-dashboard no longer have user customization/save functionality
-if (activeNavItem === 'team-ai-insights') {
-return insightSettingsState.hasChanges;
-}
+// team-ai-insights no longer saves filter state - filters reset to user defaults on each visit
 return false;
 };
  
@@ -213,11 +210,6 @@ return false;
 // Handle save and navigate
 const handleSaveAndNavigate = async () => {
 try {
-// Trigger save based on current view (team-dashboard and pi-dashboard removed)
-if (activeNavItem === 'team-ai-insights') {
-await teamInsightSettings.saveSettings();
-}
-
 // Navigate to pending item
 if (pendingNavItem) {
 userNavigatedRef.current = true; // User has navigated, allow normal rendering
@@ -1133,22 +1125,28 @@ useEffect(() => {
  // Don't reload the page - let the dashboard components handle the reset via event listener
  };
 
- // Track team insight settings changes
+ // Autosave categories for team-ai-insights (team always resets to user default)
+ const insightAutosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
  useEffect(() => {
- if (!teamInsightSettings.isLoading && activeNavItem === 'team-ai-insights') {
+ if (!teamInsightSettings.isLoading && activeNavItem === 'team-ai-insights' && teamInsightsReadyRef.current) {
+ // Update the current state with categories
  teamInsightSettings.updateCurrentState({
- topBarFilters: {
- selectedPI: teamInsightsFilters.selectedPI,
- selectedTeam: teamInsightsFilters.selectedTeam,
- selectedTreeType: teamInsightsFilters.selectedTreeType,
- },
  selectedCategories: teamInsightsFilters.selectedCategories,
  });
+ // Debounce the autosave to avoid rapid API calls
+ if (insightAutosaveTimerRef.current) clearTimeout(insightAutosaveTimerRef.current);
+ insightAutosaveTimerRef.current = setTimeout(() => {
+ teamInsightSettings.saveSettings().catch(err => {
+   console.warn('[App] Failed to autosave insight filters:', err);
+ });
+ }, 500);
  }
- }, [teamInsightsFilters.selectedPI, teamInsightsFilters.selectedTeam, teamInsightsFilters.selectedTreeType, teamInsightsFilters.selectedCategories, activeNavItem, teamInsightSettings.isLoading]);
+ return () => {
+ if (insightAutosaveTimerRef.current) clearTimeout(insightAutosaveTimerRef.current);
+ };
+ }, [teamInsightsFilters.selectedCategories, activeNavItem, teamInsightSettings.isLoading]);
 
-
- // Update insight settings state based on active page
+  // Update insight settings state based on active page
  useEffect(() => {
  if (activeNavItem === 'team-ai-insights') {
  setInsightSettingsState({
@@ -1217,62 +1215,17 @@ useEffect(() => {
  }
  }, [activeNavItem]);
 
- // Load saved team insight settings after clearing
+ // Load filters when entering team-ai-insights:
+ // - Team/group: always from user preferences (default team)
+ // - PI and categories: from saved page settings (autosaved)
  useEffect(() => {
  if (activeNavItem === 'team-ai-insights' && !teamInsightSettings.isLoading) {
- // Note: Empty groups/teams arrays are valid (just means no teams configured yet)
- // Don't block on empty arrays - only the settings loading state matters
- console.log('[App] Team insights settings loaded, groups:', groups.length, 'teams:', teams.length);
- 
+ console.log('[App] Team insights: loading filters...');
+
+ // Restore saved PI and categories from page settings
  const saved = teamInsightSettings.savedState;
- const teamNameFromSaved = saved?.topBarFilters?.selectedTeam;
- const hasSavedTeamSelection = teamNameFromSaved && teamNameFromSaved.trim() !== '';
- 
- if (hasSavedTeamSelection && saved?.topBarFilters) {
- // Use saved team/group selection
- console.log('[App] Loading saved team insight settings:', saved);
- const topBarFilters = saved.topBarFilters;
- const teamName = topBarFilters.selectedTeam;
- const treeType = topBarFilters.selectedTreeType;
- 
- setSelectedTeam(teamName);
- setSelectedTreeLabel(teamName);
- 
- let treeValue: string | null = null;
- if (treeType === 'group') {
- const group = groups.find(g => g.group_name === teamName);
- if (group) {
- treeValue = `group:${group.group_key}`;
- setSelectedTreeValue(treeValue);
- console.log('[App] Found group, setting tree value:', treeValue);
- } else {
- console.warn('[App] Group not found:', teamName);
- }
- } else {
- const team = teams.find(t => t.team_name === teamName);
- if (team) {
- treeValue = `team:${team.team_key}`;
- setSelectedTreeValue(treeValue);
- console.log('[App] Found team, setting tree value:', treeValue);
- } else {
- console.warn('[App] Team not found:', teamName);
- }
- }
- 
- setTeamInsightsFilters(prev => ({
- ...prev,
- selectedTeam: teamName,
- selectedTreeValue: treeValue,
- selectedTreeLabel: teamName,
- selectedTreeType: treeType || 'team',
- selectedCategories: saved?.selectedCategories || [],
- }));
- console.log('[App] Updated teamInsightsFilters:', { teamName, treeValue, treeType });
- if (treeType) setSelectedTreeType(treeType);
- } else {
- // No saved team selection - use user's default from onboarding preferences
- // This handles: new user who just completed onboarding, or user who never selected a team
- console.log('[App] No team in saved state, loading user default from preferences...');
+ const savedCategories = saved?.selectedCategories || [];
+
  if (!teamsLoading && (groups.length > 0 || teams.length > 0)) {
  const currentUser = getCurrentUser();
  if (currentUser?.id) {
@@ -1295,7 +1248,7 @@ useEffect(() => {
  selectedTreeValue: treeValue,
  selectedTreeLabel: teamGroupName,
  selectedTreeType: 'group',
- selectedCategories: saved?.selectedCategories || [],
+ selectedCategories: savedCategories,
  }));
  setSelectedTeam(teamGroupName);
  setSelectedTreeValue(treeValue);
@@ -1313,7 +1266,7 @@ useEffect(() => {
  selectedTreeValue: treeValue,
  selectedTreeLabel: teamGroupName,
  selectedTreeType: 'team',
- selectedCategories: saved?.selectedCategories || [],
+ selectedCategories: savedCategories,
  }));
  setSelectedTeam(teamGroupName);
  setSelectedTreeValue(treeValue);
@@ -1322,17 +1275,20 @@ useEffect(() => {
  }
  }
  }
- }).catch(err => {
- console.warn('[App] Failed to load user preferences for AI Insights:', err);
- });
- }
- }
- }
- 
- // Mark as ready after settings are loaded (or if no settings exist)
+ // Mark as ready after preferences are applied
  teamInsightsReadyRef.current = true;
  setTeamInsightsReady(true);
  console.log('[App] Team insights ready!');
+ }).catch(err => {
+ console.warn('[App] Failed to load user preferences for AI Insights:', err);
+ teamInsightsReadyRef.current = true;
+ setTeamInsightsReady(true);
+ });
+ } else {
+ teamInsightsReadyRef.current = true;
+ setTeamInsightsReady(true);
+ }
+ }
  }
 }, [activeNavItem, teamInsightSettings.isLoading, teamInsightSettings.savedState, groups, teams, teamsLoading]);
 
@@ -2410,11 +2366,7 @@ sidebarCollapsed ? 'w-16' : 'w-56'
  onSave: () => {},
  onReset: () => {},
  } : undefined}
- insightSettings={(activeNavItem === 'team-ai-insights') ? {
- hasChanges: insightSettingsState.hasChanges,
- isSaving: insightSettingsState.isSaving,
- onSave: handleSaveInsightSettings,
- } : undefined}
+ insightSettings={undefined}
  filters={{
  selectedPI: (() => {
  switch (activeNavItem) {
