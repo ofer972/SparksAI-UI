@@ -656,29 +656,28 @@ export default function BuildReportTab() {
       });
     }
     
-    const config: Record<string, unknown> = {
+    const config = {
       report_name: name,
       description: description || undefined,
       report_type: reportType,
       selected_fields: reportType === 'table' ? orderedSelectedFields : undefined,
-      x_axis: (reportType === 'bar_chart' || reportType === 'pie_chart') 
+      x_axis: (reportType === 'bar_chart' || reportType === 'pie_chart')
         ? (reportType === 'pie_chart' ? xAxisPie : xAxisBar)
         : undefined,
       y_axis: reportType === 'bar_chart' ? yAxis : undefined,
       filters: filtersToSave,
       team_name: selectedTeamGroupName || undefined,
       isGroup: isGroup,
+      ...(reportType === 'table' && {
+        default_sort: defaultSortColumn
+          ? { key: defaultSortColumn, direction: defaultSortDirection }
+          : null,
+      }),
     };
-    // Always send default_sort for table reports so it is persisted (omit for non-table)
-    if (reportType === 'table') {
-      config.default_sort = defaultSortColumn
-        ? { key: defaultSortColumn, direction: defaultSortDirection }
-        : null;
-    }
     
     if (selectedReportId && currentReportDefinition) {
       // Update existing report
-      const updated = await apiService.updateCustomReport(selectedReportId, config);
+      const updated = await apiService.updateCustomReport(selectedReportId, config as Parameters<ApiService['updateCustomReport']>[1]);
       setCurrentReportDefinition(updated);
       // Refresh custom reports list
       const reports = await apiService.getCustomReports();
@@ -689,7 +688,7 @@ export default function BuildReportTab() {
       setTimeout(() => setToastMessage(null), 3000);
     } else {
       // Save new report
-      const saved = await apiService.saveCustomReport(config);
+      const saved = await apiService.saveCustomReport(config as Parameters<ApiService['saveCustomReport']>[0]);
       setCurrentReportDefinition(saved);
       setSelectedReportId(saved.report_id);
       // Refresh custom reports list
