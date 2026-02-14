@@ -19,6 +19,7 @@ interface PRListItem {
   additions?: number;
   deletions?: number;
   maturity?: number;
+  pickup_hours?: number;
   linked_jira_issues?: string[];
   team_names?: string[];
 }
@@ -26,13 +27,26 @@ interface PRListItem {
 interface PRListReportDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  metric: string; // e.g., "prs-waiting-review", "prs-stale", "pr-size-by-period", "pr-maturity-by-period"
+  metric: string; // e.g., "prs-waiting-review", "prs-stale", "pickup-time-by-bucket"
   title: string; // Metric label
-  githubRepoIds?: string; // Optional filter
+  githubRepoIds?: string; // Optional filter (comma-separated or array for pickup-time)
   period?: string; // YYYY-MM-DD format (optional)
-  metricType?: 'core-kpi' | 'pr-size' | 'pr-maturity'; // Optional, for column customization
-  team_name?: string | null; // Optional filter: team or group name
-  isGroup?: boolean; // Optional: true = group, false = team
+  metricType?: 'core-kpi' | 'pr-size' | 'pr-maturity' | 'pickup-time-bucket';
+  team_name?: string | null;
+  isGroup?: boolean;
+  /** For metric=pickup-time-by-bucket */
+  months?: number;
+  pr_state?: string;
+  min_hours?: number;
+  max_hours?: number; // Omit for 4d+ bucket
+}
+
+function formatPickupTime(hours: number): string {
+  if (hours < 1) return `${Math.round(hours * 60)}m`;
+  if (hours < 24) return `${hours.toFixed(1)}h`;
+  const days = Math.floor(hours / 24);
+  const rem = hours % 24;
+  return rem < 1 ? `${days}d` : `${days}d ${Math.round(rem)}h`;
 }
 
 export default function PRListReportDialog({
@@ -45,12 +59,17 @@ export default function PRListReportDialog({
   metricType,
   team_name,
   isGroup,
+  months,
+  pr_state,
+  min_hours,
+  max_hours,
 }: PRListReportDialogProps) {
   const fetchFunction = useCallback(async () => {
     try {
       const params = new URLSearchParams({ metric });
-      if (githubRepoIds) {
-        params.append('github_repo_ids', githubRepoIds);
+      const repoIdsStr = Array.isArray(githubRepoIds) ? githubRepoIds.join(',') : githubRepoIds;
+      if (repoIdsStr) {
+        params.append('github_repo_ids', repoIdsStr);
       }
       if (period) {
         params.append('period', period);
@@ -58,6 +77,18 @@ export default function PRListReportDialog({
       if (team_name != null && team_name.trim() !== '') {
         params.append('team_name', team_name.trim());
         params.append('isGroup', String(Boolean(isGroup)));
+      }
+      if (months != null) {
+        params.append('months', String(months));
+      }
+      if (pr_state) {
+        params.append('pr_state', pr_state);
+      }
+      if (min_hours != null) {
+        params.append('min_hours', String(min_hours));
+      }
+      if (max_hours != null) {
+        params.append('max_hours', String(max_hours));
       }
 
       const response = await authFetch(
@@ -83,7 +114,7 @@ export default function PRListReportDialog({
         message: errorMessage,
       };
     }
-  }, [metric, githubRepoIds, period, team_name, isGroup]);
+  }, [metric, githubRepoIds, period, team_name, isGroup, months, pr_state, min_hours, max_hours]);
 
   const columns: Column<PRListItem>[] = useMemo(
     () => {
@@ -230,6 +261,21 @@ export default function PRListReportDialog({
           render: (value) => {
             if (value !== undefined && value !== null) {
               return `${(value * 100).toFixed(1)}%`;
+            }
+            return '-';
+          },
+        });
+      }
+
+      if (metricType === 'pickup-time-bucket' || metric === 'pickup-time-by-bucket') {
+        baseColumns.push({
+          key: 'pickup_hours',
+          label: 'Pickup',
+          sortable: true,
+          width: '10%',
+          render: (value) => {
+            if (value !== undefined && value !== null) {
+              return formatPickupTime(value);
             }
             return '-';
           },

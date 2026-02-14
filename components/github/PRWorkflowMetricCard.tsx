@@ -20,6 +20,7 @@ interface PRWorkflowMetricCardProps {
   onMonthsChange: (months: number) => void;
   onPrStateChange: (state: string) => void;
   onTeamGroupChange?: (value: string | null, type: 'group' | 'team', name: string) => void;
+  showTeamFilter?: boolean;
   filterBadges: Array<{ label: string; value: string }>;
   onRefresh: () => void;
   loading: boolean;
@@ -48,6 +49,7 @@ export default function PRWorkflowMetricCard({
   onMonthsChange,
   onPrStateChange,
   onTeamGroupChange,
+  showTeamFilter = true,
   filterBadges,
   onRefresh,
   loading,
@@ -80,6 +82,7 @@ export default function PRWorkflowMetricCard({
           onPrStateChange={onPrStateChange}
           onTeamGroupChange={onTeamGroupChange}
           availableRepositories={repositories}
+          showTeamFilter={showTeamFilter}
         />
       }
     >

@@ -19,6 +19,8 @@ interface PRWorkflowFiltersProps {
   onPrStateChange: (state: string) => void;
   onTeamGroupChange?: (value: string | null, type: 'group' | 'team', name: string) => void;
   availableRepositories: Array<{ id: number; github_repo_id: number; name: string }>;
+  /** Set to false to hide Team/Group filter (e.g. for debugging). Default true. */
+  showTeamFilter?: boolean;
 }
 
 const prStateOptions = [
@@ -39,6 +41,7 @@ export default function PRWorkflowFilters({
   onPrStateChange,
   onTeamGroupChange,
   availableRepositories,
+  showTeamFilter = true,
 }: PRWorkflowFiltersProps) {
   const { groups, teams } = useTeamsGroups();
 
@@ -63,15 +66,17 @@ export default function PRWorkflowFilters({
 
   return (
     <ReportFiltersRow>
-      <ReportFilterField label="Team/Group">
-        <TeamGroupFilter
-          value={teamValue}
-          onChange={handleTeamGroupChange}
-          placeholder="Select team or group"
-          allowClear={true}
-          size="xs"
-        />
-      </ReportFilterField>
+      {showTeamFilter && (
+        <ReportFilterField label="Team/Group">
+          <TeamGroupFilter
+            value={teamValue}
+            onChange={handleTeamGroupChange}
+            placeholder="Select team or group"
+            allowClear={true}
+            size="xs"
+          />
+        </ReportFilterField>
+      )}
 
       <ReportFilterField label="Repositories">
         <RepositoryMultiSelect

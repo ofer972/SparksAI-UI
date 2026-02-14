@@ -6,11 +6,12 @@ import { useDualModeMetricData } from '@/hooks/useDualModeMetricData';
 import MetricCardWrapper from './MetricCardWrapper';
 import { registerChartComponents } from '@/utils/chartRegistration';
 import ChartContainer from './metrics/shared/ChartContainer';
-import { createScatterChartOptions } from './utils/chartOptions';
+import { createHistogramChartOptions } from './utils/chartOptions';
 import { useUser } from '@/contexts/UserContext';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
+import PRListReportDialog from './PRListReportDialog';
 
-registerChartComponents(false);
+registerChartComponents(true);
 
 interface PickupTimeData {
   summary: {
@@ -47,6 +48,24 @@ const DEFAULT_FILTERS = {
   months: 1,
   prState: 'all',
 };
+
+// Histogram buckets (hours). Change here when needed.
+const PICKUP_TIME_BUCKETS = [
+  { label: '0-1h', minHours: 0, maxHours: 1 },
+  { label: '1-4h', minHours: 1, maxHours: 4 },
+  { label: '4-12h', minHours: 4, maxHours: 12 },
+  { label: '12-24h', minHours: 12, maxHours: 24 },
+  { label: '1-2 days', minHours: 24, maxHours: 48 },
+  { label: '2-4 days', minHours: 48, maxHours: 96 },
+  { label: '4d+', minHours: 96, maxHours: Infinity },
+];
+
+function getBucketIndex(hours: number): number {
+  const i = PICKUP_TIME_BUCKETS.findIndex(
+    (b) => hours >= b.minHours && (b.maxHours === Infinity || hours < b.maxHours)
+  );
+  return i >= 0 ? i : PICKUP_TIME_BUCKETS.length - 1;
+}
 
 export default function PickupTimeCard(props?: PickupTimeCardProps) {
   // Use dual-mode hook (only for hook mode and for repositories list)
@@ -176,38 +195,46 @@ export default function PickupTimeCard(props?: PickupTimeCardProps) {
     }
   }, [teamName, isGroup, groups, teams]);
 
-  // Dark mode detection
+  // Theme colors from global CSS (for light/dark and all theme variants)
   const [isDark, setIsDark] = useState(false);
+  const [chartColors, setChartColors] = useState({ bar: 'rgb(37, 99, 235)', label: '#ffffff' });
+  const [prListBucket, setPrListBucket] = useState<{ label: string; minHours: number; maxHours?: number } | null>(null);
   useEffect(() => {
-    const checkDark = () => setIsDark(document.documentElement.classList.contains('dark'));
-    checkDark();
-    const observer = new MutationObserver(checkDark);
+    const updateTheme = () => {
+      const root = document.documentElement;
+      setIsDark(root.classList.contains('dark'));
+      const primary = getComputedStyle(root).getPropertyValue('--color-primary').trim();
+      const bar = primary ? `rgb(${primary.replace(/\s+/g, ', ')})` : 'rgb(37, 99, 235)';
+      setChartColors({ bar, label: '#ffffff' });
+    };
+    updateTheme();
+    const observer = new MutationObserver(updateTheme);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     return () => observer.disconnect();
   }, []);
 
   const chartData = useMemo(() => {
-    if (!data || !data.individual_prs || data.individual_prs.length === 0) {
-      return null;
+    if (!data?.individual_prs?.length) return null;
+
+    const counts = PICKUP_TIME_BUCKETS.map(() => 0);
+    for (const pr of data.individual_prs) {
+      counts[getBucketIndex(pr.pickup_hours)] += 1;
     }
 
     return {
+      labels: PICKUP_TIME_BUCKETS.map((b) => b.label),
       datasets: [
         {
-          type: 'scatter' as const,
-          label: 'Pickup Time',
-          data: data.individual_prs.map(pr => ({
-            x: pr.pr_index,
-            y: parseFloat(pr.pickup_hours.toFixed(1)),
-          })),
-          backgroundColor: '#3b82f6',
-          borderColor: '#2563eb',
-          pointRadius: 4,
-          pointHoverRadius: 6,
+          label: 'PRs',
+          data: counts,
+          backgroundColor: chartColors.bar,
+          datalabels: {
+            color: () => chartColors.label,
+          },
         },
       ],
     };
-  }, [data]);
+  }, [data, chartColors]);
 
   const formatTime = (hours: number): string => {
     if (hours < 1) {
@@ -224,40 +251,42 @@ export default function PickupTimeCard(props?: PickupTimeCardProps) {
     }
   };
 
-  const chartOptions = useMemo(() => {
-    if (!data) return {};
-    
-    return createScatterChartOptions({
-      plugins: {
-        tooltip: {
-          enabled: true,
-          callbacks: {
-            label: (context: any) => {
-              const hours = context.parsed.y;
-              return `Pickup Time: ${formatTime(hours)}`;
+  const chartOptions = useMemo(
+    () =>
+      createHistogramChartOptions(
+        {
+          onClick: (_event: unknown, elements: { index: number }[]) => {
+            if (elements.length > 0 && data?.individual_prs?.length) {
+              const barIndex = elements[0].index;
+              const bucket = PICKUP_TIME_BUCKETS[barIndex];
+              if (bucket) {
+                setPrListBucket({
+                  label: bucket.label,
+                  minHours: bucket.minHours,
+                  maxHours: bucket.maxHours === Infinity ? undefined : bucket.maxHours,
+                });
+              }
+            }
+          },
+          plugins: {
+            datalabels: {
+              color: () => chartColors.label,
+              anchor: 'center',
+              align: 'center',
+              formatter: (value: number) => (value > 0 ? value : ''),
+            },
+            tooltip: {
+              callbacks: {
+                label: (context: { label?: string; parsed?: { y?: number | null } }) =>
+                  `${context.label}: ${context.parsed?.y ?? 0} PRs`,
+              },
             },
           },
         },
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: 'Hours',
-          },
-          ticks: {},
-        },
-        x: {
-          title: {
-            display: true,
-            text: 'PR Index',
-          },
-          ticks: {},
-        },
-      },
-    }, isDark);
-  }, [data, isDark]);
+        isDark
+      ),
+    [isDark, chartColors, data?.individual_prs?.length]
+  );
 
   return (
     <MetricCardWrapper
@@ -300,13 +329,25 @@ export default function PickupTimeCard(props?: PickupTimeCardProps) {
     >
       <ChartContainer>
         {chartData && (
-          <Chart 
-            type="scatter" 
-            data={chartData} 
-            options={chartOptions} 
-          />
+          <Chart type="bar" data={chartData} options={chartOptions} />
         )}
       </ChartContainer>
+      {prListBucket && (
+        <PRListReportDialog
+          isOpen={true}
+          onClose={() => setPrListBucket(null)}
+          metric="pickup-time-by-bucket"
+          title={`PRs — ${prListBucket.label}`}
+          metricType="pickup-time-bucket"
+          githubRepoIds={githubRepoIds.length > 0 ? githubRepoIds.join(',') : undefined}
+          months={months}
+          pr_state={prState}
+          min_hours={prListBucket.minHours}
+          max_hours={prListBucket.maxHours}
+          team_name={teamName}
+          isGroup={isGroup}
+        />
+      )}
     </MetricCardWrapper>
   );
 }

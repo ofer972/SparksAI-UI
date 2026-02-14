@@ -44,7 +44,9 @@ interface MetricCardWrapperProps {
   teamName?: string | null;
   isGroup?: boolean;
   onTeamGroupChange?: (value: string | null, type: 'group' | 'team', name: string) => void;
-  
+  /** Set to false to hide Team/Group filter (e.g. for debugging). Default true. */
+  showTeamFilter?: boolean;
+
   // Report mode props (from ReportPanel)
   filters?: Record<string, any>;
   setFilters?: (filters: Record<string, any> | ((prev: Record<string, any>) => Record<string, any>)) => void;
@@ -82,6 +84,7 @@ export default function MetricCardWrapper({
   teamName,
   isGroup,
   onTeamGroupChange,
+  showTeamFilter = true,
   // Report mode props
   filters,
   setFilters,
@@ -288,6 +291,7 @@ export default function MetricCardWrapper({
         onMonthsChange={onMonthsChange!}
         onPrStateChange={onPrStateChange!}
         onTeamGroupChange={onTeamGroupChange}
+        showTeamFilter={showTeamFilter}
         filterBadges={filterBadges!}
         onRefresh={onRefresh!}
         loading={loading}

@@ -199,3 +199,24 @@ export function createScatterChartOptions(
   return createBaseChartOptions(customOptions, false, isDark);
 }
 
+/**
+ * Options for a count-based bar chart (histogram).
+ * Y = count, X = category labels. Theme-aware.
+ */
+export function createHistogramChartOptions(
+  customOptions: Partial<ChartOptions> = {},
+  isDark: boolean = false
+): ChartOptions {
+  return createBaseChartOptions(
+    {
+      ...customOptions,
+      scales: {
+        x: { title: { display: true, text: 'Pickup time' }, ...customOptions.scales?.x },
+        y: { beginAtZero: true, title: { display: true, text: 'PRs' }, ...customOptions.scales?.y },
+      },
+    },
+    false,
+    isDark
+  );
+}
+
