@@ -71,11 +71,22 @@ export default function DORAKPIs({
 
   useEffect(() => {
     const fetchMetrics = async () => {
+      if (!defaultTeamOrGroupName) {
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError(null);
 
       try {
-        const response = await authFetch('/api/v1/github-service/KPIs');
+        // Same pattern as GenericKPIs: pass team_name and isGroup to scope github-service KPIs
+        const params = new URLSearchParams({
+          team_name: defaultTeamOrGroupName,
+          isGroup: (defaultTreeType === 'group').toString(),
+        });
+        const url = `/api/v1/github-service/KPIs?${params.toString()}`;
+        const response = await authFetch(url);
 
         if (!response.ok) {
           throw new Error(`Failed to fetch metrics: ${response.statusText}`);
@@ -94,7 +105,7 @@ export default function DORAKPIs({
     };
 
     fetchMetrics();
-  }, []);
+  }, [defaultTeamOrGroupName, defaultTreeType, currentPIName]);
 
   const handleKPIClick = (metric: MetricResponse) => {
     if (!metric.action) return;
