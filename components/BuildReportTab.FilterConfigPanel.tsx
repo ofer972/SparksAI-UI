@@ -95,7 +95,7 @@ export default function FilterConfigPanel({
                       disabled={defaultFilters.pi.loading}
                       className="flex-1 px-2 py-1.5 border border-outline rounded-md text-sm bg-surface text-content-primary focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {defaultFilters.pi.allowAll && <option value="">All</option>}
+                      {defaultFilters.pi.allowAll && <option value="">All PIs (no filter)</option>}
                       {defaultFilters.pi.options.map(opt => (
                         <option key={opt.value} value={opt.value}>
                           {opt.label}

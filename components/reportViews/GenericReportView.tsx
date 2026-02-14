@@ -11,7 +11,6 @@ import ReportCard from '../reporting/ReportCard';
 import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
 import TeamGroupFilter from '../TeamGroupFilter';
-import PIFilter from '../PIFilter';
 import GenericReportFilterMultiSelect from '../GenericReportFilterMultiSelect';
 import { ApiService } from '@/lib/api';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
@@ -83,12 +82,37 @@ export default function GenericReportView({
   const [buildReportFilters, setBuildReportFilters] = useState<BuildReportFilter[]>([]);
   const [isSegmentDialogOpen, setIsSegmentDialogOpen] = useState(false);
   const [selectedSegment, setSelectedSegment] = useState<{ x_value: string | number; fieldName?: string } | null>(null);
+  const [availablePIs, setAvailablePIs] = useState<Array<{ pi_name: string }>>([]);
+  const [loadingPIs, setLoadingPIs] = useState(true);
+
+  // Fetch PIs for the custom report view PI dropdown (so we can show "All PIs (no filter)" without using generic PIFilter)
+  useEffect(() => {
+    const api = new ApiService();
+    api.getPIs()
+      .then((res) => { if (res.pis) setAvailablePIs(res.pis); })
+      .catch(() => setAvailablePIs([]))
+      .finally(() => setLoadingPIs(false));
+  }, []);
 
   // Track if filters have been initialized to prevent infinite loops and preserve user changes
   const filtersInitializedRef = React.useRef(false);
   const reportIdRef = React.useRef<string | undefined>(reportId);
   const lastConfigFiltersRef = React.useRef<string>('');
-  
+  const allPIsAlignmentDoneRef = React.useRef(false);
+
+  // When this custom report is "All PIs (no filter)" but parent passed a PI (e.g. topbar), align filters once so the next request uses pi: null.
+  // Only run once per report load so we don't overwrite when the user later selects a specific PI in the filter.
+  React.useEffect(() => {
+    if (reportIdRef.current !== reportId) allPIsAlignmentDoneRef.current = false;
+    if (!setFilters || !definition?.default_filters || allPIsAlignmentDoneRef.current) return;
+    const defaultPi = definition.default_filters.pi;
+    if (defaultPi !== null && defaultPi !== undefined) return;
+    const currentPi = filters?.pi;
+    if (currentPi === null || currentPi === undefined || currentPi === '') return;
+    allPIsAlignmentDoneRef.current = true;
+    setFilters((prev: Record<string, any>) => ({ ...prev, pi: null }));
+  }, [reportId, definition?.default_filters, definition?.default_filters?.pi, filters?.pi, setFilters]);
+
   // Sync buildReportFilters when buildConfig or reportId changes.
   // Report definition = default. Dashboard (parent) overrides always win so user changes on the dashboard are saved and persist.
   useEffect(() => {
@@ -406,10 +430,12 @@ export default function GenericReportView({
   const segmentDialogTitle = useMemo(() => {
     if (!selectedSegment) return 'Issues';
     const label = String(selectedSegment.x_value);
-    return selectedSegment.fieldName
-      ? `Issues: ${label} (${selectedSegment.fieldName.replace(/_/g, ' ')})`
-      : `Issues: ${label}`;
-  }, [selectedSegment]);
+    if (!selectedSegment.fieldName) return `Issues: ${label}`;
+    const field = filterableFields.find((f) => f.column_name === selectedSegment.fieldName)
+      || displayableFields.find((f) => f.column_name === selectedSegment.fieldName);
+    const fieldLabel = field?.display_name ?? selectedSegment.fieldName.replace(/_/g, ' ');
+    return `Issues: ${label} (${fieldLabel})`;
+  }, [selectedSegment, filterableFields, displayableFields]);
 
   // Get filter field info helper
   const getFilterFieldInfo = React.useCallback((fieldName: string): FilterableField | undefined => {
@@ -465,23 +491,28 @@ export default function GenericReportView({
   const filtersContent = useMemo(() => {
     return (
       <ReportFiltersRow>
-        {/* PI Filter */}
+        {/* PI Filter - custom dropdown with "All PIs (no filter)" so user can clear PI without generic PIFilter auto-selecting one */}
         <ReportFilterField label={getPITerminology()}>
-          <PIFilter
-            selectedPI={piValue || ''}
-            onPIChange={(pi) => {
+          <select
+            value={piValue ?? ''}
+            onChange={(e) => {
               if (!setFilters) return;
+              const v = e.target.value;
               setFilters((prev: any) => {
-                // Only update if value actually changed
-                if (prev.pi === (pi || null)) return prev;
-                return { ...prev, pi: pi || null };
+                const nextPi = v === '' ? null : v;
+                if (prev.pi === nextPi) return prev;
+                return { ...prev, pi: nextPi };
               });
-              // Trigger refresh when PI changes
-              if (refresh) {
-                setTimeout(() => refresh(), 0);
-              }
+              if (refresh) setTimeout(() => refresh(), 0);
             }}
-          />
+            disabled={loadingPIs}
+            className="flex-1 px-2 py-1.5 border border-outline rounded-md text-sm bg-surface text-content-primary focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <option value="">All PIs (no filter)</option>
+            {availablePIs.map((pi) => (
+              <option key={pi.pi_name} value={pi.pi_name}>{pi.pi_name}</option>
+            ))}
+          </select>
         </ReportFilterField>
         
         {/* Team/Group Filter */}
@@ -603,7 +634,7 @@ export default function GenericReportView({
         })}
       </ReportFiltersRow>
     );
-  }, [teamValue, piValue, buildReportFilters, filterableFields, dropdownValues, loadingDropdownValues, getFilterFieldInfo, handleFilterChange, setFilters]);
+  }, [teamValue, piValue, buildReportFilters, filterableFields, dropdownValues, loadingDropdownValues, getFilterFieldInfo, handleFilterChange, setFilters, availablePIs, loadingPIs, refresh]);
 
   // Handle issue_key click for "Open all in Jira" button - must be before conditional returns
   const handleOpenAllInJira = React.useCallback(() => {
