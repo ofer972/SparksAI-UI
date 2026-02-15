@@ -254,7 +254,7 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
       datasets: [
         {
           type: 'bar' as const,
-          label: 'Code Churn Rate',
+          label: 'Code Churn Rate (Rework)',
           data: barValues,
           backgroundColor: '#ef4444',
           borderColor: '#dc2626',
@@ -327,7 +327,7 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
                 const c = total !== 1 ? 'commits' : 'commit';
                 return `${total} ${c}, ${rework} rework (${pct.toFixed(1)}%)`;
               }
-              return `Code Churn Rate: ${context.parsed.y.toFixed(1)}%`;
+              return `Code Churn Rate (Rework): ${context.parsed.y.toFixed(1)}%`;
             },
           },
         },
@@ -338,7 +338,7 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
           suggestedMax: suggestedMax,
           title: {
             display: true,
-            text: 'Code Churn Rate (%)',
+            text: 'Code Churn Rate (Rework) (%)',
           },
           ticks: {
             callback: function(value: any) {
@@ -387,7 +387,7 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
     <MetricCardWrapper
       isReportMode={isReportMode}
       cardType="pr-workflow"
-      title="Code Churn Rate"
+      title="Code Churn Rate (Rework)"
       metricName="rework_rate"
       tier={data?.summary?.tier || ''}
       tierLabel={data?.summary?.tier_label || ''}
