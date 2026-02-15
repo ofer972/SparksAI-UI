@@ -308,12 +308,8 @@ export default function ReworkRateCard(props?: ReworkRateCardProps) {
         datalabels: {
           formatter: (value: number, context: any) => {
             if (context.datasetIndex !== 0) return '';
-            const point = activeSeries[context.dataIndex];
-            const total = point?.commit_count;
-            if (typeof total === 'number' && total > 0) {
-              return `${total} · ${value.toFixed(0)}%`;
-            }
-            return '';
+            if (value === 0) return '';
+            return `${value.toFixed(0)}%`;
           },
         },
         tooltip: {
