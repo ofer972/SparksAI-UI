@@ -299,6 +299,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
         Send
       </button>
     </div>
+    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+      LLMs can make mistakes. Check important information.
+    </p>
   </div>
 );
 
