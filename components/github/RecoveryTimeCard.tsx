@@ -241,6 +241,7 @@ export default function RecoveryTimeCard(props?: RecoveryTimeCardProps) {
               formatter: (value: number) => (value > 0 ? value : ''),
             },
             tooltip: {
+              padding: 12,
               callbacks: {
                 label: (context: { label?: string; parsed?: { y?: number | null } }) =>
                   `${context.label}: ${context.parsed?.y ?? 0} incidents`,
