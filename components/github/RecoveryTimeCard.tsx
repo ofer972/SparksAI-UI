@@ -6,10 +6,29 @@ import { useDualModeMetricData } from '@/hooks/useDualModeMetricData';
 import MetricCardWrapper from './MetricCardWrapper';
 import { registerChartComponents } from '@/utils/chartRegistration';
 import ChartContainer from './metrics/shared/ChartContainer';
-import { createScatterChartOptions } from './utils/chartOptions';
+import { createHistogramChartOptions } from './utils/chartOptions';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 
-registerChartComponents(false);
+registerChartComponents(true);
+
+// Histogram buckets for recovery time (minutes)
+const RECOVERY_TIME_BUCKETS = [
+  { label: 'Up to 15m', minMinutes: 0, maxMinutes: 15 },
+  { label: '15m-1h', minMinutes: 15, maxMinutes: 60 },
+  { label: '1h-6h', minMinutes: 60, maxMinutes: 360 },
+  { label: '6h-1d', minMinutes: 360, maxMinutes: 1440 },      // 24*60
+  { label: '1d-3d', minMinutes: 1440, maxMinutes: 4320 },    // 72*60
+  { label: '3d-7d', minMinutes: 4320, maxMinutes: 10080 },   // 168*60
+  { label: '7d-30d', minMinutes: 10080, maxMinutes: 43200 }, // 30*24*60
+  { label: '30d+', minMinutes: 43200, maxMinutes: Infinity },
+];
+
+function getRecoveryBucketIndex(minutes: number): number {
+  const i = RECOVERY_TIME_BUCKETS.findIndex(
+    (b) => minutes >= b.minMinutes && (b.maxMinutes === Infinity || minutes < b.maxMinutes)
+  );
+  return i >= 0 ? i : RECOVERY_TIME_BUCKETS.length - 1;
+}
 
 interface RecoveryTimeData {
   summary: {
@@ -162,90 +181,77 @@ export default function RecoveryTimeCard(props?: RecoveryTimeCardProps) {
     }
   }, [isReportMode]); // Only run on mount/mode change
 
-  // Dark mode detection
+  // Theme colors (match Pickup Time bar chart: primary blue + white label in bar)
   const [isDark, setIsDark] = useState(false);
+  const [chartColors, setChartColors] = useState({ bar: 'rgb(37, 99, 235)', label: '#ffffff' });
   useEffect(() => {
-    const checkDark = () => setIsDark(document.documentElement.classList.contains('dark'));
-    checkDark();
-    const observer = new MutationObserver(checkDark);
+    const updateTheme = () => {
+      const root = document.documentElement;
+      setIsDark(root.classList.contains('dark'));
+      const primary = getComputedStyle(root).getPropertyValue('--color-primary').trim();
+      const bar = primary ? `rgb(${primary.replace(/\s+/g, ', ')})` : 'rgb(37, 99, 235)';
+      setChartColors({ bar, label: '#ffffff' });
+    };
+    updateTheme();
+    const observer = new MutationObserver(updateTheme);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     return () => observer.disconnect();
   }, []);
 
-  // Chart data transformation for scatter plot
+  // Chart data: histogram counts per bucket
   const chartData = useMemo(() => {
     if (!data || !data.incidents || data.incidents.length === 0) {
       return null;
     }
 
+    const counts = RECOVERY_TIME_BUCKETS.map(() => 0);
+    for (const incident of data.incidents) {
+      counts[getRecoveryBucketIndex(incident.recovery_time_min)] += 1;
+    }
+
     return {
+      labels: RECOVERY_TIME_BUCKETS.map((b) => b.label),
       datasets: [
         {
-          type: 'scatter' as const,
-          label: 'Recovery Time',
-          data: data.incidents.map(incident => ({
-            x: incident.incident_index,
-            y: parseFloat(incident.recovery_time_min.toFixed(1)), // Round to 1 decimal place
-          })),
-          backgroundColor: '#3b82f6',
-          borderColor: '#2563eb',
-          pointRadius: 4,
-          pointHoverRadius: 6,
+          label: 'Incidents',
+          data: counts,
+          backgroundColor: chartColors.bar,
+          datalabels: {
+            color: () => chartColors.label,
+          },
         },
       ],
     };
-  }, [data]);
+  }, [data, chartColors]);
 
-  // Chart options
-  const chartOptions = useMemo(() => {
-    if (!data) return {};
-    
-    return createScatterChartOptions({
-      plugins: {
-        tooltip: {
-          enabled: true,
-          callbacks: {
-            label: (context: any) => {
-              const minutes = context.parsed.y;
-              // Format to 1 decimal place
-              const formattedMinutes = minutes.toFixed(1);
-              return `Recovery Time: ${formattedMinutes}m`;
+  // Chart options (histogram)
+  const chartOptions = useMemo(
+    () =>
+      createHistogramChartOptions(
+        {
+          scales: {
+            x: { title: { display: true, text: 'Recovery Time' } },
+            y: { title: { display: true, text: 'Incidents' } },
+          },
+          plugins: {
+            datalabels: {
+              color: () => chartColors.label,
+              anchor: 'center',
+              align: 'center',
+              formatter: (value: number) => (value > 0 ? value : ''),
+            },
+            tooltip: {
+              callbacks: {
+                label: (context: { label?: string; parsed?: { y?: number | null } }) =>
+                  `${context.label}: ${context.parsed?.y ?? 0} incidents`,
+              },
             },
           },
         },
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          max: 90, // Show up to 90 minutes (1.5 hours) to ensure 1h label is visible
-          title: {
-            display: true,
-            text: 'Recovery Time',
-          },
-          ticks: {
-            callback: function(value: any) {
-              const minutes = value as number;
-              if (minutes >= 60) {
-                const hours = Math.floor(minutes / 60);
-                return hours === 1 ? '1h' : `${hours}h`;
-              }
-              return `${minutes}m`;
-            },
-            stepSize: 25, // 25 minute intervals
-          },
-        },
-        x: {
-          title: {
-            display: true,
-            text: 'Incident',
-          },
-          ticks: {
-            stepSize: 1,
-          },
-        },
-      },
-    }, isDark);
-  }, [data, isDark]);
+        isDark
+      ),
+    [isDark, chartColors]
+  );
 
   // Format median time for display
   const formatMedianTime = (minutes: number): string => {
@@ -296,14 +302,10 @@ export default function RecoveryTimeCard(props?: RecoveryTimeCardProps) {
         ) : null
       }
     >
-      {/* Scatter Plot Chart */}
+      {/* Recovery Time histogram */}
       <ChartContainer>
         {chartData && data && data.incidents && data.incidents.length > 0 ? (
-          <Chart 
-            type="scatter" 
-            data={chartData} 
-            options={chartOptions} 
-          />
+          <Chart type="bar" data={chartData} options={chartOptions} />
         ) : (
           <div className="text-content-muted">No incidents in this period</div>
         )}

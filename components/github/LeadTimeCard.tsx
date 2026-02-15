@@ -6,10 +6,30 @@ import { useDualModeMetricData } from '@/hooks/useDualModeMetricData';
 import MetricCardWrapper from './MetricCardWrapper';
 import { registerChartComponents } from '@/utils/chartRegistration';
 import ChartContainer from './metrics/shared/ChartContainer';
-import { createScatterChartOptions } from './utils/chartOptions';
+import { createHistogramChartOptions } from './utils/chartOptions';
 import { useTeamsGroups } from '@/contexts/TeamsGroupsContext';
 
-registerChartComponents(false);
+registerChartComponents(true);
+
+// Histogram buckets for lead time (hours)
+const LEAD_TIME_BUCKETS = [
+  { label: '< 15m', minHours: 0, maxHours: 0.25 },           // 0 to 15 minutes
+  { label: '15m-1h', minHours: 0.25, maxHours: 1 },         // 15 min to 1 hour
+  { label: '1h-6h', minHours: 1, maxHours: 6 },             // 1 hour to 6 hours
+  { label: '6h-1d', minHours: 6, maxHours: 24 },            // 6 hours to 1 day (24h)
+  { label: '1d-3d', minHours: 24, maxHours: 72 },            // 1 day to 3 days
+  { label: '3d-7d', minHours: 72, maxHours: 168 },          // 3 days to 7 days
+  { label: '7d-30d', minHours: 168, maxHours: 720 },        // 7 days to 30 days
+  { label: '30d-6mo', minHours: 720, maxHours: 4320 },      // 30 days to 6 months (180d)
+  { label: '6mo+', minHours: 4320, maxHours: Infinity },    // above 6 months
+];
+
+function getLeadTimeBucketIndex(hours: number): number {
+  const i = LEAD_TIME_BUCKETS.findIndex(
+    (b) => hours >= b.minHours && (b.maxHours === Infinity || hours < b.maxHours)
+  );
+  return i >= 0 ? i : LEAD_TIME_BUCKETS.length - 1;
+}
 
 interface LeadTimeData {
   summary: {
@@ -163,39 +183,48 @@ export default function LeadTimeCard(props?: LeadTimeCardProps) {
     }
   }, [isReportMode]); // Only run on mount/mode change
 
-  // Dark mode detection
+  // Theme colors (match Pickup Time bar chart: primary blue + white label in bar)
   const [isDark, setIsDark] = useState(false);
+  const [chartColors, setChartColors] = useState({ bar: 'rgb(37, 99, 235)', label: '#ffffff' });
   useEffect(() => {
-    const checkDark = () => setIsDark(document.documentElement.classList.contains('dark'));
-    checkDark();
-    const observer = new MutationObserver(checkDark);
+    const updateTheme = () => {
+      const root = document.documentElement;
+      setIsDark(root.classList.contains('dark'));
+      const primary = getComputedStyle(root).getPropertyValue('--color-primary').trim();
+      const bar = primary ? `rgb(${primary.replace(/\s+/g, ', ')})` : 'rgb(37, 99, 235)';
+      setChartColors({ bar, label: '#ffffff' });
+    };
+    updateTheme();
+    const observer = new MutationObserver(updateTheme);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     return () => observer.disconnect();
   }, []);
 
-  // Chart data transformation for scatter plot
+  // Chart data: histogram counts per bucket
   const chartData = useMemo(() => {
     if (!data || !data.changes || data.changes.length === 0) {
       return null;
     }
 
+    const counts = LEAD_TIME_BUCKETS.map(() => 0);
+    for (const change of data.changes) {
+      counts[getLeadTimeBucketIndex(change.lead_time_hours)] += 1;
+    }
+
     return {
+      labels: LEAD_TIME_BUCKETS.map((b) => b.label),
       datasets: [
         {
-          type: 'scatter' as const,
-          label: 'Lead Time',
-          data: data.changes.map(change => ({
-            x: change.change_index,
-            y: parseFloat(change.lead_time_hours.toFixed(1)),
-          })),
-          backgroundColor: '#3b82f6',
-          borderColor: '#2563eb',
-          pointRadius: 4,
-          pointHoverRadius: 6,
+          label: 'Changes',
+          data: counts,
+          backgroundColor: chartColors.bar,
+          datalabels: {
+            color: () => chartColors.label,
+          },
         },
       ],
     };
-  }, [data]);
+  }, [data, chartColors]);
 
   // Format time for display
   const formatTime = (hours: number): string => {
@@ -211,49 +240,34 @@ export default function LeadTimeCard(props?: LeadTimeCardProps) {
     return `${wholeHours}h`;
   };
 
-  // Chart options
-  const chartOptions = useMemo(() => {
-    if (!data) return {};
-    
-    return createScatterChartOptions({
-      plugins: {
-        tooltip: {
-          enabled: true,
-          callbacks: {
-            label: (context: any) => {
-              const hours = context.parsed.y;
-              const formatted = formatTime(hours);
-              return `Lead Time: ${formatted}`;
+  // Chart options (histogram)
+  const chartOptions = useMemo(
+    () =>
+      createHistogramChartOptions(
+        {
+          scales: {
+            x: { title: { display: true, text: 'Lead Time' } },
+            y: { title: { display: true, text: 'Changes' } },
+          },
+          plugins: {
+            datalabels: {
+              color: () => chartColors.label,
+              anchor: 'center',
+              align: 'center',
+              formatter: (value: number) => (value > 0 ? value : ''),
+            },
+            tooltip: {
+              callbacks: {
+                label: (context: { label?: string; parsed?: { y?: number | null } }) =>
+                  `${context.label}: ${context.parsed?.y ?? 0} changes`,
+              },
             },
           },
         },
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: 'Lead Time',
-          },
-          ticks: {
-            callback: function(value: any) {
-              const hours = value as number;
-              return formatTime(hours);
-            },
-          },
-        },
-        x: {
-          title: {
-            display: true,
-            text: 'Change',
-          },
-          ticks: {
-            stepSize: 1,
-          },
-        },
-      },
-    }, isDark);
-  }, [data, isDark]);
+        isDark
+      ),
+    [isDark, chartColors]
+  );
 
   // Format median time for display
   const formatMedianTime = (hours: number): string => {
@@ -299,14 +313,10 @@ export default function LeadTimeCard(props?: LeadTimeCardProps) {
         ) : null
       }
     >
-      {/* Scatter Plot Chart */}
+      {/* Lead Time histogram */}
       <ChartContainer>
         {chartData && data && data.changes && data.changes.length > 0 ? (
-          <Chart 
-            type="scatter" 
-            data={chartData} 
-            options={chartOptions} 
-          />
+          <Chart type="bar" data={chartData} options={chartOptions} />
         ) : (
           <div className="text-content-muted">No changes in this period</div>
         )}
