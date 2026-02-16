@@ -20,6 +20,24 @@ export const BUILD_REPORT_MULTI_BAR_METRICS: { value: string; label: string }[] 
   { value: 'updated', label: 'Issues updated' },
 ];
 
+/** Fields allowed for trend line (must exist on jira_issue_history). Matches backend TREND_LINE_ALLOWED_FIELDS. */
+export const TREND_LINE_ALLOWED_FIELDS = [
+  'status_category',
+  'status',
+  'team_name',
+  'issuetype',
+  'quarter_pi',
+  'flagged',
+  'story_points',
+] as const;
+
+export const TREND_LINE_OPERATORS: { value: string; label: string }[] = [
+  { value: 'equals', label: 'Equals' },
+  { value: 'contains', label: 'Contains' },
+  { value: 'greater_than', label: 'Greater than' },
+  { value: 'less_than', label: 'Less than' },
+];
+
 export interface StackByFieldOption {
   column_name: string;
   display_name: string;

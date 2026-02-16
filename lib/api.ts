@@ -454,10 +454,17 @@ export class ApiService {
     bar_2_metric?: string;
     stack_by?: string;
     bar_color?: string;
+    trend_line_enabled?: boolean;
+    trend_line_field?: string;
+    trend_line_operator?: string;
+    trend_line_values?: (string | number)[];
+    trend_line_label?: string;
+    trend_line_color?: string;
   }): Promise<{
     data: any[] | Record<string, any[]>;
     count: number;
     columns: string[];
+    trend_line_label?: string;
     meta?: {
       jira_url?: string;
     };
@@ -489,12 +496,12 @@ export class ApiService {
     }
 
     // Return data with meta included
-    // result.data is { data: actual_data, count: ..., columns: ... }
-    // We need to extract the nested data field
+    // result.data is { data: actual_data, count: ..., columns: ..., trend_line_label?: ... }
     return {
-      data: result.data.data,  // Extract the nested data field
+      data: result.data.data,
       count: result.data.count,
       columns: result.data.columns,
+      trend_line_label: result.data.trend_line_label,
       meta: result.meta
     };
   }
@@ -552,6 +559,12 @@ export class ApiService {
     bar_2_color?: string;
     stack_by?: string;
     bar_color?: string;
+    trend_line_enabled?: boolean;
+    trend_line_field?: string;
+    trend_line_operator?: string;
+    trend_line_values?: string[];
+    trend_line_label?: string;
+    trend_line_color?: string;
   }): Promise<ReportDefinition> {
     const url = buildBackendUrl('/reports/build/save');
     const response = await fetch(url, {
@@ -634,6 +647,12 @@ export class ApiService {
       bar_2_color?: string;
       stack_by?: string;
       bar_color?: string;
+      trend_line_enabled?: boolean;
+      trend_line_field?: string;
+      trend_line_operator?: string;
+      trend_line_values?: string[];
+      trend_line_label?: string;
+      trend_line_color?: string;
     }
   ): Promise<ReportDefinition> {
     const url = buildBackendUrl(`/reports/custom/${reportId}`);

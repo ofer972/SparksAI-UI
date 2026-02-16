@@ -72,6 +72,20 @@ export default function GenericReportView({
   
   // Extract buildConfig early (before useEffect that uses it)
   const buildConfig = definition?.meta_schema?.build_report_config;
+
+  // For build_report API result, data can be { data: array, count, columns, trend_line_label }; pass array and trend_line_label for chart (hooks must run before any return)
+  const chartData = useMemo(() => {
+    if (definition?.data_source === 'build_report' && data && typeof data === 'object' && !Array.isArray(data) && Array.isArray((data as any).data)) {
+      return (data as { data: any[] }).data;
+    }
+    return data;
+  }, [data, definition?.data_source]);
+  const trendLineLabelFromData = useMemo(() => {
+    if (data && typeof data === 'object' && !Array.isArray(data) && 'trend_line_label' in data) {
+      return (data as { trend_line_label?: string }).trend_line_label;
+    }
+    return undefined;
+  }, [data]);
   
   // Extract filters from buildConfig.filters (filters defined during Build Report)
   interface BuildReportFilter {
@@ -184,6 +198,7 @@ export default function GenericReportView({
             values: Array.isArray(f.values) ? f.values : (f.values ? [f.values] : []),
           }));
           const defaultFilterFields = new Set(['quarter_pi', 'team_name']);
+          const reportDefaults = definition?.default_filters || {};
           setFilters((prevFilters: any) => {
             const next: Record<string, any> = { ...prevFilters, filter_overrides: filterOverrides };
             mergedFilters.forEach((f) => {
@@ -192,6 +207,9 @@ export default function GenericReportView({
               if (vals.length === 1) next[f.field] = vals[0];
               else if (vals.length > 1) next[f.field] = vals;
             });
+            if (reportDefaults.team_name != null) next.team_name = reportDefaults.team_name;
+            if (reportDefaults.pi != null) next.pi = reportDefaults.pi;
+            if (typeof reportDefaults.isGroup === 'boolean') next.isGroup = reportDefaults.isGroup;
             return next;
           });
         }
@@ -719,7 +737,7 @@ export default function GenericReportView({
     >
       <GenericReportVisualization
         chartType={chartType as 'table' | 'bar_chart' | 'pie_chart' | 'multi_bar'}
-        data={data}
+        data={chartData}
         loading={loading}
         error={error}
         tableColumns={tableColumns}
@@ -737,6 +755,8 @@ export default function GenericReportView({
         initialSortConfig={chartType === 'table' && buildConfig?.default_sort?.key ? { key: buildConfig.default_sort.key, direction: (buildConfig.default_sort.direction === 'desc' ? 'desc' : 'asc') } : undefined}
         onBarClick={chartType === 'bar_chart' ? handleBarClick : undefined}
         onPieSliceClick={chartType === 'pie_chart' ? handlePieSliceClick : undefined}
+        trendLineLabel={chartType === 'multi_bar' ? trendLineLabelFromData : undefined}
+        trendLineColor={chartType === 'multi_bar' ? buildConfig?.trend_line_color : undefined}
       />
       {chartType === 'bar_chart' || chartType === 'pie_chart' ? (
         <IssuesDialog<Record<string, unknown>>

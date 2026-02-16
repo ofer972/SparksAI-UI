@@ -9,7 +9,8 @@ import GenericReportVisualization from './reportViews/GenericReportVisualization
 import { sortFieldsSelectedFirst } from './BuildReportTab.helpers';
 import FieldSelector, { type ReportField as FieldSelectorReportField } from './BuildReportTab.FieldSelector';
 import FilterConfigPanel, { type FilterableField as FilterConfigFilterableField, type Filter as FilterConfigFilter } from './BuildReportTab.FilterConfigPanel';
-import { BUILD_REPORT_BAR_COLORS, BUILD_REPORT_MULTI_BAR_METRICS } from './buildReport/constants';
+import { BUILD_REPORT_BAR_COLORS, BUILD_REPORT_MULTI_BAR_METRICS, TREND_LINE_ALLOWED_FIELDS } from './buildReport/constants';
+import GenericReportFilterMultiSelect from './GenericReportFilterMultiSelect';
 import BuildReportBarColorSelect from './buildReport/BarColorSelect';
 import BuildReportStackBySelect from './buildReport/StackBySelect';
 import BuildReportColoredSelect from './buildReport/ColoredSelect';
@@ -57,7 +58,14 @@ export default function BuildReportTab() {
   const [multiBarBar1Color, setMultiBarBar1Color] = useState<string>(BUILD_REPORT_BAR_COLORS[0].value);
   const [multiBarBar2Color, setMultiBarBar2Color] = useState<string>(BUILD_REPORT_BAR_COLORS[1].value);
   const [multiBarStackBy, setMultiBarStackBy] = useState<string>('');
-  
+  // Trend line (multi-bar only, from jira_issue_history)
+  const [trendLineEnabled, setTrendLineEnabled] = useState<boolean>(false);
+  const [trendLineField, setTrendLineField] = useState<string>('');
+  const [trendLineValues, setTrendLineValues] = useState<string[]>([]);
+  const [trendLineLabel, setTrendLineLabel] = useState<string>('');
+  const [trendLineLabelFromReport, setTrendLineLabelFromReport] = useState<string | undefined>(undefined);
+  const [trendLineColor, setTrendLineColor] = useState<string>(BUILD_REPORT_BAR_COLORS[2].value); // Blue
+
   // Dark mode detection
   const [isDark, setIsDark] = useState(false);
   useEffect(() => {
@@ -204,6 +212,21 @@ export default function BuildReportTab() {
     loadPIs();
   }, []);
 
+  // Load dropdown values for trend line field when selected
+  useEffect(() => {
+    if (!trendLineEnabled || !trendLineField || dropdownValues[trendLineField]) return;
+    setLoadingDropdownValues(prev => ({ ...prev, [trendLineField]: true }));
+    apiService.getFilterDropdownValues([trendLineField])
+      .then(values => setDropdownValues(prev => ({ ...prev, ...values })))
+      .catch(err => console.error('Failed to load trend line field options:', err))
+      .finally(() => {
+        setLoadingDropdownValues(prev => {
+          const next = { ...prev };
+          delete next[trendLineField];
+          return next;
+        });
+      });
+  }, [trendLineEnabled, trendLineField]);
 
   // Load default team/group from user preferences
   useEffect(() => {
@@ -413,6 +436,13 @@ export default function BuildReportTab() {
         lookback_months: reportType === 'multi_bar' ? multiBarMonths : undefined,
         bar_1_metric: reportType === 'multi_bar' ? multiBarMetric1 : undefined,
         bar_2_metric: reportType === 'multi_bar' ? multiBarMetric2 : undefined,
+        ...(reportType === 'multi_bar' && trendLineEnabled && trendLineField && trendLineValues.length > 0 && {
+          trend_line_enabled: true,
+          trend_line_field: trendLineField,
+          trend_line_operator: 'equals',
+          trend_line_values: trendLineValues,
+          trend_line_label: trendLineLabel.trim() || undefined,
+        }),
         filters: allFilters.map(f => {
           // Ensure operator is always set (default to 'equals' if missing)
           const operator = f.operator || 'equals';
@@ -442,7 +472,12 @@ export default function BuildReportTab() {
         // Table or bar chart - data is an array
         setReportData(Array.isArray(result.data) ? result.data : []);
       }
-      
+      if (reportType === 'multi_bar' && result.trend_line_label !== undefined) {
+        setTrendLineLabelFromReport(result.trend_line_label);
+      } else {
+        setTrendLineLabelFromReport(undefined);
+      }
+
       // Extract Jira URL from response meta if available
       if (result.meta?.jira_url) {
         setJiraUrl(result.meta.jira_url);
@@ -537,6 +572,13 @@ export default function BuildReportTab() {
           setMultiBarBar2Color(buildConfig.bar_2_color);
         }
         setMultiBarStackBy(buildConfig.stack_by ?? '');
+        setTrendLineEnabled(Boolean(buildConfig.trend_line_enabled));
+        setTrendLineField(buildConfig.trend_line_field ?? '');
+        setTrendLineValues(Array.isArray(buildConfig.trend_line_values) ? buildConfig.trend_line_values : []);
+        setTrendLineLabel(buildConfig.trend_line_label ?? '');
+        if (buildConfig.trend_line_color && typeof buildConfig.trend_line_color === 'string' && buildConfig.trend_line_color.trim()) {
+          setTrendLineColor(buildConfig.trend_line_color.trim());
+        }
       }
       
       // Load default filters from default_filters column (like system reports)
@@ -654,6 +696,11 @@ export default function BuildReportTab() {
     setDefaultSortDirection('asc');
     setReportData([]);
     setError(null);
+    setTrendLineEnabled(false);
+    setTrendLineField('');
+    setTrendLineValues([]);
+    setTrendLineLabel('');
+    setTrendLineLabelFromReport(undefined);
   };
   
   // Handle save report
@@ -713,6 +760,14 @@ export default function BuildReportTab() {
         bar_1_color: multiBarBar1Color,
         bar_2_color: multiBarBar2Color,
         ...(multiBarStackBy ? { stack_by: multiBarStackBy } : {}),
+        ...(trendLineEnabled && trendLineField && trendLineValues.length > 0 ? {
+          trend_line_enabled: true,
+          trend_line_field: trendLineField,
+          trend_line_operator: 'equals',
+          trend_line_values: trendLineValues,
+          trend_line_label: trendLineLabel.trim() || undefined,
+          trend_line_color: trendLineColor,
+        } : {}),
       }),
     };
     
@@ -853,8 +908,8 @@ export default function BuildReportTab() {
           />
         </div>
         
-        {/* Right Panel - Build Report Interface */}
-        <div className="flex-1 min-w-0 flex flex-col space-y-4 pl-4">
+        {/* Right Panel - Build Report Interface (scrollable when content overflows) */}
+        <div className="flex-1 min-w-0 min-h-0 flex flex-col space-y-4 pl-4 overflow-y-auto">
           {/* Header - Show current report status */}
           <div className="flex-shrink-0 pb-3 border-b border-outline">
             <div className="flex items-center gap-2">
@@ -1080,6 +1135,84 @@ export default function BuildReportTab() {
                 onChange={(v) => { setMultiBarBar2Color(v); if (!isLoadingReport) setReportData([]); }}
               />
             </div>
+            {/* Trend line: field + values (same UX as report filters – field then checkboxes, no condition) */}
+            <div className="flex items-center gap-4 flex-wrap">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={trendLineEnabled}
+                  onChange={(e) => {
+                    setTrendLineEnabled(e.target.checked);
+                    if (!e.target.checked) {
+                      setTrendLineField('');
+                      setTrendLineValues([]);
+                      setTrendLineLabel('');
+                    }
+                    if (!isLoadingReport) setReportData([]);
+                  }}
+                  className="w-4 h-4 text-brand focus:ring-brand rounded border-outline"
+                />
+                <span className="text-sm font-medium text-content-primary">Add trend line</span>
+              </label>
+              {trendLineEnabled && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-content-primary whitespace-nowrap">Field:</label>
+                    <select
+                      value={trendLineField}
+                      onChange={(e) => {
+                        setTrendLineField(e.target.value);
+                        setTrendLineValues([]);
+                        if (!isLoadingReport) setReportData([]);
+                      }}
+                      className="min-w-[140px] px-3 py-2 border border-outline rounded-md text-sm bg-surface-elevated text-content-primary focus:outline-none focus:ring-2 focus:ring-brand"
+                    >
+                      <option value="">Select field...</option>
+                      {filterableFields
+                        .filter(f => TREND_LINE_ALLOWED_FIELDS.includes(f.column_name as any))
+                        .map(f => (
+                          <option key={f.column_name} value={f.column_name}>{f.display_name}</option>
+                        ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-content-primary whitespace-nowrap">Values:</label>
+                    <div className={`min-w-[160px] ${loadingDropdownValues[trendLineField] ? 'opacity-60 pointer-events-none' : ''}`}>
+                      <GenericReportFilterMultiSelect
+                        options={loadingDropdownValues[trendLineField] ? [] : (dropdownValues[trendLineField] || [])}
+                        selectedValues={trendLineValues}
+                        onChange={(values) => {
+                          setTrendLineValues(values);
+                          if (!isLoadingReport) setReportData([]);
+                        }}
+                        placeholder={loadingDropdownValues[trendLineField] ? 'Loading...' : 'All'}
+                        disabled={loadingDropdownValues[trendLineField]}
+                        maxHeight={280}
+                      />
+                    </div>
+                    {trendLineField && !dropdownValues[trendLineField] && !loadingDropdownValues[trendLineField] && (
+                      <span className="text-xs text-content-tertiary">Run report to load options</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-content-primary whitespace-nowrap">Trend label:</label>
+                    <input
+                      type="text"
+                      value={trendLineLabel}
+                      onChange={(e) => setTrendLineLabel(e.target.value.slice(0, 80))}
+                      placeholder="e.g. Open items"
+                      maxLength={80}
+                      className="min-w-[140px] px-3 py-2 border border-outline rounded-md text-sm bg-surface-elevated text-content-primary focus:outline-none focus:ring-2 focus:ring-brand"
+                    />
+                  </div>
+                  <BuildReportBarColorSelect
+                    label="Trend color:"
+                    value={trendLineColor}
+                    onChange={(v) => { setTrendLineColor(v); if (!isLoadingReport) setReportData([]); }}
+                  />
+                </>
+              )}
+            </div>
           </div>
         )}
 
@@ -1236,8 +1369,8 @@ export default function BuildReportTab() {
           />
         </div>
 
-        {/* Results */}
-        <div className="flex-1 min-h-0">
+        {/* Results - fixed height for chart previews (~400px chart + header) so the panel scrolls instead of the chart growing */}
+        <div className={reportType === 'table' ? 'flex-1 min-h-0' : 'h-[460px] flex-shrink-0 min-h-0'}>
           {loadingReport ? (
             <div className="flex items-center justify-center h-64">
               <div className="flex flex-col items-center">
@@ -1270,6 +1403,8 @@ export default function BuildReportTab() {
               bar1Color={reportType === 'multi_bar' ? multiBarBar1Color : undefined}
               bar2Color={reportType === 'multi_bar' ? multiBarBar2Color : undefined}
               barColor={reportType === 'bar_chart' ? barChartBarColor : undefined}
+              trendLineLabel={reportType === 'multi_bar' ? (trendLineLabelFromReport ?? trendLineLabel || 'Trend') : undefined}
+              trendLineColor={reportType === 'multi_bar' ? trendLineColor : undefined}
             />
           ) : (
             <div className="flex items-center justify-center h-64">

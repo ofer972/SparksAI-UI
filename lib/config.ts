@@ -515,6 +515,12 @@ export interface ReportDefinition {
       bar_2_color?: string;
       stack_by?: string;
       bar_color?: string;
+      trend_line_enabled?: boolean;
+      trend_line_field?: string;
+      trend_line_operator?: string;
+      trend_line_values?: string[];
+      trend_line_label?: string;
+      trend_line_color?: string;
     };
   };
 }

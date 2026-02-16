@@ -2,9 +2,12 @@
 
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import DataTable, { Column, SortConfig } from '@/components/DataTable';
+import { Chart as ChartJS, LineElement, PointElement } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { ResponsivePie } from '@nivo/pie';
+
+ChartJS.register(LineElement, PointElement);
 
 const COLOR_PALETTE = [
   '#991b1b',
@@ -119,6 +122,10 @@ interface GenericReportVisualizationProps {
   onBarClick?: (payload: { x_value: string | number }) => void;
   /** Called when a pie slice is clicked (report view drill-down). */
   onPieSliceClick?: (payload: { x_value: string | number; fieldName?: string }) => void;
+  /** Multi-bar: optional trend line label (from backend or user). */
+  trendLineLabel?: string;
+  /** Multi-bar: trend line color (default #4169E1). */
+  trendLineColor?: string;
 }
 
 export default function GenericReportVisualization({
@@ -141,6 +148,8 @@ export default function GenericReportVisualization({
   initialSortConfig,
   onBarClick,
   onPieSliceClick,
+  trendLineLabel = 'Trend',
+  trendLineColor = '#4169E1',
 }: GenericReportVisualizationProps) {
   const [sortConfig, setSortConfig] = useState<SortConfig>(() =>
     initialSortConfig?.key ? { key: initialSortConfig.key, direction: initialSortConfig.direction } : { key: null, direction: 'asc' }
@@ -383,6 +392,7 @@ export default function GenericReportVisualization({
                   beginAtZero: true,
                   ticks: { stepSize: 1 },
                   stacked: isBarStacked,
+                  grace: '5%', // ~20px space between top bar and top Y-axis label
                 },
               },
             }}
@@ -425,6 +435,15 @@ export default function GenericReportVisualization({
     }
 
     const labelsMulti = multiBarData.map((d: { x_value?: string }) => String(d.x_value ?? ''));
+    const hasTrendLine = multiBarData.length > 0 && 'trend_value' in multiBarData[0];
+    const trendValues = hasTrendLine
+      ? (multiBarData as Array<{ trend_value?: number }>).map((d) => d.trend_value ?? 0)
+      : [];
+    // Normalize trend color: null/empty from report definition breaks Chart.js (black line, no datalabels). Use default when invalid.
+    const effectiveTrendColor =
+      trendLineColor && typeof trendLineColor === 'string' && trendLineColor.trim()
+        ? trendLineColor.trim()
+        : '#4169E1';
 
     const chartData = isStacked
       ? (() => {
@@ -449,30 +468,67 @@ export default function GenericReportVisualization({
             ...buildStackedBarDatasets(bar1Rows, bar1Color ?? COLOR_PALETTE[0], 'bar1', { labelPrefix: bar1Label, segmentOrder }),
             ...buildStackedBarDatasets(bar2Rows, bar2Color ?? COLOR_PALETTE[2], 'bar2', { labelPrefix: bar2Label, segmentOrder }),
           ];
+          if (hasTrendLine) {
+            datasets.push({
+              type: 'line' as const,
+              label: trendLineLabel,
+              data: trendValues,
+              borderColor: effectiveTrendColor,
+              backgroundColor: effectiveTrendColor,
+              borderWidth: 2,
+              fill: false,
+              tension: 0,
+              pointRadius: 3,
+              pointHoverRadius: 8,
+              pointBackgroundColor: effectiveTrendColor,
+              pointBorderColor: effectiveTrendColor,
+              yAxisID: 'y1',
+              order: 0,
+            });
+          }
           return { labels: labelsMulti, datasets };
         })()
       : (() => {
           const rows = multiBarData as Array<{ x_value: string; bar_1_value: number; bar_2_value: number }>;
-          return {
-            labels: labelsMulti,
-            datasets: [
-              {
-                label: bar1Label,
-                data: rows.map((d) => d.bar_1_value ?? 0),
-                backgroundColor: bar1Color ?? COLOR_PALETTE[0],
-                borderColor: bar1Color ?? COLOR_PALETTE[0],
-                borderWidth: 1,
-              },
-              {
-                label: bar2Label,
-                data: rows.map((d) => d.bar_2_value ?? 0),
-                backgroundColor: bar2Color ?? COLOR_PALETTE[2],
-                borderColor: bar2Color ?? COLOR_PALETTE[2],
-                borderWidth: 1,
-              },
-            ],
-          };
+          const datasets: any[] = [
+            {
+              label: bar1Label,
+              data: rows.map((d) => d.bar_1_value ?? 0),
+              backgroundColor: bar1Color ?? COLOR_PALETTE[0],
+              borderColor: bar1Color ?? COLOR_PALETTE[0],
+              borderWidth: 1,
+            },
+            {
+              label: bar2Label,
+              data: rows.map((d) => d.bar_2_value ?? 0),
+              backgroundColor: bar2Color ?? COLOR_PALETTE[2],
+              borderColor: bar2Color ?? COLOR_PALETTE[2],
+              borderWidth: 1,
+            },
+          ];
+          if (hasTrendLine) {
+            datasets.push({
+              type: 'line' as const,
+              label: trendLineLabel,
+              data: trendValues,
+              borderColor: effectiveTrendColor,
+              backgroundColor: effectiveTrendColor,
+              borderWidth: 2,
+              fill: false,
+              tension: 0,
+              pointRadius: 3,
+              pointHoverRadius: 8,
+              pointBackgroundColor: effectiveTrendColor,
+              pointBorderColor: effectiveTrendColor,
+              yAxisID: 'y1',
+              order: 0,
+            });
+          }
+          return { labels: labelsMulti, datasets };
         })();
+
+    const maxTrend = hasTrendLine && trendValues.length > 0 ? Math.max(...trendValues) : 0;
+    const suggestedMaxRight = maxTrend > 0 ? Math.ceil(maxTrend * 1.15) : undefined;
 
     return (
       <div className="flex flex-col h-full">
@@ -480,6 +536,7 @@ export default function GenericReportVisualization({
           <p className="text-sm text-content-secondary">
             {multiBarData.length} {multiBarData.length === 1 ? 'period' : 'periods'}
             {isStacked ? ' (stacked)' : ''}
+            {hasTrendLine ? ' + trend line' : ''}
           </p>
         </div>
         <div
@@ -505,16 +562,24 @@ export default function GenericReportVisualization({
                   labels: {
                     boxWidth: 20,
                     boxHeight: 12,
+                    usePointStyle: hasTrendLine,
                   },
                 },
-                tooltip: { enabled: true },
+                tooltip: {
+                  mode: 'index',
+                  intersect: false,
+                },
                 datalabels: {
                   display: true,
-                  color: '#ffffff',
-                  font: { size: 11, weight: 'bold' as const },
-                  formatter: (value: number) => (value == null || value === 0 ? '' : String(value)),
-                  anchor: 'center' as const,
-                  align: 'center' as const,
+                  color: (context: any) =>
+                    context.dataset.yAxisID === 'y1' ? effectiveTrendColor : '#ffffff',
+                  font: (context: any) =>
+                    ({ size: context.dataset.yAxisID === 'y1' ? 11 : 11, weight: 'bold' as const }),
+                  formatter: (value: number, context: any) =>
+                    value == null || (value === 0 && context.dataset.yAxisID !== 'y1') ? '' : String(value),
+                  anchor: (context: any) => (context.dataset.yAxisID === 'y1' ? 'center' : 'center'),
+                  align: (context: any) => (context.dataset.yAxisID === 'y1' ? 'top' : 'center'),
+                  offset: (context: any) => (context.dataset.yAxisID === 'y1' ? -4 : 0),
                 },
               },
               scales: {
@@ -526,7 +591,21 @@ export default function GenericReportVisualization({
                   beginAtZero: true,
                   ticks: { stepSize: 1 },
                   stacked: isStacked,
+                  grace: '5%', // ~20px space between top bar and top Y-axis label
                 },
+                ...(hasTrendLine && {
+                  y1: {
+                    type: 'linear' as const,
+                    display: true,
+                    position: 'right' as const,
+                    beginAtZero: true,
+                    max: suggestedMaxRight,
+                    grid: { drawOnChartArea: false },
+                    ticks: { stepSize: 1, color: effectiveTrendColor },
+                    border: { color: effectiveTrendColor },
+                    grace: '5%', // ~20px space between top of trend line and top Y-axis label
+                  },
+                }),
               },
             }}
             plugins={[ChartDataLabels]}
