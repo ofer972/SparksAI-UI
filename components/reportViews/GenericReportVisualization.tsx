@@ -507,10 +507,11 @@ export default function GenericReportVisualization({
             .sort();
           const bar1Rows = rows.map((d) => ({ stacked: d.bar_1_stacked || {} }));
           const bar2Rows = rows.map((d) => ({ stacked: d.bar_2_stacked || {} }));
-          const datasets: any[] = [
-            ...buildStackedBarDatasets(bar1Rows, bar1Color ?? COLOR_PALETTE[0], 'bar1', { labelPrefix: bar1Label, segmentOrder }),
-            ...buildStackedBarDatasets(bar2Rows, bar2Color ?? COLOR_PALETTE[2], 'bar2', { labelPrefix: bar2Label, segmentOrder }),
-          ];
+          const bar1Datasets = buildStackedBarDatasets(bar1Rows, bar1Color ?? COLOR_PALETTE[0], 'bar1', { labelPrefix: bar1Label, segmentOrder });
+          const bar2Datasets = buildStackedBarDatasets(bar2Rows, bar2Color ?? COLOR_PALETTE[2], 'bar2', { labelPrefix: bar2Label, segmentOrder });
+          bar1Datasets.forEach((d) => ((d as any).order = 1));
+          bar2Datasets.forEach((d) => ((d as any).order = 1));
+          const datasets: any[] = [...bar1Datasets, ...bar2Datasets];
           if (hasTrendLine) {
             datasets.push({
               type: 'line' as const,
@@ -540,6 +541,7 @@ export default function GenericReportVisualization({
               backgroundColor: bar1Color ?? COLOR_PALETTE[0],
               borderColor: bar1Color ?? COLOR_PALETTE[0],
               borderWidth: 1,
+              order: 1,
             },
             {
               label: bar2Label,
@@ -547,6 +549,7 @@ export default function GenericReportVisualization({
               backgroundColor: bar2Color ?? COLOR_PALETTE[2],
               borderColor: bar2Color ?? COLOR_PALETTE[2],
               borderWidth: 1,
+              order: 1,
             },
           ];
           if (hasTrendLine) {
