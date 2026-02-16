@@ -22,6 +22,7 @@ import SaveReportModal from './SaveReportModal';
 import CustomReportsList from './CustomReportsList';
 import Toast from './Toast';
 import { ReportDefinition } from '@/lib/config';
+import IssuesDialog from './reportViews/IssuesDialog';
 
 
 interface ReportField {
@@ -110,6 +111,15 @@ export default function BuildReportTab() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [isLoadingReport, setIsLoadingReport] = useState(false);
+
+  // Segment drill-down (bar/pie click → issues dialog); only when saved report is selected
+  const [selectedSegment, setSelectedSegment] = useState<{
+    x_value: string | number;
+    fieldName?: string;
+    stack_by_value?: string;
+    bar_metric?: string;
+  } | null>(null);
+  const [isSegmentDialogOpen, setIsSegmentDialogOpen] = useState(false);
 
   // Get user preferences for default team/group
   const { preferences } = useUser();
@@ -863,6 +873,77 @@ export default function BuildReportTab() {
     });
   }, [selectedFields, displayableFields, effectiveJiraUrl, handleIssueKeyClick]);
 
+  // Effective filters that produced the current chart — use these for segment issues so counts match
+  const effectiveFiltersForSegment = useMemo(() => {
+    const validFilters = filters.filter(
+      (f) => f.field && f.values && (Array.isArray(f.values) ? f.values.length > 0 : String(f.values).trim() !== '')
+    );
+    const filter_overrides = validFilters.map((f) => ({
+      field: f.field,
+      operator: f.operator || 'equals',
+      values: Array.isArray(f.values) ? f.values : [f.values],
+    }));
+    if (selectedPI) {
+      filter_overrides.push({ field: 'quarter_pi', operator: 'equals', values: [selectedPI] });
+    }
+    return {
+      team_name: selectedTeamGroupName || undefined,
+      isGroup,
+      pi: selectedPI || undefined,
+      filter_overrides,
+    };
+  }, [filters, selectedPI, selectedTeamGroupName, isGroup]);
+
+  const segmentIssueColumns: Column<Record<string, unknown>>[] = useMemo(
+    () => [
+      { key: 'issue_key', label: 'Issue key', width: '12%' },
+      { key: 'issue_type', label: 'Issue type', width: '12%' },
+      { key: 'status', label: 'Status', width: '12%' },
+      { key: 'summary', label: 'Summary', align: 'left', maxLength: 80 },
+      { key: 'created_at', label: 'Created at', width: '12%' },
+      { key: 'updated_at', label: 'Updated at', width: '12%' },
+      { key: 'assignee_name', label: 'Assignee', width: '12%' },
+    ],
+    []
+  );
+
+  const fetchSegmentIssuesFunction = useCallback(() => {
+    if (!selectedReportId || !selectedSegment) {
+      return Promise.resolve({ success: false, message: 'Missing report or segment' });
+    }
+    const segment = {
+      x_value: selectedSegment.x_value,
+      ...(selectedSegment.fieldName != null && { group_by_field: selectedSegment.fieldName }),
+      ...(selectedSegment.stack_by_value !== undefined && { stack_by_value: selectedSegment.stack_by_value }),
+      ...(selectedSegment.bar_metric != null && { bar_metric: selectedSegment.bar_metric }),
+    };
+    return apiService.getBuildReportIssues(selectedReportId, effectiveFiltersForSegment, segment);
+  }, [selectedReportId, selectedSegment, effectiveFiltersForSegment]);
+
+  const handleBarClick = useCallback((payload: { x_value: string | number; stack_by_value?: string; bar_metric?: string }) => {
+    setSelectedSegment({ x_value: payload.x_value, stack_by_value: payload.stack_by_value, bar_metric: payload.bar_metric });
+    setIsSegmentDialogOpen(true);
+  }, []);
+
+  const handlePieSliceClick = useCallback((payload: { x_value: string | number; fieldName?: string }) => {
+    setSelectedSegment({ x_value: payload.x_value, fieldName: payload.fieldName });
+    setIsSegmentDialogOpen(true);
+  }, []);
+
+  const segmentDialogTitle = useMemo(() => {
+    if (!selectedSegment) return 'Issues';
+    const label = String(selectedSegment.x_value);
+    if (selectedSegment.fieldName) {
+      const field = filterableFields.find((f) => f.column_name === selectedSegment.fieldName) ||
+        displayableFields.find((f) => f.column_name === selectedSegment.fieldName);
+      const fieldLabel = field?.display_name ?? selectedSegment.fieldName.replace(/_/g, ' ');
+      return `Issues: ${label} (${fieldLabel})`;
+    }
+    if (selectedSegment.stack_by_value !== undefined) return `Issues: ${label} · ${selectedSegment.stack_by_value}`;
+    if (selectedSegment.bar_metric) return `Issues: ${label} (${selectedSegment.bar_metric})`;
+    return `Issues: ${label}`;
+  }, [selectedSegment, filterableFields, displayableFields]);
+
   if (loadingFields) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -1403,8 +1484,12 @@ export default function BuildReportTab() {
               bar1Color={reportType === 'multi_bar' ? multiBarBar1Color : undefined}
               bar2Color={reportType === 'multi_bar' ? multiBarBar2Color : undefined}
               barColor={reportType === 'bar_chart' ? barChartBarColor : undefined}
-              trendLineLabel={reportType === 'multi_bar' ? (trendLineLabelFromReport ?? trendLineLabel || 'Trend') : undefined}
+              trendLineLabel={reportType === 'multi_bar' ? (trendLineLabelFromReport ?? (trendLineLabel || 'Trend')) : undefined}
               trendLineColor={reportType === 'multi_bar' ? trendLineColor : undefined}
+              onBarClick={selectedReportId && (reportType === 'bar_chart' || reportType === 'multi_bar') ? handleBarClick : undefined}
+              onPieSliceClick={selectedReportId && reportType === 'pie_chart' ? handlePieSliceClick : undefined}
+              bar1Metric={reportType === 'multi_bar' ? multiBarMetric1 : undefined}
+              bar2Metric={reportType === 'multi_bar' ? multiBarMetric2 : undefined}
             />
           ) : (
             <div className="flex items-center justify-center h-64">
@@ -1414,6 +1499,16 @@ export default function BuildReportTab() {
         </div>
         </div>
       </div>
+
+      <IssuesDialog
+        isOpen={isSegmentDialogOpen}
+        onClose={() => { setIsSegmentDialogOpen(false); setSelectedSegment(null); }}
+        title={segmentDialogTitle}
+        columns={segmentIssueColumns}
+        fetchFunction={fetchSegmentIssuesFunction}
+        jiraUrl={effectiveJiraUrl}
+        emptyMessage="No issues found for the selected segment."
+      />
     </>
   );
 }

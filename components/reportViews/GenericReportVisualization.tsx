@@ -118,8 +118,12 @@ interface GenericReportVisualizationProps {
   onOpenAllInJira?: () => void;
   /** Initial sort when viewing report (e.g. saved default sort) */
   initialSortConfig?: SortConfig | null;
-  /** Called when a bar is clicked (report view drill-down). */
-  onBarClick?: (payload: { x_value: string | number }) => void;
+  /** Called when a bar is clicked (report view drill-down). Optional stack_by_value for stacked bars; bar_metric for multi_bar (e.g. "created" | "resolved"). */
+  onBarClick?: (payload: { x_value: string | number; stack_by_value?: string; bar_metric?: string }) => void;
+  /** Multi-bar: metric key for bar 1 (e.g. "created") so segment issues can filter by clicked bar. */
+  bar1Metric?: string;
+  /** Multi-bar: metric key for bar 2 (e.g. "resolved"). */
+  bar2Metric?: string;
   /** Called when a pie slice is clicked (report view drill-down). */
   onPieSliceClick?: (payload: { x_value: string | number; fieldName?: string }) => void;
   /** Multi-bar: optional trend line label (from backend or user). */
@@ -148,6 +152,8 @@ export default function GenericReportVisualization({
   initialSortConfig,
   onBarClick,
   onPieSliceClick,
+  bar1Metric,
+  bar2Metric,
   trendLineLabel = 'Trend',
   trendLineColor = '#4169E1',
 }: GenericReportVisualizationProps) {
@@ -215,14 +221,51 @@ export default function GenericReportVisualization({
     () => chartDataBar.map((item: any) => item.x_value ?? item[xAxisField] ?? ''),
     [chartDataBar, xAxisField]
   );
+  // Segment order for stacked bar: same order as buildStackedBarDatasets so datasetIndex maps to segment value
+  const segmentOrderBar = useMemo(() => {
+    if (chartType !== 'bar_chart' || !chartDataBar.length || !('stacked' in chartDataBar[0])) return [];
+    const set = new Set<string>();
+    (chartDataBar as Array<{ stacked: Record<string, number> }>).forEach((d) =>
+      Object.keys(d.stacked || {}).forEach((k) => set.add(k))
+    );
+    return Array.from(set)
+      .filter((seg) => (chartDataBar as Array<{ stacked: Record<string, number> }>).some((d) => ((d.stacked && d.stacked[seg]) || 0) > 0))
+      .sort();
+  }, [chartType, chartDataBar]);
   const handleBarClick = useCallback(
-    (_event: unknown, elements: { index?: number }[]) => {
+    (_event: unknown, elements: { index?: number; datasetIndex?: number }[]) => {
       if (!onBarClick || !elements?.length || elements[0].index == null) return;
       const index = elements[0].index;
+      const datasetIndex = elements[0].datasetIndex ?? 0;
       const xVal = chartDataBar[index]?.x_value ?? chartDataBar[index]?.[xAxisField] ?? labelsBar[index];
-      if (xVal !== undefined && xVal !== null) onBarClick({ x_value: xVal });
+      if (xVal === undefined || xVal === null) return;
+      const stackByValue =
+        segmentOrderBar.length > 0 && datasetIndex >= 0 && datasetIndex < segmentOrderBar.length
+          ? segmentOrderBar[datasetIndex]
+          : undefined;
+      onBarClick({ x_value: xVal, ...(stackByValue !== undefined && { stack_by_value: stackByValue }) });
     },
-    [onBarClick, chartDataBar, xAxisField, labelsBar]
+    [onBarClick, chartDataBar, xAxisField, labelsBar, segmentOrderBar]
+  );
+
+  // Multi-bar: labels for period (x_value); handler at top level for hooks rules
+  const labelsMultiBar = useMemo(
+    () =>
+      chartType === 'multi_bar' && Array.isArray(data)
+        ? (data as Array<{ x_value?: string }>).map((d) => String(d.x_value ?? ''))
+        : [],
+    [chartType, data]
+  );
+  const handleMultiBarClick = useCallback(
+    (_evt: unknown, elements: { index?: number; datasetIndex?: number }[]) => {
+      if (!onBarClick || !elements?.length || elements[0].index == null) return;
+      const index = elements[0].index;
+      const datasetIndex = elements[0].datasetIndex ?? 0;
+      if (labelsMultiBar.length === 0 || index < 0 || index >= labelsMultiBar.length) return;
+      const bar_metric = datasetIndex === 0 ? bar1Metric : bar2Metric;
+      onBarClick({ x_value: labelsMultiBar[index], ...(bar_metric && { bar_metric }) });
+    },
+    [onBarClick, labelsMultiBar, bar1Metric, bar2Metric]
   );
 
   // Table rendering
@@ -464,7 +507,7 @@ export default function GenericReportVisualization({
             .sort();
           const bar1Rows = rows.map((d) => ({ stacked: d.bar_1_stacked || {} }));
           const bar2Rows = rows.map((d) => ({ stacked: d.bar_2_stacked || {} }));
-          const datasets = [
+          const datasets: any[] = [
             ...buildStackedBarDatasets(bar1Rows, bar1Color ?? COLOR_PALETTE[0], 'bar1', { labelPrefix: bar1Label, segmentOrder }),
             ...buildStackedBarDatasets(bar2Rows, bar2Color ?? COLOR_PALETTE[2], 'bar2', { labelPrefix: bar2Label, segmentOrder }),
           ];
@@ -542,7 +585,7 @@ export default function GenericReportVisualization({
         <div
           ref={barContainerRef}
           className="flex-1 min-h-0"
-          style={{ height: '400px', minHeight: 0 }}
+          style={{ height: '400px', cursor: onBarClick ? 'pointer' : 'default', minHeight: 0 }}
         >
           <Chart
             type="bar"
@@ -555,6 +598,7 @@ export default function GenericReportVisualization({
             options={{
               responsive: true,
               maintainAspectRatio: false,
+              onClick: onBarClick ? handleMultiBarClick : undefined,
               plugins: {
                 legend: {
                   display: true,
@@ -625,7 +669,8 @@ export default function GenericReportVisualization({
     
     const chartFields = Object.keys(chartDataMap);
     const hasData = !loading && !error && chartFields.length > 0 && chartFields.some(field => {
-      const fieldData = chartDataMap[field] || [];
+      const raw = chartDataMap[field];
+      const fieldData = Array.isArray(raw) ? raw : [];
       return fieldData.length > 0;
     });
 
@@ -660,7 +705,8 @@ export default function GenericReportVisualization({
       <div className="flex flex-col h-full overflow-auto">
         <div className={`grid ${chartFields.length === 1 ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'} gap-6 p-4`}>
           {chartFields.map((fieldName) => {
-            const fieldData = chartDataMap[fieldName] || [];
+            const raw = chartDataMap[fieldName];
+            const fieldData = Array.isArray(raw) ? raw : [];
             const totalCount = fieldData.reduce((sum, item) => sum + (item.y_value || 0), 0);
             const pieData = fieldData.map((item, index) => ({
               id: String(item.x_value || 'Unknown'),

@@ -489,6 +489,7 @@ export class ApiService {
       data: any[] | Record<string, any[]>;
       count: number;
       columns: string[];
+      trend_line_label?: string;
     }> & { meta?: { jira_url?: string } } = await response.json();
 
     if (!result.success) {
@@ -513,7 +514,7 @@ export class ApiService {
   async getBuildReportIssues(
     reportId: string,
     filters: Record<string, unknown>,
-    segment: { x_value: string | number; group_by_field?: string }
+    segment: { x_value: string | number; group_by_field?: string; stack_by_value?: string }
   ): Promise<{ success: boolean; data?: { issues: Record<string, unknown>[] }; message?: string }> {
     const url = buildBackendUrl('/reports/build/issues');
     const response = await fetch(url, {

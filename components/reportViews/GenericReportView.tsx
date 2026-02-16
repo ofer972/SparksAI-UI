@@ -73,11 +73,12 @@ export default function GenericReportView({
   // Extract buildConfig early (before useEffect that uses it)
   const buildConfig = definition?.meta_schema?.build_report_config;
 
-  // For build_report API result, data can be { data: array, count, columns, trend_line_label }; pass array and trend_line_label for chart (hooks must run before any return)
+  // For build_report API result: data can be { data: array | object, count, columns, trend_line_label }.
+  // Bar/table: data.data is array → pass it. Pie: data.data is object (field name → slices) → pass it so visualization gets correct keys.
   const chartData = useMemo(() => {
-    if (definition?.data_source === 'build_report' && data && typeof data === 'object' && !Array.isArray(data) && Array.isArray((data as any).data)) {
-      return (data as { data: any[] }).data;
-    }
+    if (definition?.data_source !== 'build_report' || !data || typeof data !== 'object' || Array.isArray(data)) return data;
+    const inner = (data as { data?: any }).data;
+    if (inner !== undefined && inner !== null && typeof inner === 'object') return inner;
     return data;
   }, [data, definition?.data_source]);
   const trendLineLabelFromData = useMemo(() => {
@@ -95,7 +96,7 @@ export default function GenericReportView({
   }
   const [buildReportFilters, setBuildReportFilters] = useState<BuildReportFilter[]>([]);
   const [isSegmentDialogOpen, setIsSegmentDialogOpen] = useState(false);
-  const [selectedSegment, setSelectedSegment] = useState<{ x_value: string | number; fieldName?: string } | null>(null);
+  const [selectedSegment, setSelectedSegment] = useState<{ x_value: string | number; fieldName?: string; stack_by_value?: string; bar_metric?: string } | null>(null);
   const [availablePIs, setAvailablePIs] = useState<Array<{ pi_name: string }>>([]);
   const [loadingPIs, setLoadingPIs] = useState(true);
 
@@ -392,6 +393,17 @@ export default function GenericReportView({
       });
     }
 
+    // Multi-bar: period filter (Day / Week / Month)
+    const periodValue = filters?.period ?? buildConfig?.period;
+    if (definition?.data_source === 'build_report' && chartType === 'multi_bar' && periodValue) {
+      badges.push({
+        label: 'Period',
+        value: periodValue === 'day' ? 'Day' : periodValue === 'week' ? 'Week' : periodValue === 'month' ? 'Month' : String(periodValue),
+        filterKey: 'period',
+        isPinned: pinnedFilters?.includes('period') || false,
+      });
+    }
+
     // Badges for build-report filters (Issue Type, Assignee, Bug Category, Bug source, etc.)
     const defaultFilterFields = new Set(['quarter_pi', 'team_name']);
     overridesForBadges.forEach((f: BuildReportFilter) => {
@@ -411,7 +423,7 @@ export default function GenericReportView({
     });
 
     return badges;
-  }, [teamName, isGroup, piValue, pinnedFilters, buildReportFilters, filters?.filter_overrides, filterableFields]);
+  }, [teamName, isGroup, piValue, pinnedFilters, buildReportFilters, filters?.filter_overrides, filters?.period, filterableFields, definition?.data_source, chartType, buildConfig?.period]);
 
   // Columns for segment issues dialog (order: issue_key, issue_type, status, summary, created_at, updated_at, assignee_name)
   const segmentIssueColumns: Column<Record<string, unknown>>[] = useMemo(() => [
@@ -431,12 +443,14 @@ export default function GenericReportView({
     const segment = {
       x_value: selectedSegment.x_value,
       ...(selectedSegment.fieldName != null && { group_by_field: selectedSegment.fieldName }),
+      ...(selectedSegment.stack_by_value !== undefined && { stack_by_value: selectedSegment.stack_by_value }),
+      ...(selectedSegment.bar_metric != null && { bar_metric: selectedSegment.bar_metric }),
     };
     return apiService.getBuildReportIssues(reportId, filters || {}, segment);
   }, [reportId, selectedSegment, filters, apiService]);
 
-  const handleBarClick = useCallback((payload: { x_value: string | number }) => {
-    setSelectedSegment({ x_value: payload.x_value });
+  const handleBarClick = useCallback((payload: { x_value: string | number; stack_by_value?: string; bar_metric?: string }) => {
+    setSelectedSegment({ x_value: payload.x_value, stack_by_value: payload.stack_by_value, bar_metric: payload.bar_metric });
     setIsSegmentDialogOpen(true);
   }, []);
 
@@ -448,11 +462,15 @@ export default function GenericReportView({
   const segmentDialogTitle = useMemo(() => {
     if (!selectedSegment) return 'Issues';
     const label = String(selectedSegment.x_value);
-    if (!selectedSegment.fieldName) return `Issues: ${label}`;
-    const field = filterableFields.find((f) => f.column_name === selectedSegment.fieldName)
-      || displayableFields.find((f) => f.column_name === selectedSegment.fieldName);
-    const fieldLabel = field?.display_name ?? selectedSegment.fieldName.replace(/_/g, ' ');
-    return `Issues: ${label} (${fieldLabel})`;
+    if (selectedSegment.fieldName) {
+      const field = filterableFields.find((f) => f.column_name === selectedSegment.fieldName)
+        || displayableFields.find((f) => f.column_name === selectedSegment.fieldName);
+      const fieldLabel = field?.display_name ?? selectedSegment.fieldName.replace(/_/g, ' ');
+      return `Issues: ${label} (${fieldLabel})`;
+    }
+    if (selectedSegment.stack_by_value !== undefined) return `Issues: ${label} · ${selectedSegment.stack_by_value}`;
+    if (selectedSegment.bar_metric) return `Issues: ${label} (${selectedSegment.bar_metric})`;
+    return `Issues: ${label}`;
   }, [selectedSegment, filterableFields, displayableFields]);
 
   // Get filter field info helper
@@ -567,6 +585,29 @@ export default function GenericReportView({
             allowClear={true}
           />
         </ReportFilterField>
+
+        {/* Multi-bar only: Period filter (Day / Week / Month) - request overrides report default */}
+        {definition?.data_source === 'build_report' && chartType === 'multi_bar' && (
+          <ReportFilterField label="Period">
+            <select
+              value={filters?.period ?? buildConfig?.period ?? 'week'}
+              onChange={(e) => {
+                if (!setFilters) return;
+                const v = e.target.value as 'day' | 'week' | 'month';
+                setFilters((prev: any) => {
+                  if (prev.period === v) return prev;
+                  return { ...prev, period: v };
+                });
+                if (refresh) setTimeout(() => refresh(), 0);
+              }}
+              className="flex-1 px-2 py-1.5 border border-outline rounded-md text-sm bg-surface text-content-primary focus:outline-none focus:ring-2 focus:ring-brand"
+            >
+              <option value="day">Day</option>
+              <option value="week">Week</option>
+              <option value="month">Month</option>
+            </select>
+          </ReportFilterField>
+        )}
         
         {/* Build Report Filters (filters defined during Build Report) */}
         {buildReportFilters.map((filter) => {
@@ -753,12 +794,14 @@ export default function GenericReportView({
         jiraUrl={chartType === 'table' ? jiraUrl : undefined}
         onOpenAllInJira={chartType === 'table' ? handleOpenAllInJira : undefined}
         initialSortConfig={chartType === 'table' && buildConfig?.default_sort?.key ? { key: buildConfig.default_sort.key, direction: (buildConfig.default_sort.direction === 'desc' ? 'desc' : 'asc') } : undefined}
-        onBarClick={chartType === 'bar_chart' ? handleBarClick : undefined}
+        onBarClick={chartType === 'bar_chart' || chartType === 'multi_bar' ? handleBarClick : undefined}
         onPieSliceClick={chartType === 'pie_chart' ? handlePieSliceClick : undefined}
+        bar1Metric={chartType === 'multi_bar' ? buildConfig?.bar_1_metric : undefined}
+        bar2Metric={chartType === 'multi_bar' ? buildConfig?.bar_2_metric : undefined}
         trendLineLabel={chartType === 'multi_bar' ? trendLineLabelFromData : undefined}
         trendLineColor={chartType === 'multi_bar' ? buildConfig?.trend_line_color : undefined}
       />
-      {chartType === 'bar_chart' || chartType === 'pie_chart' ? (
+      {chartType === 'bar_chart' || chartType === 'pie_chart' || chartType === 'multi_bar' ? (
         <IssuesDialog<Record<string, unknown>>
           isOpen={isSegmentDialogOpen}
           onClose={() => {
