@@ -18,6 +18,53 @@ const COLOR_PALETTE = [
   '#0ea5e9',
 ];
 
+/** Return a shade of a hex color for stacked segment index (0 = base, 1+ = lighter). */
+function shadeForSegment(hex: string, segmentIndex: number, totalSegments: number): string {
+  if (!hex || totalSegments <= 0) return hex;
+  const base = hex.replace(/^#/, '');
+  if (base.length !== 6) return hex;
+  const r = parseInt(base.slice(0, 2), 16);
+  const g = parseInt(base.slice(2, 4), 16);
+  const b = parseInt(base.slice(4, 6), 16);
+  // Segment 0 = base; 1 = +15% lightness; 2 = +30%; etc. (max +50%)
+  const t = totalSegments <= 1 ? 0 : segmentIndex / (totalSegments - 1);
+  const factor = 0.5 * t; // 0 to 0.5
+  const blend = (c: number) => Math.round(Math.min(255, c + (255 - c) * factor));
+  return `#${[r, g, b].map(blend).map((x) => x.toString(16).padStart(2, '0')).join('')}`;
+}
+
+/** Single place for stacked bar chart datasets. Used by bar_chart (once) and multi_bar (twice). */
+function buildStackedBarDatasets(
+  rows: Array<{ stacked: Record<string, number> }>,
+  baseColor: string,
+  stackId: string,
+  options?: { labelPrefix?: string; segmentOrder?: string[]; usePalette?: boolean }
+): Array<{ label: string; data: number[]; backgroundColor: string; borderColor: string; borderWidth: number; stack: string }> {
+  const segmentOrder =
+    options?.segmentOrder ??
+    (() => {
+      const set = new Set<string>();
+      rows.forEach((d) => Object.keys(d.stacked || {}).forEach((k) => set.add(k)));
+      return Array.from(set)
+        .filter((seg) => rows.some((d) => ((d.stacked && d.stacked[seg]) || 0) > 0))
+        .sort();
+    })();
+  const n = segmentOrder.length;
+  return segmentOrder.map((seg, segIdx) => {
+    const color = options?.usePalette
+      ? COLOR_PALETTE[segIdx % COLOR_PALETTE.length]
+      : shadeForSegment(baseColor, segIdx, n);
+    return {
+      label: options?.labelPrefix ? `${options.labelPrefix} – ${seg}` : seg,
+      data: rows.map((d) => (d.stacked && d.stacked[seg]) || 0),
+      backgroundColor: color,
+      borderColor: color,
+      borderWidth: 1,
+      stack: stackId,
+    };
+  });
+}
+
 /** Pluralize a field display name for counts (e.g. "Priority" → "priorities", "Bug source" → "bug sources"). */
 function pluralizeFieldName(displayName: string): string {
   if (!displayName) return 'categories';
@@ -43,7 +90,7 @@ interface ReportField {
 }
 
 interface GenericReportVisualizationProps {
-  chartType: 'table' | 'bar_chart' | 'pie_chart';
+  chartType: 'table' | 'bar_chart' | 'pie_chart' | 'multi_bar';
   data: any;
   loading: boolean;
   error: string | null;
@@ -52,6 +99,13 @@ interface GenericReportVisualizationProps {
   // Chart props
   xAxisField?: string;
   yAxisField?: string;
+  // Multi-bar labels and colors (for legend and bar fill)
+  bar1Label?: string;
+  bar2Label?: string;
+  bar1Color?: string;
+  bar2Color?: string;
+  /** Bar chart (single bar) color; used for stacked segment shading when bar_chart has stack_by */
+  barColor?: string;
   // Pie chart props
   filterableFields?: ReportField[];
   // Styling
@@ -75,6 +129,11 @@ export default function GenericReportVisualization({
   tableColumns = [],
   xAxisField = 'x_value',
   yAxisField = 'count',
+  bar1Label = 'Bar 1',
+  bar2Label = 'Bar 2',
+  bar1Color,
+  bar2Color,
+  barColor,
   filterableFields = [],
   isDark = false,
   jiraUrl,
@@ -91,7 +150,7 @@ export default function GenericReportVisualization({
   const barContainerRef = useRef<HTMLDivElement>(null);
   const [barChartSize, setBarChartSize] = useState({ width: 600, height: 400 });
   useEffect(() => {
-    if (chartType !== 'bar_chart' || !barContainerRef.current) return;
+    if ((chartType !== 'bar_chart' && chartType !== 'multi_bar') || !barContainerRef.current) return;
     const el = barContainerRef.current;
     const setSize = () => setBarChartSize({ width: el.clientWidth || 600, height: el.clientHeight || 400 });
     setSize();
@@ -226,8 +285,9 @@ export default function GenericReportVisualization({
     );
   }
 
-  // Bar chart rendering
+  // Bar chart rendering (simple or stacked by segment)
   if (chartType === 'bar_chart') {
+    const isBarStacked = chartDataBar.length > 0 && 'stacked' in chartDataBar[0];
     const hasData = !loading && !error && chartDataBar.length > 0;
 
     if (error) {
@@ -257,11 +317,27 @@ export default function GenericReportVisualization({
       );
     }
 
+    const barChartDatasets = isBarStacked
+      ? buildStackedBarDatasets(
+          chartDataBar as Array<{ stacked: Record<string, number> }>,
+          barColor ?? COLOR_PALETTE[0],
+          'stack0',
+          { usePalette: true }
+        )
+      : [{
+          label: yAxisField === 'count' ? 'Count' : 'Value',
+          data: chartDataBar.map((item: any) => item.y_value || item[yAxisField] || 0),
+          backgroundColor: barColor ?? '#3b82f6',
+          borderColor: barColor ?? '#2563eb',
+          borderWidth: 1,
+        }];
+
     return (
       <div className="flex flex-col h-full">
         <div className="flex items-center justify-between mb-4 pb-2 border-b border-outline">
           <p className="text-sm text-content-secondary">
             {chartDataBar.length} {chartDataBar.length === 1 ? 'data point' : 'data points'}
+            {isBarStacked ? ' (stacked)' : ''}
           </p>
         </div>
         <div
@@ -276,13 +352,7 @@ export default function GenericReportVisualization({
             height={barChartSize.height}
             data={{
               labels: labelsBar,
-              datasets: [{
-                label: yAxisField === 'count' ? 'Count' : 'Value',
-                data: chartDataBar.map((item: any) => item.y_value || item[yAxisField] || 0),
-                backgroundColor: '#3b82f6',
-                borderColor: '#2563eb',
-                borderWidth: 1,
-              }]
+              datasets: barChartDatasets,
             }}
             options={{
               responsive: true,
@@ -290,36 +360,174 @@ export default function GenericReportVisualization({
               onClick: onBarClick ? handleBarClick : undefined,
               plugins: {
                 legend: {
-                  display: false
+                  display: isBarStacked,
+                  position: 'top' as const,
+                  labels: isBarStacked ? { boxWidth: 20, boxHeight: 12 } : undefined,
                 },
-                tooltip: {
-                  enabled: true
-                },
+                tooltip: { enabled: true },
                 datalabels: {
                   display: true,
                   color: '#ffffff',
-                  font: {
-                    size: 12,
-                    weight: 'bold' as const,
-                  },
+                  font: { size: 12, weight: 'bold' as const },
                   formatter: (value: number) => {
-                    if (value === undefined || value === null || isNaN(value) || value === 0) {
-                      return '';
-                    }
+                    if (value === undefined || value === null || isNaN(value) || value === 0) return '';
                     return value.toString();
                   },
                   anchor: 'center' as const,
                   align: 'center' as const,
-                }
+                },
               },
               scales: {
+                x: { stacked: isBarStacked },
                 y: {
                   beginAtZero: true,
-                  ticks: {
-                    stepSize: 1
-                  }
-                }
-              }
+                  ticks: { stepSize: 1 },
+                  stacked: isBarStacked,
+                },
+              },
+            }}
+            plugins={[ChartDataLabels]}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Multi-bar rendering (time-based: two metrics side by side per period, optional stacking)
+  if (chartType === 'multi_bar') {
+    const multiBarData = Array.isArray(data) ? data : [];
+    const isStacked = multiBarData.length > 0 && 'bar_1_stacked' in multiBarData[0];
+    const hasData = !loading && !error && multiBarData.length > 0;
+
+    if (error) {
+      return (
+        <div className="bg-danger-bg border border-danger-border rounded-lg p-4 text-sm text-danger-text">
+          {error}
+        </div>
+      );
+    }
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+            <div className="text-sm text-content-tertiary">Loading report...</div>
+          </div>
+        </div>
+      );
+    }
+    if (!hasData) {
+      return (
+        <div className="flex items-center justify-center h-64 text-content-tertiary">
+          No data available
+        </div>
+      );
+    }
+
+    const labelsMulti = multiBarData.map((d: { x_value?: string }) => String(d.x_value ?? ''));
+
+    const chartData = isStacked
+      ? (() => {
+          const rows = multiBarData as Array<{ x_value: string; bar_1_stacked: Record<string, number>; bar_2_stacked: Record<string, number> }>;
+          const segmentSet = new Set<string>();
+          rows.forEach((d) => {
+            Object.keys(d.bar_1_stacked || {}).forEach((k) => segmentSet.add(k));
+            Object.keys(d.bar_2_stacked || {}).forEach((k) => segmentSet.add(k));
+          });
+          const segmentOrder = Array.from(segmentSet)
+            .filter((seg) =>
+              rows.some(
+                (d) =>
+                  ((d.bar_1_stacked && d.bar_1_stacked[seg]) || 0) > 0 ||
+                  ((d.bar_2_stacked && d.bar_2_stacked[seg]) || 0) > 0
+              )
+            )
+            .sort();
+          const bar1Rows = rows.map((d) => ({ stacked: d.bar_1_stacked || {} }));
+          const bar2Rows = rows.map((d) => ({ stacked: d.bar_2_stacked || {} }));
+          const datasets = [
+            ...buildStackedBarDatasets(bar1Rows, bar1Color ?? COLOR_PALETTE[0], 'bar1', { labelPrefix: bar1Label, segmentOrder }),
+            ...buildStackedBarDatasets(bar2Rows, bar2Color ?? COLOR_PALETTE[2], 'bar2', { labelPrefix: bar2Label, segmentOrder }),
+          ];
+          return { labels: labelsMulti, datasets };
+        })()
+      : (() => {
+          const rows = multiBarData as Array<{ x_value: string; bar_1_value: number; bar_2_value: number }>;
+          return {
+            labels: labelsMulti,
+            datasets: [
+              {
+                label: bar1Label,
+                data: rows.map((d) => d.bar_1_value ?? 0),
+                backgroundColor: bar1Color ?? COLOR_PALETTE[0],
+                borderColor: bar1Color ?? COLOR_PALETTE[0],
+                borderWidth: 1,
+              },
+              {
+                label: bar2Label,
+                data: rows.map((d) => d.bar_2_value ?? 0),
+                backgroundColor: bar2Color ?? COLOR_PALETTE[2],
+                borderColor: bar2Color ?? COLOR_PALETTE[2],
+                borderWidth: 1,
+              },
+            ],
+          };
+        })();
+
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between mb-4 pb-2 border-b border-outline">
+          <p className="text-sm text-content-secondary">
+            {multiBarData.length} {multiBarData.length === 1 ? 'period' : 'periods'}
+            {isStacked ? ' (stacked)' : ''}
+          </p>
+        </div>
+        <div
+          ref={barContainerRef}
+          className="flex-1 min-h-0"
+          style={{ height: '400px', minHeight: 0 }}
+        >
+          <Chart
+            type="bar"
+            width={barChartSize.width}
+            height={barChartSize.height}
+            data={{
+              labels: chartData.labels,
+              datasets: chartData.datasets,
+            }}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: true,
+                  position: 'top',
+                  labels: {
+                    boxWidth: 20,
+                    boxHeight: 12,
+                  },
+                },
+                tooltip: { enabled: true },
+                datalabels: {
+                  display: true,
+                  color: '#ffffff',
+                  font: { size: 11, weight: 'bold' as const },
+                  formatter: (value: number) => (value == null || value === 0 ? '' : String(value)),
+                  anchor: 'center' as const,
+                  align: 'center' as const,
+                },
+              },
+              scales: {
+                x: {
+                  grid: { display: false },
+                  stacked: isStacked,
+                },
+                y: {
+                  beginAtZero: true,
+                  ticks: { stepSize: 1 },
+                  stacked: isStacked,
+                },
+              },
             }}
             plugins={[ChartDataLabels]}
           />

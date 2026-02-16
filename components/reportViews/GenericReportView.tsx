@@ -718,13 +718,18 @@ export default function GenericReportView({
       hideCollapse={componentProps?.hideCollapse}
     >
       <GenericReportVisualization
-        chartType={chartType as 'table' | 'bar_chart' | 'pie_chart'}
+        chartType={chartType as 'table' | 'bar_chart' | 'pie_chart' | 'multi_bar'}
         data={data}
         loading={loading}
         error={error}
         tableColumns={tableColumns}
         xAxisField={chartType === 'bar_chart' ? (typeof buildConfig?.x_axis === 'string' ? buildConfig.x_axis : 'x_value') : undefined}
         yAxisField={chartType === 'bar_chart' ? (buildConfig?.y_axis || 'count') : undefined}
+        bar1Label={chartType === 'multi_bar' ? (buildConfig?.bar_1_metric === 'created' ? 'Issues created' : buildConfig?.bar_1_metric === 'resolved' ? 'Issues resolved' : buildConfig?.bar_1_metric === 'updated' ? 'Issues updated' : 'Bar 1') : undefined}
+        bar2Label={chartType === 'multi_bar' ? (buildConfig?.bar_2_metric === 'created' ? 'Issues created' : buildConfig?.bar_2_metric === 'resolved' ? 'Issues resolved' : buildConfig?.bar_2_metric === 'updated' ? 'Issues updated' : 'Bar 2') : undefined}
+        bar1Color={chartType === 'multi_bar' ? buildConfig?.bar_1_color : undefined}
+        bar2Color={chartType === 'multi_bar' ? buildConfig?.bar_2_color : undefined}
+        barColor={chartType === 'bar_chart' ? buildConfig?.bar_color : undefined}
         filterableFields={filterableFields}
         isDark={isDark}
         jiraUrl={chartType === 'table' ? jiraUrl : undefined}

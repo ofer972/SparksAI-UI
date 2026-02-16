@@ -507,6 +507,14 @@ export interface ReportDefinition {
       team_name?: string;
       isGroup?: boolean;
       default_sort?: { key: string; direction?: 'asc' | 'desc' };
+      period?: string;
+      lookback_months?: number;
+      bar_1_metric?: string;
+      bar_2_metric?: string;
+      bar_1_color?: string;
+      bar_2_color?: string;
+      stack_by?: string;
+      bar_color?: string;
     };
   };
 }

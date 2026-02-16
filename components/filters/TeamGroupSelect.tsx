@@ -45,7 +45,7 @@ export default function TeamGroupSelect({
  size = 'xs',
  fullWidth = false,
 }: TeamGroupSelectProps) {
- const { treeData, loading, groups, teams } = useTeamsGroups();
+ const { treeData, loading, groups, teams, error: contextError } = useTeamsGroups();
  const [isOpen, setIsOpen] = useState(false);
  const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
  const [buttonRect, setButtonRect] = useState<DOMRect | null>(null);
@@ -308,7 +308,7 @@ export default function TeamGroupSelect({
  {/* Render content based on mode */}
  {mode === 'tree' && treeNodes.length === 0 && (
  <div className="px-3 py-2 text-sm text-content-muted whitespace-nowrap">
- No teams or groups available
+   {contextError ? contextError : 'No teams or groups available. Sign in or ensure your org has teams/groups configured.'}
  </div>
  )}
  {mode === 'tree' && treeNodes.length > 0 && treeNodes.map(node => renderTreeNode(node))}

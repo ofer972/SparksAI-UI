@@ -9,6 +9,10 @@ import GenericReportVisualization from './reportViews/GenericReportVisualization
 import { sortFieldsSelectedFirst } from './BuildReportTab.helpers';
 import FieldSelector, { type ReportField as FieldSelectorReportField } from './BuildReportTab.FieldSelector';
 import FilterConfigPanel, { type FilterableField as FilterConfigFilterableField, type Filter as FilterConfigFilter } from './BuildReportTab.FilterConfigPanel';
+import { BUILD_REPORT_BAR_COLORS, BUILD_REPORT_MULTI_BAR_METRICS } from './buildReport/constants';
+import BuildReportBarColorSelect from './buildReport/BarColorSelect';
+import BuildReportStackBySelect from './buildReport/StackBySelect';
+import BuildReportColoredSelect from './buildReport/ColoredSelect';
 import TeamGroupSelect from '@/components/filters/TeamGroupSelect';
 import { getPITerminology } from '@/lib/piTerminology';
 import { useUser } from '@/contexts/UserContext';
@@ -37,24 +41,22 @@ interface Filter {
   values: string[] | string;
 }
 
-const COLOR_PALETTE = [
-  '#991b1b',
-  '#fbbf24',
-  '#7dd3fc',
-  '#3b82f6',
-  '#a855f7',
-  '#ec4899',
-  '#f97316',
-  '#14b8a6',
-  '#8b5cf6',
-  '#0ea5e9',
-];
-
 export default function BuildReportTab() {
   const [reportType, setReportType] = useState('table');
   const [xAxisBar, setXAxisBar] = useState<string>(''); // Single value for bar charts
   const [xAxisPie, setXAxisPie] = useState<string[]>([]); // Array for pie charts
   const [yAxis, setYAxis] = useState<string>('count');
+  // Bar chart: optional stack by and bar color
+  const [barChartStackBy, setBarChartStackBy] = useState<string>('');
+  const [barChartBarColor, setBarChartBarColor] = useState<string>(BUILD_REPORT_BAR_COLORS[0].value);
+  // Multi-bar (time-based)
+  const [multiBarPeriod, setMultiBarPeriod] = useState<'month' | 'week' | 'day'>('month');
+  const [multiBarMonths, setMultiBarMonths] = useState<number>(6);
+  const [multiBarMetric1, setMultiBarMetric1] = useState<string>('');
+  const [multiBarMetric2, setMultiBarMetric2] = useState<string>('');
+  const [multiBarBar1Color, setMultiBarBar1Color] = useState<string>(BUILD_REPORT_BAR_COLORS[0].value);
+  const [multiBarBar2Color, setMultiBarBar2Color] = useState<string>(BUILD_REPORT_BAR_COLORS[1].value);
+  const [multiBarStackBy, setMultiBarStackBy] = useState<string>('');
   
   // Dark mode detection
   const [isDark, setIsDark] = useState(false);
@@ -365,6 +367,10 @@ export default function BuildReportTab() {
       setErrorModal('Please select at least one Group By field');
       return;
     }
+    if (reportType === 'multi_bar' && (!multiBarMetric1 || !multiBarMetric2)) {
+      setErrorModal('Please select both Bar 1 and Bar 2 metrics');
+      return;
+    }
 
     // Reorder fields: move selected to top
     reorderFieldsToShowSelectedFirst();
@@ -397,10 +403,16 @@ export default function BuildReportTab() {
       const result = await apiService.buildReport({
         report_type: reportType,
         selected_fields: reportType === 'table' ? orderedSelectedFields : undefined,
-        x_axis: (reportType === 'bar_chart' || reportType === 'pie_chart') 
+        x_axis: (reportType === 'bar_chart' || reportType === 'pie_chart')
           ? (reportType === 'pie_chart' ? xAxisPie : xAxisBar)
           : undefined,
         y_axis: reportType === 'bar_chart' ? yAxis : undefined,
+        stack_by: reportType === 'bar_chart' && barChartStackBy ? barChartStackBy : reportType === 'multi_bar' && multiBarStackBy ? multiBarStackBy : undefined,
+        bar_color: reportType === 'bar_chart' ? barChartBarColor : undefined,
+        period: reportType === 'multi_bar' ? multiBarPeriod : undefined,
+        lookback_months: reportType === 'multi_bar' ? multiBarMonths : undefined,
+        bar_1_metric: reportType === 'multi_bar' ? multiBarMetric1 : undefined,
+        bar_2_metric: reportType === 'multi_bar' ? multiBarMetric2 : undefined,
         filters: allFilters.map(f => {
           // Ensure operator is always set (default to 'equals' if missing)
           const operator = f.operator || 'equals';
@@ -507,8 +519,24 @@ export default function BuildReportTab() {
         if (buildConfig.y_axis) {
           setYAxis(buildConfig.y_axis);
         }
+        setBarChartStackBy(buildConfig.stack_by ?? '');
+        if (buildConfig.bar_color && BUILD_REPORT_BAR_COLORS.some(c => c.value === buildConfig.bar_color)) {
+          setBarChartBarColor(buildConfig.bar_color);
+        }
       } else if (buildConfig.report_type === 'pie_chart' && buildConfig.x_axis) {
         setXAxisPie(Array.isArray(buildConfig.x_axis) ? buildConfig.x_axis : [buildConfig.x_axis]);
+      } else if (buildConfig.report_type === 'multi_bar') {
+        setMultiBarPeriod((buildConfig.period === 'week' ? 'week' : buildConfig.period === 'day' ? 'day' : 'month'));
+        setMultiBarMonths(buildConfig.lookback_months ?? 6);
+        setMultiBarMetric1(buildConfig.bar_1_metric ?? '');
+        setMultiBarMetric2(buildConfig.bar_2_metric ?? '');
+        if (buildConfig.bar_1_color && BUILD_REPORT_BAR_COLORS.some(c => c.value === buildConfig.bar_1_color)) {
+          setMultiBarBar1Color(buildConfig.bar_1_color);
+        }
+        if (buildConfig.bar_2_color && BUILD_REPORT_BAR_COLORS.some(c => c.value === buildConfig.bar_2_color)) {
+          setMultiBarBar2Color(buildConfig.bar_2_color);
+        }
+        setMultiBarStackBy(buildConfig.stack_by ?? '');
       }
       
       // Load default filters from default_filters column (like system reports)
@@ -672,6 +700,19 @@ export default function BuildReportTab() {
         default_sort: defaultSortColumn
           ? { key: defaultSortColumn, direction: defaultSortDirection }
           : null,
+      }),
+      ...(reportType === 'bar_chart' && {
+        stack_by: barChartStackBy || undefined,
+        bar_color: barChartBarColor,
+      }),
+      ...(reportType === 'multi_bar' && {
+        period: multiBarPeriod,
+        lookback_months: multiBarMonths,
+        bar_1_metric: multiBarMetric1,
+        bar_2_metric: multiBarMetric2,
+        bar_1_color: multiBarBar1Color,
+        bar_2_color: multiBarBar2Color,
+        ...(multiBarStackBy ? { stack_by: multiBarStackBy } : {}),
       }),
     };
     
@@ -864,18 +905,19 @@ export default function BuildReportTab() {
             <option value="table">Table</option>
             <option value="bar_chart">Bar Chart</option>
             <option value="pie_chart">Pie Chart</option>
+            <option value="multi_bar">Multi-Bar</option>
           </select>
           <div className="w-6"></div>
           <button
             onClick={handleBuildReport}
-            disabled={loadingReport || (reportType === 'table' ? selectedFields.length === 0 : (reportType === 'bar_chart' ? !xAxisBar : xAxisPie.length === 0))}
+            disabled={loadingReport || (reportType === 'table' ? selectedFields.length === 0 : reportType === 'bar_chart' ? !xAxisBar : reportType === 'pie_chart' ? xAxisPie.length === 0 : !multiBarMetric1 || !multiBarMetric2)}
             className="px-3 py-1.5 text-sm bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {loadingReport ? 'Loading Report...' : 'Preview Report'}
           </button>
           <button
             onClick={() => setShowSaveModal(true)}
-            disabled={loadingReport || (reportType === 'table' ? selectedFields.length === 0 : (reportType === 'bar_chart' ? !xAxisBar : xAxisPie.length === 0))}
+            disabled={loadingReport || (reportType === 'table' ? selectedFields.length === 0 : reportType === 'bar_chart' ? !xAxisBar : reportType === 'pie_chart' ? xAxisPie.length === 0 : !multiBarMetric1 || !multiBarMetric2)}
             className="px-3 py-1.5 text-sm bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 text-white rounded transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {selectedReportId ? 'Update Report' : 'Save Report'}
@@ -914,35 +956,33 @@ export default function BuildReportTab() {
           </div>
         )}
 
-        {/* Bar Chart Axis Selectors */}
+        {/* Bar Chart: X-Axis (Bar) + Bar color first, then Y-Axis, Stack by */}
         {reportType === 'bar_chart' && (
-          <div className="flex-shrink-0 flex items-center gap-4">
+          <div className="flex-shrink-0 flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-3">
               <label className="text-sm font-medium text-content-primary whitespace-nowrap">
-                X-Axis:
+                X-Axis (Bar):
               </label>
-              <select
+              <BuildReportColoredSelect
                 value={xAxisBar}
-                onChange={(e) => {
-                  setXAxisBar(e.target.value);
-                  // Clear report data when X-axis changes (unless loading a report)
-                  if (!isLoadingReport) {
-                    setReportData([]);
-                    setError(null);
-                  }
-                }}
-                className="w-48 px-3 py-2 border border-outline rounded-md text-sm bg-surface-elevated text-content-primary focus:outline-none focus:ring-2 focus:ring-brand"
-              >
-                <option value="">Select field...</option>
-                {filterableFields
-                  .filter(f => f.filter_type === 'dropdown')
-                  .map(field => (
-                    <option key={field.column_name} value={field.column_name}>
-                      {field.display_name}
-                    </option>
-                  ))}
-              </select>
+                onChange={(v) => { setXAxisBar(v); if (!isLoadingReport) { setReportData([]); setError(null); } }}
+                options={[
+                  { value: 'team_name', label: 'Team name' },
+                  ...filterableFields
+                    .filter(f => f.filter_type === 'dropdown')
+                    .map(f => ({ value: f.column_name, label: f.display_name })),
+                ]}
+                color={barChartBarColor}
+                placeholder="Select field..."
+                selectClassName="w-48 px-3 py-2 border border-outline rounded-md text-sm bg-surface-elevated focus:outline-none focus:ring-2 focus:ring-brand"
+              />
             </div>
+            <BuildReportBarColorSelect
+              label="Bar color:"
+              value={barChartBarColor}
+              onChange={(v) => { setBarChartBarColor(v); if (!isLoadingReport) setReportData([]); }}
+              disabled={!!barChartStackBy}
+            />
             <div className="flex items-center gap-3">
               <label className="text-sm font-medium text-content-primary whitespace-nowrap">
                 Y-Axis:
@@ -957,9 +997,91 @@ export default function BuildReportTab() {
                 <option value="avg" disabled>Average of [field] (Coming Soon)</option>
               </select>
             </div>
+            <BuildReportStackBySelect
+              value={barChartStackBy}
+              onChange={(v) => { setBarChartStackBy(v); if (!isLoadingReport) { setReportData([]); setError(null); } }}
+              filterableFields={filterableFields}
+              placeholder="Don't stack"
+            />
           </div>
         )}
 
+        {/* Multi-Bar: row 1 = Period, Lookback, Stack by; row 2 = Bar 1, Bar 2, Bar 1 color, Bar 2 color */}
+        {reportType === 'multi_bar' && (
+          <div className="flex-shrink-0 flex flex-col gap-3">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium text-content-primary whitespace-nowrap">Period:</label>
+                <select
+                  value={multiBarPeriod}
+                  onChange={(e) => { setMultiBarPeriod(e.target.value as 'month' | 'week' | 'day'); if (!isLoadingReport) { setReportData([]); setError(null); } }}
+                  className="w-32 px-3 py-2 border border-outline rounded-md text-sm bg-surface-elevated text-content-primary focus:outline-none focus:ring-2 focus:ring-brand"
+                >
+                  <option value="month">Month</option>
+                  <option value="week">Week</option>
+                  <option value="day">Day</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium text-content-primary whitespace-nowrap">Lookback:</label>
+                <select
+                  value={multiBarMonths}
+                  onChange={(e) => { setMultiBarMonths(Number(e.target.value)); if (!isLoadingReport) { setReportData([]); setError(null); } }}
+                  className="w-28 px-3 py-2 border border-outline rounded-md text-sm bg-surface-elevated text-content-primary focus:outline-none focus:ring-2 focus:ring-brand"
+                >
+                  <option value={1}>1 month</option>
+                  <option value={2}>2 months</option>
+                  <option value={3}>3 months</option>
+                  <option value={4}>4 months</option>
+                  <option value={6}>6 months</option>
+                  <option value={9}>9 months</option>
+                  <option value={12}>12 months</option>
+                </select>
+              </div>
+              <BuildReportStackBySelect
+                value={multiBarStackBy}
+                onChange={(v) => { setMultiBarStackBy(v); if (!isLoadingReport) { setReportData([]); setError(null); } }}
+                filterableFields={filterableFields}
+                placeholder="Don't stack"
+              />
+            </div>
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium text-content-primary whitespace-nowrap">Bar 1:</label>
+                <BuildReportColoredSelect
+                  value={multiBarMetric1}
+                  onChange={(v) => { setMultiBarMetric1(v); if (!isLoadingReport) { setReportData([]); setError(null); } }}
+                  options={BUILD_REPORT_MULTI_BAR_METRICS}
+                  color={multiBarBar1Color}
+                  placeholder="Select metric..."
+                  selectClassName="w-44 px-3 py-2 border border-outline rounded-md text-sm bg-surface-elevated focus:outline-none focus:ring-2 focus:ring-brand"
+                />
+              </div>
+              <BuildReportBarColorSelect
+                label="Bar 1 color:"
+                value={multiBarBar1Color}
+                onChange={(v) => { setMultiBarBar1Color(v); if (!isLoadingReport) setReportData([]); }}
+              />
+              <div className="w-24 flex-shrink-0" aria-hidden="true" />
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium text-content-primary whitespace-nowrap">Bar 2:</label>
+                <BuildReportColoredSelect
+                  value={multiBarMetric2}
+                  onChange={(v) => { setMultiBarMetric2(v); if (!isLoadingReport) { setReportData([]); setError(null); } }}
+                  options={BUILD_REPORT_MULTI_BAR_METRICS}
+                  color={multiBarBar2Color}
+                  placeholder="Select metric..."
+                  selectClassName="w-44 px-3 py-2 border border-outline rounded-md text-sm bg-surface-elevated focus:outline-none focus:ring-2 focus:ring-brand"
+                />
+              </div>
+              <BuildReportBarColorSelect
+                label="Bar 2 color:"
+                value={multiBarBar2Color}
+                onChange={(v) => { setMultiBarBar2Color(v); if (!isLoadingReport) setReportData([]); }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Field Selector / Group By, Filter Selector, and Filter Values - Three Columns */}
         <div className="flex-shrink-0 flex gap-4">
@@ -1040,7 +1162,7 @@ export default function BuildReportTab() {
                   fields={displayableFields as FieldSelectorReportField[]}
                   selectedFields={selectedFields}
                   onToggle={handleFieldToggle}
-                  disabled={reportType === 'bar_chart'}
+                  disabled={reportType === 'bar_chart' || reportType === 'multi_bar'}
                   showReorderButtons={true}
                   onMoveUp={moveFieldUp}
                   onMoveDown={moveFieldDown}
@@ -1131,7 +1253,7 @@ export default function BuildReportTab() {
             </div>
           ) : (!loadingReport && reportData && (Array.isArray(reportData) ? reportData.length > 0 : Object.keys(reportData).length > 0)) ? (
             <GenericReportVisualization
-              chartType={reportType as 'table' | 'bar_chart' | 'pie_chart'}
+              chartType={reportType as 'table' | 'bar_chart' | 'pie_chart' | 'multi_bar'}
               data={reportData}
               loading={false}
               error={null}
@@ -1143,6 +1265,11 @@ export default function BuildReportTab() {
               jiraUrl={reportType === 'table' ? effectiveJiraUrl : undefined}
               onOpenAllInJira={reportType === 'table' ? handleOpenAllInJira : undefined}
               initialSortConfig={reportType === 'table' && defaultSortColumn ? { key: defaultSortColumn, direction: defaultSortDirection } : undefined}
+              bar1Label={reportType === 'multi_bar' ? BUILD_REPORT_MULTI_BAR_METRICS.find(m => m.value === multiBarMetric1)?.label : undefined}
+              bar2Label={reportType === 'multi_bar' ? BUILD_REPORT_MULTI_BAR_METRICS.find(m => m.value === multiBarMetric2)?.label : undefined}
+              bar1Color={reportType === 'multi_bar' ? multiBarBar1Color : undefined}
+              bar2Color={reportType === 'multi_bar' ? multiBarBar2Color : undefined}
+              barColor={reportType === 'bar_chart' ? barChartBarColor : undefined}
             />
           ) : (
             <div className="flex items-center justify-center h-64">
