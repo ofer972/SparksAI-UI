@@ -208,9 +208,10 @@ export default function GenericReportView({
               if (vals.length === 1) next[f.field] = vals[0];
               else if (vals.length > 1) next[f.field] = vals;
             });
-            if (reportDefaults.team_name != null) next.team_name = reportDefaults.team_name;
-            if (reportDefaults.pi != null) next.pi = reportDefaults.pi;
-            if (typeof reportDefaults.isGroup === 'boolean') next.isGroup = reportDefaults.isGroup;
+            // Prefer parent/dashboard values over report definition so user's choice persists (e.g. on custom dashboard)
+            if (reportDefaults.team_name != null && (prevFilters.team_name === undefined || prevFilters.team_name === null || prevFilters.team_name === '')) next.team_name = reportDefaults.team_name;
+            if (reportDefaults.pi != null && (prevFilters.pi === undefined || prevFilters.pi === null || prevFilters.pi === '')) next.pi = reportDefaults.pi;
+            if (typeof reportDefaults.isGroup === 'boolean' && prevFilters.isGroup === undefined) next.isGroup = reportDefaults.isGroup;
             return next;
           });
         }
