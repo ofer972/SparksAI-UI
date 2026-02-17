@@ -404,6 +404,17 @@ export default function GenericReportView({
       });
     }
 
+    // Multi-bar: lookback filter (months)
+    const lookbackValue = filters?.lookback_months ?? buildConfig?.lookback_months;
+    if (definition?.data_source === 'build_report' && chartType === 'multi_bar' && lookbackValue != null) {
+      badges.push({
+        label: 'Lookback',
+        value: `${lookbackValue} month${Number(lookbackValue) !== 1 ? 's' : ''}`,
+        filterKey: 'lookback_months',
+        isPinned: pinnedFilters?.includes('lookback_months') || false,
+      });
+    }
+
     // Badges for build-report filters (Issue Type, Assignee, Bug Category, Bug source, etc.)
     const defaultFilterFields = new Set(['quarter_pi', 'team_name']);
     overridesForBadges.forEach((f: BuildReportFilter) => {
@@ -423,7 +434,7 @@ export default function GenericReportView({
     });
 
     return badges;
-  }, [teamName, isGroup, piValue, pinnedFilters, buildReportFilters, filters?.filter_overrides, filters?.period, filterableFields, definition?.data_source, chartType, buildConfig?.period]);
+  }, [teamName, isGroup, piValue, pinnedFilters, buildReportFilters, filters?.filter_overrides, filters?.period, filters?.lookback_months, filterableFields, definition?.data_source, chartType, buildConfig?.period, buildConfig?.lookback_months]);
 
   // Columns for segment issues dialog (order: issue_key, issue_type, status, summary, created_at, updated_at, assignee_name)
   const segmentIssueColumns: Column<Record<string, unknown>>[] = useMemo(() => [
@@ -605,6 +616,30 @@ export default function GenericReportView({
               <option value="day">Day</option>
               <option value="week">Week</option>
               <option value="month">Month</option>
+            </select>
+          </ReportFilterField>
+        )}
+
+        {/* Multi-bar only: Lookback (months) - same as period, filter overrides report default */}
+        {definition?.data_source === 'build_report' && chartType === 'multi_bar' && (
+          <ReportFilterField label="Lookback">
+            <select
+              value={String(filters?.lookback_months ?? buildConfig?.lookback_months ?? 6)}
+              onChange={(e) => {
+                if (!setFilters) return;
+                const v = parseInt(e.target.value, 10);
+                if (Number.isNaN(v)) return;
+                setFilters((prev: any) => {
+                  if (prev.lookback_months === v) return prev;
+                  return { ...prev, lookback_months: v };
+                });
+                if (refresh) setTimeout(() => refresh(), 0);
+              }}
+              className="flex-1 px-2 py-1.5 border border-outline rounded-md text-sm bg-surface text-content-primary focus:outline-none focus:ring-2 focus:ring-brand"
+            >
+              {[1, 2, 3, 4, 6, 9, 12].map((m) => (
+                <option key={m} value={m}>{m} month{m !== 1 ? 's' : ''}</option>
+              ))}
             </select>
           </ReportFilterField>
         )}
