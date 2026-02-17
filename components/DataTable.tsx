@@ -465,7 +465,7 @@ function DataTable<T extends Record<string, any>>({
  } else if (['warning', 'pending', 'in progress', 'yellow'].some(s => v.includes(s))) {
  color = 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border-yellow-200 dark:border-yellow-700';
  } else if (['failed', 'error', 'red', 'inactive', 'disabled', 'blocked'].some(s => v.includes(s))) {
- color = 'bg-danger-bg text-red-800 text-red-300 border-red-200 dark:border-red-700';
+ color = 'bg-danger-bg text-red-800 dark:text-white border-red-200 dark:border-red-700';
  } else if (['info', 'blue'].some(s => v.includes(s))) {
  color = 'bg-brand/20 text-blue-800 dark:text-blue-300 border-blue-200 border-blue-700';
  } else if (['open'].some(s => v.includes(s))) {
