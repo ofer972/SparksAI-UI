@@ -107,6 +107,10 @@ export function getGoogleLoginUrl(): string {
   return `${getBaseUrl()}/oauth/google/login`;
 }
 
+export function getMicrosoftLoginUrl(): string {
+  return `${getBaseUrl()}/oauth/microsoft/login`;
+}
+
 export function logout() {
   clearTokens();
 }
