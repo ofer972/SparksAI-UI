@@ -13,3 +13,9 @@ NEXT_PUBLIC_API_VERSION=v1
 # Set to "PI" (default) or "Quarter" depending on customer preference
 # This only affects display labels/titles - API parameters remain unchanged
 NEXT_PUBLIC_PI_TERMINOLOGY=Quarter
+
+# OAuth Providers
+# Controls which OAuth login buttons are shown on the login page
+# Comma-separated list: "google", "microsoft", or "google,microsoft"
+# Leave empty or unset to show both (default)
+NEXT_PUBLIC_OAUTH_PROVIDERS=
