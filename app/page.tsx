@@ -2573,6 +2573,7 @@ sidebarCollapsed ? 'w-16' : 'w-56'
  isPublic={activeNavItem === 'custom-dashboard-editor' && !isViewingOthersPublicDashboard ? isPublicDashboard : undefined}
  onTogglePublic={activeNavItem === 'custom-dashboard-editor' && !isViewingOthersPublicDashboard ? handleTogglePublicDashboard : undefined}
  isViewingOthersPublicDashboard={activeNavItem === 'custom-dashboard-editor' && isViewingOthersPublicDashboard}
+ publicDashboardOwnerName={activeNavItem === 'custom-dashboard-editor' && isViewingOthersPublicDashboard ? customDashboardData?.owner_name : undefined}
  onCreateFromPublicDashboard={activeNavItem === 'custom-dashboard-editor' && isViewingOthersPublicDashboard ? () => { setCreateFromPublicName((customDashboardData?.name || '') + ' (Copy)'); setShowCreateFromPublicModal(true); } : undefined}
  />
  </div>
@@ -2765,7 +2766,7 @@ sidebarCollapsed ? 'w-16' : 'w-56'
  {showCreateFromPublicModal && customDashboardData && (
  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
  <div className="bg-surface rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
- <h3 className="text-lg font-semibold text-content-primary mb-2">Create dashboard from this</h3>
+ <h3 className="text-lg font-semibold text-content-primary mb-2">Create from</h3>
  <p className="text-sm text-content-secondary mb-4">
  Create a copy of &quot;{customDashboardData.name}&quot; in your dashboards.
  </p>

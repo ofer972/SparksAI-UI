@@ -44,8 +44,9 @@ interface DashboardTopBarContentProps {
  // Public dashboard toggle (custom-dashboard-editor only)
  isPublic?: boolean;
  onTogglePublic?: () => void;
- // Viewing someone else's public dashboard - hide edit controls, show Create from this
+ // Viewing someone else's public dashboard - hide edit controls, show Create from (owner)
  isViewingOthersPublicDashboard?: boolean;
+ publicDashboardOwnerName?: string;
  onCreateFromPublicDashboard?: () => void;
 }
 
@@ -66,6 +67,7 @@ export default function DashboardTopBarContent({
  isPublic,
  onTogglePublic,
  isViewingOthersPublicDashboard,
+ publicDashboardOwnerName,
  onCreateFromPublicDashboard,
 }: DashboardTopBarContentProps) {
  return (
@@ -92,14 +94,21 @@ export default function DashboardTopBarContent({
  ))}
  </div>
  ) : null}
- <div className="flex items-center justify-between w-full">
- {/* View title */}
- <h1 className="text-lg font-semibold text-content-primary whitespace-nowrap truncate mr-2">
+ <div className="flex items-end justify-between w-full">
+ {/* View title + owner badge (when viewing others' public dashboard) */}
+ <div className="flex items-end gap-2 min-w-0 flex-1 mr-2">
+ <h1 className="text-lg font-semibold text-content-primary whitespace-nowrap truncate">
  {viewTitle}
  </h1>
+ {activeNavItem === 'custom-dashboard-editor' && isViewingOthersPublicDashboard && publicDashboardOwnerName && (
+ <span className="flex-shrink-0 text-[10px] font-medium text-content-tertiary">
+ owner: {publicDashboardOwnerName}
+ </span>
+ )}
+ </div>
  
  {/* Mobile Actions */}
- <div className="flex items-center gap-1.5 flex-shrink-0">
+ <div className="flex items-end gap-1.5 flex-shrink-0">
  {/* Filter Toggle Button (Mobile) - Hidden for team-dashboard and pi-dashboard */}
  {hasFilters && activeNavItem !== 'team-dashboard' && activeNavItem !== 'pi-dashboard' && (
  <button
@@ -137,42 +146,7 @@ export default function DashboardTopBarContent({
  </button>
  )}
 
- {/* Create from this (Mobile) - when viewing others' public dashboard */}
- {activeNavItem === 'custom-dashboard-editor' && isViewingOthersPublicDashboard && onCreateFromPublicDashboard && (
- <button
- onClick={onCreateFromPublicDashboard}
- className="inline-flex items-center justify-center gap-1.5 h-7 px-2 rounded-lg border border-brand text-brand bg-brand/10 hover:bg-brand/20 transition-all touch-manipulation"
- title="Create dashboard from this"
- aria-label="Create dashboard from this"
- type="button"
- >
- <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
- </svg>
- <span className="text-xs font-medium">Create from this</span>
- </button>
- )}
-
- {/* Public Toggle (Mobile) - custom-dashboard-editor only, hidden when viewing others' public */}
- {activeNavItem === 'custom-dashboard-editor' && !isViewingOthersPublicDashboard && onTogglePublic && (
- <button
- onClick={onTogglePublic}
- className={`inline-flex items-center justify-center h-7 w-7 rounded-lg border transition-all ${
-   isPublic
-     ? 'border-emerald-400 dark:border-emerald-600 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30'
-     : 'border-outline-strong text-content-muted hover:text-content-secondary hover:border-outline-strong'
- }`}
- title={isPublic ? 'Dashboard is public — click to make private' : 'Dashboard is private — click to make public'}
- aria-label="Toggle public visibility"
- type="button"
- >
- <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-   <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
- </svg>
- </button>
- )}
- 
- {/* AI Chat Button */}
+ {/* AI Chat Button - part of toolbar buttons */}
  <DashboardAIMenu
  onOpenAIChat={aiChat.onOpenChat}
  prompts={aiChat.prompts}
@@ -203,8 +177,43 @@ export default function DashboardTopBarContent({
  }}
  />
  
-        {/* Mobile User Menu */}
-        <div className="mr-2">
+        {/* Public Toggle (Mobile) - when viewing own dashboard */}
+        {activeNavItem === 'custom-dashboard-editor' && !isViewingOthersPublicDashboard && onTogglePublic && (
+          <button
+            onClick={onTogglePublic}
+            className={`inline-flex items-center justify-center h-7 w-7 rounded-lg border transition-all ${
+              isPublic
+                ? 'border-emerald-400 dark:border-emerald-600 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30'
+                : 'border-outline-strong text-content-muted hover:text-content-secondary hover:border-outline-strong'
+            }`}
+            title={isPublic ? 'Dashboard is public — click to make private' : 'Dashboard is private — click to make public'}
+            aria-label="Toggle public visibility"
+            type="button"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
+            </svg>
+          </button>
+        )}
+
+        {/* Create from (Mobile) - last button when viewing others' public dashboard */}
+        {activeNavItem === 'custom-dashboard-editor' && isViewingOthersPublicDashboard && onCreateFromPublicDashboard && (
+          <button
+            onClick={onCreateFromPublicDashboard}
+            className="inline-flex items-center justify-center gap-1.5 h-7 px-2 rounded-lg border border-brand text-brand bg-brand/10 hover:bg-brand/20 transition-all touch-manipulation"
+            title="Create from"
+            aria-label="Create from"
+            type="button"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span className="text-xs font-medium">Create from</span>
+          </button>
+        )}
+ 
+        {/* Divider + Mobile User Menu */}
+        <div className="flex items-end self-end gap-2 pl-2 ml-1 mr-2 border-l border-outline-strong/80">
           <UserDropdownMenu onOpenSettings={onNavigateToSettings} />
         </div>
  </div>
@@ -228,7 +237,7 @@ export default function DashboardTopBarContent({
 
  {/* Desktop: Full Layout */}
  <div className="hidden md:flex md:items-end md:gap-3 w-full">
- {/* Title + breadcrumbs */}
+ {/* Title + breadcrumbs + badges (grouped with minimal gap like team insights) */}
  <div className="flex flex-col min-w-0">
  {breadcrumbs && breadcrumbs.length > 0 ? (
  <div className="flex items-center gap-1 text-[11px] text-content-muted mb-1">
@@ -250,14 +259,14 @@ export default function DashboardTopBarContent({
  ))}
  </div>
  ) : null}
+ <div className="flex items-end gap-3 flex-wrap">
  <h1 className="text-xl font-semibold text-content-primary whitespace-nowrap tracking-tight leading-none m-0">
  {viewTitle}
  </h1>
- </div>
-
- {/* Filter Badges */}
- {filterBadges.length > 0 && (
- <div className="flex flex-wrap gap-1.5 items-center">
+ {activeNavItem === 'custom-dashboard-editor' && isViewingOthersPublicDashboard && publicDashboardOwnerName && (
+ <span className="text-xs font-medium text-content-tertiary">owner: {publicDashboardOwnerName}</span>
+ )}
+ {/* Filter Badges - inline with title (gap-3 like team insights) */}
  {filterBadges.map((badge, index) => (
  <span
  key={index}
@@ -268,13 +277,13 @@ export default function DashboardTopBarContent({
  </span>
  ))}
  </div>
- )}
+ </div>
 
  {/* Spacer to push actions to the right on desktop */}
  <div className="flex-1 min-w-0"></div>
 
       {/* Desktop Actions: Dashboard buttons, AI Chat, User, Logout */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-end gap-2">
         {/* Filter Toggle Button - Hidden for team-dashboard and pi-dashboard */}
         {hasFilters && activeNavItem !== 'team-dashboard' && activeNavItem !== 'pi-dashboard' && (
           <button
@@ -313,42 +322,6 @@ export default function DashboardTopBarContent({
         </button>
         )}
 
-        {/* Create from this (Desktop) - when viewing others' public dashboard */}
-        {activeNavItem === 'custom-dashboard-editor' && isViewingOthersPublicDashboard && onCreateFromPublicDashboard && (
-          <button
-            onClick={onCreateFromPublicDashboard}
-            className="inline-flex items-center justify-center gap-2 h-7 px-2 rounded-lg border border-brand text-brand bg-brand/10 hover:bg-brand/20 focus:outline-none focus:ring-2 focus:ring-brand transition-all"
-            title="Create dashboard from this"
-            aria-label="Create dashboard from this"
-            type="button"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            <span className="text-xs font-medium">Create from this</span>
-          </button>
-        )}
-
-        {/* Public Toggle (Desktop) - custom-dashboard-editor only, hidden when viewing others' public */}
-        {activeNavItem === 'custom-dashboard-editor' && !isViewingOthersPublicDashboard && onTogglePublic && (
-          <button
-            onClick={onTogglePublic}
-            className={`inline-flex items-center justify-center h-7 rounded-lg border transition-all gap-1.5 px-2 ${
-              isPublic
-                ? 'border-emerald-400 dark:border-emerald-600 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30'
-                : 'border-outline-strong text-content-muted hover:text-content-secondary hover:border-outline-strong hover:bg-surface-elevated'
-            } focus:outline-none focus:ring-2 focus:ring-emerald-500`}
-            title={isPublic ? 'Dashboard is public — click to make private' : 'Dashboard is private — click to make public'}
-            aria-label="Toggle public visibility"
-            type="button"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
-            </svg>
-            <span className="hidden md:inline text-xs font-medium">{isPublic ? 'Public' : 'Private'}</span>
-          </button>
-        )}
-        
         {/* Save Settings Button - Hidden for team-dashboard and pi-dashboard */}
         {activeNavItem !== 'custom-dashboard-editor' && activeNavItem !== 'team-dashboard' && activeNavItem !== 'pi-dashboard' && (
           <button
@@ -376,9 +349,9 @@ export default function DashboardTopBarContent({
         )}
         
         {/* Reset to Defaults Button - Removed for team-dashboard and pi-dashboard */}
- 
- {/* AI Chat Button */}
- <DashboardAIMenu
+
+        {/* AI Chat Button - part of toolbar buttons */}
+        <DashboardAIMenu
  onOpenAIChat={aiChat.onOpenChat}
  prompts={aiChat.prompts}
  selectedPrompt={aiChat.selectedPrompt}
@@ -406,10 +379,46 @@ export default function DashboardTopBarContent({
  }, 1000);
  });
  }}
- />
+        />
+
+        {/* Public Toggle (Desktop) - last button before divider, custom-dashboard-editor only */}
+        {activeNavItem === 'custom-dashboard-editor' && !isViewingOthersPublicDashboard && onTogglePublic && (
+          <button
+            onClick={onTogglePublic}
+            className={`inline-flex items-center justify-center h-7 rounded-lg border transition-all gap-1.5 px-2 ${
+              isPublic
+                ? 'border-emerald-400 dark:border-emerald-600 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30'
+                : 'border-outline-strong text-content-muted hover:text-content-secondary hover:border-outline-strong hover:bg-surface-elevated'
+            } focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+            title={isPublic ? 'Dashboard is public — click to make private' : 'Dashboard is private — click to make public'}
+            aria-label="Toggle public visibility"
+            type="button"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
+            </svg>
+            <span className="hidden md:inline text-xs font-medium">{isPublic ? 'Public' : 'Private'}</span>
+          </button>
+        )}
+
+        {/* Create from (Desktop) - last button when viewing others' public dashboard */}
+        {activeNavItem === 'custom-dashboard-editor' && isViewingOthersPublicDashboard && onCreateFromPublicDashboard && (
+          <button
+            onClick={onCreateFromPublicDashboard}
+            className="inline-flex items-center justify-center gap-2 h-7 px-2 rounded-lg border border-brand text-brand bg-brand/10 hover:bg-brand/20 focus:outline-none focus:ring-2 focus:ring-brand transition-all"
+            title="Create from"
+            aria-label="Create from"
+            type="button"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span className="text-xs font-medium">Create from</span>
+          </button>
+        )}
  
-          {/* User Dropdown Menu */}
-          <div className="mr-3">
+          {/* Divider + User Dropdown Menu */}
+          <div className="flex items-end self-end gap-2 pl-2 ml-1 mr-3 border-l border-outline-strong/80">
             <UserDropdownMenu onOpenSettings={onNavigateToSettings} />
           </div>
  </div>
