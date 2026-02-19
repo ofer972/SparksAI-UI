@@ -33,7 +33,7 @@ import {
   CycleTimeIssuesResponse,
   BurndownIssuesResponse
 } from './config';
-import { getAuthHeaders, refreshAccessToken, clearTokens, getCurrentUser } from './auth';
+import { getAuthHeaders, refreshAccessToken, clearTokens, getCurrentUser, getLoginUrl, setAuthRedirect } from './auth';
 
 // Re-export types for convenience
 export type { IssuesTrendDataPoint, IssuesTrendResponse, PIPredictabilityResponse, PIPredictabilityData, ScopeChangesResponse, ScopeChangesDataPoint };
@@ -78,14 +78,20 @@ export async function authFetch(input: RequestInfo | URL, init?: RequestInit): P
       if (res.status === 401) {
         clearTokens();
         if (typeof window !== 'undefined') {
-          try { window.location.assign('/login'); } catch {}
+          const path = window.location.pathname || '/';
+          const redirect = path + window.location.hash;
+          if (redirect.startsWith('/') && !redirect.startsWith('//')) setAuthRedirect(redirect);
+          try { window.location.assign(getLoginUrl()); } catch {}
         }
       }
     } else {
       // Refresh failed - clear tokens and redirect
       clearTokens();
       if (typeof window !== 'undefined') {
-        try { window.location.assign('/login'); } catch {}
+        const path = window.location.pathname || '/';
+        const redirect = path + window.location.hash;
+        if (redirect.startsWith('/') && !redirect.startsWith('//')) setAuthRedirect(redirect);
+        try { window.location.assign(getLoginUrl()); } catch {}
       }
     }
   }

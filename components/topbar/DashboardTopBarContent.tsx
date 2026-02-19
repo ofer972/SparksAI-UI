@@ -44,6 +44,9 @@ interface DashboardTopBarContentProps {
  // Public dashboard toggle (custom-dashboard-editor only)
  isPublic?: boolean;
  onTogglePublic?: () => void;
+ // Viewing someone else's public dashboard - hide edit controls, show Create from this
+ isViewingOthersPublicDashboard?: boolean;
+ onCreateFromPublicDashboard?: () => void;
 }
 
 export default function DashboardTopBarContent({
@@ -62,6 +65,8 @@ export default function DashboardTopBarContent({
  onNavigateToSettings,
  isPublic,
  onTogglePublic,
+ isViewingOthersPublicDashboard,
+ onCreateFromPublicDashboard,
 }: DashboardTopBarContentProps) {
  return (
  <div className="flex flex-col md:flex-row md:items-center gap-0 md:gap-4 flex-1 min-w-0 pr-3 md:px-0 md:py-2 w-full">
@@ -112,8 +117,8 @@ export default function DashboardTopBarContent({
  </button>
  )}
 
- {/* Manage Reports Button - Hidden for team-dashboard and pi-dashboard */}
- {activeNavItem !== 'team-dashboard' && activeNavItem !== 'pi-dashboard' && (
+ {/* Manage Reports Button - Hidden for team-dashboard, pi-dashboard, and when viewing others' public */}
+ {activeNavItem !== 'team-dashboard' && activeNavItem !== 'pi-dashboard' && !isViewingOthersPublicDashboard && (
  <button
  onClick={(e) => {
  e.preventDefault();
@@ -132,8 +137,24 @@ export default function DashboardTopBarContent({
  </button>
  )}
 
- {/* Public Toggle (Mobile) - custom-dashboard-editor only */}
- {activeNavItem === 'custom-dashboard-editor' && onTogglePublic && (
+ {/* Create from this (Mobile) - when viewing others' public dashboard */}
+ {activeNavItem === 'custom-dashboard-editor' && isViewingOthersPublicDashboard && onCreateFromPublicDashboard && (
+ <button
+ onClick={onCreateFromPublicDashboard}
+ className="inline-flex items-center justify-center gap-1.5 h-7 px-2 rounded-lg border border-brand text-brand bg-brand/10 hover:bg-brand/20 transition-all touch-manipulation"
+ title="Create dashboard from this"
+ aria-label="Create dashboard from this"
+ type="button"
+ >
+ <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+ <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+ </svg>
+ <span className="text-xs font-medium">Create from this</span>
+ </button>
+ )}
+
+ {/* Public Toggle (Mobile) - custom-dashboard-editor only, hidden when viewing others' public */}
+ {activeNavItem === 'custom-dashboard-editor' && !isViewingOthersPublicDashboard && onTogglePublic && (
  <button
  onClick={onTogglePublic}
  className={`inline-flex items-center justify-center h-7 w-7 rounded-lg border transition-all ${
@@ -272,8 +293,8 @@ export default function DashboardTopBarContent({
           </button>
         )}
         
-        {/* Manage Reports Button - Hidden for team-dashboard and pi-dashboard */}
-        {activeNavItem !== 'team-dashboard' && activeNavItem !== 'pi-dashboard' && (
+        {/* Manage Reports Button - Hidden for team-dashboard, pi-dashboard, and when viewing others' public */}
+        {activeNavItem !== 'team-dashboard' && activeNavItem !== 'pi-dashboard' && !isViewingOthersPublicDashboard && (
         <button
           onClick={(e) => {
             e.preventDefault();
@@ -292,8 +313,24 @@ export default function DashboardTopBarContent({
         </button>
         )}
 
-        {/* Public Toggle (Desktop) - custom-dashboard-editor only */}
-        {activeNavItem === 'custom-dashboard-editor' && onTogglePublic && (
+        {/* Create from this (Desktop) - when viewing others' public dashboard */}
+        {activeNavItem === 'custom-dashboard-editor' && isViewingOthersPublicDashboard && onCreateFromPublicDashboard && (
+          <button
+            onClick={onCreateFromPublicDashboard}
+            className="inline-flex items-center justify-center gap-2 h-7 px-2 rounded-lg border border-brand text-brand bg-brand/10 hover:bg-brand/20 focus:outline-none focus:ring-2 focus:ring-brand transition-all"
+            title="Create dashboard from this"
+            aria-label="Create dashboard from this"
+            type="button"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span className="text-xs font-medium">Create from this</span>
+          </button>
+        )}
+
+        {/* Public Toggle (Desktop) - custom-dashboard-editor only, hidden when viewing others' public */}
+        {activeNavItem === 'custom-dashboard-editor' && !isViewingOthersPublicDashboard && onTogglePublic && (
           <button
             onClick={onTogglePublic}
             className={`inline-flex items-center justify-center h-7 rounded-lg border transition-all gap-1.5 px-2 ${
