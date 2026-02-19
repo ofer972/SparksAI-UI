@@ -166,9 +166,11 @@ export default function JiraSettingsView() {
         </div>
       </div>
 
-      {/* Tab Content - full width on mobile */}
+      {/* Tab Content - scrollable (same pattern as WidgetSelectorModal: outer overflow-hidden, inner overflow-y-auto) */}
       <div className="flex-1 overflow-hidden flex flex-col min-h-0 bg-surface border border-outline-strong rounded-tr-lg rounded-b-lg shadow-sm mb-2 sm:mb-4 mx-2 sm:mx-4 md:mx-6">
-        {renderContent()}
+        <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
+          {renderContent()}
+        </div>
       </div>
     </div>
   );

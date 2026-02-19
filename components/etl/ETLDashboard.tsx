@@ -168,9 +168,9 @@ export default function ETLDashboard({
   };
 
   return (
-    <div className="h-full flex flex-col overflow-hidden bg-surface">
-      {/* Content - Single Column, No Scroll */}
-      <div className="flex-1 overflow-hidden p-6">
+    <div className="min-h-full flex flex-col bg-surface">
+      {/* Content - scrolls within parent on mobile */}
+      <div className="flex-1 min-h-0 p-4 sm:p-6">
         <div className="h-full flex flex-col gap-6">
           {/* Job Status & History - Side by Side */}
           <div className="flex-shrink-0 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:items-stretch">
