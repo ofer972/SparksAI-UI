@@ -103,8 +103,68 @@ export async function register(name: string, email: string, password: string): P
   return tokens;
 }
 
-export function getGoogleLoginUrl(): string {
-  return `${getBaseUrl()}/oauth/google/login`;
+const AUTH_REDIRECT_KEY = 'authRedirect';
+
+/**
+ * Builds the login URL with optional redirect param.
+ * Use when redirecting unauthenticated users so they return to the intended destination after login.
+ */
+export function getLoginUrl(redirect?: string): string {
+  if (typeof window === 'undefined') {
+    return '/login';
+  }
+  const path = (window.location.pathname || '/').replace(/\/+$/, '') || '/';
+  const hash = window.location.hash || '';
+  const target = redirect ?? path + hash;
+  if (!target.startsWith('/') || target.startsWith('//')) {
+    return '/login';
+  }
+  return '/login?redirect=' + encodeURIComponent(target);
+}
+
+/**
+ * Get the stored post-login redirect (from sessionStorage or search params).
+ * Call from login page and auth callback.
+ */
+export function getAuthRedirect(): string | null {
+  if (typeof window === 'undefined') return null;
+  return sessionStorage.getItem(AUTH_REDIRECT_KEY);
+}
+
+/**
+ * Store redirect for use after OAuth callback. Call from login page when it has ?redirect= in URL.
+ */
+export function setAuthRedirect(redirect: string): void {
+  if (typeof window === 'undefined') return;
+  if (redirect.startsWith('/') && !redirect.startsWith('//')) {
+    sessionStorage.setItem(AUTH_REDIRECT_KEY, redirect);
+  }
+}
+
+/**
+ * Consume and return the stored redirect (for auth callback). Clears it after reading.
+ */
+export function consumeAuthRedirect(): string | null {
+  if (typeof window === 'undefined') return null;
+  const value = sessionStorage.getItem(AUTH_REDIRECT_KEY);
+  sessionStorage.removeItem(AUTH_REDIRECT_KEY);
+  return value;
+}
+
+export function getGoogleLoginUrl(redirect?: string | null): string {
+  const base = `${getBaseUrl()}/oauth/google/login`;
+  if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+    return base + '?redirect=' + encodeURIComponent(redirect);
+  }
+  return base;
+}
+
+export function getMicrosoftLoginUrl(redirect?: string | null): string {
+  const base = `${getBaseUrl()}/oauth/microsoft/login`;
+  if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+    return base + '?redirect=' + encodeURIComponent(redirect);
+  }
+  return base;
 }
 
 export function logout() {

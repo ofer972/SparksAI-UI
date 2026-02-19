@@ -77,6 +77,10 @@ interface TopBarProps {
   // Public dashboard toggle (custom-dashboard-editor only)
   isPublic?: boolean;
   onTogglePublic?: () => void;
+  // Viewing someone else's public dashboard - hide edit controls, show Create from (owner)
+  isViewingOthersPublicDashboard?: boolean;
+  publicDashboardOwnerName?: string;
+  onCreateFromPublicDashboard?: () => void;
 }
 
 export default function TopBar({
@@ -96,6 +100,9 @@ export default function TopBar({
   onNavigateToSettings,
   isPublic,
   onTogglePublic,
+  isViewingOthersPublicDashboard,
+  publicDashboardOwnerName,
+  onCreateFromPublicDashboard,
 }: TopBarProps) {
   const [filtersCollapsed, setFiltersCollapsed] = useState(true);
   
@@ -210,6 +217,9 @@ export default function TopBar({
                 onNavigateToSettings={onNavigateToSettings}
                 isPublic={isPublic}
                 onTogglePublic={onTogglePublic}
+                isViewingOthersPublicDashboard={isViewingOthersPublicDashboard}
+                publicDashboardOwnerName={publicDashboardOwnerName}
+                onCreateFromPublicDashboard={onCreateFromPublicDashboard}
               />
             ) : (
               <InsightsTopBarContent
