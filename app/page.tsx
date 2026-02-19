@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAccessToken, refreshAccessToken, clearTokens, getCurrentUser, logout } from '@/lib/auth';
+import { getAccessToken, refreshAccessToken, clearTokens, getCurrentUser, logout, getLoginUrl, setAuthRedirect } from '@/lib/auth';
 import SparksAILogo from '@/components/SparksAILogo';
 import SprintKPIs from '@/components/SprintKPIs';
 import PIMetrics from '@/components/PIMetrics';
@@ -32,7 +32,7 @@ import { useJiraConfigurationCheck } from '@/hooks/etl/useJiraConfigurationCheck
 import { useUserPreferences, useUser } from '@/contexts/UserContext';
 import CustomDashboardsView from '@/components/CustomDashboardsView';
 import CustomDashboardEditor from '@/components/CustomDashboardEditor';
-import { getUserDashboards, getUserPreferences, updateDashboard } from '@/lib/api';
+import { getUserDashboards, getUserPreferences, updateDashboard, createDashboard } from '@/lib/api';
 import type { CustomDashboard } from '@/lib/config';
 import GoalProgressTab from '@/components/GoalProgressTab';
 import PIGoalsTab from '@/components/PIGoalsTab';
@@ -46,6 +46,7 @@ import type { KPIDashboardData } from '@/components/DORAKPIs';
 import type { KPIDashboardData as SprintKPIDashboardData } from '@/components/SprintKPIs';
 import type { BreadcrumbItem, NavItemId } from '@/lib/nav';
 import type { AICard } from '@/lib/config';
+import { useNavigationHistory } from '@/hooks/useNavigationHistory';
 
 function HomeContent() {
  const router = useRouter();
@@ -65,8 +66,13 @@ function HomeContent() {
  const token = getAccessToken();
  async function goLogin() {
  clearTokens();
- try { router.replace('/login'); } catch {}
- if (typeof window !== 'undefined') window.location.assign('/login');
+ const loginUrl = getLoginUrl();
+ const path = (typeof window !== 'undefined') ? (window.location.pathname || '/') : '';
+ const hash = (typeof window !== 'undefined') ? window.location.hash : '';
+ const redirect = path + hash;
+ if (redirect.startsWith('/') && !redirect.startsWith('//')) setAuthRedirect(redirect);
+ try { router.replace(loginUrl); } catch {}
+ if (typeof window !== 'undefined') window.location.assign(loginUrl);
  }
  if (!token) {
  const ok = await refreshAccessToken();
@@ -318,10 +324,12 @@ setPendingNavItem(null);
  });
 
  const [selectedCustomDashboardId, setSelectedCustomDashboardId] = useState<string | null>(null);
+ useNavigationHistory(activeNavItem, setActiveNavItem, setMobileSidebarOpen, selectedCustomDashboardId, setSelectedCustomDashboardId);
  const [customDashboards, setCustomDashboards] = useState<CustomDashboard[]>([]);
  const [loadingDashboards, setLoadingDashboards] = useState(false);
  const [customDashboardData, setCustomDashboardData] = useState<CustomDashboard | null>(null);
  const [isPublicDashboard, setIsPublicDashboard] = useState(false);
+ const [isViewingOthersPublicDashboard, setIsViewingOthersPublicDashboard] = useState(false);
  const customDashboardFiltersInitializedRef = useRef(false);
  const { user } = useUser();
  
@@ -346,6 +354,46 @@ setPendingNavItem(null);
      // Revert on error
      setIsPublicDashboard(!newValue);
      console.error('Failed to toggle public dashboard:', err);
+   }
+ };
+
+ const handleCreateFromPublicDashboard = async () => {
+   if (!customDashboardData || !createFromPublicName.trim() || (!user?.id && !(user as any)?.user_id)) return;
+   const userId = ((user as any)?.id || (user as any)?.user_id) as string;
+   try {
+     const lc = customDashboardData.layout_config as any;
+     const clonedConfig = lc?.layoutConfig?.rows ? {
+       layoutConfig: {
+         rows: (lc.layoutConfig.rows || []).map((row: any, rowIdx: number) => ({
+           id: row.id || `row-${rowIdx}-${Date.now()}`,
+           widgets: (row.widgets || []).map((w: any, wIdx: number) => ({
+             ...w,
+             id: `widget-${rowIdx}-${wIdx}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+           })),
+           columnWidths: row.columnWidths,
+           height: row.height,
+         })),
+       },
+       pinnedFilters: lc.pinnedFilters ? { ...lc.pinnedFilters } : {},
+       reportFilters: lc.reportFilters ? { ...lc.reportFilters } : {},
+       topBarFilters: lc.topBarFilters ? { ...lc.topBarFilters } : {},
+     } : undefined;
+     const newDash = await createDashboard(userId, {
+       name: createFromPublicName.trim(),
+       description: customDashboardData.description,
+       layout_config: clonedConfig,
+     });
+     setShowCreateFromPublicModal(false);
+     setCreateFromPublicName('');
+     setSelectedCustomDashboardId(newDash.id);
+     setCustomDashboardData(newDash);
+     setIsViewingOthersPublicDashboard(false);
+     setActiveNavItem('custom-dashboard-editor');
+     loadDashboards();
+   } catch (err: any) {
+     console.error('Failed to create dashboard from public:', err);
+     setMessage({ type: 'error', text: err?.message || 'Failed to create dashboard' });
+     setTimeout(() => setMessage(null), 3000);
    }
  };
  
@@ -629,6 +677,8 @@ setPendingNavItem(null);
  error: string | null;
  }>({ hasChanges: false, isSaving: false, error: null });
  const [showResetConfirm, setShowResetConfirm] = useState(false);
+ const [showCreateFromPublicModal, setShowCreateFromPublicModal] = useState(false);
+ const [createFromPublicName, setCreateFromPublicName] = useState('');
  
  // Insight settings state (for team-insight and pi-insight pages)
  const [insightSettingsState, setInsightSettingsState] = useState<{
@@ -1928,10 +1978,15 @@ const navigationGroups: Array<{ title: string; items: Array<{ id: string; label:
  dashboardId={selectedCustomDashboardId}
  filters={customDashboardFilters}
  onFiltersChange={setCustomDashboardFilters}
- onDashboardLoaded={setCustomDashboardData}
+ onDashboardLoaded={(data, options) => {
+ setCustomDashboardData(data);
+ setIsViewingOthersPublicDashboard(options?.isOwnedByCurrentUser === false);
+ }}
+ onRedirectToHome={() => { setSelectedCustomDashboardId(null); setCustomDashboardData(null); setIsViewingOthersPublicDashboard(false); setActiveNavItem('home'); }}
  onClose={() => {
  setSelectedCustomDashboardId(null);
  setCustomDashboardData(null);
+ setIsViewingOthersPublicDashboard(false);
  setActiveNavItem('custom-dashboards');
  }}
  onSave={() => {
@@ -2515,8 +2570,11 @@ sidebarCollapsed ? 'w-16' : 'w-56'
  currentUser={getCurrentUser()}
  onLogout={() => { logout(); try { location.assign('/login'); } catch {} }}
  onNavigateToSettings={() => setActiveNavItem('user-settings')}
- isPublic={activeNavItem === 'custom-dashboard-editor' ? isPublicDashboard : undefined}
- onTogglePublic={activeNavItem === 'custom-dashboard-editor' ? handleTogglePublicDashboard : undefined}
+ isPublic={activeNavItem === 'custom-dashboard-editor' && !isViewingOthersPublicDashboard ? isPublicDashboard : undefined}
+ onTogglePublic={activeNavItem === 'custom-dashboard-editor' && !isViewingOthersPublicDashboard ? handleTogglePublicDashboard : undefined}
+ isViewingOthersPublicDashboard={activeNavItem === 'custom-dashboard-editor' && isViewingOthersPublicDashboard}
+ publicDashboardOwnerName={activeNavItem === 'custom-dashboard-editor' && isViewingOthersPublicDashboard ? customDashboardData?.owner_name : undefined}
+ onCreateFromPublicDashboard={activeNavItem === 'custom-dashboard-editor' && isViewingOthersPublicDashboard ? () => { setCreateFromPublicName((customDashboardData?.name || '') + ' (Copy)'); setShowCreateFromPublicModal(true); } : undefined}
  />
  </div>
 
@@ -2704,6 +2762,41 @@ sidebarCollapsed ? 'w-16' : 'w-56'
  />
  )}
  
+ {/* Create from Public Dashboard Modal */}
+ {showCreateFromPublicModal && customDashboardData && (
+ <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+ <div className="bg-surface rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+ <h3 className="text-lg font-semibold text-content-primary mb-2">Create from</h3>
+ <p className="text-sm text-content-secondary mb-4">
+ Create a copy of &quot;{customDashboardData.name}&quot; in your dashboards.
+ </p>
+ <input
+ type="text"
+ value={createFromPublicName}
+ onChange={(e) => setCreateFromPublicName(e.target.value)}
+ placeholder="Dashboard name"
+ className="w-full p-2 border border-outline-strong rounded bg-surface-elevated text-content-primary mb-4"
+ autoFocus
+ />
+ <div className="flex justify-end gap-3">
+ <button
+ onClick={() => { setShowCreateFromPublicModal(false); setCreateFromPublicName(''); }}
+ className="px-4 py-2 text-sm font-medium text-content-secondary hover:bg-surface-secondary rounded"
+ >
+ Cancel
+ </button>
+ <button
+ onClick={handleCreateFromPublicDashboard}
+ disabled={!createFromPublicName.trim()}
+ className="px-4 py-2 text-sm font-medium text-white bg-brand hover:bg-brand-hover disabled:opacity-50 rounded"
+ >
+ Create
+ </button>
+ </div>
+ </div>
+ </div>
+ )}
+
  {/* Reset Dashboard Settings Confirmation Modal */}
  {showResetConfirm && (
  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">

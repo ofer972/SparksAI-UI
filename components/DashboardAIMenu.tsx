@@ -521,14 +521,14 @@ function DashboardAIMenu({
  <button
  ref={buttonRef}
  onClick={() => setIsOpen(!isOpen)}
- className="flex items-center space-x-2 px-3 py-1 rounded-lg hover:bg-surface-secondary text-content-tertiary focus:outline-none focus:ring-2 focus:ring-brand transition-colors"
+ className="inline-flex items-center justify-center gap-2 h-7 px-2 rounded-lg border border-outline-strong text-content-muted hover:text-brand hover:border-brand hover:bg-brand/10 focus:outline-none focus:ring-2 focus:ring-brand transition-all"
  aria-label="Open AI Menu"
  >
- <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-brand text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+ <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-brand" viewBox="0 0 20 20" fill="currentColor">
  <path d="M10 3.5a1.5 1.5 0 011.5 1.5v1.5a1.5 1.5 0 01-3 0V5a1.5 1.5 0 011.5-1.5zM5.5 11a1.5 1.5 0 00-1.5 1.5v1.5a1.5 1.5 0 003 0V12.5a1.5 1.5 0 00-1.5-1.5zM14.5 11a1.5 1.5 0 00-1.5 1.5v1.5a1.5 1.5 0 003 0V12.5a1.5 1.5 0 00-1.5-1.5zM10 9a1 1 0 00-1 1v1a1 1 0 002 0v-1a1 1 0 00-1-1z" />
  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0 2a10 10 0 100-20 10 10 0 000 20z" clipRule="evenodd" />
  </svg>
- <span className="text-sm font-medium">AI</span>
+ <span className="text-xs font-medium">AI</span>
  </button>
 
  {typeof window !== 'undefined' && dropdownContent && createPortal(dropdownContent, document.body)}

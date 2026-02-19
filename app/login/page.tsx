@@ -1,10 +1,16 @@
 "use client";
 
-import { useState, useEffect } from"react";
-import Link from"next/link";
-import { useRouter } from"next/navigation";
-import { login, getGoogleLoginUrl, getMicrosoftLoginUrl, clearTokens } from"@/lib/auth";
-import UnauthorizedAccess from"@/components/UnauthorizedAccess";
+import { Suspense, useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { login, getGoogleLoginUrl, getMicrosoftLoginUrl, clearTokens, setAuthRedirect, getAuthRedirect } from "@/lib/auth";
+import UnauthorizedAccess from "@/components/UnauthorizedAccess";
+
+function getRedirectFromUrl(): string | null {
+  if (typeof window === "undefined") return null;
+  const params = new URLSearchParams(window.location.search);
+  return params.get("redirect");
+}
 
 const oauthRaw = (process.env.NEXT_PUBLIC_OAUTH_PROVIDERS ?? "").trim().toLowerCase();
 const oauthProviders = oauthRaw ? oauthRaw.split(",").map((p) => p.trim()) : [];
@@ -12,17 +18,27 @@ const showGoogle = oauthProviders.length === 0 || oauthProviders.includes("googl
 const showMicrosoft = oauthProviders.length === 0 || oauthProviders.includes("microsoft");
 const showOAuth = showGoogle || showMicrosoft;
 
-export default function LoginPage() {
- const router = useRouter();
- const [email, setEmail] = useState("");
- const [password, setPassword] = useState("");
- const [loading, setLoading] = useState(false);
- const [error, setError] = useState<string | null>(null);
- const [showUnauthorized, setShowUnauthorized] = useState(false);
+function LoginContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showUnauthorized, setShowUnauthorized] = useState(false);
 
- useEffect(() => {
- clearTokens();
- }, []);
+  useEffect(() => {
+    clearTokens();
+  }, []);
+
+  // Store redirect in sessionStorage so OAuth callback can use it
+  // Read from URL directly - useSearchParams can be delayed
+  useEffect(() => {
+    const redirect = searchParams.get("redirect") ?? getRedirectFromUrl();
+    if (redirect && redirect.startsWith("/") && !redirect.startsWith("//")) {
+      setAuthRedirect(redirect);
+    }
+  }, [searchParams]);
 
  async function onSubmit(e: React.FormEvent) {
  e.preventDefault();
@@ -30,8 +46,15 @@ export default function LoginPage() {
  setShowUnauthorized(false);
  setLoading(true);
  try {
- await login(email, password);
- router.push("/");
+   await login(email, password);
+   const redirect = searchParams.get("redirect") ?? getAuthRedirect() ?? getRedirectFromUrl() ?? "/";
+   const target = redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "/";
+   // router.push() strips hashes; use full URL for deep links to ensure hash is preserved
+   if (target.includes("#")) {
+     window.location.href = window.location.origin + target;
+   } else {
+     router.push(target);
+   }
  } catch (err: any) {
  const msg = String(err?.message ||"Login failed");
  // Check if error indicates unauthorized email
@@ -100,7 +123,7 @@ export default function LoginPage() {
  <div className="space-y-3">
  {showGoogle && (
  <a
- href={getGoogleLoginUrl()}
+ href={getGoogleLoginUrl(searchParams.get("redirect") ?? getAuthRedirect() ?? getRedirectFromUrl())}
  className="flex items-center justify-center gap-3 w-full p-2 border border-outline-strong rounded bg-surface-elevated text-content-primary hover:bg-surface-secondary transition-colors"
  >
  <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -114,7 +137,7 @@ export default function LoginPage() {
  )}
  {showMicrosoft && (
  <a
- href={getMicrosoftLoginUrl()}
+ href={getMicrosoftLoginUrl(searchParams.get("redirect") ?? getAuthRedirect() ?? getRedirectFromUrl())}
  className="flex items-center justify-center gap-3 w-full p-2 border border-outline-strong rounded bg-surface-elevated text-content-primary hover:bg-surface-secondary transition-colors"
  >
  <svg className="w-5 h-5" viewBox="0 0 21 21">
@@ -138,4 +161,18 @@ export default function LoginPage() {
  </div>
  </div>
  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 to-surface">
+        <div className="w-full max-w-md p-6 bg-surface rounded-xl shadow-lg border border-outline text-center text-content-secondary">
+          Loading...
+        </div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
+  );
 }

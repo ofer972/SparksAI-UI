@@ -603,6 +603,7 @@ export interface CustomDashboard {
   is_public?: boolean;
   created_at: string;
   updated_at: string;
+  owner_name?: string; // Set when viewing another user's dashboard
 }
 
 export interface PublicDashboard {

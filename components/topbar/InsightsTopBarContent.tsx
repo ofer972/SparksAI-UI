@@ -176,8 +176,8 @@ export default function InsightsTopBarContent({
  />
  )}
 
-          {/* Mobile User Menu */}
-          <div className="mr-2">
+          {/* Divider + Mobile User Menu */}
+          <div className="flex items-end pl-2 ml-1 mr-2 border-l border-outline-strong/80">
             <UserDropdownMenu onOpenSettings={onNavigateToSettings} />
           </div>
  </div>
@@ -199,7 +199,7 @@ export default function InsightsTopBarContent({
  )}
  </div>
  
- {/* Desktop: View title */}
+ {/* Desktop: View title + badges (inline with gap-3 like dashboards) */}
  <div className="hidden md:flex flex-col min-w-0">
  {breadcrumbs && breadcrumbs.length > 0 ? (
  <div className="flex items-center gap-1 text-[11px] text-content-muted mb-1">
@@ -221,14 +221,11 @@ export default function InsightsTopBarContent({
  ))}
  </div>
  ) : null}
+ <div className="flex items-end gap-3 flex-wrap">
  <h1 className="text-xl font-semibold text-content-primary whitespace-nowrap tracking-tight leading-none m-0">
  {viewTitle}
  </h1>
- </div>
-
- {/* Filter Badges - Always display active filters */}
- {filterBadges.length > 0 && (
- <div className="hidden md:flex flex-wrap gap-1.5 items-center">
+ {/* Filter Badges - inline with title */}
  {filterBadges.map((badge, index) => (
  <span
  key={index}
@@ -239,7 +236,7 @@ export default function InsightsTopBarContent({
  </span>
  ))}
  </div>
- )}
+ </div>
 
  {/* Spacer to push actions to the right */}
  <div className="flex-1"></div>
@@ -322,8 +319,8 @@ export default function InsightsTopBarContent({
  />
  )}
  
-          {/* User Dropdown Menu */}
-          <div className="mr-3">
+          {/* Divider + User Dropdown Menu */}
+          <div className="flex items-end pl-2 ml-1 mr-3 border-l border-outline-strong/80">
             <UserDropdownMenu onOpenSettings={onNavigateToSettings} />
           </div>
  </div>

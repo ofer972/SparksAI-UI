@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { saveTokens } from "@/lib/auth";
+import { saveTokens, consumeAuthRedirect } from "@/lib/auth";
 import UnauthorizedAccess from "@/components/UnauthorizedAccess";
 
-export default function OAuthCallbackPage() {
+function OAuthCallbackContent() {
   const router = useRouter();
   const params = useSearchParams();
   const [message, setMessage] = useState("Completing sign-in...");
@@ -28,11 +28,28 @@ export default function OAuthCallbackPage() {
     if (access && refresh) {
       saveTokens({ accessToken: access, refreshToken: refresh });
       setMessage("Signed in. Redirecting...");
-      const timer = setTimeout(() => router.push("/"), 500);
+      const redirect = params.get("redirect") ?? consumeAuthRedirect() ?? "/";
+      const target = redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "/";
+      const timer = setTimeout(() => {
+        // router.push() strips hashes; use full URL for deep links to ensure hash is preserved
+        if (target.includes("#")) {
+          window.location.href = window.location.origin + target;
+        } else {
+          router.push(target);
+        }
+      }, 500);
       return () => clearTimeout(timer);
     }
     // If tokens not present, just redirect home; backend may have already issued session or provided another flow
-    const timer = setTimeout(() => router.push("/"), 1000);
+    const redirect = params.get("redirect") ?? consumeAuthRedirect() ?? "/";
+    const target = redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "/";
+    const timer = setTimeout(() => {
+      if (target.includes("#")) {
+        window.location.href = window.location.origin + target;
+      } else {
+        router.push(target);
+      }
+    }, 1000);
     return () => clearTimeout(timer);
   }, [params, router]);
 
@@ -46,5 +63,19 @@ export default function OAuthCallbackPage() {
         <p>{message}</p>
       </div>
     </div>
+  );
+}
+
+export default function OAuthCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="w-full max-w-md p-6 bg-surface rounded shadow text-center">
+          <p>Completing sign-in...</p>
+        </div>
+      </div>
+    }>
+      <OAuthCallbackContent />
+    </Suspense>
   );
 }

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useUser } from '@/contexts/UserContext';
 import {
   getDashboard,
+  getPublicDashboard,
   updateDashboard,
 } from '@/lib/api';
 import DraggableResizableGrid from './DraggableResizableGrid';
@@ -47,9 +48,10 @@ interface CustomDashboardEditorProps {
     selectedTreeLabel: string;
     selectedTreeType: 'team' | 'group';
   }) => void;
-  onDashboardLoaded?: (dashboard: CustomDashboard) => void;
+  onDashboardLoaded?: (dashboard: CustomDashboard, options?: { isOwnedByCurrentUser: boolean }) => void;
   onClose?: () => void;
   onSave?: () => void;
+  onRedirectToHome?: () => void;
 }
 
 export default function CustomDashboardEditor({ 
@@ -58,10 +60,12 @@ export default function CustomDashboardEditor({
   onFiltersChange,
   onDashboardLoaded,
   onClose, 
-  onSave 
+  onSave,
+  onRedirectToHome,
 }: CustomDashboardEditorProps) {
   const { user } = useUser();
   const [dashboard, setDashboard] = useState<CustomDashboard | null>(null);
+  const [isViewingOthersPublicDashboard, setIsViewingOthersPublicDashboard] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -537,8 +541,8 @@ export default function CustomDashboardEditor({
         // Update previous ref
         prevFiltersRef.current = newFilters;
         
-        // Auto-save the filter changes to the dashboard (debounced)
-        if (user) {
+        // Auto-save the filter changes to the dashboard (debounced) - skip if viewing others' public
+        if (user && !isViewingOthersPublicDashboard) {
           const userId = (user?.id || user?.user_id) as string;
           setTimeout(() => {
             updateDashboard(userId, dashboardId, {
@@ -571,9 +575,29 @@ export default function CustomDashboardEditor({
     setError(null);
     try {
       const userId = (user?.id || user?.user_id) as string;
-      const dashboardData = await getDashboard(userId, dashboardId);
-      
+      let dashboardData: CustomDashboard;
+      let isOwnedByCurrentUser = true;
+
+      try {
+        dashboardData = await getDashboard(userId, dashboardId);
+      } catch {
+        // Not in user's dashboards - try public (e.g. from shared link)
+        try {
+          dashboardData = await getPublicDashboard(dashboardId);
+        } catch {
+          // Private or not found - redirect home
+          onRedirectToHome?.();
+          return;
+        }
+      }
+
+      // Always derive ownership from dashboard user_id vs current user (backend GetDashboard
+      // returns any dashboard by ID without validating path userId matches owner)
+      const normalize = (v: string) => String(v || '').toLowerCase().replace(/-/g, '');
+      isOwnedByCurrentUser = normalize(dashboardData.user_id) === normalize(userId);
+
       setDashboard(dashboardData);
+      setIsViewingOthersPublicDashboard(!isOwnedByCurrentUser);
       setDashboardName(dashboardData.name);
       setDashboardDescription(dashboardData.description || '');
       
@@ -615,7 +639,7 @@ export default function CustomDashboardEditor({
       
       // Notify parent of loaded dashboard
       if (onDashboardLoaded) {
-        onDashboardLoaded(dashboardData);
+        onDashboardLoaded(dashboardData, { isOwnedByCurrentUser });
       }
     } catch (err: any) {
       setError(err.message || 'Failed to load dashboard');
@@ -626,6 +650,7 @@ export default function CustomDashboardEditor({
 
   const handleSaveDashboard = async () => {
     if (!dashboard || !user?.id && !user?.user_id) return;
+    if (isViewingOthersPublicDashboard) return;
     
     setIsSaving(true);
     setError(null);
