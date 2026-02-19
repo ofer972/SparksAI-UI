@@ -46,6 +46,7 @@ import type { KPIDashboardData } from '@/components/DORAKPIs';
 import type { KPIDashboardData as SprintKPIDashboardData } from '@/components/SprintKPIs';
 import type { BreadcrumbItem, NavItemId } from '@/lib/nav';
 import type { AICard } from '@/lib/config';
+import { useNavigationHistory } from '@/hooks/useNavigationHistory';
 
 function HomeContent() {
  const router = useRouter();
@@ -318,6 +319,7 @@ setPendingNavItem(null);
  });
 
  const [selectedCustomDashboardId, setSelectedCustomDashboardId] = useState<string | null>(null);
+ useNavigationHistory(activeNavItem, setActiveNavItem, setMobileSidebarOpen, selectedCustomDashboardId, setSelectedCustomDashboardId);
  const [customDashboards, setCustomDashboards] = useState<CustomDashboard[]>([]);
  const [loadingDashboards, setLoadingDashboards] = useState(false);
  const [customDashboardData, setCustomDashboardData] = useState<CustomDashboard | null>(null);

@@ -1,7 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // App directory is now stable in Next.js 14, no need for experimental flag
-  
+  experimental: {
+    // Required for SPA-style history (pushState/popstate) to work with back/forward buttons
+    // Without this, Next.js triggers a full reload when navigating back to our entries
+    windowHistorySupport: true,
+  },
+
   // Output standalone for better Docker performance
   output: 'standalone',
   
