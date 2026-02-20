@@ -88,6 +88,8 @@ export default function SettingsScreen() {
  const [originalOpenaiModel, setOriginalOpenaiModel] = useState<string>('gpt-4o-mini');
  const [originalGeminiTemperature, setOriginalGeminiTemperature] = useState<number>(0);
  const [originalOpenaiTemperature, setOriginalOpenaiTemperature] = useState<number>(0.7);
+ const [geminiThinkingLevel, setGeminiThinkingLevel] = useState<string>('off');
+ const [originalGeminiThinkingLevel, setOriginalGeminiThinkingLevel] = useState<string>('off');
  const MASK = '********';
  const [saving, setSaving] = useState(false);
 
@@ -222,6 +224,12 @@ export default function SettingsScreen() {
  setGeminiTemperature(loadedGeminiTemp);
  setOriginalGeminiTemperature(loadedGeminiTemp);
 
+ const allowedThinking = ['off', 'minimal', 'low', 'medium', 'high', 'default'];
+ const loadedThinking = s.ai_gemini_thinking && allowedThinking.includes(String(s.ai_gemini_thinking).toLowerCase())
+   ? String(s.ai_gemini_thinking).toLowerCase() : 'off';
+ setGeminiThinkingLevel(loadedThinking);
+ setOriginalGeminiThinkingLevel(loadedThinking);
+
  let loadedOpenaiTemp = 0.7;
  if (s.ai_chatgpt_temperature !== undefined) {
  const v = typeof s.ai_chatgpt_temperature === 'string' ? parseFloat(s.ai_chatgpt_temperature) : s.ai_chatgpt_temperature;
@@ -344,6 +352,7 @@ export default function SettingsScreen() {
  // Check temperatures
  if (openaiTemperature !== originalOpenaiTemperature) return true;
  if (geminiTemperature !== originalGeminiTemperature) return true;
+ if (geminiThinkingLevel !== originalGeminiThinkingLevel) return true;
 
  // Check API keys (only if changed from masked value)
  const geminiKeyChanged = geminiApiKey && geminiApiKey !== MASK && geminiApiKey !== (originalGeminiApiKey ?? '');
@@ -368,6 +377,7 @@ export default function SettingsScreen() {
  ai_chatgpt_model: String(openaiModel),
  ai_gemini_model: String(geminiModel),
  ai_gemini_temperature: String(geminiTemperature),
+ ai_gemini_thinking: String(geminiThinkingLevel),
  ai_chatgpt_temperature: String(openaiTemperature),
  };
 
@@ -389,6 +399,7 @@ export default function SettingsScreen() {
  setOriginalGeminiModel(geminiModel);
  setOriginalOpenaiTemperature(openaiTemperature);
  setOriginalGeminiTemperature(geminiTemperature);
+ setOriginalGeminiThinkingLevel(geminiThinkingLevel);
  
  // Update API key state - if a key was sent, mark it as saved (show MASK), otherwise keep current state
  if (payload.gemini_api_key) {
@@ -866,6 +877,22 @@ export default function SettingsScreen() {
  className="border border-outline-strong bg-surface-elevated text-content-primary rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
  />
  <p className="text-xs text-content-tertiary">Controls randomness (0 = deterministic, 1 = creative)</p>
+ </div>
+ <div className="flex flex-col space-y-2">
+ <label className="text-sm font-medium text-content-secondary">Thinking level</label>
+ <select
+ value={geminiThinkingLevel}
+ onChange={(e) => setGeminiThinkingLevel(e.target.value)}
+ className="border border-outline-strong bg-surface-elevated text-content-primary rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+ >
+ <option value="off">Off</option>
+ <option value="minimal">Minimal</option>
+ <option value="low">Low</option>
+ <option value="medium">Medium</option>
+ <option value="high">High</option>
+ <option value="default">Default</option>
+ </select>
+ <p className="text-xs text-content-tertiary">Higher = slower, more reasoning</p>
  </div>
  <div className="flex flex-col space-y-2">
  <label className="text-sm font-medium text-content-secondary">API Key</label>
