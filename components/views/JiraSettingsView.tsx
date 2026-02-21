@@ -119,12 +119,15 @@ export default function JiraSettingsView() {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Top-level Tabs */}
-      <div className="flex-shrink-0 px-4 md:px-6 mt-4">
-        <div className="px-4 md:pl-0 md:pr-6">
-          {/* Mobile: scrollable tabs */}
-          <nav className="flex gap-1 overflow-x-auto md:hidden pb-1">
+    <div className="h-full flex flex-col min-h-0">
+      {/* Top-level Tabs - responsive for Jira Data Sync */}
+      <div className="flex-shrink-0 px-2 sm:px-4 md:px-6 mt-2 sm:mt-4">
+        <div className="px-2 sm:px-4 md:pl-0 md:pr-6">
+          {/* Mobile: horizontal scroll, scroll-snap, touch-friendly */}
+          <nav
+            className="flex gap-1 overflow-x-auto overflow-y-hidden md:hidden pb-1 -mx-2 px-2"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
@@ -132,7 +135,7 @@ export default function JiraSettingsView() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`
-                    flex-shrink-0 px-4 py-2.5 text-xs font-medium rounded-t-lg border transition-colors whitespace-nowrap
+                    flex-shrink-0 min-w-[max-content] px-3 py-2.5 text-xs sm:text-sm font-medium rounded-t-lg border transition-colors whitespace-nowrap
                     ${isActive ? 'bg-surface text-brand border-x border-t border-outline-strong border-b-white border-b-surface -mb-px relative z-10' : 'bg-surface-elevated text-content-tertiary border border-outline hover:bg-surface-secondary'}
                   `}
                 >
@@ -142,7 +145,7 @@ export default function JiraSettingsView() {
             })}
           </nav>
 
-          {/* Desktop: single row */}
+          {/* Desktop: single row / wrap */}
           <nav className="hidden md:flex md:flex-wrap gap-1 md:justify-start">
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id;
@@ -163,9 +166,11 @@ export default function JiraSettingsView() {
         </div>
       </div>
 
-      {/* Tab Content */}
-      <div className="flex-1 overflow-hidden flex flex-col min-h-0 bg-surface border border-outline-strong rounded-tr-lg rounded-b-lg shadow-sm mb-4 mx-4 md:mx-6">
-        {renderContent()}
+      {/* Tab Content - scrollable (same pattern as WidgetSelectorModal: outer overflow-hidden, inner overflow-y-auto) */}
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0 bg-surface border border-outline-strong rounded-tr-lg rounded-b-lg shadow-sm mb-2 sm:mb-4 mx-2 sm:mx-4 md:mx-6">
+        <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
+          {renderContent()}
+        </div>
       </div>
     </div>
   );

@@ -114,9 +114,12 @@ export default function ETLSettingsTabs({ settings, customFields, onSaved, initi
         </div>
       )}
 
-      {/* Tab Navigation - Only show if not hidden */}
+      {/* Tab Navigation - Only show if not hidden; scrollable on small screens */}
       {!hideNavigation && (
-        <nav className="flex-shrink-0 flex space-x-1 bg-surface px-4 pt-4">
+        <nav
+          className="flex-shrink-0 flex gap-1 overflow-x-auto overflow-y-hidden bg-surface px-2 sm:px-4 pt-4"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -124,7 +127,7 @@ export default function ETLSettingsTabs({ settings, customFields, onSaved, initi
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
-                  flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg border transition-colors
+                  flex items-center gap-1.5 sm:gap-2 flex-shrink-0 min-w-[max-content] px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium rounded-t-lg border transition-colors
                   ${isActive 
                     ? 'bg-surface text-brand border-x border-t border-outline border-b-white -mb-px relative z-10' 
                     : 'bg-surface-elevated text-content-secondary border border-outline hover:bg-surface-secondary'}
@@ -138,35 +141,35 @@ export default function ETLSettingsTabs({ settings, customFields, onSaved, initi
         </nav>
       )}
 
-      {/* Tab Content Area with Border */}
-      <div className={`flex-1 overflow-y-auto bg-surface ${hideNavigation ? 'p-6' : 'border border-outline rounded-tr-lg rounded-b-lg shadow-sm p-6'}`}>
+      {/* Tab Content Area with Border - full width on mobile for Jira Data Sync */}
+      <div className={`flex-1 overflow-y-auto bg-surface ${hideNavigation ? 'p-4 sm:p-6' : 'border border-outline rounded-tr-lg rounded-b-lg shadow-sm p-4 sm:p-6'}`}>
         {activeTab === 'jira-connection' && (
-          <div className="w-full max-w-[50%]">
+          <div className="w-full max-w-full md:max-w-[50%]">
             <JiraConnectionTab settings={settings} onSaved={onSaved} onShowToast={showToast} />
           </div>
         )}
         {activeTab === 'projects' && (
-          <div className="w-full max-w-[38.4%]">
+          <div className="w-full max-w-full md:max-w-[38.4%]">
             <ProjectsTab settings={settings} onSaved={onSaved} onShowToast={showToast} />
           </div>
         )}
         {activeTab === 'jql' && (
-          <div className="w-full max-w-[50%]">
+          <div className="w-full max-w-full md:max-w-[50%]">
             <JQLScopeTab settings={settings} onSaved={onSaved} onShowToast={showToast} />
           </div>
         )}
         {activeTab === 'fields' && (
-          <div className="w-full max-w-[40%]">
+          <div className="w-full max-w-full md:max-w-[40%]">
             <FieldsTab settings={settings} customFields={customFields} onSaved={onSaved} onShowToast={showToast} />
           </div>
         )}
         {activeTab === 'history' && (
-          <div className="w-full max-w-[40%]">
+          <div className="w-full max-w-full md:max-w-[40%]">
             <HistoryScopeTab settings={settings} onSaved={onSaved} onShowToast={showToast} />
           </div>
         )}
         {activeTab === 'derived' && (
-          <div className="w-full max-w-[50%]">
+          <div className="w-full max-w-full md:max-w-[50%]">
             <DerivedFieldsTab settings={settings} onSaved={onSaved} onShowToast={showToast} />
           </div>
         )}
