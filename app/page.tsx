@@ -302,11 +302,11 @@ setPendingNavItem(null);
  const hasSprint = teamInsightsFilters.selectedCategories.includes('Sprint Status') || 
  teamInsightsFilters.selectedCategories.includes('Sprint Events');
  
- // If there's a mix of PI and Sprint categories, don't change metrics tab
  if (hasPI && hasSprint) {
- return;
+   // Mixed categories: don't change the tab — keep user's current choice (PI or Sprint)
+   return;
  }
- 
+
  if (hasPI) {
  setInsightMetricsTab('pi');
  } else if (hasSprint) {
@@ -1378,7 +1378,7 @@ useEffect(() => {
  
  fetchCurrentPI();
  }
- }, [activeNavItem, teamInsightSettings.isLoading]);
+ }, [activeNavItem, teamInsightSettings.isLoading, teamInsightsReady]);
 
  // Fetch custom dashboards
  const loadDashboards = useCallback(async () => {
