@@ -302,11 +302,16 @@ setPendingNavItem(null);
  const hasSprint = teamInsightsFilters.selectedCategories.includes('Sprint Status') || 
  teamInsightsFilters.selectedCategories.includes('Sprint Events');
  
- // If there's a mix of PI and Sprint categories, don't change metrics tab
  if (hasPI && hasSprint) {
- return;
+   // All (or both) categories selected: set tab from current filters so the matrix always shows when possible
+   if (teamInsightsFilters.selectedTeam) {
+     setInsightMetricsTab('team');
+   } else if (teamInsightsFilters.selectedPI) {
+     setInsightMetricsTab('pi');
+   }
+   return;
  }
- 
+
  if (hasPI) {
  setInsightMetricsTab('pi');
  } else if (hasSprint) {
@@ -1378,7 +1383,7 @@ useEffect(() => {
  
  fetchCurrentPI();
  }
- }, [activeNavItem, teamInsightSettings.isLoading]);
+ }, [activeNavItem, teamInsightSettings.isLoading, teamInsightsReady]);
 
  // Fetch custom dashboards
  const loadDashboards = useCallback(async () => {
