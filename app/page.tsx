@@ -303,12 +303,7 @@ setPendingNavItem(null);
  teamInsightsFilters.selectedCategories.includes('Sprint Events');
  
  if (hasPI && hasSprint) {
-   // All (or both) categories selected: set tab from current filters so the matrix always shows when possible
-   if (teamInsightsFilters.selectedTeam) {
-     setInsightMetricsTab('team');
-   } else if (teamInsightsFilters.selectedPI) {
-     setInsightMetricsTab('pi');
-   }
+   // Mixed categories: don't change the tab — keep user's current choice (PI or Sprint)
    return;
  }
 
