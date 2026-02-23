@@ -18,6 +18,8 @@ interface AIChatModalProps {
   recommendationId?: number | string;
   teamName?: string;
   piName?: string;
+  /** When true, teamName is a group name (backend resolves to team list for SQL) */
+  isGroup?: boolean;
   promptName?: string;
   dashboardData?: DashboardData | null;
 }
@@ -316,6 +318,7 @@ export default function AIChatModal({
   recommendationId,
   teamName,
   piName,
+  isGroup,
   promptName,
   dashboardData,
 }: AIChatModalProps) {
@@ -337,6 +340,7 @@ export default function AIChatModal({
     recommendationId,
     teamName,
     piName,
+    isGroup,
     promptName,
     dashboardData,
   });
