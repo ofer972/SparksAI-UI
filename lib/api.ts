@@ -1848,6 +1848,7 @@ export class ApiService {
     user_id: string;
     selected_team: string;
     selected_pi?: string;
+    is_group?: boolean;
     chat_type: string;
     recommendation_id?: string;
     insights_id?: string;

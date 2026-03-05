@@ -2719,6 +2719,13 @@ sidebarCollapsed ? 'w-16' : 'w-56'
  ? collectedDashboardData.topBarFilters.selectedTeam
  : undefined
  }
+ isGroup={
+ activeNavItem === 'team-dashboard' 
+ ? selectedTreeType === 'group' 
+ : activeNavItem === 'custom-dashboard-editor' && collectedDashboardData?.topBarFilters?.selectedTreeType
+ ? collectedDashboardData.topBarFilters.selectedTreeType === 'group'
+ : undefined
+ }
  piName={
  activeNavItem === 'pi-dashboard' 
  ? selectedPI 

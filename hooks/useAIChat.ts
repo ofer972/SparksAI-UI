@@ -23,6 +23,8 @@ interface UseAIChatParams {
   recommendationId?: number | string;
   teamName?: string;
   piName?: string;
+  /** When true, teamName is a group name; backend will resolve to team list for SQL */
+  isGroup?: boolean;
   promptName?: string;
   dashboardData?: DashboardData | null;
 }
@@ -37,7 +39,7 @@ interface UseAIChatResult {
 }
 
 export function useAIChat(params: UseAIChatParams): UseAIChatResult {
-  const { isOpen, chatType, insightsId, recommendationId, teamName, piName, promptName, dashboardData } = params;
+  const { isOpen, chatType, insightsId, recommendationId, teamName, piName, isGroup, promptName, dashboardData } = params;
   const { user } = useUser();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -78,13 +80,23 @@ export function useAIChat(params: UseAIChatParams): UseAIChatResult {
     if (dashboardData) {
       console.log('[useAIChat] Adding dashboard_data to request');
       request.dashboard_data = dashboardData;
-    } else {
+      // So backend can resolve group → team list for SQL: send is_group from top bar
+      const treeType = dashboardData?.topBarFilters?.selectedTreeType;
+      if (treeType === 'group' || treeType === 'team') {
+        request.is_group = treeType === 'group';
+      }
+    }
+    // Explicit isGroup from caller (e.g. team-ai-insights when group selected)
+    if (isGroup !== undefined) {
+      request.is_group = isGroup;
+    }
+    if (!dashboardData) {
       console.log('[useAIChat] No dashboard_data to add');
     }
 
     console.log('[useAIChat] Final request:', request);
     return request;
-  }, [chatType, insightsId, recommendationId, teamName, piName, promptName, user, dashboardData]);
+  }, [chatType, insightsId, recommendationId, teamName, piName, isGroup, promptName, user, dashboardData]);
 
   const startTypewriter = useCallback((fullText: string, append: boolean = false) => {
     if (typingTimerRef.current) {
