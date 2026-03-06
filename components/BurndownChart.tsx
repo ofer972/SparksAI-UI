@@ -285,6 +285,14 @@ export default function BurndownChart({
           filter: function(context: any) {
             return context.parsed.y !== null && context.parsed.y !== undefined;
           },
+          footer: function(context: any) {
+            const dataIndex = context[0]?.dataIndex;
+            const n = data[dataIndex]?.issues_completed_outside_sprint;
+            if (n != null && n > 0) {
+              return `ℹ️ ${n} issue(s) completed before sprint start (excluded from total scope).`;
+            }
+            return '';
+          },
         },
       },
     },

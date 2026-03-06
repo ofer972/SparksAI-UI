@@ -114,6 +114,8 @@ export interface BurndownDataPoint {
   issues_completed_on_day: number;
   planned_issues?: number; // For PI burndown
   wip_issues_in_progress?: number | null; // Work in progress issues per day
+  /** Sprint burndown only: issues already Done before sprint start (excluded from total scope). */
+  issues_completed_outside_sprint?: number;
 }
 
 export interface BurndownResponse {
