@@ -72,9 +72,10 @@ export default function BurndownChart({
       return d.wip_issues_in_progress;
     });
 
-    // Create event markers for issues removed and completed
+    // Create event markers for issues removed, completed, and added
     const issuesRemovedData = data.map(d => d.issues_removed_on_day > 0 ? d.issues_removed_on_day : null);
     const issuesCompletedData = data.map(d => d.issues_completed_on_day > 0 ? d.issues_completed_on_day : null);
+    const issuesAddedData = data.map(d => d.issues_added_on_day > 0 ? d.issues_added_on_day : null);
 
     return {
       labels,
@@ -188,6 +189,27 @@ export default function BurndownChart({
             display: false,
           },
         },
+        {
+          label: 'Issues Added',
+          data: issuesAddedData,
+          borderColor: '#9333ea',
+          backgroundColor: '#9333ea',
+          borderWidth: 1,
+          pointRadius: 5,
+          pointStyle: 'triangle',
+          pointBackgroundColor: '#9333ea',
+          pointBorderColor: '#9333ea',
+          pointHoverRadius: 7,
+          fill: false,
+          tension: 0,
+          showLine: false,
+          pointHoverBackgroundColor: '#9333ea',
+          pointHoverBorderColor: '#9333ea',
+          pointHoverBorderWidth: 1,
+          datalabels: {
+            display: false,
+          },
+        },
       ],
     };
   }, [data]);
@@ -200,6 +222,7 @@ export default function BurndownChart({
       3: 'wip_in_progress',
       4: 'issues_removed',
       5: 'issues_completed',
+      6: 'issues_added',
     };
     return metricMap[datasetIndex] || null;
   };
@@ -276,6 +299,8 @@ export default function BurndownChart({
                 return `🔴 Issues Removed: ${value} issues`;
               case 'Issues Completed':
                 return `🟢 Issues Completed: ${value} issues`;
+              case 'Issues Added':
+                return `⬆️ Issues Added: ${value} issues`;
               case 'Work In Progress':
                 return `🟣 Work In Progress: ${value} issues`;
               default:
@@ -330,7 +355,8 @@ export default function BurndownChart({
         max: Math.max(
           ...data.map(d => d.ideal_remaining), 
           ...data.map(d => d.total_issues),
-          ...data.map(d => d.wip_issues_in_progress ?? 0)
+          ...data.map(d => d.wip_issues_in_progress ?? 0),
+          ...data.map(d => d.issues_added_on_day ?? 0)
         ) + 2,
         ticks: {
           stepSize: 2,
@@ -343,7 +369,7 @@ export default function BurndownChart({
     },
     elements: {
       point: {
-        hitRadius: 10,
+        hitRadius: 4,
       },
     },
     interaction: {
@@ -352,16 +378,11 @@ export default function BurndownChart({
     },
     onClick: (event: any, elements: any[]) => {
       if (!onChartClick || elements.length === 0) return;
-      
-      // With mode: 'point', elements array contains only the clicked element
       const element = elements[0];
       const dataIndex = element.index;
       const datasetIndex = element.datasetIndex;
-      
-      // Only allow clicks on clickable datasets (exclude ideal_burndown)
       const metricType = getMetricTypeFromDataset(datasetIndex);
       if (!metricType) return;
-      
       const clickedData = data[dataIndex];
       if (clickedData && clickedData.snapshot_date) {
         onChartClick({

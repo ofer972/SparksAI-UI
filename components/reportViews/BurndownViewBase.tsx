@@ -147,6 +147,7 @@ const BurndownViewBase: React.FC<BurndownViewBaseProps> = ({
       'wip_in_progress': 'Work In Progress',
       'issues_completed': 'Issues Completed',
       'issues_removed': 'Issues Removed',
+      'issues_added': 'Issues Added',
     };
     return labels[metricType] || metricType;
   };
