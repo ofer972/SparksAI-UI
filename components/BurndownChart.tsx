@@ -75,7 +75,14 @@ export default function BurndownChart({
     // Create event markers for issues removed, completed, and added
     const issuesRemovedData = data.map(d => d.issues_removed_on_day > 0 ? d.issues_removed_on_day : null);
     const issuesCompletedData = data.map(d => d.issues_completed_on_day > 0 ? d.issues_completed_on_day : null);
-    const issuesAddedData = data.map(d => d.issues_added_on_day > 0 ? d.issues_added_on_day : null);
+    const issuesAddedData = data.map(d => (d.issues_added_on_day ?? 0) as number | null);
+
+    // Count event markers per index for heat reduce: smaller points when multiple on same day
+    const eventCountPerIndex = data.map((_, i) =>
+      [issuesRemovedData[i], issuesCompletedData[i], issuesAddedData[i]].filter(
+        (v) => v != null && v !== 0
+      ).length
+    );
 
     return {
       labels,
@@ -86,8 +93,8 @@ export default function BurndownChart({
           borderColor: '#ff8c00',
           backgroundColor: 'rgba(255, 140, 0, 0.1)',
           borderWidth: 1.5,
-          pointRadius: 3,
-          pointHoverRadius: 8,
+          pointRadius: 5,
+          pointHoverRadius: 10,
           pointBackgroundColor: '#ff8c00',
           pointBorderColor: '#ff8c00',
           pointHoverBackgroundColor: '#ff8c00',
@@ -116,8 +123,8 @@ export default function BurndownChart({
         {
           label: 'Total Scope',
           data: totalScope,
-          borderColor: '#0066cc',
-          backgroundColor: 'rgba(0, 102, 204, 0.1)',
+          borderColor: '#2563eb',
+          backgroundColor: 'rgba(37, 99, 235, 0.1)',
           borderWidth: 2,
           borderDash: [2, 2],
           pointRadius: 0,
@@ -130,16 +137,16 @@ export default function BurndownChart({
         {
           label: 'Work In Progress',
           data: wipData,
-          borderColor: '#6a1b9a',
-          backgroundColor: 'rgba(106, 27, 154, 0.1)',
+          borderColor: '#06b6d4',
+          backgroundColor: 'rgba(6, 182, 212, 0.1)',
           borderWidth: 1,
           borderDash: [10, 5],
-          pointRadius: 3,
-          pointHoverRadius: 7,
-          pointBackgroundColor: '#6a1b9a',
-          pointBorderColor: '#6a1b9a',
-          pointHoverBackgroundColor: '#6a1b9a',
-          pointHoverBorderColor: '#6a1b9a',
+          pointRadius: 5,
+          pointHoverRadius: 9,
+          pointBackgroundColor: '#06b6d4',
+          pointBorderColor: '#06b6d4',
+          pointHoverBackgroundColor: '#06b6d4',
+          pointHoverBorderColor: '#06b6d4',
           pointHoverBorderWidth: 1,
           fill: false,
           tension: 0,
@@ -153,7 +160,8 @@ export default function BurndownChart({
           borderColor: '#ff0000',
           backgroundColor: '#ff0000',
           borderWidth: 1,
-          pointRadius: 5,
+          pointRadius: (ctx: { dataIndex: number }) =>
+            (eventCountPerIndex[ctx.dataIndex] ?? 0) > 1 ? 4 : 5,
           pointStyle: 'rectRot',
           pointBackgroundColor: '#ff0000',
           pointBorderColor: '#ff0000',
@@ -174,8 +182,9 @@ export default function BurndownChart({
           borderColor: '#00ff00',
           backgroundColor: '#00ff00',
           borderWidth: 0,
-          pointRadius: 6,
-          pointHoverRadius: 8,
+          pointRadius: (ctx: { dataIndex: number }) =>
+            (eventCountPerIndex[ctx.dataIndex] ?? 0) > 1 ? 5 : 6,
+          pointHoverRadius: 10,
           pointStyle: 'rectRot',
           pointBackgroundColor: '#00ff00',
           pointBorderColor: '#00ff00',
@@ -192,19 +201,24 @@ export default function BurndownChart({
         {
           label: 'Issues Added',
           data: issuesAddedData,
-          borderColor: '#9333ea',
-          backgroundColor: '#9333ea',
+          borderColor: '#7c3aed',
+          backgroundColor: '#7c3aed',
           borderWidth: 1,
-          pointRadius: 5,
-          pointStyle: 'triangle',
-          pointBackgroundColor: '#9333ea',
-          pointBorderColor: '#9333ea',
+          pointRadius: (ctx: { raw: number | null; dataIndex: number }) =>
+            ctx.raw === 0 || ctx.raw == null
+              ? 0
+              : (eventCountPerIndex[ctx.dataIndex] ?? 0) > 1
+                ? 6
+                : 5,
+          pointStyle: 'star',
+          pointBackgroundColor: '#7c3aed',
+          pointBorderColor: '#7c3aed',
           pointHoverRadius: 7,
           fill: false,
           tension: 0,
           showLine: false,
-          pointHoverBackgroundColor: '#9333ea',
-          pointHoverBorderColor: '#9333ea',
+          pointHoverBackgroundColor: '#7c3aed',
+          pointHoverBorderColor: '#7c3aed',
           pointHoverBorderWidth: 1,
           datalabels: {
             display: false,
@@ -287,28 +301,44 @@ export default function BurndownChart({
               return '';
             }
             
-            // Add more descriptive labels
+            // One icon (left color swatch) is enough; no emoji in text
             switch (datasetLabel) {
               case 'Actual Remaining':
-                return `📊 Actual Remaining: ${value} issues`;
+                return `Actual Remaining: ${value} issues`;
               case 'Ideal Burndown':
-                return `📈 Ideal Burndown: ${value} issues`;
+                return `Ideal Burndown: ${value} issues`;
               case 'Total Scope':
-                return `📋 Total Scope: ${value} issues`;
+                return `Total Scope: ${value} issues`;
               case 'Issues Removed':
-                return `🔴 Issues Removed: ${value} issues`;
+                return `Issues Removed: ${value} issues`;
               case 'Issues Completed':
-                return `🟢 Issues Completed: ${value} issues`;
+                return `Issues Completed: ${value} issues`;
               case 'Issues Added':
-                return `⬆️ Issues Added: ${value} issues`;
+                return `Issues Added: ${value} issues`;
               case 'Work In Progress':
-                return `🟣 Work In Progress: ${value} issues`;
+                return `Work In Progress: ${value} issues`;
               default:
                 return `${datasetLabel}: ${value}`;
             }
           },
           filter: function(context: any) {
             return context.parsed.y !== null && context.parsed.y !== undefined;
+          },
+          labelColor: function(context: any) {
+            const label = context.dataset?.label;
+            const wipCyan = '#06b6d4';
+            if (label === 'Work In Progress') {
+              return { borderColor: wipCyan, backgroundColor: wipCyan };
+            }
+            const solid = context.dataset.pointBackgroundColor ?? context.dataset.borderColor;
+            return {
+              borderColor: context.dataset.borderColor,
+              backgroundColor: solid ?? context.dataset.backgroundColor,
+            };
+          },
+          // Single icon per row: only the color swatch (left). No second shape.
+          labelPointStyle: function() {
+            return { pointStyle: 'circle', rotation: 0, radius: 0, borderWidth: 0 };
           },
           footer: function(context: any) {
             const dataIndex = context[0]?.dataIndex;
@@ -369,7 +399,7 @@ export default function BurndownChart({
     },
     elements: {
       point: {
-        hitRadius: 4,
+        hitRadius: 3,
       },
     },
     interaction: {
