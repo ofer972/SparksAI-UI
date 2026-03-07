@@ -123,8 +123,8 @@ export default function BurndownChart({
         {
           label: 'Total Scope',
           data: totalScope,
-          borderColor: '#2563eb',
-          backgroundColor: 'rgba(37, 99, 235, 0.1)',
+          borderColor: '#1d4ed8',
+          backgroundColor: 'rgba(29, 78, 216, 0.1)',
           borderWidth: 2,
           borderDash: [2, 2],
           pointRadius: 0,
@@ -204,7 +204,7 @@ export default function BurndownChart({
           borderColor: '#7c3aed',
           backgroundColor: '#7c3aed',
           borderWidth: 1,
-          pointRadius: (ctx: { raw: number | null; dataIndex: number }) =>
+          pointRadius: (ctx: { raw?: unknown; dataIndex: number }) =>
             ctx.raw === 0 || ctx.raw == null
               ? 0
               : (eventCountPerIndex[ctx.dataIndex] ?? 0) > 1
@@ -336,9 +336,9 @@ export default function BurndownChart({
               backgroundColor: solid ?? context.dataset.backgroundColor,
             };
           },
-          // Single icon per row: only the color swatch (left). No second shape.
+          // Single icon per row: only the color swatch (left). Minimal point style for type compatibility.
           labelPointStyle: function() {
-            return { pointStyle: 'circle', rotation: 0, radius: 0, borderWidth: 0 };
+            return { pointStyle: 'circle' as const, rotation: 0 };
           },
           footer: function(context: any) {
             const dataIndex = context[0]?.dataIndex;
