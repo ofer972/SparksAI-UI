@@ -84,8 +84,8 @@ export default function BurndownChart({
       ).length
     );
 
-    // Small vertical offset by type when 2+ event markers on same day so they stack visibly (step in issue-count units)
-    const EVENT_V_OFFSET = 0.25;
+    // Vertical offset by type when 2+ event markers on same day so they stack visibly (issue-count units). Use 0.4 so same-value markers (e.g. Completed=1, Added=1) separate; keep < 0.5 so Removed(2) stays above Added(1) when both present.
+    const EVENT_V_OFFSET = 0.4;
     const eventArrays = [issuesRemovedData, issuesCompletedData, issuesAddedData];
     const withVerticalOffset = (datasetIdx: number, values: (number | null)[]): (number | null)[] =>
       values.map((y, i) => {
@@ -97,7 +97,9 @@ export default function BurndownChart({
           .filter((d) => d >= 0);
         const rank = whoHasValue.indexOf(datasetIdx);
         const center = (count - 1) / 2;
-        const offset = (rank - center) * EVENT_V_OFFSET;
+        // Put top marker (rank 0, Removed) above its value so the downward triangle doesn't sit below the count and overlap others
+        const offset =
+          rank === 0 ? EVENT_V_OFFSET : (rank - center) * EVENT_V_OFFSET;
         return y + offset;
       });
 
@@ -184,7 +186,8 @@ export default function BurndownChart({
           borderWidth: 1,
           pointRadius: (ctx: { dataIndex: number }) =>
             (eventCountPerIndex[ctx.dataIndex] ?? 0) > 1 ? 4 : 5,
-          pointStyle: 'rectRot',
+          pointStyle: 'triangle',
+          pointRotation: 180,
           pointBackgroundColor: '#ff0000',
           pointBorderColor: '#ff0000',
           pointHoverRadius: 7,
@@ -234,7 +237,7 @@ export default function BurndownChart({
               : (eventCountPerIndex[ctx.dataIndex] ?? 0) > 1
                 ? 6
                 : 5,
-          pointStyle: 'star',
+          pointStyle: 'triangle',
           pointBackgroundColor: '#7c3aed',
           pointBorderColor: '#7c3aed',
           pointHoverRadius: 7,
