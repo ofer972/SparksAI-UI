@@ -84,12 +84,30 @@ export default function BurndownChart({
       ).length
     );
 
+    // Small vertical offset by type when 2+ event markers on same day so they stack visibly (step in issue-count units)
+    const EVENT_V_OFFSET = 0.25;
+    const eventArrays = [issuesRemovedData, issuesCompletedData, issuesAddedData];
+    const withVerticalOffset = (datasetIdx: number, values: (number | null)[]): (number | null)[] =>
+      values.map((y, i) => {
+        if (y == null || y === 0) return null;
+        const count = eventCountPerIndex[i] ?? 0;
+        if (count <= 1) return y;
+        const whoHasValue = eventArrays
+          .map((arr, d) => (arr[i] != null && arr[i] !== 0 ? d : -1))
+          .filter((d) => d >= 0);
+        const rank = whoHasValue.indexOf(datasetIdx);
+        const center = (count - 1) / 2;
+        const offset = (rank - center) * EVENT_V_OFFSET;
+        return y + offset;
+      });
+
     return {
       labels,
       datasets: [
         {
           label: 'Actual Remaining',
           data: actualRemaining,
+          order: 1,
           borderColor: '#ff8c00',
           backgroundColor: 'rgba(255, 140, 0, 0.1)',
           borderWidth: 1.5,
@@ -109,6 +127,7 @@ export default function BurndownChart({
         {
           label: 'Ideal Burndown',
           data: idealRemaining,
+          order: 1,
           borderColor: '#808080',
           backgroundColor: 'rgba(128, 128, 128, 0.1)',
           borderWidth: 2,
@@ -123,6 +142,7 @@ export default function BurndownChart({
         {
           label: 'Total Scope',
           data: totalScope,
+          order: 1,
           borderColor: '#1d4ed8',
           backgroundColor: 'rgba(29, 78, 216, 0.1)',
           borderWidth: 2,
@@ -137,6 +157,7 @@ export default function BurndownChart({
         {
           label: 'Work In Progress',
           data: wipData,
+          order: 1,
           borderColor: '#06b6d4',
           backgroundColor: 'rgba(6, 182, 212, 0.1)',
           borderWidth: 1,
@@ -156,7 +177,8 @@ export default function BurndownChart({
         },
         {
           label: 'Issues Removed',
-          data: issuesRemovedData,
+          data: withVerticalOffset(0, issuesRemovedData),
+          order: 0,
           borderColor: '#ff0000',
           backgroundColor: '#ff0000',
           borderWidth: 1,
@@ -178,7 +200,8 @@ export default function BurndownChart({
         },
         {
           label: 'Issues Completed',
-          data: issuesCompletedData,
+          data: withVerticalOffset(1, issuesCompletedData),
+          order: 0,
           borderColor: '#00ff00',
           backgroundColor: '#00ff00',
           borderWidth: 0,
@@ -200,7 +223,8 @@ export default function BurndownChart({
         },
         {
           label: 'Issues Added',
-          data: issuesAddedData,
+          data: withVerticalOffset(2, issuesAddedData),
+          order: 0,
           borderColor: '#7c3aed',
           backgroundColor: '#7c3aed',
           borderWidth: 1,
@@ -296,29 +320,30 @@ export default function BurndownChart({
           },
           label: function(context: any) {
             const datasetLabel = context.dataset.label;
-            const value = context.parsed.y;
+            let value = context.parsed.y;
             if (value === null || value === undefined) {
               return '';
             }
-            
-            // One icon (left color swatch) is enough; no emoji in text
+            // Event markers use small vertical offset for stacking; show actual count (rounded) in tooltip
+            const isEventMarker = ['Issues Removed', 'Issues Completed', 'Issues Added'].includes(datasetLabel);
+            const displayValue = isEventMarker ? Math.round(Number(value)) : value;
             switch (datasetLabel) {
               case 'Actual Remaining':
-                return `Actual Remaining: ${value} issues`;
+                return `Actual Remaining: ${displayValue} issues`;
               case 'Ideal Burndown':
-                return `Ideal Burndown: ${value} issues`;
+                return `Ideal Burndown: ${displayValue} issues`;
               case 'Total Scope':
-                return `Total Scope: ${value} issues`;
+                return `Total Scope: ${displayValue} issues`;
               case 'Issues Removed':
-                return `Issues Removed: ${value} issues`;
+                return `Issues Removed: ${displayValue} issues`;
               case 'Issues Completed':
-                return `Issues Completed: ${value} issues`;
+                return `Issues Completed: ${displayValue} issues`;
               case 'Issues Added':
-                return `Issues Added: ${value} issues`;
+                return `Issues Added: ${displayValue} issues`;
               case 'Work In Progress':
-                return `Work In Progress: ${value} issues`;
+                return `Work In Progress: ${displayValue} issues`;
               default:
-                return `${datasetLabel}: ${value}`;
+                return `${datasetLabel}: ${displayValue}`;
             }
           },
           filter: function(context: any) {
