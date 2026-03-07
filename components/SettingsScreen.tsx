@@ -74,7 +74,7 @@ export default function SettingsScreen() {
  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
  const [pendingTab, setPendingTab] = useState<string | null>(null);
  const [aiProvider, setAiProvider] = useState('openai');
- const [geminiModel, setGeminiModel] = useState('gemini-2.5-flash');
+ const [geminiModel, setGeminiModel] = useState('gemini-flash-latest');
  const [openaiModel, setOpenaiModel] = useState('gpt-4o-mini');
  const [geminiTemperature, setGeminiTemperature] = useState(0);
  const [openaiTemperature, setOpenaiTemperature] = useState(0.7);
@@ -84,7 +84,7 @@ export default function SettingsScreen() {
  const [originalOpenaiApiKey, setOriginalOpenaiApiKey] = useState<string | null>(null);
  // Store original values for change tracking
  const [originalAiProvider, setOriginalAiProvider] = useState<string>('openai');
- const [originalGeminiModel, setOriginalGeminiModel] = useState<string>('gemini-2.5-flash');
+ const [originalGeminiModel, setOriginalGeminiModel] = useState<string>('gemini-flash-latest');
  const [originalOpenaiModel, setOriginalOpenaiModel] = useState<string>('gpt-4o-mini');
  const [originalGeminiTemperature, setOriginalGeminiTemperature] = useState<number>(0);
  const [originalOpenaiTemperature, setOriginalOpenaiTemperature] = useState<number>(0.7);
