@@ -53,6 +53,16 @@ export default function BurndownChart({
     return () => observer.disconnect();
   }, []);
 
+  // Totals for summary box (sprint scope change)
+  const totals = React.useMemo(() => {
+    if (!data.length) return { added: 0, removed: 0, completed: 0 };
+    return {
+      added: data.reduce((s, d) => s + (d.issues_added_on_day ?? 0), 0),
+      removed: data.reduce((s, d) => s + (d.issues_removed_on_day ?? 0), 0),
+      completed: data.reduce((s, d) => s + (d.issues_completed_on_day ?? 0), 0),
+    };
+  }, [data]);
+
   // Memoize chart data preparation to prevent unnecessary recalculations
   const chartData = React.useMemo(() => {
     if (!data.length) return null;
@@ -489,6 +499,26 @@ export default function BurndownChart({
 
   return (
     <div className="relative h-full min-h-[350px]">
+      {/* Fixed summary box: top-right of chart area */}
+      <div
+        className="absolute top-2 right-2 z-10 rounded-lg border border-border bg-background/95 px-3 py-2 shadow-sm backdrop-blur-sm"
+        aria-label="Sprint scope summary"
+      >
+        <div className="text-xs font-medium text-content-secondary space-y-1">
+          <div className="flex justify-between gap-4">
+            <span>Total Added:</span>
+            <span className="tabular-nums font-semibold text-content">{totals.added}</span>
+          </div>
+          <div className="flex justify-between gap-4">
+            <span>Total Removed:</span>
+            <span className="tabular-nums font-semibold text-content">{totals.removed}</span>
+          </div>
+          <div className="flex justify-between gap-4">
+            <span>Total Completed:</span>
+            <span className="tabular-nums font-semibold text-content">{totals.completed}</span>
+          </div>
+        </div>
+      </div>
       <Line key={isDark ? 'dark' : 'light'} options={options} data={chartData} />
     </div>
   );

@@ -387,6 +387,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
               'issues_at_start': 'issues_at_start_keys',
               'issues_added': 'issues_added_keys',
               'issues_removed': 'issues_removed_keys',
+              'issues_completed_outside_sprint': 'issues_completed_outside_sprint_keys',
               'bugs_planned_plus_added': 'bugs_planned_plus_added_keys',
               'bug_resolved_during_sprint': 'bug_resolved_during_sprint_keys',
             };
