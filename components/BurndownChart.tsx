@@ -501,7 +501,7 @@ export default function BurndownChart({
     <div className="relative h-full min-h-[350px]">
       {/* Fixed summary box: top-right of chart area */}
       <div
-        className="absolute top-2 right-2 z-10 rounded-lg border border-border bg-background/95 px-3 py-2 shadow-sm backdrop-blur-sm"
+        className="absolute top-2 right-2 z-10 -translate-y-[10px] rounded-lg border border-border bg-background/95 px-3 py-2 shadow-sm backdrop-blur-sm"
         aria-label="Sprint scope summary"
       >
         <div className="text-xs font-medium text-content-secondary space-y-1">
