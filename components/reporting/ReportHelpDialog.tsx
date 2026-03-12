@@ -32,7 +32,7 @@ export default function ReportHelpDialog({
 
   const title = reportTitle || 'Report help';
 
-  const positionStyle: React.CSSProperties = anchorRect
+  const positionStyle: React.CSSProperties | undefined = anchorRect
     ? (() => {
         const top = anchorRect.bottom + GAP_PX;
         let left = anchorRect.left;
