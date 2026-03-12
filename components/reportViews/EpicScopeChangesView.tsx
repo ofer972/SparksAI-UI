@@ -8,6 +8,7 @@ import StackedGroupedBarChart, {
 import { ScopeChangesDataPoint } from '@/lib/api';
 import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
 import ReportCard from '../reporting/ReportCard';
+import ReportHelpButton from '../reporting/ReportHelpButton';
 import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
 import TeamGroupFilter from '../TeamGroupFilter';
@@ -264,6 +265,7 @@ const EpicScopeChangesView: React.FC<EpicScopeChangesViewProps> = ({
     <ReportCard
       title="Epic Scope Changes"
       reportId={componentProps?.reportId}
+      titleSuffix={<ReportHelpButton reportId={componentProps?.reportId} reportTitle="Epic Scope Changes" />}
       filters={filtersContent}
       filterBadges={filterBadges}
       onTogglePin={togglePin}

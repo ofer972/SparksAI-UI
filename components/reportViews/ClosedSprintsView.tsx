@@ -5,6 +5,7 @@ import { ClosedSprint } from '@/lib/config';
 import DataTable, { Column, SortConfig } from '../DataTable';
 import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
 import ReportCard from '../reporting/ReportCard';
+import ReportHelpButton from '../reporting/ReportHelpButton';
 import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
 import TeamGroupFilter from '../TeamGroupFilter';
@@ -569,6 +570,7 @@ const ClosedSprintsView: React.FC<ClosedSprintsViewProps> = ({
     <ReportCard
       title={isSprintPredictabilityAlias ? 'Sprint Predictability' : 'Closed Sprints'}
       reportId={componentProps?.reportId}
+      titleSuffix={<ReportHelpButton reportId={componentProps?.reportId} reportTitle={isSprintPredictabilityAlias ? 'Sprint Predictability' : 'Closed Sprints'} />}
       filters={filtersContent}
       filterBadges={filterBadges}
       onTogglePin={togglePin}

@@ -2,6 +2,9 @@
 
 import React from 'react';
 
+/** Context so help dialog can position itself just under the report header. */
+export const ReportCardHeaderRectContext = React.createContext<(() => DOMRect | null) | null>(null);
+
 interface FilterBadge {
  label: string;
  value: string | number;
@@ -30,6 +33,7 @@ interface ReportCardProps {
  readOnly?: boolean; // If true, hides all header buttons (filter, refresh, close, AI chat)
  hideHeader?: boolean; // If true, completely hides the header section
  hideCollapse?: boolean; // If true, hides the collapse/expand button
+ compactHeader?: boolean; // If true, use smaller header (padding and title) like the help dialog
 }
 
 const iconStyles = 'h-5 w-5 text-content-muted';
@@ -103,6 +107,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
  readOnly = false,
  hideHeader = false,
  hideCollapse = false,
+ compactHeader = false,
 }) => {
  const [collapsed, setCollapsed] = React.useState(defaultCollapsed);
  const [filtersCollapsed, setFiltersCollapsed] = React.useState(true);
@@ -130,8 +135,11 @@ const ReportCard: React.FC<ReportCardProps> = ({
  const handleToggleFilters = React.useCallback(() => {
  setFiltersCollapsed((prev) => !prev);
  }, []);
+ const headerRef = React.useRef<HTMLDivElement>(null);
+ const getHeaderRect = React.useCallback(() => headerRef.current?.getBoundingClientRect() ?? null, []);
 
  return (
+ <ReportCardHeaderRectContext.Provider value={getHeaderRect}>
  <div
  className={`bg-surface rounded-xl flex flex-col h-full relative border-2 border-outline border-outline shadow-lg hover:shadow-xl transition-all duration-200 ${className} ${collapsed ? 'shadow-md' : ''}`}
  >
@@ -152,42 +160,42 @@ const ReportCard: React.FC<ReportCardProps> = ({
  
  {/* Header with Gradient Background */}
  {!hideHeader && (
- <div className={`flex items-center justify-between px-4 py-2 ${isInsightCard && priorityColors ? priorityColors.headerGradient : 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40'} border-b-2 border-outline ${!collapsed ? 'rounded-t-xl' : 'rounded-xl'} relative z-40`}>
+ <div ref={headerRef} className={`flex items-center justify-between ${compactHeader ? 'px-3 py-1.5' : 'px-4 py-2'} ${isInsightCard && priorityColors ? priorityColors.headerGradient : 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40'} border-b-2 border-outline ${!collapsed ? 'rounded-t-xl' : 'rounded-xl'} relative z-40`}>
  <div className="flex items-center gap-2">
  {!hideCollapse && (
  <button
  type="button"
  onClick={handleToggleCollapse}
- className="inline-flex items-center justify-center h-7 w-7 rounded-lg bg-surface-elevated border-2 border-blue-300 border-blue-700 text-brand hover:bg-brand/10 hover:border-brand focus:outline-none focus:ring-2 focus:ring-brand transition-all duration-200 shadow-sm relative z-40"
+ className={`inline-flex items-center justify-center rounded-lg bg-surface-elevated border-2 border-blue-300 border-blue-700 text-brand hover:bg-brand/10 hover:border-brand focus:outline-none focus:ring-2 focus:ring-brand transition-all duration-200 shadow-sm relative z-40 ${compactHeader ? 'h-6 w-6' : 'h-7 w-7'}`}
  aria-label={collapsed ? `Expand ${title}` : `Collapse ${title}`}
  >
  {collapsed ? (
- <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+ <svg className={compactHeader ? 'h-3.5 w-3.5' : 'h-4 w-4'} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9" />
  </svg>
  ) : (
- <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+ <svg className={compactHeader ? 'h-3.5 w-3.5' : 'h-4 w-4'} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
  <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
  </svg>
  )}
  </button>
  )}
  {priorityIcon && (
- <span className="text-lg flex-shrink-0" aria-label={`Priority: ${priorityColor}`}>
+ <span className={`flex-shrink-0 ${compactHeader ? 'text-base' : 'text-lg'}`} aria-label={`Priority: ${priorityColor}`}>
  {priorityIcon}
  </span>
  )}
- <h2 className="text-base font-bold text-content-primary">{title}</h2>
- {titleSuffix && <div className="flex items-center gap-2 relative z-40">{titleSuffix}</div>}
+ <h2 className={`font-bold text-content-primary ${compactHeader ? 'text-sm' : 'text-base'}`}>{title}</h2>
  </div>
  <div className={`flex items-center gap-1.5 relative z-40 ${!readOnly ? 'mr-8' : ''}`}>
- {!readOnly && filters && (
+ {titleSuffix}
+{!readOnly && filters && (
  <button
  type="button"
  onClick={handleToggleFilters}
- className={`inline-flex items-center justify-center h-7 w-7 rounded-lg bg-surface-elevated border-2 transition-all duration-200 shadow-sm ${
- !filtersCollapsed 
- ? 'border-brand text-brand bg-blue-50' 
+ className={`inline-flex items-center justify-center rounded-lg bg-surface-elevated border-2 transition-all duration-200 shadow-sm ${compactHeader ? 'h-6 w-6' : 'h-7 w-7'} ${
+ !filtersCollapsed
+ ? 'border-brand text-brand bg-blue-50'
  : 'border-outline-strong text-content-tertiary hover:bg-surface-secondary hover:border-outline-strong'
  } focus:outline-none focus:ring-2 focus:ring-brand`}
  aria-label={filtersCollapsed ? 'Show filters' : 'Hide filters'}
@@ -202,7 +210,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
  <button
  type="button"
  onClick={onRefresh}
- className="inline-flex items-center justify-center h-7 w-7 rounded-lg bg-surface-elevated border-2 border-outline-strong text-content-tertiary hover:bg-green-50 dark:hover:bg-green-900/30 hover:text-green-600 hover:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 shadow-sm"
+ className={`inline-flex items-center justify-center rounded-lg bg-surface-elevated border-2 border-outline-strong text-content-tertiary hover:bg-green-50 dark:hover:bg-green-900/30 hover:text-green-600 hover:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 shadow-sm ${compactHeader ? 'h-6 w-6' : 'h-7 w-7'}`}
  aria-label="Refresh"
  title="Refresh"
  >
@@ -216,7 +224,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
  <button
  type="button"
  onClick={onAIChat}
- className="inline-flex items-center justify-center h-7 w-7 rounded-lg bg-surface-elevated border-2 border-outline-strong text-content-tertiary hover:bg-surface-secondary hover:border-outline-strong focus:outline-none focus:ring-2 focus:ring-brand transition-all duration-200 shadow-sm"
+ className={`inline-flex items-center justify-center rounded-lg bg-surface-elevated border-2 border-outline-strong text-content-tertiary hover:bg-surface-secondary hover:border-outline-strong focus:outline-none focus:ring-2 focus:ring-brand transition-all duration-200 shadow-sm ${compactHeader ? 'h-6 w-6' : 'h-7 w-7'}`}
  aria-label="AI Chat for this report"
  title="Open AI chat for this report"
  >
@@ -294,6 +302,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
  </div>
  )}
  </div>
+ </ReportCardHeaderRectContext.Provider>
  );
 };
 

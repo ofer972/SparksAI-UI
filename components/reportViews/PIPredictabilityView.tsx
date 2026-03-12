@@ -5,6 +5,7 @@ import { PIPredictabilityData } from '@/lib/config';
 import DataTable, { Column, SortConfig } from '../DataTable';
 import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
 import ReportCard from '../reporting/ReportCard';
+import ReportHelpButton from '../reporting/ReportHelpButton';
 import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
 import TeamGroupFilter from '../TeamGroupFilter';
@@ -402,6 +403,7 @@ const PIPredictabilityView: React.FC<PIPredictabilityViewProps> = ({
  <ReportCard 
  title={piLabel('Predictability')} 
  reportId={componentProps?.reportId}
+ titleSuffix={<ReportHelpButton reportId={componentProps?.reportId} reportTitle={piLabel('Predictability')} />}
  filters={filtersContent}
  filterBadges={filterBadges}
  onTogglePin={togglePin}

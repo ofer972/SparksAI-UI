@@ -5,6 +5,7 @@ import BurndownChart from '../BurndownChart';
 import type { BurndownDataPoint } from '@/lib/api';
 import type { ReportFiltersUpdater } from '../reportComponentsRegistry';
 import ReportCard from '../reporting/ReportCard';
+import ReportHelpButton from '../reporting/ReportHelpButton';
 import ReportFiltersRow from '../reporting/ReportFiltersRow';
 import ReportFilterField from '../reporting/ReportFilterField';
 import TeamGroupFilter from '../TeamGroupFilter';
@@ -231,6 +232,8 @@ const BurndownViewBase: React.FC<BurndownViewBaseProps> = ({
     <ReportCard 
       title={title} 
       reportId={componentProps?.reportId} 
+      titleSuffix={<ReportHelpButton reportId={componentProps?.reportId} reportTitle={title} />}
+      compactHeader={componentProps?.reportId === 'team-sprint-burndown'}
       filters={filtersContent} 
       filterBadges={filterBadges}
       onTogglePin={togglePin}
